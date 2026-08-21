@@ -28,22 +28,19 @@ function RootLayoutNav() {
   }
 
   return (
-    <Stack>
+    <Stack screenOptions={{ headerShown: false }}>
       {session && profile?.onboarding_completed ? (
-        // 已登入且完成 onboarding，導向 tabs (主頁)
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" />
       ) : session && !profile?.onboarding_completed ? (
-        // 已登入但未完成 onboarding，導向 onboarding 頁面
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding" />
       ) : (
-        // 未登入，導向登入頁面
-        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="login" />
       )}
-      <Stack.Screen name="admin" options={{ headerShown: false }} />
-      <Stack.Screen name="chat/[matchId]" options={{ headerShown: false }} />
-      <Stack.Screen name="person/[userId]" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-      <Stack.Screen name="signup" options={{ presentation: "modal" }} />
+      <Stack.Screen name="admin" />
+      <Stack.Screen name="chat/[matchId]" />
+      <Stack.Screen name="person/[userId]" />
+      <Stack.Screen name="modal" options={{ presentation: "modal", headerShown: true, title: "Modal" }} />
+      <Stack.Screen name="signup" options={{ presentation: "modal", headerShown: true, title: "註冊" }} />
     </Stack>
   );
 }
