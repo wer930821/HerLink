@@ -141,7 +141,7 @@ export async function saveAnonymousProfile(
   userId: string,
   profile: {
     anonymous_display_name: string;
-    anonymous_avatar: AnonymousAvatarId;
+    anonymous_avatar?: AnonymousAvatarId;
     anonymous_mode_enabled?: boolean;
     onboarding_completed?: boolean;
   }
