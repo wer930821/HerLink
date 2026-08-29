@@ -5,6 +5,7 @@ node_modules/
 
 # Expo
 .expo/
+.next/
 dist/
 web-build/
 expo-env.d.ts
@@ -41,6 +42,7 @@ yarn-error.*
 /android
 
 .env
+.supabase.test.env
 supabase/.temp/
 work/*.tgz
 
