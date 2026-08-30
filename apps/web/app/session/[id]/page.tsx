@@ -147,6 +147,7 @@ export default function RandomSessionPage({ params }: Props) {
   const typingChannelRef = useRef<any>(null);
   const typingSenderTimerRef = useRef<number | null>(null);
   const typingReceiverTimerRef = useRef<number | null>(null);
+  const typingReceiverDeadlineRef = useRef<number | null>(null);
   const typingActiveRef = useRef(false);
   const [myProfile, setMyProfile] = useState<WebProfile | null>(null);
   const [session, setSession] = useState<RandomSessionRow | null>(null);
@@ -237,7 +238,23 @@ export default function RandomSessionPage({ params }: Props) {
 
   const clearPartnerTyping = () => {
     clearReceiverTypingTimer();
+    typingReceiverDeadlineRef.current = null;
     setPartnerTyping(false);
+  };
+
+  const armPartnerTypingTimeout = () => {
+    clearReceiverTypingTimer();
+    const deadline = Date.now() + 4500;
+    typingReceiverDeadlineRef.current = deadline;
+    typingReceiverTimerRef.current = window.setTimeout(() => {
+      typingReceiverTimerRef.current = null;
+      if (typingReceiverDeadlineRef.current !== deadline) {
+        return;
+      }
+
+      typingReceiverDeadlineRef.current = null;
+      setPartnerTyping(false);
+    }, 4500);
   };
 
   useEffect(() => {
@@ -367,10 +384,7 @@ export default function RandomSessionPage({ params }: Props) {
         }
 
         setPartnerTyping(true);
-        clearReceiverTypingTimer();
-        typingReceiverTimerRef.current = window.setTimeout(() => {
-          setPartnerTyping(false);
-        }, 4500);
+        armPartnerTypingTimeout();
       })
       .subscribe();
 
@@ -418,6 +432,27 @@ export default function RandomSessionPage({ params }: Props) {
       clearPartnerTyping();
     }
   }, [isEnded]);
+
+  useEffect(() => {
+    if (!partnerTyping) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      const deadline = typingReceiverDeadlineRef.current;
+      if (deadline === null) {
+        return;
+      }
+
+      if (Date.now() >= deadline) {
+        clearPartnerTyping();
+      }
+    }, 1000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [partnerTyping]);
 
   useEffect(() => {
     if (!session || !myProfile?.id || isEnded) {
