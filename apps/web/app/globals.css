@@ -83,6 +83,51 @@ input {
   line-height: 1.7;
 }
 
+.waiting-title {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2em;
+}
+
+.waiting-meta {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+}
+
+.waiting-eyes {
+  display: inline-block;
+  transform-origin: 50% 55%;
+  animation: waiting-eyes-look 1.4s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes waiting-eyes-look {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  50% {
+    transform: translateX(0);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .waiting-eyes {
+    animation: none;
+  }
+}
+
 .panel {
   display: grid;
   gap: 14px;

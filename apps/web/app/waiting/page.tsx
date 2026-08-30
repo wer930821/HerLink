@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOnlinePresence } from "../../lib/realtime-presence";
 import {
@@ -27,7 +27,31 @@ export default function WaitingPage() {
   const [session, setSession] = useState<RandomSessionRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionBusy, setActionBusy] = useState(false);
-  const { onlineCount, onlineCountConnected } = useOnlinePresence(userId);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const waitingMountedAtRef = useRef<number>(Date.now());
+  const waitingStartedAtRef = useRef<number | null>(null);
+  const { onlineCount } = useOnlinePresence(userId);
+
+  const waitingTitle = useMemo(() => {
+    if (elapsedSeconds >= 30) {
+      return (
+        <>
+          還在幫你找人，再等等看 <span className="waiting-eyes" aria-hidden="true">👀</span>
+        </>
+      );
+    }
+
+    return "正在尋找聊天對象…";
+  }, [elapsedSeconds]);
+
+  const formattedElapsed = useMemo(() => {
+    const totalSeconds = Math.max(0, elapsedSeconds);
+    const minutes = Math.floor(totalSeconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const seconds = (totalSeconds % 60).toString().padStart(2, "0");
+    return `${minutes}:${seconds}`;
+  }, [elapsedSeconds]);
 
   useEffect(() => {
     let mounted = true;
@@ -111,6 +135,36 @@ export default function WaitingPage() {
     }
   }, [loading, router, session]);
 
+  useEffect(() => {
+    if (loading || session) {
+      waitingStartedAtRef.current = null;
+      setElapsedSeconds(0);
+      return;
+    }
+
+    if (queue && (queue.status !== "waiting" || queue.matched_session_id)) {
+      waitingStartedAtRef.current = null;
+      setElapsedSeconds(0);
+      return;
+    }
+
+    const parsedJoinedAt = queue?.joined_at ? Date.parse(queue.joined_at) : Number.NaN;
+    const startAt = Number.isFinite(parsedJoinedAt) ? parsedJoinedAt : waitingMountedAtRef.current;
+    waitingStartedAtRef.current = startAt;
+
+    const syncElapsed = () => {
+      const startedAt = waitingStartedAtRef.current ?? startAt;
+      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
+    };
+
+    syncElapsed();
+    const interval = window.setInterval(syncElapsed, 1000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [loading, queue?.joined_at, queue?.matched_session_id, queue?.status, session]);
+
   if (loading) {
     return (
       <main className="hero">
@@ -133,7 +187,11 @@ export default function WaitingPage() {
   return (
     <main className="stack">
       <section className="hero">
-        <h1 className="hero-title">正在尋找聊天對象…</h1>
+        <h1 className="hero-title waiting-title">{waitingTitle}</h1>
+        <div className="waiting-meta">
+          <div className="muted">已等待 {formattedElapsed}</div>
+          <div className="muted small">目前在線 {onlineCount ?? 0} 人</div>
+        </div>
         <p className="hero-copy">系統會自動把你配對給另一位等待中的匿名使用者。</p>
         {profile ? (
           <div className="row">
@@ -143,7 +201,6 @@ export default function WaitingPage() {
             </div>
           </div>
         ) : null}
-        {onlineCountConnected ? <div className="muted small">目前在線 {onlineCount} 人</div> : null}
         <div className="row">
           <button className="button secondary" onClick={cancelWaiting} disabled={actionBusy}>
             取消配對
