@@ -1,5 +1,6 @@
 import { createClient, type Session } from "@supabase/supabase-js";
 import { ANONYMOUS_AVATAR_OPTIONS, generateNextAnonymousDisplayName, isAnonymousAvatarId, validateAnonymousDisplayName } from "../../../lib/anonymous";
+import { getAnonymousInstallationId } from "./anonymous-install";
 
 const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -11,13 +12,125 @@ const supabaseAnonKey =
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
   "";
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-});
+type SupabaseClientError = {
+  message: string;
+  code?: string;
+  status?: number;
+};
+
+type MissingSupabaseResult<T> = Promise<{
+  data: T;
+  error: SupabaseClientError | null;
+}>;
+
+function createSupabaseClientError(message: string, status = 503): SupabaseClientError {
+  return {
+    message,
+    code: "SUPABASE_NOT_CONFIGURED",
+    status,
+  };
+}
+
+function createMissingQueryBuilder(resource: string) {
+  const error = createSupabaseClientError(`Supabase 尚未設定，無法存取 ${resource}。`);
+
+  const builder: Record<string, unknown> = {
+    select: () => builder,
+    upsert: () => Promise.resolve({ data: null, error }) as MissingSupabaseResult<null>,
+    insert: () => Promise.resolve({ data: null, error }) as MissingSupabaseResult<null>,
+    update: () => Promise.resolve({ data: null, error }) as MissingSupabaseResult<null>,
+    delete: () => Promise.resolve({ data: null, error }) as MissingSupabaseResult<null>,
+    eq: () => builder,
+    neq: () => builder,
+    order: () => builder,
+    limit: () => builder,
+    in: () => builder,
+    contains: () => builder,
+    or: () => builder,
+    ilike: () => builder,
+    gte: () => builder,
+    lte: () => builder,
+    maybeSingle: () => Promise.resolve({ data: null, error }) as MissingSupabaseResult<null>,
+    single: () => Promise.resolve({ data: null, error }) as MissingSupabaseResult<null>,
+  };
+
+  return builder;
+}
+
+function createMissingSupabaseClient() {
+  const authError = createSupabaseClientError("Supabase 尚未設定，無法執行登入相關操作。");
+
+  return {
+    auth: {
+      async getSession() {
+        return { data: { session: null }, error: null };
+      },
+      async signInWithPassword() {
+        return { data: { user: null, session: null }, error: authError };
+      },
+      async signUp() {
+        return { data: { user: null, session: null }, error: authError };
+      },
+      async signInAnonymously() {
+        return { data: { user: null, session: null }, error: authError };
+      },
+      async signOut() {
+        return { error: null };
+      },
+      onAuthStateChange(callback: (event: string, session: { session: null }) => void) {
+        callback("SIGNED_OUT", { session: null });
+        return {
+          data: {
+            subscription: {
+              unsubscribe() {
+                return undefined;
+              },
+            },
+          },
+        };
+      },
+    },
+    from(resource: string) {
+      return createMissingQueryBuilder(resource);
+    },
+    rpc(name: string) {
+      return Promise.resolve({
+        data: null,
+        error: createSupabaseClientError(`Supabase 尚未設定，無法執行 RPC：${name}。`),
+      });
+    },
+    channel(name: string) {
+      return {
+        subscribe() {
+          return { name };
+        },
+        on() {
+          return this;
+        },
+        track() {
+          return Promise.resolve();
+        },
+      };
+    },
+    async removeChannel() {
+      return { error: null };
+    },
+  };
+}
+
+const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey);
+
+const realSupabaseClient = hasSupabaseConfig
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    })
+  : null;
+
+export const supabase: any = realSupabaseClient ?? createMissingSupabaseClient();
 
 export type AnonymousAvatarId = (typeof ANONYMOUS_AVATAR_OPTIONS)[number]["id"];
 
@@ -86,6 +199,17 @@ export type SafeAnonymousRow = {
   verified?: boolean;
 };
 
+export type AnonymousAbusePrecheckRow = {
+  installation_key: string;
+  current_user_id: string | null;
+  decision: "allow" | "cooldown" | "temporary_suspension" | "blocked";
+  reason_code: string | null;
+  risk_score: number;
+  cooldown_until: string | null;
+  temporary_suspension_until: string | null;
+  review_required: boolean;
+};
+
 export function isAnonymousProfileReady(profile: WebProfile | null | undefined) {
   if (!profile?.onboarding_completed || !profile.anonymous_mode_enabled) {
     return false;
@@ -115,11 +239,11 @@ export async function signOut() {
 }
 
 export async function loadMyProfile(userId: string) {
-  return supabase
+  return (supabase
     .from("profiles")
     .select("id, anonymous_mode_enabled, anonymous_display_name, anonymous_avatar, onboarding_completed, account_status")
     .eq("id", userId)
-    .maybeSingle<WebProfile>();
+    .maybeSingle() as Promise<{ data: WebProfile | null; error: { message?: string } | null }>);
 }
 
 export async function upsertAnonymousProfile(userId: string, profile: {
@@ -174,11 +298,11 @@ export async function loadMyRandomSession(sessionId: string) {
 }
 
 export async function loadMyRandomQueue(userId: string) {
-  return supabase
+  return (supabase
     .from("random_match_queue")
     .select("*")
     .eq("user_id", userId)
-    .maybeSingle<RandomQueueRow>();
+    .maybeSingle() as Promise<{ data: RandomQueueRow | null; error: { message?: string } | null }>);
 }
 
 export async function loadRandomMessages(sessionId: string, limit = 100) {
@@ -195,6 +319,31 @@ export async function loadSafeAnonymousProfiles(userIds: string[]) {
   return supabase.rpc("get_safe_anonymous_profiles", {
     p_user_ids: userIds,
   });
+}
+
+export async function registerAnonymousAbuseIdentity() {
+  const installationId = getAnonymousInstallationId();
+  if (!installationId) {
+    return {
+      data: null,
+      error: createSupabaseClientError("目前無法取得匿名裝置識別，請重新整理後再試。"),
+    } as {
+      data: AnonymousAbusePrecheckRow | null;
+      error: SupabaseClientError | null;
+    };
+  }
+
+  const result = await supabase.rpc("register_anonymous_abuse_identity", {
+    p_installation_id: installationId,
+  });
+
+  return {
+    data: Array.isArray(result.data) ? result.data[0] ?? null : result.data ?? null,
+    error: result.error,
+  } as {
+    data: AnonymousAbusePrecheckRow | null;
+    error: SupabaseClientError | null;
+  };
 }
 
 export async function findOrJoinRandomMatch() {

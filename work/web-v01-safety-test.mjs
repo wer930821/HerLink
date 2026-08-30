@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
 function loadEnv(filePath) {
@@ -26,6 +27,14 @@ function assertEnv(name, value) {
   if (!value) {
     throw new Error(`Missing required env var: ${name}`);
   }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function hashInstallationId(value) {
+  return crypto.createHash("md5").update(String(value).trim().toLowerCase()).digest("hex");
 }
 
 function makeClient(url, key, authHeader) {
@@ -57,9 +66,37 @@ async function createUser(admin, email, password) {
 
 async function signIn(url, anonKey, email, password) {
   const client = makeClient(url, anonKey);
-  const result = await client.auth.signInWithPassword({ email, password });
-  if (result.error) throw result.error;
-  return { client, session: result.data.session };
+  let lastError = null;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const result = await client.auth.signInWithPassword({ email, password });
+    if (!result.error) return { client, session: result.data.session };
+
+    lastError = result.error;
+    const message = String(result.error?.message ?? "").toLowerCase();
+    const code = String(result.error?.code ?? "").toLowerCase();
+    const status = typeof result.error?.status === "number" ? result.error.status : null;
+    const isRateLimit =
+      status === 429 ||
+      code.includes("rate_limit") ||
+      message.includes("rate limit") ||
+      message.includes("too many attempts");
+
+    if (!isRateLimit || attempt === 4) {
+      throw result.error;
+    }
+
+    await sleep(2000 * (attempt + 1));
+  }
+
+  throw lastError ?? new Error("Sign in failed.");
+}
+
+async function registerAbuseIdentity(client, installationId) {
+  const { data, error } = await client.rpc("register_anonymous_abuse_identity", {
+    p_installation_id: installationId,
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] ?? null : data ?? null;
 }
 
 async function upsertAnonymousProfile(admin, userId, name, avatar) {
@@ -153,6 +190,7 @@ async function run() {
   };
 
   const createdUserIds = {};
+  const installationKeys = {};
   const clients = {};
   const summary = { tests: {} };
 
@@ -161,6 +199,8 @@ async function run() {
       createdUserIds[key] = await createUser(admin, user.email, user.password);
       await upsertAnonymousProfile(admin, createdUserIds[key], user.name, user.avatar);
       const { client } = await signIn(url, anonKey, user.email, user.password);
+      installationKeys[key] = `web-v01-safe-install-${key}-${stamp}`;
+      await registerAbuseIdentity(client, installationKeys[key]);
       clients[key] = client;
     }
 
@@ -183,6 +223,12 @@ async function run() {
       const sessionId = await joinPair(clients.c, clients.d);
       const blocked = await rpcOrThrow(clients.c, "block_random_user", { p_session_id: sessionId });
       await expect(blocked?.blocked === true, "block should succeed");
+      await admin
+        .from("profiles")
+        .update({ anonymous_display_name: "改名後仍被封鎖" })
+        .eq("id", createdUserIds.d)
+        .select("id")
+        .maybeSingle();
       const sessionRow = await admin
         .from("random_chat_sessions")
         .select("status, ended_reason")
@@ -218,6 +264,12 @@ async function run() {
       });
       await expect(firstReport?.status === "pending", "report should be pending");
       await expect(firstReport?.blocked === true, "combined report should block");
+      await admin
+        .from("profiles")
+        .update({ anonymous_display_name: "改名後仍可追溯" })
+        .eq("id", createdUserIds.f)
+        .select("id")
+        .maybeSingle();
 
       const duplicateReport = await rpcOrThrow(clients.e, "report_random_user", {
         p_session_id: sessionId,
@@ -229,12 +281,14 @@ async function run() {
 
       const reports = await admin
         .from("reports")
-        .select("id")
+        .select("id, random_session_id, reported_user_id")
         .eq("reporter_id", createdUserIds.e)
         .eq("reported_user_id", createdUserIds.f)
+        .eq("random_session_id", sessionId)
         .eq("category", "spam")
         .eq("description", "垃圾廣告");
       await expect(!reports.error && (reports.data ?? []).length === 1, "duplicate report should not create extra row");
+      await expect(reports.data?.[0]?.random_session_id === sessionId, "report should keep session provenance");
 
       await rpcOrThrow(clients.e, "leave_random_session", { p_session_id: sessionId }).catch(() => null);
       return { ok: true };
@@ -368,6 +422,13 @@ async function run() {
   } finally {
     for (const userId of Object.values(createdUserIds)) {
       await deleteUser(admin, userId).catch(() => null);
+    }
+    for (const installationKey of Object.values(installationKeys)) {
+      try {
+        await admin.from("anonymous_risk_identities").delete().eq("installation_key", hashInstallationId(installationKey));
+      } catch {
+        // best effort cleanup
+      }
     }
   }
 }

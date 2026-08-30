@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
 function loadEnv(filePath) {
@@ -37,6 +38,10 @@ function summarizeError(error) {
   return String(error);
 }
 
+function hashInstallationId(value) {
+  return crypto.createHash("md5").update(String(value).trim().toLowerCase()).digest("hex");
+}
+
 function makeClient(url, key, authHeader) {
   return createClient(url, key, {
     auth: {
@@ -69,6 +74,14 @@ async function signIn(url, anonKey, email, password) {
   const result = await client.auth.signInWithPassword({ email, password });
   if (result.error) throw result.error;
   return { client, session: result.data.session };
+}
+
+async function registerAbuseIdentity(client, installationId) {
+  const { data, error } = await client.rpc("register_anonymous_abuse_identity", {
+    p_installation_id: installationId,
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] ?? null : data ?? null;
 }
 
 async function upsertAnonymousProfile(admin, userId, name, avatar) {
@@ -192,6 +205,7 @@ async function run() {
   };
 
   const createdUserIds = {};
+  const installationKeys = {};
   const clients = {};
   const summary = {
     tests: {},
@@ -202,6 +216,8 @@ async function run() {
       createdUserIds[key] = await createUser(admin, user.email, user.password);
       await upsertAnonymousProfile(admin, createdUserIds[key], user.name, user.avatar);
       const { client } = await signIn(url, anonKey, user.email, user.password);
+      installationKeys[key] = `web-v01-install-${key}-${stamp}`;
+      await registerAbuseIdentity(client, installationKeys[key]);
       clients[key] = client;
     }
 
@@ -250,7 +266,10 @@ async function run() {
       await expect(!strangerRead.error && strangerRead.data == null, "stranger cannot read session");
 
       const strangerEnd = await clients.h.rpc("leave_random_session", { p_session_id: sessionId });
-      await expect(Boolean(strangerEnd.error), "stranger cannot end session");
+      await expect(
+        Boolean(strangerEnd.error) || Array.isArray(strangerEnd.data) && strangerEnd.data[0]?.ended === false,
+        "stranger should not be able to end session"
+      );
 
       const endedByA = await rpcOrThrow(clients.a, "leave_random_session", { p_session_id: sessionId });
       await expect(endedByA?.ended === true, "A can end session");
@@ -345,7 +364,10 @@ async function run() {
       await expect(Boolean(strangerSend.error), "third party cannot send random messages");
 
       const strangerLeave = await clients.h.rpc("leave_random_session", { p_session_id: sessionId });
-      await expect(Boolean(strangerLeave.error), "non participant leave should be rejected");
+      await expect(
+        Boolean(strangerLeave.error) || Array.isArray(strangerLeave.data) && strangerLeave.data[0]?.ended === false,
+        "non participant should not end session"
+      );
 
       const leaveByC = await rpcOrThrow(clients.c, "leave_random_session", { p_session_id: sessionId });
       await expect(leaveByC?.ended === true, "participant can leave random session");
@@ -407,6 +429,13 @@ async function run() {
     for (const userId of Object.values(createdUserIds)) {
       try {
         await deleteUser(admin, userId);
+      } catch {
+        // best effort cleanup
+      }
+    }
+    for (const installationKey of Object.values(installationKeys)) {
+      try {
+        await admin.from("anonymous_risk_identities").delete().eq("installation_key", hashInstallationId(installationKey));
       } catch {
         // best effort cleanup
       }

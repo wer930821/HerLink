@@ -13,6 +13,7 @@ import {
   loadMyActiveRandomSession,
   loadMyProfile,
   loadMyRandomQueue,
+  registerAnonymousAbuseIdentity,
   signInAnonymously,
   signOut,
   type RandomQueueRow,
@@ -150,6 +151,18 @@ export default function HomePage() {
         throw new Error("匿名登入未建立工作階段");
       }
 
+      const abuseCheck = await registerAnonymousAbuseIdentity();
+      if (abuseCheck.error) {
+        throw abuseCheck.error;
+      }
+
+      if (abuseCheck.data && abuseCheck.data.decision !== "allow") {
+        await signOut();
+        setState(emptyBootstrapState);
+        setMessage("此帳號目前無法使用配對功能，請稍後再試。");
+        return;
+      }
+
       router.replace("/onboarding");
     } catch (error) {
       setMessage(getFriendlyAuthErrorMessage(error, "目前無法建立匿名身份，請稍後再試。"));
@@ -187,6 +200,16 @@ export default function HomePage() {
     setActionBusy(true);
     setMessage(null);
     try {
+      const abuseCheck = await registerAnonymousAbuseIdentity();
+      if (abuseCheck.error) {
+        throw abuseCheck.error;
+      }
+
+      if (abuseCheck.data && abuseCheck.data.decision !== "allow") {
+        setMessage("此帳號目前無法使用配對功能，請稍後再試。");
+        return;
+      }
+
       const { data, error } = await findOrJoinRandomMatch();
       if (error) {
         throw error;
