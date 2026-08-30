@@ -105,6 +105,9 @@ function createMissingSupabaseClient() {
         presenceState() {
           return {};
         },
+        send() {
+          return Promise.resolve({ status: "ok" });
+        },
         subscribe(callback?: (status: string) => void) {
           callback?.("SUBSCRIBED");
           return channel;

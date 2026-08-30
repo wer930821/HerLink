@@ -144,6 +144,10 @@ export default function RandomSessionPage({ params }: Props) {
   const router = useRouter();
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const seenMessageIdsRef = useRef<Set<string>>(new Set());
+  const typingChannelRef = useRef<any>(null);
+  const typingSenderTimerRef = useRef<number | null>(null);
+  const typingReceiverTimerRef = useRef<number | null>(null);
+  const typingActiveRef = useRef(false);
   const [myProfile, setMyProfile] = useState<WebProfile | null>(null);
   const [session, setSession] = useState<RandomSessionRow | null>(null);
   const [messages, setMessages] = useState<RandomChatMessageRow[]>([]);
@@ -162,12 +166,14 @@ export default function RandomSessionPage({ params }: Props) {
   const [pendingExternalUrl, setPendingExternalUrl] = useState<string | null>(null);
   const [reportCategory, setReportCategory] = useState<RandomReportCategory>("harassment");
   const [reportDescription, setReportDescription] = useState("");
+  const [partnerTyping, setPartnerTyping] = useState(false);
 
   const isEnded = session?.status === "ended";
   const partnerName = session?.partner_anonymous_display_name ?? "匿名使用者";
   const partnerVerified = session?.partner_verified ?? false;
   const sessionEndedText =
     session?.ended_by_me ? "你已離開這個聊天室。" : "對方已離開聊天。";
+  const typingIndicatorText = partnerTyping ? `${partnerName} 正在輸入…` : "\u00a0";
 
   const messageWarning = useMemo(() => {
     if (messages.some((message) => message.risk_level === "high" || message.risk_level === "critical")) {
@@ -186,6 +192,52 @@ export default function RandomSessionPage({ params }: Props) {
     setReportOpen(false);
     setReportFollowupOpen(false);
     setBlockConfirmOpen(false);
+  };
+
+  const clearSenderTypingTimer = () => {
+    if (typingSenderTimerRef.current !== null) {
+      window.clearTimeout(typingSenderTimerRef.current);
+      typingSenderTimerRef.current = null;
+    }
+  };
+
+  const clearReceiverTypingTimer = () => {
+    if (typingReceiverTimerRef.current !== null) {
+      window.clearTimeout(typingReceiverTimerRef.current);
+      typingReceiverTimerRef.current = null;
+    }
+  };
+
+  const sendTypingState = async (typing: boolean) => {
+    const channel = typingChannelRef.current;
+    if (!channel) {
+      return;
+    }
+
+    try {
+      await channel.send({
+        type: "broadcast",
+        event: "typing",
+        payload: { typing },
+      });
+    } catch {
+      // Typing is best-effort only.
+    }
+  };
+
+  const stopTyping = () => {
+    clearSenderTypingTimer();
+    if (!typingActiveRef.current) {
+      return;
+    }
+
+    typingActiveRef.current = false;
+    void sendTypingState(false);
+  };
+
+  const clearPartnerTyping = () => {
+    clearReceiverTypingTimer();
+    setPartnerTyping(false);
   };
 
   useEffect(() => {
@@ -302,6 +354,26 @@ export default function RandomSessionPage({ params }: Props) {
       )
       .subscribe();
 
+    const typingChannel = supabase.channel(`random-chat-typing-${session.id}`);
+    typingChannelRef.current = typingChannel;
+
+    typingChannel
+      .on("broadcast", { event: "typing" }, (payload: { payload?: { typing?: unknown } }) => {
+        const typing = Boolean(payload?.payload?.typing);
+
+        if (!typing) {
+          clearPartnerTyping();
+          return;
+        }
+
+        setPartnerTyping(true);
+        clearReceiverTypingTimer();
+        typingReceiverTimerRef.current = window.setTimeout(() => {
+          setPartnerTyping(false);
+        }, 4500);
+      })
+      .subscribe();
+
     const sessionChannel = supabase
       .channel(`random-chat-session-${session.id}`)
       .on(
@@ -316,6 +388,8 @@ export default function RandomSessionPage({ params }: Props) {
           const nextSession = payload.new as RandomSessionRow;
           setSession(nextSession);
           if (nextSession.status === "ended") {
+            stopTyping();
+            clearPartnerTyping();
             setNotice(
               nextSession.ended_reason === "next"
                 ? "對方剛剛切換到下一位。"
@@ -329,10 +403,55 @@ export default function RandomSessionPage({ params }: Props) {
       .subscribe();
 
     return () => {
+      stopTyping();
+      clearPartnerTyping();
+      typingChannelRef.current = null;
       void supabase.removeChannel(messagesChannel);
+      void supabase.removeChannel(typingChannel);
       void supabase.removeChannel(sessionChannel);
     };
   }, [myProfile?.id, session]);
+
+  useEffect(() => {
+    if (isEnded) {
+      stopTyping();
+      clearPartnerTyping();
+    }
+  }, [isEnded]);
+
+  useEffect(() => {
+    if (!session || !myProfile?.id || isEnded) {
+      stopTyping();
+      clearPartnerTyping();
+      return;
+    }
+
+    const hasDraftContent = draft.trim().length > 0;
+
+    if (!hasDraftContent) {
+      stopTyping();
+      return;
+    }
+
+    if (!typingActiveRef.current) {
+      typingActiveRef.current = true;
+      void sendTypingState(true);
+    }
+
+    clearSenderTypingTimer();
+    typingSenderTimerRef.current = window.setTimeout(() => {
+      if (!typingActiveRef.current) {
+        return;
+      }
+
+      typingActiveRef.current = false;
+      void sendTypingState(false);
+    }, 2500);
+
+    return () => {
+      clearSenderTypingTimer();
+    };
+  }, [draft, isEnded, myProfile?.id, session?.id]);
 
   useEffect(() => {
     messageListRef.current?.scrollTo({ top: messageListRef.current.scrollHeight, behavior: "smooth" });
@@ -360,6 +479,7 @@ export default function RandomSessionPage({ params }: Props) {
           setNotice("這則訊息含有可疑內容，請提高警覺。");
         }
       }
+      stopTyping();
       setDraft("");
     } catch (error) {
       setNotice(getFriendlyRandomChatError(error, "訊息傳送失敗，請稍後再試。"));
@@ -372,6 +492,8 @@ export default function RandomSessionPage({ params }: Props) {
     if (!session || leaveBusy) return;
     setLeaveBusy(true);
     try {
+      stopTyping();
+      clearPartnerTyping();
       await leaveRandomSession(session.id);
       router.replace("/");
     } catch {
@@ -386,6 +508,8 @@ export default function RandomSessionPage({ params }: Props) {
     setNextBusy(true);
     setNotice(null);
     try {
+      stopTyping();
+      clearPartnerTyping();
       const { data, error } = await nextRandomMatch(session.id);
       if (error) {
         throw error;
@@ -410,6 +534,8 @@ export default function RandomSessionPage({ params }: Props) {
     setBlockBusy(true);
     setNotice(null);
     try {
+      stopTyping();
+      clearPartnerTyping();
       const { error } = await blockRandomUser(session.id);
       if (error) {
         throw error;
@@ -545,6 +671,10 @@ export default function RandomSessionPage({ params }: Props) {
 
         {notice ? <div className="notice">{notice}</div> : null}
         {messageWarning ? <div className="notice safety-notice">{messageWarning}</div> : null}
+
+        <div className="chat-typing-indicator" aria-live="polite" aria-atomic="true">
+          {typingIndicatorText}
+        </div>
 
         <div className="chat-messages" ref={messageListRef}>
           {messages.length === 0 ? (
