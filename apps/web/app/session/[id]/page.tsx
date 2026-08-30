@@ -157,11 +157,11 @@ export default function RandomSessionPage({ params }: Props) {
   const [notice, setNotice] = useState<string | null>(null);
   const [safetyMenuOpen, setSafetyMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [reportFollowupOpen, setReportFollowupOpen] = useState(false);
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [pendingExternalUrl, setPendingExternalUrl] = useState<string | null>(null);
   const [reportCategory, setReportCategory] = useState<RandomReportCategory>("harassment");
   const [reportDescription, setReportDescription] = useState("");
-  const [reportBlock, setReportBlock] = useState(true);
 
   const isEnded = session?.status === "ended";
   const partnerName = session?.partner_anonymous_display_name ?? "匿名使用者";
@@ -184,6 +184,7 @@ export default function RandomSessionPage({ params }: Props) {
   const closeSafetyMenus = () => {
     setSafetyMenuOpen(false);
     setReportOpen(false);
+    setReportFollowupOpen(false);
     setBlockConfirmOpen(false);
   };
 
@@ -439,23 +440,15 @@ export default function RandomSessionPage({ params }: Props) {
         session.id,
         reportCategory,
         cleanedDescription.length > 0 ? cleanedDescription : null,
-        reportBlock
+        false
       );
       if (error) {
         throw error;
       }
 
-      const result = Array.isArray(data) ? data[0] : data;
-      if (reportBlock && result?.blocked) {
-        closeSafetyMenus();
-        setNotice("已送出檢舉，並已封鎖對方。");
-        router.replace("/");
-        return;
-      }
-
-      closeSafetyMenus();
+      setReportOpen(false);
+      setReportFollowupOpen(true);
       setReportDescription("");
-      setReportBlock(true);
       setNotice("已送出檢舉。");
     } catch {
       setNotice("目前無法送出檢舉，請稍後再試。");
@@ -615,7 +608,6 @@ export default function RandomSessionPage({ params }: Props) {
                 onClick={() => {
                   setSafetyMenuOpen(false);
                   setReportOpen(true);
-                  setReportBlock(true);
                 }}
                 disabled={reportBusy}
               >
@@ -683,20 +675,29 @@ export default function RandomSessionPage({ params }: Props) {
               />
               <div className="muted mini">{reportDescription.trim().length} / 500</div>
             </div>
-            <label className="row" style={{ alignItems: "center" }}>
-              <input
-                type="checkbox"
-                checked={reportBlock}
-                onChange={(event) => setReportBlock(event.target.checked)}
-              />
-              <span>同時封鎖對方</span>
-            </label>
             <div className="modal-actions">
               <button className="ghost" onClick={closeSafetyMenus}>
                 取消
               </button>
               <button className="button" onClick={() => void submitReport()} disabled={reportBusy}>
                 {reportBusy ? "送出中…" : "送出檢舉"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {reportFollowupOpen ? (
+        <div className="modal-backdrop" role="presentation" onClick={closeSafetyMenus}>
+          <div className="modal-card" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-title">檢舉已送出</div>
+            <p className="hero-copy">你可以繼續聊天，也可以封鎖對方並離開這段對話。</p>
+            <div className="modal-actions">
+              <button className="ghost" onClick={closeSafetyMenus}>
+                繼續聊天
+              </button>
+              <button className="button" onClick={() => void confirmBlock()} disabled={blockBusy}>
+                {blockBusy ? "處理中…" : "封鎖並離開"}
               </button>
             </div>
           </div>

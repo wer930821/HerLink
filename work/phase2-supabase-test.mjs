@@ -17,6 +17,11 @@ function loadEnv(filePath) {
   return env;
 }
 
+function resolveEnvPath() {
+  const dedicatedEnv = path.resolve(".supabase.test.env");
+  return fs.existsSync(dedicatedEnv) ? dedicatedEnv : path.resolve(".env");
+}
+
 function assertEnv(name, value) {
   if (!value) {
     throw new Error(`Missing required env var: ${name}`);
@@ -150,8 +155,72 @@ async function fetchLikesCount(admin, fromUserId, toUserId) {
   return count ?? 0;
 }
 
+async function fetchMatchCountForPair(admin, userAId, userBId) {
+  const user1 = userAId < userBId ? userAId : userBId;
+  const user2 = userAId < userBId ? userBId : userAId;
+  const { count, error } = await admin
+    .from("matches")
+    .select("*", { count: "exact", head: true })
+    .eq("user_1_id", user1)
+    .eq("user_2_id", user2);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+}
+
+async function sendMessage(client, matchId, content) {
+  const { data, error } = await client.rpc("send_message", {
+    p_match_id: matchId,
+    p_content: content,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const row = data?.[0] ?? null;
+  if (!row?.id) {
+    throw new Error("send_message did not return a message row.");
+  }
+
+  return row;
+}
+
+async function trySendMessage(client, matchId, content) {
+  const { data, error } = await client.rpc("send_message", {
+    p_match_id: matchId,
+    p_content: content,
+  });
+
+  return {
+    data: data?.[0] ?? null,
+    error,
+  };
+}
+
+async function fetchMessagesForMatch(client, matchId) {
+  return client.from("messages").select("*").eq("match_id", matchId).order("created_at", { ascending: true });
+}
+
+async function fetchConversationList(client) {
+  return client.rpc("list_active_conversations");
+}
+
+function isDeniedOrHidden(result) {
+  const message = summarizeError(result?.error) ?? "";
+  return Boolean(
+    result?.error ||
+      result?.data === null ||
+      (Array.isArray(result?.data) && result.data.length === 0) ||
+      /permission denied|row-level security|not available|forbidden|not found|invalid input/i.test(message)
+  );
+}
+
 async function main() {
-  const env = loadEnv(path.resolve(".env"));
+  const env = loadEnv(resolveEnvPath());
   const url = env.EXPO_PUBLIC_SUPABASE_URL;
   const anonKey = env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
@@ -208,7 +277,7 @@ async function main() {
       city: "Taipei",
       bio: "Phase 2 A",
       orientation: "Lesbian",
-      identity_label: "Woman",
+      identity_label: "P",
       relationship_goals: ["長期關係"],
       interests: ["閱讀"],
       onboarding_completed: true,
@@ -219,7 +288,7 @@ async function main() {
       city: "Kaohsiung",
       bio: "Phase 2 B",
       orientation: "Bisexual",
-      identity_label: "Woman",
+      identity_label: "P",
       relationship_goals: ["交朋友"],
       interests: ["電影"],
       onboarding_completed: true,
@@ -230,7 +299,7 @@ async function main() {
       city: "Taichung",
       bio: "Phase 2 C",
       orientation: "Lesbian",
-      identity_label: "Woman",
+      identity_label: "P",
       relationship_goals: ["不確定"],
       interests: ["旅行"],
       onboarding_completed: true,
@@ -241,7 +310,7 @@ async function main() {
       city: "Tainan",
       bio: "Phase 2 D",
       orientation: "Lesbian",
-      identity_label: "Woman",
+      identity_label: "P",
       relationship_goals: ["長期關係"],
       interests: ["咖啡"],
       onboarding_completed: true,
@@ -252,7 +321,7 @@ async function main() {
       city: "Hsinchu",
       bio: "Phase 2 E",
       orientation: "Bisexual",
-      identity_label: "Woman",
+      identity_label: "P",
       relationship_goals: ["交朋友"],
       interests: ["音樂"],
       onboarding_completed: true,
@@ -263,7 +332,7 @@ async function main() {
       city: "Keelung",
       bio: "Phase 2 S",
       orientation: "Lesbian",
-      identity_label: "Woman",
+      identity_label: "P",
       relationship_goals: ["交朋友"],
       interests: ["散步"],
       onboarding_completed: true,
@@ -274,7 +343,7 @@ async function main() {
       city: "Chiayi",
       bio: "Phase 2 P",
       orientation: "Lesbian",
-      identity_label: "Woman",
+      identity_label: "P",
       relationship_goals: ["交朋友"],
       interests: ["烘焙"],
       onboarding_completed: false,
@@ -352,18 +421,13 @@ async function main() {
       const row = data?.[0];
       const match = await fetchSingleMatchForPair(admin, userIds.a, userIds.b);
       abMatchId = match?.id ?? null;
-      const { count, error: countError } = await admin
-        .from("matches")
-        .select("*", { count: "exact", head: true })
-        .eq("user_1_id", userIds.a < userIds.b ? userIds.a : userIds.b)
-        .eq("user_2_id", userIds.a < userIds.b ? userIds.b : userIds.a);
-      if (countError) throw countError;
+      const count = await fetchMatchCountForPair(admin, userIds.a, userIds.b);
       return {
         result: row ?? null,
         matchId: match?.id ?? null,
         matchStatus: match?.status ?? null,
-        count: count ?? 0,
-        passed: !!row?.matched && !!match?.id && (count ?? 0) === 1,
+        count,
+        passed: !!row?.matched && !!match?.id && count === 1,
       };
     });
 
@@ -376,19 +440,28 @@ async function main() {
       if (likeE.error) throw likeE.error;
 
       const match = await fetchSingleMatchForPair(admin, userIds.d, userIds.e);
-      const { count, error } = await admin
-        .from("matches")
-        .select("*", { count: "exact", head: true })
-        .eq("user_1_id", userIds.d < userIds.e ? userIds.d : userIds.e)
-        .eq("user_2_id", userIds.d < userIds.e ? userIds.e : userIds.d);
-      if (error) throw error;
+      const count = await fetchMatchCountForPair(admin, userIds.d, userIds.e);
 
       return {
         likeD: likeD.data?.[0] ?? null,
         likeE: likeE.data?.[0] ?? null,
         matchId: match?.id ?? null,
-        count: count ?? 0,
-        passed: !!match?.id && (count ?? 0) === 1,
+        count,
+        passed: !!match?.id && count === 1,
+      };
+    });
+
+    await runStep(summary, "G2_duplicate_reverse_like_keeps_single_match", async () => {
+      const repeatLike = await clients.a.rpc("like_user", { target_user_id: userIds.b });
+      if (repeatLike.error) throw repeatLike.error;
+      const match = await fetchSingleMatchForPair(admin, userIds.a, userIds.b);
+      const count = await fetchMatchCountForPair(admin, userIds.a, userIds.b);
+
+      return {
+        result: repeatLike.data?.[0] ?? null,
+        matchId: match?.id ?? null,
+        count,
+        passed: !!match?.id && count === 1,
       };
     });
 
@@ -444,55 +517,63 @@ async function main() {
     let messageId = null;
 
     await runStep(summary, "L_member_can_send_message", async () => {
-      const { data, error } = await clients.a
-        .from("messages")
-        .insert({
-          match_id: abMatchId,
-          sender_id: userIds.a,
-          type: "text",
-          content: "你好，這是 Phase 2 測試訊息。",
-        })
-        .select("*")
-        .single();
-      if (error) throw error;
-      messageId = data.id;
+      const message = await sendMessage(clients.a, abMatchId, "你好，這是 Phase 2 測試訊息。");
+      messageId = message.id;
       return {
         messageId,
-        passed: !!data.id,
+        senderId: message.sender_id,
+        matchId: message.match_id,
+        content: message.content,
+        passed: message.sender_id === userIds.a && message.match_id === abMatchId,
       };
     });
 
     await runStep(summary, "M_match_member_can_read_message", async () => {
-      const { data, error } = await clients.b.from("messages").select("*").eq("id", messageId).maybeSingle();
-      if (error) throw error;
+      const [readerA, readerB] = await Promise.all([
+        fetchMessagesForMatch(clients.a, abMatchId),
+        fetchMessagesForMatch(clients.b, abMatchId),
+      ]);
+      if (readerA.error) throw readerA.error;
+      if (readerB.error) throw readerB.error;
+      const messageA = (readerA.data ?? []).find((item) => item.id === messageId) ?? null;
+      const messageB = (readerB.data ?? []).find((item) => item.id === messageId) ?? null;
       return {
-        found: !!data,
-        content: data?.content ?? null,
-        passed: !!data,
+        foundByA: !!messageA,
+        foundByB: !!messageB,
+        contentByA: messageA?.content ?? null,
+        contentByB: messageB?.content ?? null,
+        passed:
+          !!messageA &&
+          !!messageB &&
+          messageA.content === "你好，這是 Phase 2 測試訊息。" &&
+          messageB.content === "你好，這是 Phase 2 測試訊息。" &&
+          messageA.match_id === abMatchId &&
+          messageB.match_id === abMatchId,
       };
     });
 
     await runStep(summary, "N_third_party_cannot_read_messages", async () => {
-      const { data, error } = await clients.c.from("messages").select("*").eq("id", messageId).maybeSingle();
-      if (error) throw error;
+      const [messageResult, conversationResult] = await Promise.all([
+        fetchMessagesForMatch(clients.c, abMatchId),
+        fetchConversationList(clients.c),
+      ]);
+      const visibleConversation = (conversationResult.data ?? []).find((row) => row.match_id === abMatchId) ?? null;
       return {
-        found: !!data,
-        passed: data === null,
+        messagesDenied: isDeniedOrHidden(messageResult),
+        conversationVisible: !!visibleConversation,
+        messageError: summarizeError(messageResult.error),
+        conversationError: summarizeError(conversationResult.error),
+        passed: isDeniedOrHidden(messageResult) && !visibleConversation,
       };
     });
 
     await runStep(summary, "O_third_party_cannot_write_messages", async () => {
-      const { error } = await clients.c.from("messages").insert({
-        match_id: abMatchId,
-        sender_id: userIds.c,
-        type: "text",
-        content: "我不該能寫進別人的聊天室。",
-      });
-      if (!error) {
+      const attempt = await trySendMessage(clients.c, abMatchId, "我不該能寫進別人的聊天室。");
+      if (!attempt.error) {
         throw new Error("Third-party message insert was unexpectedly allowed.");
       }
       return {
-        error: error.message,
+        error: attempt.error.message,
         passed: true,
       };
     });
@@ -513,6 +594,44 @@ async function main() {
       };
     });
 
+    await runStep(summary, "P2_second_member_can_send_message", async () => {
+      const message = await sendMessage(clients.b, abMatchId, "B 也可以透過正式 RPC 回覆。");
+      return {
+        messageId: message.id,
+        senderId: message.sender_id,
+        matchId: message.match_id,
+        passed: message.sender_id === userIds.b && message.match_id === abMatchId,
+      };
+    });
+
+    await runStep(summary, "P3_mark_read_member_only", async () => {
+      const readA = await clients.a.rpc("mark_match_messages_read", { p_match_id: abMatchId });
+      const readB = await clients.b.rpc("mark_match_messages_read", { p_match_id: abMatchId });
+      const readC = await clients.c.rpc("mark_match_messages_read", { p_match_id: abMatchId });
+
+      if (readA.error) throw readA.error;
+      if (readB.error) throw readB.error;
+
+      return {
+        readACount: readA.data ?? null,
+        readBCount: readB.data ?? null,
+        readCError: summarizeError(readC.error),
+        passed: !readC.data && !!readC.error,
+      };
+    });
+
+    await runStep(summary, "P4_invalid_match_blocked", async () => {
+      const bogusMatchId = "00000000-0000-0000-0000-000000000000";
+      const bogusAttempt = await trySendMessage(clients.a, bogusMatchId, "不存在的 match");
+      const unrelatedAttempt = await trySendMessage(clients.a, "11111111-1111-1111-1111-111111111111", "假的 match");
+
+      return {
+        bogusError: summarizeError(bogusAttempt.error),
+        unrelatedError: summarizeError(unrelatedAttempt.error),
+        passed: !!bogusAttempt.error && !!unrelatedAttempt.error,
+      };
+    });
+
     await runStep(summary, "Q_unmatched_users_cannot_send_new_messages", async () => {
       const unmatchResult = await clients.a.rpc("unmatch_user", { p_match_id: abMatchId });
       if (unmatchResult.error) throw unmatchResult.error;
@@ -520,18 +639,8 @@ async function main() {
         throw new Error("unmatch_user did not return true.");
       }
 
-      const sendA = await clients.a.from("messages").insert({
-        match_id: abMatchId,
-        sender_id: userIds.a,
-        type: "text",
-        content: "取消配對後 A 送訊息",
-      });
-      const sendB = await clients.b.from("messages").insert({
-        match_id: abMatchId,
-        sender_id: userIds.b,
-        type: "text",
-        content: "取消配對後 B 送訊息",
-      });
+      const sendA = await trySendMessage(clients.a, abMatchId, "取消配對後 A 送訊息");
+      const sendB = await trySendMessage(clients.b, abMatchId, "取消配對後 B 送訊息");
       const match = await fetchSingleMatchForPair(admin, userIds.a, userIds.b);
 
       if (!sendA.error || !sendB.error) {
