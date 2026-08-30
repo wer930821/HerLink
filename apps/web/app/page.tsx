@@ -7,6 +7,7 @@ import {
   findOrJoinRandomMatch,
   getCurrentSession,
   getSupabaseDiagnostics,
+  ensureAnonymousBootstrapProfile,
   isAnonymousProfileReady,
   isSupabaseConfigured,
   leaveRandomQueue,
@@ -149,6 +150,11 @@ export default function HomePage() {
 
       if (!data.session) {
         throw new Error("匿名登入未建立工作階段");
+      }
+
+      const profileResult = await ensureAnonymousBootstrapProfile(data.session.user.id);
+      if (profileResult.error) {
+        throw profileResult.error;
       }
 
       const abuseCheck = await registerAnonymousAbuseIdentity();

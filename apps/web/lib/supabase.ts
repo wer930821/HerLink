@@ -261,6 +261,25 @@ export async function upsertAnonymousProfile(userId: string, profile: {
   });
 }
 
+export async function ensureAnonymousBootstrapProfile(userId: string) {
+  const existing = await loadMyProfile(userId);
+  if (existing.error || existing.data) {
+    return existing;
+  }
+
+  return supabase
+    .from("profiles")
+    .insert({
+      id: userId,
+      anonymous_mode_enabled: false,
+      anonymous_display_name: generateNextAnonymousDisplayName(),
+      anonymous_avatar: "avatar_01",
+      onboarding_completed: false,
+    })
+    .select("id, anonymous_mode_enabled, anonymous_display_name, anonymous_avatar, onboarding_completed, account_status")
+    .maybeSingle() as Promise<{ data: WebProfile | null; error: { message?: string } | null }>;
+}
+
 export async function saveAnonymousProfile(
   userId: string,
   profile: {
