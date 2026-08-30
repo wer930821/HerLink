@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useOnlinePresence } from "../../lib/realtime-presence";
 import {
   isAnonymousProfileReady,
   leaveRandomQueue,
@@ -26,6 +27,7 @@ export default function WaitingPage() {
   const [session, setSession] = useState<RandomSessionRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionBusy, setActionBusy] = useState(false);
+  const { onlineCount, onlineCountConnected } = useOnlinePresence(userId);
 
   useEffect(() => {
     let mounted = true;
@@ -141,6 +143,7 @@ export default function WaitingPage() {
             </div>
           </div>
         ) : null}
+        {onlineCountConnected ? <div className="muted small">目前在線 {onlineCount} 人</div> : null}
         <div className="row">
           <button className="button secondary" onClick={cancelWaiting} disabled={actionBusy}>
             取消配對

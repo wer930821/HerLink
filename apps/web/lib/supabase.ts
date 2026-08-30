@@ -100,16 +100,25 @@ function createMissingSupabaseClient() {
       });
     },
     channel(name: string) {
-      return {
-        subscribe() {
-          return { name };
+      const channel = {
+        name,
+        presenceState() {
+          return {};
+        },
+        subscribe(callback?: (status: string) => void) {
+          callback?.("SUBSCRIBED");
+          return channel;
         },
         on() {
-          return this;
+          return channel;
         },
         track() {
           return Promise.resolve();
         },
+      };
+
+      return {
+        ...channel,
       };
     },
     async removeChannel() {

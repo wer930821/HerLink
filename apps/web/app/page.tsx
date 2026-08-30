@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../lib/auth-ui";
+import { useOnlinePresence } from "../lib/realtime-presence";
 import {
   findOrJoinRandomMatch,
   getCurrentSession,
@@ -43,6 +44,7 @@ export default function HomePage() {
   const [state, setState] = useState<BootstrapState>(emptyBootstrapState);
   const [actionBusy, setActionBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
 
   useEffect(() => {
     let mounted = true;
@@ -183,13 +185,14 @@ export default function HomePage() {
         <section className="hero">
           <h1 className="hero-title">HerLink</h1>
           <p className="hero-copy">不用註冊、不用公開真實資料，直接建立匿名身份開始聊天。</p>
-          <div className="row">
-            <button className="button" onClick={startAnonymous} disabled={actionBusy}>
-              {actionBusy ? "建立匿名身份中…" : "開始匿名聊天"}
-            </button>
-          </div>
-          {message ? <div className="notice">{message}</div> : null}
-        </section>
+        <div className="row">
+          <button className="button" onClick={startAnonymous} disabled={actionBusy}>
+            {actionBusy ? "建立匿名身份中…" : "開始匿名聊天"}
+          </button>
+        </div>
+        {onlineCountConnected ? <div className="muted small">目前在線 {onlineCount} 人</div> : null}
+        {message ? <div className="notice">{message}</div> : null}
+      </section>
         <section className="panel">
           <p className="notice">請勿向陌生人匯款、投資或提供銀行資料、信用卡資訊與驗證碼。</p>
           <p className="muted small" style={{ marginTop: 12 }}>
@@ -304,6 +307,7 @@ export default function HomePage() {
             目前會話：{state.activeSession ? "已配對" : "未配對"}
           </div>
         </div>
+        {onlineCountConnected ? <div className="muted small">目前在線 {onlineCount} 人</div> : null}
       </section>
 
       <section className="footer">
