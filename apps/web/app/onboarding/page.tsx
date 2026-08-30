@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { generateNextAnonymousDisplayName } from "../../../../lib/anonymous";
 import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
@@ -23,7 +24,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     let mounted = true;
-    void supabase.auth.getSession().then(async ({ data }) => {
+    void supabase.auth.getSession().then(async ({ data }: { data: { session: Session | null } }) => {
       try {
         const session = data.session;
         if (!session) {

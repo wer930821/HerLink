@@ -25,6 +25,10 @@ type Props = {
   params: { id: string };
 };
 
+type RealtimePayload<T> = {
+  new: T;
+};
+
 const EXTERNAL_URL_PATTERN = /((?:https?:\/\/|www\.)[^\s<>"'`]+)/gi;
 const REPORT_CATEGORY_LABELS: Record<RandomReportCategory, string> = {
   spam: "垃圾訊息 / 廣告",
@@ -275,7 +279,7 @@ export default function RandomSessionPage({ params }: Props) {
           table: "random_chat_messages",
           filter: `session_id=eq.${session.id}`,
         },
-        (payload) => {
+        (payload: RealtimePayload<RandomChatMessageRealtimeRow>) => {
           const nextMessage = payload.new as RandomChatMessageRealtimeRow;
           if (seenMessageIdsRef.current.has(nextMessage.id)) {
             return;
@@ -307,7 +311,7 @@ export default function RandomSessionPage({ params }: Props) {
           table: "random_chat_sessions",
           filter: `id=eq.${session.id}`,
         },
-        (payload) => {
+        (payload: RealtimePayload<RandomSessionRow>) => {
           const nextSession = payload.new as RandomSessionRow;
           setSession(nextSession);
           if (nextSession.status === "ended") {

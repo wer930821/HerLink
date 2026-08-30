@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
 import { signUp, supabase } from "../../lib/supabase";
@@ -14,7 +15,7 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void supabase.auth.getSession().then(({ data }) => {
+    void supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
       if (data.session) {
         router.replace("/");
       }

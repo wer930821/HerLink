@@ -14,6 +14,10 @@ import {
   type WebProfile,
 } from "../../lib/supabase";
 
+type RealtimePayload<T> = {
+  new: T;
+};
+
 export default function WaitingPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
@@ -78,7 +82,7 @@ export default function WaitingPage() {
           table: "random_match_queue",
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
+        (payload: RealtimePayload<RandomQueueRow>) => {
           const nextQueue = payload.new as RandomQueueRow;
           setQueue(nextQueue);
           if (nextQueue.status === "matched" && nextQueue.matched_session_id) {
