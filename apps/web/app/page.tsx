@@ -192,10 +192,13 @@ export default function HomePage() {
         </section>
         <section className="panel">
           <p className="notice">請勿向陌生人匯款、投資或提供銀行資料、信用卡資訊與驗證碼。</p>
+          <p className="muted small" style={{ marginTop: 12 }}>
+            使用 HerLink 即表示你已年滿 18 歲，並同意服務條款與隱私權政策。
+          </p>
           <div className="link-row">
-            <a className="link" href="#">服務條款</a>
-            <a className="link" href="#">隱私權政策</a>
-            <a className="link" href="#">安全說明</a>
+            <a className="link" href="/terms">服務條款</a>
+            <a className="link" href="/privacy">隱私權政策</a>
+            <a className="link" href="/safety">安全說明</a>
           </div>
         </section>
       </main>
