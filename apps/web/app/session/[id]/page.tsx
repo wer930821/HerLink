@@ -143,12 +143,16 @@ function renderMessageContent(
 export default function RandomSessionPage({ params }: Props) {
   const router = useRouter();
   const messageListRef = useRef<HTMLDivElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const seenMessageIdsRef = useRef<Set<string>>(new Set());
   const typingChannelRef = useRef<any>(null);
   const typingSenderTimerRef = useRef<number | null>(null);
   const typingReceiverTimerRef = useRef<number | null>(null);
   const typingReceiverDeadlineRef = useRef<number | null>(null);
   const typingActiveRef = useRef(false);
+  const stickToBottomRef = useRef(true);
+  const pendingScrollToBottomRef = useRef(false);
+  const scrollRafRef = useRef<number | null>(null);
   const [myProfile, setMyProfile] = useState<WebProfile | null>(null);
   const [session, setSession] = useState<RandomSessionRow | null>(null);
   const [messages, setMessages] = useState<RandomChatMessageRow[]>([]);
@@ -242,6 +246,37 @@ export default function RandomSessionPage({ params }: Props) {
     setPartnerTyping(false);
   };
 
+  const isNearBottom = () => {
+    const container = messageListRef.current;
+    if (!container) {
+      return true;
+    }
+
+    return container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+  };
+
+  const scrollMessagesToBottom = (behavior: ScrollBehavior = "auto") => {
+    const container = messageListRef.current;
+    if (!container) {
+      return;
+    }
+
+    const top = Math.max(0, container.scrollHeight - container.clientHeight);
+    container.scrollTo({ top, behavior });
+    stickToBottomRef.current = true;
+  };
+
+  const scheduleScrollMessagesToBottom = (behavior: ScrollBehavior = "auto") => {
+    if (scrollRafRef.current !== null) {
+      window.cancelAnimationFrame(scrollRafRef.current);
+    }
+
+    scrollRafRef.current = window.requestAnimationFrame(() => {
+      scrollRafRef.current = null;
+      scrollMessagesToBottom(behavior);
+    });
+  };
+
   const armPartnerTypingTimeout = () => {
     clearReceiverTypingTimer();
     const deadline = Date.now() + 4500;
@@ -307,6 +342,9 @@ export default function RandomSessionPage({ params }: Props) {
           const nextMessages = Array.isArray(messagesResult.data) ? messagesResult.data : [];
           seenMessageIdsRef.current = new Set(nextMessages.map((item) => item.id));
           setMessages(nextMessages);
+          if (nextMessages.length > 0) {
+            pendingScrollToBottomRef.current = true;
+          }
         }
 
         if (nextSession.status === "ended") {
@@ -337,6 +375,15 @@ export default function RandomSessionPage({ params }: Props) {
   }, [params.id, router]);
 
   useEffect(() => {
+    return () => {
+      if (scrollRafRef.current !== null) {
+        window.cancelAnimationFrame(scrollRafRef.current);
+        scrollRafRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!session || !myProfile?.id) return;
 
     const messagesChannel = supabase
@@ -355,6 +402,7 @@ export default function RandomSessionPage({ params }: Props) {
             return;
           }
 
+          const shouldAutoScroll = stickToBottomRef.current;
           seenMessageIdsRef.current.add(nextMessage.id);
           setMessages((current) =>
             upsertMessage(current, {
@@ -367,6 +415,9 @@ export default function RandomSessionPage({ params }: Props) {
               risk_types: nextMessage.risk_types ?? [],
             })
           );
+          if (shouldAutoScroll) {
+            pendingScrollToBottomRef.current = true;
+          }
         }
       )
       .subscribe();
@@ -380,11 +431,17 @@ export default function RandomSessionPage({ params }: Props) {
 
         if (!typing) {
           clearPartnerTyping();
+          if (stickToBottomRef.current) {
+            pendingScrollToBottomRef.current = true;
+          }
           return;
         }
 
         setPartnerTyping(true);
         armPartnerTypingTimeout();
+        if (stickToBottomRef.current) {
+          pendingScrollToBottomRef.current = true;
+        }
       })
       .subscribe();
 
@@ -489,8 +546,18 @@ export default function RandomSessionPage({ params }: Props) {
   }, [draft, isEnded, myProfile?.id, session?.id]);
 
   useEffect(() => {
-    messageListRef.current?.scrollTo({ top: messageListRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages.length, session?.status]);
+    if (!session) {
+      return;
+    }
+
+    if (!pendingScrollToBottomRef.current && !stickToBottomRef.current) {
+      return;
+    }
+
+    const shouldSmooth = pendingScrollToBottomRef.current;
+    pendingScrollToBottomRef.current = false;
+    scheduleScrollMessagesToBottom(shouldSmooth ? "smooth" : "auto");
+  }, [messages.length, partnerTyping, session?.id]);
 
   const sendMessage = async () => {
     const content = draft.trim();
@@ -510,6 +577,7 @@ export default function RandomSessionPage({ params }: Props) {
       if (nextMessage) {
         seenMessageIdsRef.current.add(nextMessage.id);
         setMessages((current) => upsertMessage(current, nextMessage));
+        pendingScrollToBottomRef.current = true;
         if (nextMessage.risk_level && nextMessage.risk_level !== "low") {
           setNotice("這則訊息含有可疑內容，請提高警覺。");
         }
@@ -711,7 +779,13 @@ export default function RandomSessionPage({ params }: Props) {
           {typingIndicatorText}
         </div>
 
-        <div className="chat-messages" ref={messageListRef}>
+        <div
+          className="chat-messages"
+          ref={messageListRef}
+          onScroll={() => {
+            stickToBottomRef.current = isNearBottom();
+          }}
+        >
           {messages.length === 0 ? (
             <div className="chat-empty">
               <div className="title">目前還沒有訊息</div>
@@ -720,6 +794,7 @@ export default function RandomSessionPage({ params }: Props) {
           ) : (
             renderedMessages
           )}
+          <div ref={messagesEndRef} aria-hidden="true" />
         </div>
 
         <form
