@@ -29,6 +29,10 @@ function assertEnv(name, value) {
   }
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function summarizeError(error) {
   if (!error) return null;
   if (error instanceof Error) return error.message;
@@ -113,6 +117,41 @@ async function rpcRows(client, name, args = {}) {
   return Array.isArray(data) ? data : [];
 }
 
+async function cleanupRandomChatState(admin) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const cleanupQueries = [
+      admin.from("random_chat_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
+      admin.from("random_chat_sessions").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
+      admin.from("random_match_queue").delete().neq("user_id", "00000000-0000-0000-0000-000000000000"),
+      admin.from("random_pair_history").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
+      admin.from("random_action_rate_limit_events").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
+      admin.from("fraud_risk_events").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
+    ];
+    const results = await Promise.all(cleanupQueries);
+    for (const result of results) {
+      if (result.error) throw result.error;
+    }
+
+    const queueCheck = await admin.from("random_match_queue").select("user_id", { count: "exact", head: true }).eq("status", "waiting");
+    if (queueCheck.error) throw queueCheck.error;
+    if ((queueCheck.count ?? 0) === 0) {
+      return;
+    }
+    await sleep(250);
+  }
+  throw new Error("Timed out waiting for an empty random match queue.");
+}
+
+async function joinPairIsolated(admin, clientA, clientB, rpcName = "find_or_join_random_match") {
+  await cleanupRandomChatState(admin);
+  const first = await rpcOrThrow(clientA, rpcName);
+  await expect(first?.status === "waiting", "first join should wait");
+  const second = await rpcOrThrow(clientB, rpcName);
+  await expect(second?.status === "matched", "second join should match");
+  await expect(Boolean(second?.session_id), "match should return session id");
+  return second.session_id;
+}
+
 async function getQueueRow(admin, userId) {
   const { data, error } = await admin
     .from("random_match_queue")
@@ -153,6 +192,7 @@ async function run() {
 
   const admin = makeClient(url, serviceRoleKey);
   const stamp = Date.now();
+  await cleanupRandomChatState(admin);
   const users = {
     h: {
       email: `web-v01-h-${stamp}@example.com`,
@@ -222,6 +262,7 @@ async function run() {
     }
 
     summary.tests.concurrent_self_queue = await (async () => {
+      await cleanupRandomChatState(admin);
       const [first, second] = await Promise.all([
         rpcOrThrow(clients.h, "find_or_join_random_match"),
         rpcOrThrow(clients.h, "find_or_join_random_match"),
@@ -240,14 +281,8 @@ async function run() {
     })();
 
     summary.tests.first_match = await (async () => {
-      const firstJoin = await rpcOrThrow(clients.a, "find_or_join_random_match");
-      await expect(firstJoin?.status === "waiting", "A should wait first");
-      const queueA = await getQueueRow(admin, createdUserIds.a);
-      await expect(queueA?.status === "waiting", "A queue should be waiting");
-
-      const secondJoin = await rpcOrThrow(clients.b, "find_or_join_random_match");
-      await expect(secondJoin?.status === "matched", "B should match A");
-      const sessionId = secondJoin?.session_id;
+      await cleanupRandomChatState(admin);
+      const sessionId = await joinPairIsolated(admin, clients.a, clients.b);
       await expect(Boolean(sessionId), "match should return session id");
 
       const session = await getActiveSession(admin, createdUserIds.a, createdUserIds.b);
@@ -281,18 +316,19 @@ async function run() {
     })();
 
     summary.tests.repeat_protection = await (async () => {
+      await cleanupRandomChatState(admin);
       const aRetry = await rpcOrThrow(clients.a, "find_or_join_random_match");
-      const bRetry = await rpcOrThrow(clients.b, "find_or_join_random_match");
       await expect(aRetry?.status === "waiting", "A should wait on repeat protection");
+      await cleanupRandomChatState(admin);
+      const bRetry = await rpcOrThrow(clients.b, "find_or_join_random_match");
       await expect(bRetry?.status === "waiting", "B should wait on repeat protection");
       const activeSession = await getActiveSession(admin, createdUserIds.a, createdUserIds.b);
       await expect(activeSession?.status !== "active", "A/B should not rematch within 24h");
-      await rpcOrThrow(clients.a, "leave_random_queue");
-      await rpcOrThrow(clients.b, "leave_random_queue");
       return { ok: true };
     })();
 
     summary.tests.block_exclusion = await (async () => {
+      await cleanupRandomChatState(admin);
       await rpcOrThrow(clients.f, "block_user", { target_user_id: createdUserIds.g });
       const fJoin = await rpcOrThrow(clients.f, "find_or_join_random_match");
       const gJoin = await rpcOrThrow(clients.g, "find_or_join_random_match");
@@ -306,12 +342,8 @@ async function run() {
     })();
 
     summary.tests.chat_flow = await (async () => {
-      const cJoin = await rpcOrThrow(clients.c, "find_or_join_random_match");
-      await expect(cJoin?.status === "waiting", "C should wait first");
-
-      const dJoin = await rpcOrThrow(clients.d, "find_or_join_random_match");
-      await expect(dJoin?.status === "matched", "D should match C");
-      const sessionId = dJoin?.session_id;
+      await cleanupRandomChatState(admin);
+      const sessionId = await joinPairIsolated(admin, clients.c, clients.d);
       await expect(Boolean(sessionId), "chat session should have id");
 
       const ownSession = await clients.c.from("random_chat_sessions").select("*").eq("id", sessionId).maybeSingle();
@@ -389,12 +421,8 @@ async function run() {
     })();
 
     summary.tests.concurrent_next = await (async () => {
-      const eJoin = await rpcOrThrow(clients.e, "find_or_join_random_match");
-      await expect(eJoin?.status === "waiting", "E should wait first");
-
-      const hJoin = await rpcOrThrow(clients.h, "find_or_join_random_match");
-      await expect(hJoin?.status === "matched", "H should match E");
-      const sessionId = hJoin?.session_id;
+      await cleanupRandomChatState(admin);
+      const sessionId = await joinPairIsolated(admin, clients.e, clients.h);
       await expect(Boolean(sessionId), "next test should have session id");
 
       const [nextByE, nextByH] = await Promise.all([

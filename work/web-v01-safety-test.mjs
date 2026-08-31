@@ -132,13 +132,41 @@ async function rpcRows(client, name, args = {}) {
   return Array.isArray(data) ? data : [];
 }
 
+async function cleanupRandomChatState(admin) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const cleanupQueries = [
+      admin.from("random_chat_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
+      admin.from("random_chat_sessions").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
+      admin.from("random_match_queue").delete().neq("user_id", "00000000-0000-0000-0000-000000000000"),
+      admin.from("random_pair_history").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
+      admin.from("random_action_rate_limit_events").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
+      admin.from("fraud_risk_events").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
+    ];
+    const results = await Promise.all(cleanupQueries);
+    for (const result of results) {
+      if (result.error) throw result.error;
+    }
+
+    const queueCheck = await admin.from("random_match_queue").select("user_id", { count: "exact", head: true }).eq("status", "waiting");
+    if (queueCheck.error) throw queueCheck.error;
+    if ((queueCheck.count ?? 0) === 0) {
+      return;
+    }
+    await sleep(250);
+  }
+  throw new Error("Timed out waiting for an empty random match queue.");
+}
+
 async function expect(condition, label) {
   if (!condition) {
     throw new Error(`Assertion failed: ${label}`);
   }
 }
 
-async function joinPair(clientA, clientB, rpcName = "find_or_join_random_match") {
+async function joinPair(admin, clientA, clientB, rpcName = "find_or_join_random_match") {
+  if (admin) {
+    await cleanupRandomChatState(admin);
+  }
   const first = await rpcOrThrow(clientA, rpcName);
   await expect(first?.status === "waiting", "first join should wait");
   const second = await rpcOrThrow(clientB, rpcName);
@@ -158,14 +186,7 @@ async function run() {
 
   const admin = makeClient(url, serviceRoleKey);
   const stamp = Date.now();
-  await Promise.all([
-    admin.from("random_chat_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-    admin.from("random_chat_sessions").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-    admin.from("random_match_queue").delete().neq("user_id", "00000000-0000-0000-0000-000000000000"),
-    admin.from("random_pair_history").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-    admin.from("random_action_rate_limit_events").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-    admin.from("fraud_risk_events").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-  ]);
+  await cleanupRandomChatState(admin);
   const users = {
     a: { email: `web-v01-safe-a-${stamp}@example.com`, password: "Password!1234", name: "晨霧書頁", avatar: "avatar_01" },
     b: { email: `web-v01-safe-b-${stamp}@example.com`, password: "Password!1234", name: "夜行列車", avatar: "avatar_02" },
@@ -205,7 +226,7 @@ async function run() {
     }
 
     summary.tests.safe_session_projection = await (async () => {
-      const sessionId = await joinPair(clients.m, clients.n);
+      const sessionId = await joinPair(admin, clients.m, clients.n);
       const safeByA = await rpcOrThrow(clients.m, "get_my_random_session_view", { p_session_id: sessionId });
       const safeByH = await rpcOrThrow(clients.c, "get_my_random_session_view", { p_session_id: sessionId }).catch(() => null);
       await expect(Boolean(safeByA?.id), "safe session should return id");
@@ -220,7 +241,7 @@ async function run() {
     })();
 
     summary.tests.block_random_user = await (async () => {
-      const sessionId = await joinPair(clients.c, clients.d);
+      const sessionId = await joinPair(admin, clients.c, clients.d);
       const blocked = await rpcOrThrow(clients.c, "block_random_user", { p_session_id: sessionId });
       await expect(blocked?.blocked === true, "block should succeed");
       await admin
@@ -237,6 +258,7 @@ async function run() {
       await expect(sessionRow.data?.status === "ended", "blocked session should end");
       await expect(sessionRow.data?.ended_reason === "blocked", "blocked session reason should be blocked");
 
+      await cleanupRandomChatState(admin);
       const rematchA = await rpcOrThrow(clients.c, "find_or_join_random_match");
       const rematchB = await rpcOrThrow(clients.d, "find_or_join_random_match");
       await expect(rematchA?.status === "waiting", "blocked A should wait");
@@ -255,7 +277,7 @@ async function run() {
     })();
 
     summary.tests.report_random_user = await (async () => {
-      const sessionId = await joinPair(clients.e, clients.f);
+      const sessionId = await joinPair(admin, clients.e, clients.f);
       const firstReport = await rpcOrThrow(clients.e, "report_random_user", {
         p_session_id: sessionId,
         p_category: "spam",
@@ -295,7 +317,7 @@ async function run() {
     })();
 
     summary.tests.report_rate_limit = await (async () => {
-      const sessionId = await joinPair(clients.g, clients.h);
+      const sessionId = await joinPair(admin, clients.g, clients.h);
       const forgedReport = await clients.a.rpc("report_random_user", {
         p_session_id: sessionId,
         p_category: "spam",
@@ -322,7 +344,7 @@ async function run() {
     })();
 
     summary.tests.report_category_rejects_invalid = await (async () => {
-      const sessionId = await joinPair(clients.o, clients.p);
+      const sessionId = await joinPair(admin, clients.o, clients.p);
       const invalid = await clients.o.rpc("report_random_user", {
         p_session_id: sessionId,
         p_category: "not_allowed",
@@ -335,7 +357,7 @@ async function run() {
     })();
 
     summary.tests.message_risk_detection = await (async () => {
-      const sessionId = await joinPair(clients.i, clients.j);
+      const sessionId = await joinPair(admin, clients.i, clients.j);
       const normal = await rpcOrThrow(clients.i, "send_random_message", {
         p_session_id: sessionId,
         p_content: "今天心情不錯，想聊電影。",
@@ -367,7 +389,7 @@ async function run() {
     })();
 
     summary.tests.message_rate_limit = await (async () => {
-      const sessionId = await joinPair(clients.k, clients.l);
+      const sessionId = await joinPair(admin, clients.k, clients.l);
       let blockedAt = null;
       for (let index = 0; index < 6; index += 1) {
         const result = await clients.k.rpc("send_random_message", {
@@ -385,7 +407,7 @@ async function run() {
     })();
 
     summary.tests.next_rate_limit = await (async () => {
-      const sessionId = await joinPair(clients.q, clients.r);
+      const sessionId = await joinPair(admin, clients.q, clients.r);
       const attempts = [];
       for (let index = 0; index < 4; index += 1) {
         attempts.push(await clients.q.rpc("next_random_match", { p_session_id: sessionId }));
@@ -399,7 +421,7 @@ async function run() {
     })();
 
     summary.tests.rls_and_projection = await (async () => {
-      const sessionId = await joinPair(clients.s, clients.t);
+      const sessionId = await joinPair(admin, clients.s, clients.t);
       const messages = await rpcRows(clients.s, "list_random_messages", { p_session_id: sessionId });
       await expect(messages.length >= 0, "participant should read messages");
       await expect(!("sender_id" in (messages[0] ?? {})), "safe message projection must not expose sender_id");

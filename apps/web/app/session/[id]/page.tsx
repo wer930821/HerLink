@@ -20,6 +20,7 @@ import {
   type RandomReportCategory,
   type WebProfile,
 } from "../../../lib/supabase";
+import { recordRealtimeDiagnostic } from "../../../lib/realtime-diagnostics";
 
 type Props = {
   params: { id: string };
@@ -150,6 +151,11 @@ export default function RandomSessionPage({ params }: Props) {
   const typingReceiverTimerRef = useRef<number | null>(null);
   const typingReceiverDeadlineRef = useRef<number | null>(null);
   const typingActiveRef = useRef(false);
+  const realtimeClientInstanceIdRef = useRef(
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `client-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+  );
   const stickToBottomRef = useRef(true);
   const pendingScrollToBottomRef = useRef(false);
   const scrollRafRef = useRef<number | null>(null);
@@ -244,6 +250,39 @@ export default function RandomSessionPage({ params }: Props) {
     clearReceiverTypingTimer();
     typingReceiverDeadlineRef.current = null;
     setPartnerTyping(false);
+  };
+
+  const recordDiagnostic = (
+    eventType:
+      | "realtime_subscribe_started"
+      | "realtime_subscribed"
+      | "realtime_subscribe_error"
+      | "realtime_disconnected"
+      | "realtime_reconnected"
+      | "message_received_realtime"
+      | "message_loaded_from_db",
+    input: {
+      sessionId?: string | null;
+      userId?: string | null;
+      messageId?: string | null;
+      safeErrorCode?: string | null;
+      metadata?: Record<string, unknown>;
+    } = {}
+  ) => {
+    const nextSessionId = input.sessionId ?? session?.id ?? null;
+    const nextUserId = input.userId ?? myProfile?.id ?? null;
+    if (!nextSessionId || !nextUserId) {
+      return;
+    }
+
+    void recordRealtimeDiagnostic({
+      sessionId: nextSessionId,
+      eventType,
+      clientInstanceId: realtimeClientInstanceIdRef.current,
+      messageId: input.messageId ?? null,
+      safeErrorCode: input.safeErrorCode ?? null,
+      metadata: input.metadata ?? {},
+    });
   };
 
   const isNearBottom = () => {
@@ -342,6 +381,11 @@ export default function RandomSessionPage({ params }: Props) {
           const nextMessages = Array.isArray(messagesResult.data) ? messagesResult.data : [];
           seenMessageIdsRef.current = new Set(nextMessages.map((item) => item.id));
           setMessages(nextMessages);
+          recordDiagnostic("message_loaded_from_db", {
+            sessionId: nextSession.id,
+            userId: authSession.user.id,
+            metadata: { message_count: nextMessages.length },
+          });
           if (nextMessages.length > 0) {
             pendingScrollToBottomRef.current = true;
           }
@@ -386,8 +430,15 @@ export default function RandomSessionPage({ params }: Props) {
   useEffect(() => {
     if (!session || !myProfile?.id) return;
 
-    const messagesChannel = supabase
-      .channel(`random-chat-messages-${session.id}`)
+    let messagesChannelSubscribed = false;
+    recordDiagnostic("realtime_subscribe_started", {
+      sessionId: session.id,
+      userId: myProfile.id,
+      metadata: { channel: "messages" },
+    });
+
+    const messagesChannel = supabase.channel(`random-chat-messages-${session.id}`);
+    messagesChannel
       .on(
         "postgres_changes",
         {
@@ -401,6 +452,13 @@ export default function RandomSessionPage({ params }: Props) {
           if (seenMessageIdsRef.current.has(nextMessage.id)) {
             return;
           }
+
+          recordDiagnostic("message_received_realtime", {
+            sessionId: session.id,
+            userId: myProfile.id,
+            messageId: nextMessage.id,
+            metadata: { channel: "messages" },
+          });
 
           const shouldAutoScroll = stickToBottomRef.current;
           seenMessageIdsRef.current.add(nextMessage.id);
@@ -420,7 +478,36 @@ export default function RandomSessionPage({ params }: Props) {
           }
         }
       )
-      .subscribe();
+      .subscribe((status: string) => {
+        if (status === "SUBSCRIBED") {
+          recordDiagnostic(messagesChannelSubscribed ? "realtime_reconnected" : "realtime_subscribed", {
+            sessionId: session.id,
+            userId: myProfile.id,
+            metadata: { channel: "messages" },
+          });
+          messagesChannelSubscribed = true;
+          return;
+        }
+
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          recordDiagnostic("realtime_subscribe_error", {
+            sessionId: session.id,
+            userId: myProfile.id,
+            safeErrorCode: status,
+            metadata: { channel: "messages" },
+          });
+          return;
+        }
+
+        if (status === "CLOSED") {
+          recordDiagnostic("realtime_disconnected", {
+            sessionId: session.id,
+            userId: myProfile.id,
+            safeErrorCode: status,
+            metadata: { channel: "messages" },
+          });
+        }
+      });
 
     const typingChannel = supabase.channel(`random-chat-typing-${session.id}`);
     typingChannelRef.current = typingChannel;
@@ -474,6 +561,11 @@ export default function RandomSessionPage({ params }: Props) {
       .subscribe();
 
     return () => {
+      recordDiagnostic("realtime_disconnected", {
+        sessionId: session.id,
+        userId: myProfile.id,
+        metadata: { channel: "messages" },
+      });
       stopTyping();
       clearPartnerTyping();
       typingChannelRef.current = null;
