@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../lib/auth-ui";
+import { clearAnonymousInstallationId } from "../lib/anonymous-install";
 import { useOnlinePresence } from "../lib/realtime-presence";
 import { MAINTENANCE_MESSAGE, MAINTENANCE_MODE, MAINTENANCE_TITLE } from "../lib/site-config";
 import {
@@ -13,6 +14,7 @@ import {
   isAnonymousProfileReady,
   isSupabaseConfigured,
   leaveRandomQueue,
+  leaveRandomSession,
   loadMyActiveRandomSession,
   loadMyProfile,
   loadMyRandomQueue,
@@ -107,15 +109,10 @@ export default function HomePage() {
       return;
     }
 
-    if (state.activeSession) {
-      router.replace(`/session/${state.activeSession.id}`);
-      return;
-    }
-
     if (state.queue?.status === "waiting" && !state.queue.matched_session_id) {
       router.replace("/waiting");
     }
-  }, [bootstrapping, router, state.activeSession, state.profile, state.queue, state.session]);
+  }, [bootstrapping, router, state.profile, state.queue, state.session]);
 
   const anonymousSummary = useMemo(() => {
     if (!state.profile) return null;
@@ -237,15 +234,34 @@ export default function HomePage() {
       return;
     }
 
+    if (state.activeSession?.id) {
+      router.replace(`/session/${state.activeSession.id}`);
+      return;
+    }
+
     setActionBusy(true);
     setMessage(null);
     try {
-      const abuseCheck = await registerAnonymousAbuseIdentity();
-      if (abuseCheck.error) {
-        throw abuseCheck.error;
+      const runAbuseCheck = async () => {
+        const abuseCheck = await registerAnonymousAbuseIdentity();
+        if (abuseCheck.error) {
+          throw abuseCheck.error;
+        }
+
+        if (abuseCheck.data && abuseCheck.data.decision !== "allow") {
+          return false;
+        }
+
+        return true;
+      };
+
+      let allowed = await runAbuseCheck();
+      if (!allowed) {
+        clearAnonymousInstallationId();
+        allowed = await runAbuseCheck();
       }
 
-      if (abuseCheck.data && abuseCheck.data.decision !== "allow") {
+      if (!allowed) {
         setMessage("此帳號目前無法使用配對功能，請稍後再試。");
         return;
       }
@@ -275,6 +291,21 @@ export default function HomePage() {
       await leaveRandomQueue();
       setState((prev) => ({ ...prev, queue: null }));
       setMessage("已離開等待池。");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const leaveActiveSession = async () => {
+    if (!state.activeSession?.id) {
+      return;
+    }
+
+    setActionBusy(true);
+    try {
+      await leaveRandomSession(state.activeSession.id);
+      setState((prev) => ({ ...prev, activeSession: null }));
+      setMessage("已離開聊天室。");
     } finally {
       setActionBusy(false);
     }
@@ -311,12 +342,29 @@ export default function HomePage() {
         </div>
         <div className="row">
           <button className="button" onClick={startMatching} disabled={actionBusy || MAINTENANCE_MODE}>
-            {actionBusy ? "處理中…" : MAINTENANCE_MODE ? "維護中" : "開始隨機配對"}
+            {actionBusy ? "處理中…" : MAINTENANCE_MODE ? "維護中" : state.activeSession ? "繼續聊天" : "開始隨機配對"}
           </button>
           <button className="ghost" onClick={() => router.push("/onboarding")} disabled={actionBusy || MAINTENANCE_MODE}>
             重新設定匿名身份
           </button>
         </div>
+        {state.activeSession ? (
+          <div className="banner">
+            你有一個尚未結束的聊天室。
+            <div style={{ marginTop: 12 }} className="row">
+              <button
+                className="button secondary"
+                onClick={() => router.replace(`/session/${state.activeSession?.id}`)}
+                disabled={actionBusy}
+              >
+                繼續聊天
+              </button>
+          <button className="ghost" onClick={() => void leaveActiveSession()} disabled={actionBusy}>
+                離開聊天室
+              </button>
+            </div>
+          </div>
+        ) : null}
         {state.queue?.status === "waiting" ? (
           <div className="banner">
             你正在等待配對中。

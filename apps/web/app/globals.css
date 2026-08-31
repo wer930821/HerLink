@@ -575,6 +575,7 @@ select {
   flex-direction: column;
   gap: 12px;
   overflow: hidden;
+  position: relative;
 }
 
 .chat-header {
@@ -583,6 +584,8 @@ select {
   gap: 12px;
   align-items: center;
   padding-bottom: 2px;
+  position: relative;
+  z-index: 2;
 }
 
 .chat-header-main {
@@ -634,6 +637,8 @@ select {
   color: var(--muted);
   font-size: 0.84rem;
   line-height: 1.4;
+  position: relative;
+  z-index: 1;
 }
 
 .chat-messages {
@@ -642,9 +647,13 @@ select {
   display: grid;
   gap: 12px;
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   padding: 6px 2px;
+  position: relative;
+  z-index: 0;
 }
 
 .chat-empty {
@@ -782,6 +791,8 @@ select {
   gap: 12px;
   padding-top: 0;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .chat-input {
@@ -833,6 +844,10 @@ select {
 
   .chat-input {
     min-height: 52px;
+  }
+
+  .chat-typing-indicator {
+    min-height: 18px;
   }
 
   .modal-backdrop {

@@ -25,3 +25,15 @@ export function getAnonymousInstallationId() {
     return null;
   }
 }
+
+export function clearAnonymousInstallationId() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(ANONYMOUS_INSTALLATION_ID_KEY);
+  } catch {
+    // Ignore storage failures; callers will fall back to a fresh ID next time.
+  }
+}

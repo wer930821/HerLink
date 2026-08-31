@@ -99,12 +99,39 @@ function getFriendlyRandomChatError(error: unknown, fallback: string) {
   return fallback;
 }
 
+function getRandomChatSendErrorCode(error: unknown, refreshedSession?: RandomSessionRow | null) {
+  const message = getRandomChatErrorMessage(error).toLowerCase();
+
+  if (message.includes("authentication required")) return "AUTH_MISSING";
+  if (message.includes("rate limit exceeded")) return "RATE_LIMITED";
+  if (message.includes("this session is not available")) {
+    return refreshedSession?.status === "ended" ? "SESSION_NOT_ACTIVE" : "SESSION_NOT_FOUND";
+  }
+  if (message.includes("not a participant")) return "NOT_PARTICIPANT";
+  if (message.includes("network") || message.includes("failed to fetch") || error instanceof TypeError) return "NETWORK_ERROR";
+  if (message.includes("rpc") || message.includes("function") || message.includes("supabase")) return "RPC_ERROR";
+
+  return "UNKNOWN";
+}
+
 function getRandomChatErrorMessage(error: unknown) {
   return error instanceof Error
     ? error.message
     : typeof error === "object" && error && "message" in error && typeof (error as { message?: unknown }).message === "string"
       ? (error as { message: string }).message
       : "";
+}
+
+function getSessionLifecycleNotice(nextSession: RandomSessionRow) {
+  if (nextSession.status !== "ended") {
+    return null;
+  }
+
+  return nextSession.ended_reason === "next"
+    ? "對方剛剛切換到下一位。"
+    : nextSession.ended_reason === "blocked"
+      ? "這段對話已被封鎖。"
+      : "對方已離開聊天。";
 }
 
 function renderMessageContent(
@@ -151,6 +178,7 @@ function renderMessageContent(
 
 export default function RandomSessionPage({ params }: Props) {
   const router = useRouter();
+  const sessionRouteIdRef = useRef(params.id);
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const seenMessageIdsRef = useRef<Set<string>>(new Set());
@@ -158,6 +186,7 @@ export default function RandomSessionPage({ params }: Props) {
   const messageSyncQueuedRef = useRef(false);
   const refreshMessagesFromServerRef = useRef<((options?: { forceScroll?: boolean }) => Promise<void>) | null>(null);
   const refreshSessionFromServerRef = useRef<(() => Promise<RandomSessionRow | null>) | null>(null);
+  const sessionRefreshGenerationRef = useRef(0);
   const typingChannelRef = useRef<any>(null);
   const typingSenderTimerRef = useRef<number | null>(null);
   const typingReceiverTimerRef = useRef<number | null>(null);
@@ -351,33 +380,43 @@ export default function RandomSessionPage({ params }: Props) {
   };
 
   refreshSessionFromServerRef.current = async () => {
-    if (!session?.id) {
+    const targetSessionId = session?.id ?? sessionRouteIdRef.current;
+    if (!targetSessionId) {
       return null;
     }
 
-    const result = await loadMyRandomSession(session.id);
+    const refreshGeneration = ++sessionRefreshGenerationRef.current;
+    const result = await loadMyRandomSession(targetSessionId);
+    if (refreshGeneration !== sessionRefreshGenerationRef.current) {
+      return null;
+    }
+
     if (result.error) {
       return null;
     }
 
     const nextSession = result.data ?? null;
-    if (nextSession) {
-      setSession(nextSession);
-      if (nextSession.status === "ended") {
-        stopTyping();
-        clearPartnerTyping();
-        setNotice(
-          nextSession.ended_reason === "next"
-            ? "對方剛剛切換到下一位。"
-            : nextSession.ended_reason === "blocked"
-              ? "這段對話已被封鎖。"
-              : "對方已離開聊天。"
-        );
-      }
+    if (!nextSession) {
+      return null;
+    }
+
+    const previousStatus = session?.status ?? null;
+    setSession(nextSession);
+
+    if (nextSession.status === "ended") {
+      stopTyping();
+      clearPartnerTyping();
+      setNotice(getSessionLifecycleNotice(nextSession));
+    } else if (previousStatus !== "active") {
+      setNotice(null);
     }
 
     return nextSession;
   };
+
+  useEffect(() => {
+    sessionRouteIdRef.current = params.id;
+  }, [params.id]);
 
   const isNearBottom = () => {
     const container = messageListRef.current;
@@ -439,10 +478,7 @@ export default function RandomSessionPage({ params }: Props) {
           return;
         }
 
-        const [profileResult, sessionResult] = await Promise.all([
-          loadMyProfile(authSession.user.id),
-          loadMyRandomSession(params.id),
-        ]);
+        const [profileResult] = await Promise.all([loadMyProfile(authSession.user.id)]);
 
         if (!mounted) return;
 
@@ -458,13 +494,11 @@ export default function RandomSessionPage({ params }: Props) {
           return;
         }
 
-        const nextSession = sessionResult.data ?? null;
+        const nextSession = await refreshSessionFromServerRef.current?.();
         if (!nextSession) {
           router.replace("/");
           return;
         }
-
-        setSession(nextSession);
 
         const messagesResult = await loadRandomMessages(nextSession.id, 200);
         if (!mounted) return;
@@ -485,15 +519,6 @@ export default function RandomSessionPage({ params }: Props) {
           }
         }
 
-        if (nextSession.status === "ended") {
-          setNotice(
-            nextSession.ended_reason === "next"
-              ? "對方剛剛切換到下一位。"
-              : nextSession.ended_reason === "blocked"
-                ? "這段對話已被封鎖。"
-                : "對方已離開聊天。"
-          );
-        }
       } catch {
         if (mounted) {
           router.replace("/");
@@ -574,11 +599,13 @@ export default function RandomSessionPage({ params }: Props) {
       void refreshSessionFromServerRef.current?.();
     };
 
+    const interval = window.setInterval(syncNow, 15000);
     window.addEventListener("focus", syncNow);
     window.addEventListener("online", syncNow);
     document.addEventListener("visibilitychange", syncNow);
 
     return () => {
+      window.clearInterval(interval);
       window.removeEventListener("focus", syncNow);
       window.removeEventListener("online", syncNow);
       document.removeEventListener("visibilitychange", syncNow);
@@ -644,6 +671,7 @@ export default function RandomSessionPage({ params }: Props) {
             metadata: { channel: "messages" },
           });
           messagesChannelSubscribed = true;
+          void refreshSessionFromServerRef.current?.();
           void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
           return;
         }
@@ -677,17 +705,11 @@ export default function RandomSessionPage({ params }: Props) {
 
         if (!typing) {
           clearPartnerTyping();
-          if (stickToBottomRef.current) {
-            pendingScrollToBottomRef.current = true;
-          }
           return;
         }
 
         setPartnerTyping(true);
         armPartnerTypingTimeout();
-        if (stickToBottomRef.current) {
-          pendingScrollToBottomRef.current = true;
-        }
       })
       .subscribe();
 
@@ -701,20 +723,8 @@ export default function RandomSessionPage({ params }: Props) {
           table: "random_chat_sessions",
           filter: `id=eq.${session.id}`,
         },
-        (payload: RealtimePayload<RandomSessionRow>) => {
-          const nextSession = payload.new as RandomSessionRow;
-          setSession(nextSession);
-          if (nextSession.status === "ended") {
-            stopTyping();
-            clearPartnerTyping();
-            setNotice(
-              nextSession.ended_reason === "next"
-                ? "對方剛剛切換到下一位。"
-                : nextSession.ended_reason === "blocked"
-                  ? "這段對話已被封鎖。"
-                  : "對方已離開聊天。"
-            );
-          }
+        () => {
+          void refreshSessionFromServerRef.current?.();
         }
       )
       .subscribe((status: string) => {
@@ -838,18 +848,30 @@ export default function RandomSessionPage({ params }: Props) {
     const shouldSmooth = pendingScrollToBottomRef.current;
     pendingScrollToBottomRef.current = false;
     scheduleScrollMessagesToBottom(shouldSmooth ? "smooth" : "auto");
-  }, [messages.length, partnerTyping, session?.id]);
+  }, [messages.length, session?.id]);
 
   const sendMessage = async () => {
     const content = draft.trim();
-    if (!content || !session || sendBusy || isEnded) {
+    if (!content || !session || sendBusy) {
       return;
     }
 
     setSendBusy(true);
     setNotice(null);
     try {
-      const { data, error } = await sendRandomMessage(session.id, content);
+      const refreshedSession = await refreshSessionFromServerRef.current?.();
+      if (!refreshedSession || refreshedSession.status !== "active") {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[herlink] random chat send blocked before RPC", {
+            code: getRandomChatSendErrorCode(new Error("This session is not available."), refreshedSession),
+            sessionId: session.id,
+          });
+        }
+        setNotice("這段對話目前不可用。");
+        return;
+      }
+
+      const { data, error } = await sendRandomMessage(refreshedSession.id, content);
       if (error) {
         throw error;
       }
@@ -869,6 +891,13 @@ export default function RandomSessionPage({ params }: Props) {
       stopTyping();
       clearPartnerTyping();
       const refreshedSession = await refreshSessionFromServerRef.current?.();
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[herlink] random chat send failed", {
+          code: getRandomChatSendErrorCode(error, refreshedSession),
+          sessionId: session.id,
+          message: getRandomChatErrorMessage(error),
+        });
+      }
       if (refreshedSession?.status === "active") {
         await refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
       }
@@ -1062,10 +1091,6 @@ export default function RandomSessionPage({ params }: Props) {
         {notice ? <div className="notice">{notice}</div> : null}
         {messageWarning ? <div className="notice safety-notice">{messageWarning}</div> : null}
 
-        <div className="chat-typing-indicator" aria-live="polite" aria-atomic="true">
-          {typingIndicatorText}
-        </div>
-
         <div
           className="chat-messages"
           ref={messageListRef}
@@ -1103,15 +1128,19 @@ export default function RandomSessionPage({ params }: Props) {
             }}
             rows={3}
             placeholder={isEnded ? "聊天室已結束，無法再傳送訊息。" : "輸入訊息…"}
-            disabled={sendBusy || isEnded}
+            disabled={sendBusy}
           />
           <div className="chat-composer-row">
             <div className="muted small">{isEnded ? sessionEndedText : "按 Enter 送出，按 Shift+Enter 換行。"}</div>
-            <button className="button" type="submit" disabled={sendBusy || isEnded || draft.trim().length === 0}>
+            <button className="button" type="submit" disabled={sendBusy || draft.trim().length === 0}>
               {sendBusy ? "送出中…" : "送出"}
             </button>
           </div>
         </form>
+
+        <div className="chat-typing-indicator" aria-live="polite" aria-atomic="true">
+          {typingIndicatorText}
+        </div>
       </section>
 
       {safetyMenuOpen ? (
