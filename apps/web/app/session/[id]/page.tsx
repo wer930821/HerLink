@@ -99,6 +99,23 @@ function getFriendlyRandomChatError(error: unknown, fallback: string) {
   return fallback;
 }
 
+function getRandomChatErrorMessage(error: unknown) {
+  return error instanceof Error
+    ? error.message
+    : typeof error === "object" && error && "message" in error && typeof (error as { message?: unknown }).message === "string"
+      ? (error as { message: string }).message
+      : "";
+}
+
+function isSessionUnavailableError(error: unknown) {
+  const normalized = getRandomChatErrorMessage(error).toLowerCase();
+  return (
+    normalized.includes("this session is not available") ||
+    normalized.includes("this connection is no longer available") ||
+    normalized.includes("your account is not available")
+  );
+}
+
 function renderMessageContent(
   content: string,
   onOpenExternalLink: (url: string) => void
@@ -146,6 +163,10 @@ export default function RandomSessionPage({ params }: Props) {
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const seenMessageIdsRef = useRef<Set<string>>(new Set());
+  const messageSyncInFlightRef = useRef(false);
+  const messageSyncQueuedRef = useRef(false);
+  const refreshMessagesFromServerRef = useRef<((options?: { forceScroll?: boolean }) => Promise<void>) | null>(null);
+  const refreshSessionFromServerRef = useRef<(() => Promise<RandomSessionRow | null>) | null>(null);
   const typingChannelRef = useRef<any>(null);
   const typingSenderTimerRef = useRef<number | null>(null);
   const typingReceiverTimerRef = useRef<number | null>(null);
@@ -178,6 +199,7 @@ export default function RandomSessionPage({ params }: Props) {
   const [reportCategory, setReportCategory] = useState<RandomReportCategory>("harassment");
   const [reportDescription, setReportDescription] = useState("");
   const [partnerTyping, setPartnerTyping] = useState(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
 
   const isEnded = session?.status === "ended";
   const partnerName = session?.partner_anonymous_display_name ?? "匿名使用者";
@@ -283,6 +305,87 @@ export default function RandomSessionPage({ params }: Props) {
       safeErrorCode: input.safeErrorCode ?? null,
       metadata: input.metadata ?? {},
     });
+  };
+
+  refreshMessagesFromServerRef.current = async ({ forceScroll = false } = {}) => {
+    if (!session?.id || !myProfile?.id) {
+      return;
+    }
+
+    if (messageSyncInFlightRef.current) {
+      messageSyncQueuedRef.current = true;
+      return;
+    }
+
+    messageSyncInFlightRef.current = true;
+
+    try {
+      const result = await loadRandomMessages(session.id, 200);
+      if (result.error) {
+        return;
+      }
+
+      const freshMessages = Array.isArray(result.data) ? result.data : [];
+      if (freshMessages.length === 0) {
+        return;
+      }
+
+      let receivedNewMessage = false;
+      setMessages((current) => {
+        let next = current;
+        for (const item of freshMessages) {
+          if (!seenMessageIdsRef.current.has(item.id)) {
+            receivedNewMessage = true;
+          }
+          next = upsertMessage(next, item);
+        }
+
+        return next;
+      });
+
+      for (const item of freshMessages) {
+        seenMessageIdsRef.current.add(item.id);
+      }
+
+      if ((forceScroll || receivedNewMessage) && stickToBottomRef.current) {
+        pendingScrollToBottomRef.current = true;
+      }
+    } finally {
+      messageSyncInFlightRef.current = false;
+      if (messageSyncQueuedRef.current) {
+        messageSyncQueuedRef.current = false;
+        void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
+      }
+    }
+  };
+
+  refreshSessionFromServerRef.current = async () => {
+    if (!session?.id) {
+      return null;
+    }
+
+    const result = await loadMyRandomSession(session.id);
+    if (result.error) {
+      return null;
+    }
+
+    const nextSession = result.data ?? null;
+    if (nextSession) {
+      setSession(nextSession);
+      if (nextSession.status === "ended") {
+        stopTyping();
+        clearPartnerTyping();
+        setNotice(
+          nextSession.ended_reason === "next"
+            ? "對方剛剛切換到下一位。"
+            : nextSession.ended_reason === "blocked"
+              ? "這段對話已被封鎖。"
+              : "對方已離開聊天。"
+        );
+      }
+    }
+
+    return nextSession;
   };
 
   const isNearBottom = () => {
@@ -428,6 +531,70 @@ export default function RandomSessionPage({ params }: Props) {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined" || typeof window.visualViewport === "undefined") {
+      return;
+    }
+
+    const viewport = window.visualViewport;
+    if (!viewport) {
+      return;
+    }
+
+    const updateKeyboardInset = () => {
+      const nextInset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      setKeyboardInset(nextInset);
+    };
+
+    updateKeyboardInset();
+    viewport.addEventListener("resize", updateKeyboardInset);
+    viewport.addEventListener("scroll", updateKeyboardInset);
+    window.addEventListener("orientationchange", updateKeyboardInset);
+
+    return () => {
+      viewport.removeEventListener("resize", updateKeyboardInset);
+      viewport.removeEventListener("scroll", updateKeyboardInset);
+      window.removeEventListener("orientationchange", updateKeyboardInset);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!session?.id || !myProfile?.id) {
+      return;
+    }
+
+    if (!stickToBottomRef.current && !pendingScrollToBottomRef.current) {
+      return;
+    }
+
+    scheduleScrollMessagesToBottom("auto");
+  }, [keyboardInset, myProfile?.id, session?.id]);
+
+  useEffect(() => {
+    if (!session?.id || !myProfile?.id) {
+      return;
+    }
+
+    const syncNow = () => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
+      void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
+      void refreshSessionFromServerRef.current?.();
+    };
+
+    window.addEventListener("focus", syncNow);
+    window.addEventListener("online", syncNow);
+    document.addEventListener("visibilitychange", syncNow);
+
+    return () => {
+      window.removeEventListener("focus", syncNow);
+      window.removeEventListener("online", syncNow);
+      document.removeEventListener("visibilitychange", syncNow);
+    };
+  }, [myProfile?.id, session?.id]);
+
+  useEffect(() => {
     if (!session || !myProfile?.id) return;
 
     let messagesChannelSubscribed = false;
@@ -486,6 +653,7 @@ export default function RandomSessionPage({ params }: Props) {
             metadata: { channel: "messages" },
           });
           messagesChannelSubscribed = true;
+          void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
           return;
         }
 
@@ -573,7 +741,7 @@ export default function RandomSessionPage({ params }: Props) {
       void supabase.removeChannel(typingChannel);
       void supabase.removeChannel(sessionChannel);
     };
-  }, [myProfile?.id, session]);
+  }, [myProfile?.id, session?.id]);
 
   useEffect(() => {
     if (isEnded) {
@@ -677,6 +845,12 @@ export default function RandomSessionPage({ params }: Props) {
       stopTyping();
       setDraft("");
     } catch (error) {
+      stopTyping();
+      clearPartnerTyping();
+      if (isSessionUnavailableError(error)) {
+        void refreshSessionFromServerRef.current?.();
+        void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
+      }
       setNotice(getFriendlyRandomChatError(error, "訊息傳送失敗，請稍後再試。"));
     } finally {
       setSendBusy(false);

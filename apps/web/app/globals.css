@@ -44,7 +44,9 @@ a {
 }
 
 button,
-input {
+input,
+textarea,
+select {
   font: inherit;
 }
 
@@ -571,7 +573,8 @@ input {
   min-height: calc(100dvh - 48px);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  overflow: hidden;
 }
 
 .chat-header {
@@ -638,9 +641,9 @@ input {
   min-height: 0;
   display: grid;
   gap: 12px;
-  min-height: 320px;
-  max-height: none;
-  overflow: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 6px 2px;
 }
 
@@ -658,6 +661,7 @@ input {
 
 .chat-message {
   display: flex;
+  align-items: flex-start;
 }
 
 .chat-message.mine {
@@ -669,6 +673,7 @@ input {
 }
 
 .chat-bubble {
+  width: fit-content;
   max-width: min(82%, 520px);
   padding: 12px 14px;
   border-radius: 18px;
@@ -776,12 +781,14 @@ input {
   display: grid;
   gap: 12px;
   padding-top: 0;
+  flex-shrink: 0;
 }
 
 .chat-input {
-  min-height: 88px;
+  min-height: 56px;
   max-height: 180px;
-  resize: vertical;
+  resize: none;
+  font-size: 16px;
 }
 
 .chat-composer-row {
@@ -822,6 +829,10 @@ input {
   .chat-composer-row {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .chat-input {
+    min-height: 52px;
   }
 
   .modal-backdrop {
