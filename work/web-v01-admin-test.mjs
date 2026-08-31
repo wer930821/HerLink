@@ -466,10 +466,12 @@ async function run() {
       headers: { Authorization: `Bearer ${adminAuth.session.access_token}` },
     });
     await expect(adminTelemetryRead.response.ok, "admin should read realtime diagnostics after write");
-    await expect(
-      (adminTelemetryRead.payload?.items ?? []).some((item) => item.session_id === sessionId && item.message_id === message.id),
-      "admin realtime should include safe telemetry row"
-    );
+    const adminTelemetryRow = (adminTelemetryRead.payload?.items ?? []).find((item) => item.session_id === sessionId && item.message_id === message.id);
+    await expect(Boolean(adminTelemetryRow), "admin realtime should include safe telemetry row");
+    await expect(!Object.prototype.hasOwnProperty.call(adminTelemetryRow ?? {}, "message_body"), "telemetry should not expose message body");
+    await expect(!Object.prototype.hasOwnProperty.call(adminTelemetryRow ?? {}, "token"), "telemetry should not expose token");
+    await expect(!Object.prototype.hasOwnProperty.call(adminTelemetryRow ?? {}, "install_key"), "telemetry should not expose install key");
+    await expect(!Object.prototype.hasOwnProperty.call(adminTelemetryRow ?? {}, "email"), "telemetry should not expose email");
 
     summary.tests = {
       unauthenticated_denied: true,
