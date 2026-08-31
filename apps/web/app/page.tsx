@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../lib/auth-ui";
 import { useOnlinePresence } from "../lib/realtime-presence";
+import { MAINTENANCE_MESSAGE, MAINTENANCE_MODE, MAINTENANCE_TITLE } from "../lib/site-config";
 import {
   findOrJoinRandomMatch,
   getCurrentSession,
@@ -123,6 +124,23 @@ export default function HomePage() {
     };
   }, [state.profile]);
 
+  if (MAINTENANCE_MODE && !state.activeSession) {
+    return (
+      <main className="stack">
+        <section className="hero">
+          <div className="status-badge" style={{ color: "var(--accent-strong)", borderColor: "rgba(255, 111, 97, 0.24)" }}>
+            維護中
+          </div>
+          <h1 className="hero-title">{MAINTENANCE_TITLE}</h1>
+          <p className="hero-copy">{MAINTENANCE_MESSAGE}</p>
+          <div className="notice">
+            目前先暫停新的隨機配對。已經在聊天中的匿名對話不會被強制中斷。
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   if (!isSupabaseConfigured()) {
     return (
       <main className="panel">
@@ -142,6 +160,11 @@ export default function HomePage() {
   }
 
   const startAnonymous = async () => {
+    if (MAINTENANCE_MODE) {
+      setMessage("HerLink 維護中，聊天功能目前暫時停止。");
+      return;
+    }
+
     setActionBusy(true);
     setMessage(null);
     try {
@@ -209,6 +232,11 @@ export default function HomePage() {
   }
 
   const startMatching = async () => {
+    if (MAINTENANCE_MODE) {
+      setMessage("HerLink 維護中，聊天功能目前暫時停止。");
+      return;
+    }
+
     setActionBusy(true);
     setMessage(null);
     try {
@@ -272,14 +300,20 @@ export default function HomePage() {
             <p className="hero-copy">匿名聊天，不需要公開自己。</p>
           </div>
         </div>
+        {MAINTENANCE_MODE ? (
+          <div className="notice">
+            <strong>HerLink 維護中。</strong>
+            <div style={{ marginTop: 8 }}>{MAINTENANCE_MESSAGE}</div>
+          </div>
+        ) : null}
         <div className="notice">
           你目前的匿名身份是 <strong>{anonymousSummary?.name ?? "匿名使用者"}</strong>。
         </div>
         <div className="row">
-          <button className="button" onClick={startMatching} disabled={actionBusy}>
-            {actionBusy ? "處理中…" : "開始隨機配對"}
+          <button className="button" onClick={startMatching} disabled={actionBusy || MAINTENANCE_MODE}>
+            {actionBusy ? "處理中…" : MAINTENANCE_MODE ? "維護中" : "開始隨機配對"}
           </button>
-          <button className="ghost" onClick={() => router.push("/onboarding")} disabled={actionBusy}>
+          <button className="ghost" onClick={() => router.push("/onboarding")} disabled={actionBusy || MAINTENANCE_MODE}>
             重新設定匿名身份
           </button>
         </div>

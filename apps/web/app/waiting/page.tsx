@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOnlinePresence } from "../../lib/realtime-presence";
+import { MAINTENANCE_MESSAGE, MAINTENANCE_MODE, MAINTENANCE_TITLE } from "../../lib/site-config";
 import {
   isAnonymousProfileReady,
   leaveRandomQueue,
@@ -56,6 +57,13 @@ export default function WaitingPage() {
   useEffect(() => {
     let mounted = true;
 
+    if (MAINTENANCE_MODE) {
+      setLoading(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
     async function bootstrap() {
       try {
         const { data } = await supabase.auth.getSession();
@@ -96,7 +104,7 @@ export default function WaitingPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (MAINTENANCE_MODE || !userId) return;
 
     const channel = supabase
       .channel(`random-queue-${userId}`)
@@ -124,19 +132,23 @@ export default function WaitingPage() {
   }, [router, userId]);
 
   useEffect(() => {
+    if (MAINTENANCE_MODE) return;
+
     if (!loading && (!profile || !isAnonymousProfileReady(profile))) {
       router.replace("/onboarding");
     }
   }, [loading, profile, router]);
 
   useEffect(() => {
+    if (MAINTENANCE_MODE) return;
+
     if (!loading && session) {
       router.replace(`/session/${session.id}`);
     }
   }, [loading, router, session]);
 
   useEffect(() => {
-    if (loading || session) {
+    if (MAINTENANCE_MODE || loading || session) {
       waitingStartedAtRef.current = null;
       setElapsedSeconds(0);
       return;
@@ -164,6 +176,28 @@ export default function WaitingPage() {
       window.clearInterval(interval);
     };
   }, [loading, queue?.joined_at, queue?.matched_session_id, queue?.status, session]);
+
+  if (MAINTENANCE_MODE) {
+    return (
+      <main className="stack">
+        <section className="hero">
+          <div className="status-badge" style={{ color: "var(--accent-strong)", borderColor: "rgba(255, 111, 97, 0.24)" }}>
+            維護中
+          </div>
+          <h1 className="hero-title">{MAINTENANCE_TITLE}</h1>
+          <p className="hero-copy">{MAINTENANCE_MESSAGE}</p>
+          <div className="notice">
+            目前不開放新的等待配對。若你已經在匿名對話中，現有聊天室不會被強制關閉。
+          </div>
+          <div className="row">
+            <button className="ghost" onClick={() => router.replace("/")}>
+              返回首頁
+            </button>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   if (loading) {
     return (
