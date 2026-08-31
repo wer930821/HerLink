@@ -3,6 +3,14 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  getShortId,
+  isNavigationDebugEnabled,
+  readLastNavigationDiagnostic,
+  recordNavigationDiagnostic,
+  withNavigationDebugParam,
+  type NavigationDiagnosticEvent,
+} from "../../../lib/navigation-diagnostics";
+import {
   blockRandomUser,
   isAnonymousProfileReady,
   leaveRandomSession,
@@ -191,6 +199,7 @@ export default function RandomSessionPage({ params }: Props) {
   const refreshMessagesFromServerRef = useRef<((options?: { forceScroll?: boolean }) => Promise<void>) | null>(null);
   const refreshSessionFromServerRef = useRef<(() => Promise<RandomSessionRow | null>) | null>(null);
   const sessionRefreshGenerationRef = useRef(0);
+  const lastSessionFetchErrorRef = useRef(false);
   const typingChannelRef = useRef<any>(null);
   const typingSenderTimerRef = useRef<number | null>(null);
   const typingReceiverTimerRef = useRef<number | null>(null);
@@ -224,6 +233,10 @@ export default function RandomSessionPage({ params }: Props) {
   const [reportDescription, setReportDescription] = useState("");
   const [partnerTyping, setPartnerTyping] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
+  const [authState, setAuthState] = useState<NavigationDiagnosticEvent["authState"]>("loading");
+  const [sessionState, setSessionState] = useState<NavigationDiagnosticEvent["sessionState"]>("loading");
+  const [debugEnabled, setDebugEnabled] = useState(false);
+  const [lastDiagnostic, setLastDiagnostic] = useState<NavigationDiagnosticEvent | null>(null);
 
   const isEnded = session?.status === "ended";
   const partnerName = session?.partner_anonymous_display_name ?? "匿名使用者";
@@ -253,29 +266,52 @@ export default function RandomSessionPage({ params }: Props) {
 
   const recordSessionRouteDiagnostic = (
     eventType:
-      | "continue_clicked"
-      | "bootstrap_auth_loading"
-      | "bootstrap_auth_ready"
-      | "bootstrap_auth_missing"
-      | "bootstrap_profile_missing"
-      | "bootstrap_profile_not_ready"
-      | "bootstrap_session_missing"
-      | "bootstrap_session_ready"
-      | "bootstrap_redirect_home"
-      | "bootstrap_redirect_onboarding",
+      | "SESSION_ROUTE_MOUNT"
+      | "AUTH_WAIT_START"
+      | "AUTH_READY"
+      | "AUTH_MISSING"
+      | "SESSION_FETCH_START"
+      | "SESSION_FETCH_RESULT"
+      | "SESSION_ACTIVE"
+      | "SESSION_ENDED"
+      | "REDIRECT_HOME"
+      | "REDIRECT_ONBOARDING"
+      | "SESSION_ROUTE_UNMOUNT"
+      | "STALE_BOOTSTRAP_DISCARDED",
     metadata: Record<string, unknown> = {}
   ) => {
-    if (process.env.NODE_ENV === "production") {
-      return;
-    }
-
-    console.warn("[herlink] session route diagnostic", {
-      eventType,
+    const nextAuthState =
+      typeof metadata.authState === "string" && ["loading", "ready", "missing"].includes(metadata.authState)
+        ? (metadata.authState as NavigationDiagnosticEvent["authState"])
+        : authState;
+    const nextSessionState =
+      typeof metadata.sessionState === "string" && ["loading", "active", "ended", "missing"].includes(metadata.sessionState)
+        ? (metadata.sessionState as NavigationDiagnosticEvent["sessionState"])
+        : sessionState;
+    const nextEvent: NavigationDiagnosticEvent = {
+      timestamp: new Date().toISOString(),
       pathname,
-      routeSessionId: params.id,
-      state: sessionBootstrapStateRef.current,
-      ...metadata,
-    });
+      event: eventType,
+      reason: typeof metadata.reason === "string" ? metadata.reason : null,
+      authState: nextAuthState,
+      sessionState: nextSessionState,
+      routeSessionIdShort: getShortId(params.id),
+      serverSessionIdShort: getShortId(typeof metadata.serverSessionId === "string" ? metadata.serverSessionId : session?.id ?? null),
+      bootstrapRunId: typeof metadata.bootstrapRunId === "number" ? metadata.bootstrapRunId : sessionBootstrapRunRef.current,
+    };
+
+    recordNavigationDiagnostic(nextEvent);
+    setLastDiagnostic(nextEvent);
+  };
+
+  const goHome = (reason: string, metadata: Record<string, unknown> = {}) => {
+    recordSessionRouteDiagnostic("REDIRECT_HOME", { ...metadata, reason });
+    router.replace(withNavigationDebugParam("/"));
+  };
+
+  const goOnboarding = (reason: string, metadata: Record<string, unknown> = {}) => {
+    recordSessionRouteDiagnostic("REDIRECT_ONBOARDING", { ...metadata, reason });
+    router.replace(withNavigationDebugParam("/onboarding"));
   };
 
   const clearSenderTypingTimer = () => {
@@ -417,28 +453,73 @@ export default function RandomSessionPage({ params }: Props) {
     }
 
     const refreshGeneration = ++sessionRefreshGenerationRef.current;
+    lastSessionFetchErrorRef.current = false;
+    setSessionState("loading");
+    recordSessionRouteDiagnostic("SESSION_FETCH_START", {
+      sessionState: "loading",
+      serverSessionId: targetSessionId,
+    });
     const result = await loadMyRandomSession(targetSessionId);
     if (refreshGeneration !== sessionRefreshGenerationRef.current) {
+      recordSessionRouteDiagnostic("STALE_BOOTSTRAP_DISCARDED", {
+        reason: "STALE_BOOTSTRAP_DISCARDED",
+        serverSessionId: targetSessionId,
+      });
       return null;
     }
 
     if (result.error) {
+      lastSessionFetchErrorRef.current = true;
+      recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
+        reason: "TEMPORARY_FETCH_ERROR",
+        sessionState: session?.status === "active" ? "active" : "missing",
+        serverSessionId: targetSessionId,
+      });
       return null;
     }
 
     const nextSession = result.data ?? null;
     if (!nextSession) {
+      recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
+        reason: "SESSION_CONFIRMED_MISSING",
+        sessionState: "missing",
+        serverSessionId: targetSessionId,
+      });
+      return null;
+    }
+
+    if (nextSession.id !== targetSessionId) {
+      recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
+        reason: "SESSION_ID_MISMATCH",
+        sessionState: "missing",
+        serverSessionId: nextSession.id,
+      });
       return null;
     }
 
     const previousStatus = session?.status ?? null;
     setSession(nextSession);
+    setSessionState(nextSession.status === "active" ? "active" : "ended");
+    recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
+      reason: null,
+      sessionState: nextSession.status === "active" ? "active" : "ended",
+      serverSessionId: nextSession.id,
+    });
 
     if (nextSession.status === "ended") {
+      recordSessionRouteDiagnostic("SESSION_ENDED", {
+        reason: "SESSION_ENDED",
+        sessionState: "ended",
+        serverSessionId: nextSession.id,
+      });
       stopTyping();
       clearPartnerTyping();
       setNotice(getSessionLifecycleNotice(nextSession));
     } else if (previousStatus !== "active") {
+      recordSessionRouteDiagnostic("SESSION_ACTIVE", {
+        sessionState: "active",
+        serverSessionId: nextSession.id,
+      });
       setNotice(null);
     }
 
@@ -447,6 +528,27 @@ export default function RandomSessionPage({ params }: Props) {
 
   useEffect(() => {
     sessionRouteIdRef.current = params.id;
+  }, [params.id]);
+
+  useEffect(() => {
+    setDebugEnabled(isNavigationDebugEnabled());
+    setLastDiagnostic(readLastNavigationDiagnostic());
+  }, [pathname]);
+
+  useEffect(() => {
+    recordSessionRouteDiagnostic("SESSION_ROUTE_MOUNT", {
+      authState,
+      sessionState,
+      serverSessionId: session?.id ?? null,
+    });
+
+    return () => {
+      recordSessionRouteDiagnostic("SESSION_ROUTE_UNMOUNT", {
+        authState,
+        sessionState,
+        serverSessionId: session?.id ?? null,
+      });
+    };
   }, [params.id]);
 
   const isNearBottom = () => {
@@ -501,7 +603,13 @@ export default function RandomSessionPage({ params }: Props) {
 
     async function bootstrap() {
       sessionBootstrapStateRef.current = "loading";
-      recordSessionRouteDiagnostic("bootstrap_auth_loading");
+      setAuthState("loading");
+      setSessionState("loading");
+      recordSessionRouteDiagnostic("AUTH_WAIT_START", {
+        authState: "loading",
+        sessionState: "loading",
+        bootstrapRunId,
+      });
       setLoading(true);
       try {
         const { data } = await waitForCurrentSession(2500, 100);
@@ -509,34 +617,44 @@ export default function RandomSessionPage({ params }: Props) {
 
         if (!authSession) {
           sessionBootstrapStateRef.current = "missing";
-          recordSessionRouteDiagnostic("bootstrap_auth_missing");
-          recordSessionRouteDiagnostic("bootstrap_redirect_home", { reason: "auth_missing" });
-          router.replace("/");
+          setAuthState("missing");
+          recordSessionRouteDiagnostic("AUTH_MISSING", {
+            reason: "AUTH_CONFIRMED_MISSING",
+            authState: "missing",
+            bootstrapRunId,
+          });
+          goHome("AUTH_CONFIRMED_MISSING", { authState: "missing", bootstrapRunId });
           return;
         }
 
         sessionBootstrapStateRef.current = "ready";
-        recordSessionRouteDiagnostic("bootstrap_auth_ready", { userId: authSession.user.id });
+        setAuthState("ready");
+        recordSessionRouteDiagnostic("AUTH_READY", {
+          authState: "ready",
+          bootstrapRunId,
+        });
 
         const [profileResult] = await Promise.all([loadMyProfile(authSession.user.id)]);
 
-        if (!mounted || bootstrapRunId !== sessionBootstrapRunRef.current) return;
+        if (!mounted || bootstrapRunId !== sessionBootstrapRunRef.current) {
+          recordSessionRouteDiagnostic("STALE_BOOTSTRAP_DISCARDED", {
+            reason: "STALE_BOOTSTRAP_DISCARDED",
+            bootstrapRunId,
+          });
+          return;
+        }
 
         const nextProfile = profileResult.data ?? null;
         setMyProfile(nextProfile);
         if (!nextProfile) {
           sessionBootstrapStateRef.current = "unauthorized";
-          recordSessionRouteDiagnostic("bootstrap_profile_missing", { userId: authSession.user.id });
-          recordSessionRouteDiagnostic("bootstrap_redirect_onboarding", { reason: "missing_profile" });
-          router.replace("/onboarding");
+          goOnboarding("PROFILE_NOT_READY", { authState: "ready", bootstrapRunId });
           return;
         }
 
         if (!isAnonymousProfileReady(nextProfile)) {
           sessionBootstrapStateRef.current = "unauthorized";
-          recordSessionRouteDiagnostic("bootstrap_profile_not_ready", { userId: authSession.user.id });
-          recordSessionRouteDiagnostic("bootstrap_redirect_onboarding", { reason: "profile_not_ready" });
-          router.replace("/onboarding");
+          goOnboarding("PROFILE_NOT_READY", { authState: "ready", bootstrapRunId });
           return;
         }
 
@@ -554,27 +672,49 @@ export default function RandomSessionPage({ params }: Props) {
 
           return null;
         })();
-        if (!mounted || bootstrapRunId !== sessionBootstrapRunRef.current) return;
-        if (!nextSession) {
-          sessionBootstrapStateRef.current = "missing";
-          recordSessionRouteDiagnostic("bootstrap_session_missing", {
-            routeSessionId: params.id,
-            authUserId: authSession.user.id,
+        if (!mounted || bootstrapRunId !== sessionBootstrapRunRef.current) {
+          recordSessionRouteDiagnostic("STALE_BOOTSTRAP_DISCARDED", {
+            reason: "STALE_BOOTSTRAP_DISCARDED",
+            bootstrapRunId,
           });
-          recordSessionRouteDiagnostic("bootstrap_redirect_home", { reason: "missing_session" });
-          router.replace("/");
+          return;
+        }
+        if (!nextSession) {
+          if (lastSessionFetchErrorRef.current) {
+            setNotice("聊天室載入失敗，正在重試。");
+            setSessionState("loading");
+            return;
+          }
+
+          sessionBootstrapStateRef.current = "missing";
+          setSessionState("missing");
+          recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
+            reason: "SESSION_CONFIRMED_MISSING",
+            authState: "ready",
+            sessionState: "missing",
+            bootstrapRunId,
+          });
+          goHome("SESSION_CONFIRMED_MISSING", { authState: "ready", sessionState: "missing", bootstrapRunId });
           return;
         }
 
         sessionBootstrapStateRef.current = nextSession.status === "ended" ? "ended" : "ready";
-        recordSessionRouteDiagnostic("bootstrap_session_ready", {
-          routeSessionId: params.id,
-          loadedSessionId: nextSession.id,
-          sessionStatus: nextSession.status,
+        recordSessionRouteDiagnostic(nextSession.status === "ended" ? "SESSION_ENDED" : "SESSION_ACTIVE", {
+          reason: nextSession.status === "ended" ? "SESSION_ENDED" : null,
+          authState: "ready",
+          sessionState: nextSession.status === "ended" ? "ended" : "active",
+          serverSessionId: nextSession.id,
+          bootstrapRunId,
         });
 
         const messagesResult = await loadRandomMessages(nextSession.id, 200);
-        if (!mounted || bootstrapRunId !== sessionBootstrapRunRef.current) return;
+        if (!mounted || bootstrapRunId !== sessionBootstrapRunRef.current) {
+          recordSessionRouteDiagnostic("STALE_BOOTSTRAP_DISCARDED", {
+            reason: "STALE_BOOTSTRAP_DISCARDED",
+            bootstrapRunId,
+          });
+          return;
+        }
 
         if (messagesResult.error) {
           setNotice("訊息暫時無法載入，請稍後再試。");
@@ -594,9 +734,11 @@ export default function RandomSessionPage({ params }: Props) {
 
       } catch {
         if (mounted && bootstrapRunId === sessionBootstrapRunRef.current) {
-          sessionBootstrapStateRef.current = "missing";
-          recordSessionRouteDiagnostic("bootstrap_redirect_home", { reason: "bootstrap_error" });
-          router.replace("/");
+          setNotice("聊天室載入失敗，正在重試。");
+          recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
+            reason: "BOOTSTRAP_EXCEPTION",
+            bootstrapRunId,
+          });
         }
       } finally {
         if (mounted && bootstrapRunId === sessionBootstrapRunRef.current) {
@@ -989,7 +1131,7 @@ export default function RandomSessionPage({ params }: Props) {
       stopTyping();
       clearPartnerTyping();
       await leaveRandomSession(session.id);
-      router.replace("/");
+      goHome("USER_LEFT_SESSION", { serverSessionId: session.id });
     } catch {
       setNotice("目前無法離開聊天室，請稍後再試。");
     } finally {
@@ -1037,7 +1179,7 @@ export default function RandomSessionPage({ params }: Props) {
 
       setNotice("已封鎖對方。");
       closeSafetyMenus();
-      router.replace("/");
+      goHome("USER_BLOCKED_PARTNER", { serverSessionId: session.id });
     } catch {
       setNotice("目前無法封鎖這位使用者，請稍後再試。");
     } finally {
@@ -1109,11 +1251,25 @@ export default function RandomSessionPage({ params }: Props) {
     );
   });
 
+  const debugPanel = debugEnabled ? (
+    <div className="debug-panel">
+      <div>path: {pathname}</div>
+      <div>auth: {authState}</div>
+      <div>session: {sessionState}</div>
+      <div>event: {lastDiagnostic?.event ?? "none"}</div>
+      <div>reason: {lastDiagnostic?.reason ?? "none"}</div>
+      <div>route id: {getShortId(params.id) ?? "none"}</div>
+      <div>server id: {getShortId(session?.id ?? null) ?? lastDiagnostic?.serverSessionIdShort ?? "none"}</div>
+    </div>
+  ) : null;
+
   if (loading) {
     return (
       <main className="hero">
         <h1 className="hero-title">正在載入匿名會話…</h1>
         <p className="hero-copy">請稍候，HerLink 正在確認會話狀態。</p>
+        {notice ? <div className="notice">{notice}</div> : null}
+        {debugPanel}
       </main>
     );
   }
@@ -1123,7 +1279,8 @@ export default function RandomSessionPage({ params }: Props) {
       <main className="hero">
         <h1 className="hero-title">會話已結束</h1>
         <p className="hero-copy">你可以回到首頁重新開始隨機配對。</p>
-        <button className="button" type="button" onClick={() => router.replace("/")}>回到首頁</button>
+        <button className="button" type="button" onClick={() => goHome("USER_TAPPED_ENDED_HOME")}>回到首頁</button>
+        {debugPanel}
       </main>
     );
   }
@@ -1132,7 +1289,7 @@ export default function RandomSessionPage({ params }: Props) {
     <main className="stack">
       <section className="panel chat-shell">
         <header className="chat-header">
-          <button className="ghost" type="button" onClick={() => router.replace("/")}>返回首頁</button>
+          <button className="ghost" type="button" onClick={() => goHome("USER_TAPPED_HEADER_HOME", { serverSessionId: session.id })}>返回首頁</button>
           <div className="chat-header-main">
             <div className="stack" style={{ gap: 4 }}>
               <div className="title" style={{ fontSize: "1.15rem" }}>{partnerName}</div>
@@ -1354,6 +1511,7 @@ export default function RandomSessionPage({ params }: Props) {
           </div>
         </div>
       ) : null}
+      {debugPanel}
     </main>
   );
 }

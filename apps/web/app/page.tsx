@@ -1,9 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../lib/auth-ui";
 import { clearAnonymousInstallationId } from "../lib/anonymous-install";
+import {
+  getShortId,
+  isNavigationDebugEnabled,
+  readLastNavigationDiagnostic,
+  recordNavigationDiagnostic,
+  withNavigationDebugParam,
+  type NavigationDiagnosticEvent,
+} from "../lib/navigation-diagnostics";
 import { useOnlinePresence } from "../lib/realtime-presence";
 import { MAINTENANCE_MESSAGE, MAINTENANCE_MODE, MAINTENANCE_TITLE } from "../lib/site-config";
 import {
@@ -44,24 +52,32 @@ const emptyBootstrapState: BootstrapState = {
 export default function HomePage() {
   const router = useRouter();
   const pathname = usePathname();
+  const navigatingToSessionRef = useRef(false);
   const [bootstrapping, setBootstrapping] = useState(true);
   const [state, setState] = useState<BootstrapState>(emptyBootstrapState);
   const [actionBusy, setActionBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [debugEnabled, setDebugEnabled] = useState(false);
+  const [lastDiagnostic, setLastDiagnostic] = useState<NavigationDiagnosticEvent | null>(null);
   const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
 
   const recordHomeRouteDiagnostic = (eventType: "continue_clicked" | "continue_routed", metadata: Record<string, unknown> = {}) => {
-    if (process.env.NODE_ENV === "production") {
-      return;
-    }
-
-    console.warn("[herlink] home route diagnostic", {
-      eventType,
+    const targetSessionId =
+      typeof metadata.target === "string" ? metadata.target.split("/session/")[1]?.split("?")[0] ?? null : null;
+    const nextEvent: NavigationDiagnosticEvent = {
+      timestamp: new Date().toISOString(),
       pathname,
-      activeSessionId: state.activeSession?.id ?? null,
-      activeSessionStatus: state.activeSession?.status ?? null,
-      ...metadata,
-    });
+      event: eventType === "continue_clicked" ? "HOME_CONTINUE_CLICK" : "HOME_CONTINUE_ROUTE",
+      reason: typeof metadata.reason === "string" ? metadata.reason : null,
+      authState: state.session ? "ready" : bootstrapping ? "loading" : "missing",
+      sessionState: state.activeSession?.status === "active" ? "active" : "missing",
+      routeSessionIdShort: getShortId(targetSessionId),
+      serverSessionIdShort: getShortId(state.activeSession?.id ?? null),
+      bootstrapRunId: null,
+    };
+
+    recordNavigationDiagnostic(nextEvent);
+    setLastDiagnostic(nextEvent);
   };
 
   const continueActiveSession = (event?: MouseEvent<HTMLButtonElement>) => {
@@ -74,7 +90,8 @@ export default function HomePage() {
       buttonType: event?.currentTarget.type ?? null,
       inForm: Boolean(event?.currentTarget.form),
     });
-    router.push(`/session/${state.activeSession.id}`);
+    navigatingToSessionRef.current = true;
+    router.push(withNavigationDebugParam(`/session/${state.activeSession.id}`));
   };
 
   useEffect(() => {
@@ -131,6 +148,7 @@ export default function HomePage() {
   useEffect(() => {
     if (bootstrapping) return;
     if (!state.session) return;
+    if (navigatingToSessionRef.current || pathname !== "/") return;
 
     if (!state.profile || !isAnonymousProfileReady(state.profile)) {
       router.replace("/onboarding");
@@ -140,7 +158,12 @@ export default function HomePage() {
     if (state.queue?.status === "waiting" && !state.queue.matched_session_id) {
       router.replace("/waiting");
     }
-  }, [bootstrapping, router, state.profile, state.queue, state.session]);
+  }, [bootstrapping, pathname, router, state.profile, state.queue, state.session]);
+
+  useEffect(() => {
+    setDebugEnabled(isNavigationDebugEnabled());
+    setLastDiagnostic(readLastNavigationDiagnostic());
+  }, [pathname]);
 
   const anonymousSummary = useMemo(() => {
     if (!state.profile) return null;
@@ -148,6 +171,18 @@ export default function HomePage() {
       name: state.profile.anonymous_display_name ?? "匿名使用者",
     };
   }, [state.profile]);
+
+  const debugPanel = debugEnabled ? (
+    <div className="debug-panel">
+      <div>path: {pathname}</div>
+      <div>auth: {state.session ? "ready" : bootstrapping ? "loading" : "missing"}</div>
+      <div>session: {state.activeSession?.status ?? "missing"}</div>
+      <div>event: {lastDiagnostic?.event ?? "none"}</div>
+      <div>reason: {lastDiagnostic?.reason ?? "none"}</div>
+      <div>route id: {lastDiagnostic?.routeSessionIdShort ?? "none"}</div>
+      <div>server id: {getShortId(state.activeSession?.id ?? null) ?? lastDiagnostic?.serverSessionIdShort ?? "none"}</div>
+    </div>
+  ) : null;
 
   if (MAINTENANCE_MODE && !state.activeSession) {
     return (
@@ -161,6 +196,7 @@ export default function HomePage() {
           <div className="notice">
             目前先暫停新的隨機配對。已經在聊天中的匿名對話不會被強制中斷。
           </div>
+          {debugPanel}
         </section>
       </main>
     );
@@ -171,6 +207,7 @@ export default function HomePage() {
       <main className="panel">
         <h1 className="hero-title">HerLink Web V0.1</h1>
         <p className="hero-copy">缺少 Supabase 設定，請先補上 `NEXT_PUBLIC_SUPABASE_URL` 和 `NEXT_PUBLIC_SUPABASE_ANON_KEY`。</p>
+        {debugPanel}
       </main>
     );
   }
@@ -180,6 +217,7 @@ export default function HomePage() {
       <main className="hero">
         <h1 className="hero-title">HerLink</h1>
         <p className="hero-copy">正在檢查登入狀態…</p>
+        {debugPanel}
       </main>
     );
   }
@@ -251,6 +289,7 @@ export default function HomePage() {
             <a className="link" href="/privacy">隱私權政策</a>
             <a className="link" href="/safety">安全說明</a>
           </div>
+          {debugPanel}
         </section>
       </main>
     );
@@ -425,6 +464,7 @@ export default function HomePage() {
         <div>Supabase 連線：{getSupabaseDiagnostics().hasUrl ? "URL 已設定" : "URL 未設定"}</div>
         <div>匿名金鑰：{getSupabaseDiagnostics().hasAnonKey ? "已設定" : "未設定"}</div>
       </section>
+      {debugPanel}
     </main>
   );
 }
