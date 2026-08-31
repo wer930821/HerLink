@@ -235,7 +235,7 @@ export default function HomePage() {
     }
 
     if (state.activeSession?.id) {
-      router.replace(`/session/${state.activeSession.id}`);
+      router.push(`/session/${state.activeSession.id}`);
       return;
     }
 
@@ -354,7 +354,7 @@ export default function HomePage() {
             <div style={{ marginTop: 12 }} className="row">
               <button
                 className="button secondary"
-                onClick={() => router.replace(`/session/${state.activeSession?.id}`)}
+                onClick={() => router.push(`/session/${state.activeSession?.id}`)}
                 disabled={actionBusy}
               >
                 繼續聊天

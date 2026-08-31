@@ -494,7 +494,20 @@ export default function RandomSessionPage({ params }: Props) {
           return;
         }
 
-        const nextSession = await refreshSessionFromServerRef.current?.();
+        const nextSession = await (async () => {
+          for (let attempt = 0; attempt < 3; attempt += 1) {
+            const restoredSession = await refreshSessionFromServerRef.current?.();
+            if (restoredSession) {
+              return restoredSession;
+            }
+
+            if (attempt < 2) {
+              await new Promise((resolve) => window.setTimeout(resolve, 150 * (attempt + 1)));
+            }
+          }
+
+          return null;
+        })();
         if (!nextSession) {
           router.replace("/");
           return;
