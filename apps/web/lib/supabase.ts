@@ -234,6 +234,30 @@ export async function getCurrentSession() {
   return supabase.auth.getSession();
 }
 
+export async function waitForCurrentSession(timeoutMs = 2500, intervalMs = 100) {
+  if (!hasSupabaseConfig) {
+    return { data: { session: null }, error: null } as {
+      data: { session: Session | null };
+      error: null;
+    };
+  }
+
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const result = await supabase.auth.getSession();
+    if (result.data.session) {
+      return result as {
+        data: { session: Session | null };
+        error: null;
+      };
+    }
+
+    await new Promise((resolve) => window.setTimeout(resolve, intervalMs));
+  }
+
+  return await supabase.auth.getSession();
+}
+
 export async function signIn(email: string, password: string) {
   return supabase.auth.signInWithPassword({ email, password });
 }

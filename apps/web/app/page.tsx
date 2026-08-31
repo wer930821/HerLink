@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../lib/auth-ui";
 import { clearAnonymousInstallationId } from "../lib/anonymous-install";
 import { useOnlinePresence } from "../lib/realtime-presence";
@@ -43,11 +43,39 @@ const emptyBootstrapState: BootstrapState = {
 
 export default function HomePage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [bootstrapping, setBootstrapping] = useState(true);
   const [state, setState] = useState<BootstrapState>(emptyBootstrapState);
   const [actionBusy, setActionBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
+
+  const recordHomeRouteDiagnostic = (eventType: "continue_clicked" | "continue_routed", metadata: Record<string, unknown> = {}) => {
+    if (process.env.NODE_ENV === "production") {
+      return;
+    }
+
+    console.warn("[herlink] home route diagnostic", {
+      eventType,
+      pathname,
+      activeSessionId: state.activeSession?.id ?? null,
+      activeSessionStatus: state.activeSession?.status ?? null,
+      ...metadata,
+    });
+  };
+
+  const continueActiveSession = (event?: MouseEvent<HTMLButtonElement>) => {
+    if (!state.activeSession?.id) {
+      return;
+    }
+
+    recordHomeRouteDiagnostic(event ? "continue_clicked" : "continue_routed", {
+      target: `/session/${state.activeSession.id}`,
+      buttonType: event?.currentTarget.type ?? null,
+      inForm: Boolean(event?.currentTarget.form),
+    });
+    router.push(`/session/${state.activeSession.id}`);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -206,7 +234,7 @@ export default function HomePage() {
           <h1 className="hero-title">HerLink</h1>
           <p className="hero-copy">不用註冊、不用公開真實資料，直接建立匿名身份開始聊天。</p>
         <div className="row">
-          <button className="button" onClick={startAnonymous} disabled={actionBusy}>
+          <button type="button" className="button" onClick={startAnonymous} disabled={actionBusy}>
             {actionBusy ? "建立匿名身份中…" : "開始匿名聊天"}
           </button>
         </div>
@@ -235,7 +263,7 @@ export default function HomePage() {
     }
 
     if (state.activeSession?.id) {
-      router.push(`/session/${state.activeSession.id}`);
+      continueActiveSession();
       return;
     }
 
@@ -341,10 +369,10 @@ export default function HomePage() {
           你目前的匿名身份是 <strong>{anonymousSummary?.name ?? "匿名使用者"}</strong>。
         </div>
         <div className="row">
-          <button className="button" onClick={startMatching} disabled={actionBusy || MAINTENANCE_MODE}>
+          <button type="button" className="button" onClick={startMatching} disabled={actionBusy || MAINTENANCE_MODE}>
             {actionBusy ? "處理中…" : MAINTENANCE_MODE ? "維護中" : state.activeSession ? "繼續聊天" : "開始隨機配對"}
           </button>
-          <button className="ghost" onClick={() => router.push("/onboarding")} disabled={actionBusy || MAINTENANCE_MODE}>
+          <button type="button" className="ghost" onClick={() => router.push("/onboarding")} disabled={actionBusy || MAINTENANCE_MODE}>
             重新設定匿名身份
           </button>
         </div>
@@ -354,12 +382,13 @@ export default function HomePage() {
             <div style={{ marginTop: 12 }} className="row">
               <button
                 className="button secondary"
-                onClick={() => router.push(`/session/${state.activeSession?.id}`)}
+                type="button"
+                onClick={continueActiveSession}
                 disabled={actionBusy}
               >
                 繼續聊天
               </button>
-          <button className="ghost" onClick={() => void leaveActiveSession()} disabled={actionBusy}>
+              <button type="button" className="ghost" onClick={() => void leaveActiveSession()} disabled={actionBusy}>
                 離開聊天室
               </button>
             </div>
@@ -369,7 +398,7 @@ export default function HomePage() {
           <div className="banner">
             你正在等待配對中。
             <div style={{ marginTop: 12 }}>
-              <button className="button secondary" onClick={leaveQueue} disabled={actionBusy}>
+              <button type="button" className="button secondary" onClick={leaveQueue} disabled={actionBusy}>
                 取消等待
               </button>
             </div>
@@ -382,7 +411,7 @@ export default function HomePage() {
         <p className="title">安全提醒</p>
         <p className="hero-copy">請勿匯款、投資或提供驗證碼。若遇到可疑內容，請直接封鎖、檢舉並離開。</p>
         <div className="row">
-          <button className="ghost" onClick={logout} disabled={actionBusy}>
+          <button type="button" className="ghost" onClick={logout} disabled={actionBusy}>
             登出
           </button>
           <div className="muted small">

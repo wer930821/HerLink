@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   blockRandomUser,
   isAnonymousProfileReady,
@@ -13,6 +13,7 @@ import {
   reportRandomUser,
   sendRandomMessage,
   supabase,
+  waitForCurrentSession,
   RANDOM_REPORT_CATEGORIES,
   type RandomChatMessageRealtimeRow,
   type RandomChatMessageRow,
@@ -178,7 +179,10 @@ function renderMessageContent(
 
 export default function RandomSessionPage({ params }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const sessionRouteIdRef = useRef(params.id);
+  const sessionBootstrapRunRef = useRef(0);
+  const sessionBootstrapStateRef = useRef<"loading" | "ready" | "ended" | "missing" | "unauthorized">("loading");
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const seenMessageIdsRef = useRef<Set<string>>(new Set());
@@ -245,6 +249,33 @@ export default function RandomSessionPage({ params }: Props) {
     setReportOpen(false);
     setReportFollowupOpen(false);
     setBlockConfirmOpen(false);
+  };
+
+  const recordSessionRouteDiagnostic = (
+    eventType:
+      | "continue_clicked"
+      | "bootstrap_auth_loading"
+      | "bootstrap_auth_ready"
+      | "bootstrap_auth_missing"
+      | "bootstrap_profile_missing"
+      | "bootstrap_profile_not_ready"
+      | "bootstrap_session_missing"
+      | "bootstrap_session_ready"
+      | "bootstrap_redirect_home"
+      | "bootstrap_redirect_onboarding",
+    metadata: Record<string, unknown> = {}
+  ) => {
+    if (process.env.NODE_ENV === "production") {
+      return;
+    }
+
+    console.warn("[herlink] session route diagnostic", {
+      eventType,
+      pathname,
+      routeSessionId: params.id,
+      state: sessionBootstrapStateRef.current,
+      ...metadata,
+    });
   };
 
   const clearSenderTypingTimer = () => {
@@ -466,30 +497,45 @@ export default function RandomSessionPage({ params }: Props) {
 
   useEffect(() => {
     let mounted = true;
+    const bootstrapRunId = ++sessionBootstrapRunRef.current;
 
     async function bootstrap() {
+      sessionBootstrapStateRef.current = "loading";
+      recordSessionRouteDiagnostic("bootstrap_auth_loading");
       setLoading(true);
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await waitForCurrentSession(2500, 100);
         const authSession = data.session;
 
         if (!authSession) {
+          sessionBootstrapStateRef.current = "missing";
+          recordSessionRouteDiagnostic("bootstrap_auth_missing");
+          recordSessionRouteDiagnostic("bootstrap_redirect_home", { reason: "auth_missing" });
           router.replace("/");
           return;
         }
 
+        sessionBootstrapStateRef.current = "ready";
+        recordSessionRouteDiagnostic("bootstrap_auth_ready", { userId: authSession.user.id });
+
         const [profileResult] = await Promise.all([loadMyProfile(authSession.user.id)]);
 
-        if (!mounted) return;
+        if (!mounted || bootstrapRunId !== sessionBootstrapRunRef.current) return;
 
         const nextProfile = profileResult.data ?? null;
         setMyProfile(nextProfile);
         if (!nextProfile) {
+          sessionBootstrapStateRef.current = "unauthorized";
+          recordSessionRouteDiagnostic("bootstrap_profile_missing", { userId: authSession.user.id });
+          recordSessionRouteDiagnostic("bootstrap_redirect_onboarding", { reason: "missing_profile" });
           router.replace("/onboarding");
           return;
         }
 
         if (!isAnonymousProfileReady(nextProfile)) {
+          sessionBootstrapStateRef.current = "unauthorized";
+          recordSessionRouteDiagnostic("bootstrap_profile_not_ready", { userId: authSession.user.id });
+          recordSessionRouteDiagnostic("bootstrap_redirect_onboarding", { reason: "profile_not_ready" });
           router.replace("/onboarding");
           return;
         }
@@ -508,13 +554,27 @@ export default function RandomSessionPage({ params }: Props) {
 
           return null;
         })();
+        if (!mounted || bootstrapRunId !== sessionBootstrapRunRef.current) return;
         if (!nextSession) {
+          sessionBootstrapStateRef.current = "missing";
+          recordSessionRouteDiagnostic("bootstrap_session_missing", {
+            routeSessionId: params.id,
+            authUserId: authSession.user.id,
+          });
+          recordSessionRouteDiagnostic("bootstrap_redirect_home", { reason: "missing_session" });
           router.replace("/");
           return;
         }
 
+        sessionBootstrapStateRef.current = nextSession.status === "ended" ? "ended" : "ready";
+        recordSessionRouteDiagnostic("bootstrap_session_ready", {
+          routeSessionId: params.id,
+          loadedSessionId: nextSession.id,
+          sessionStatus: nextSession.status,
+        });
+
         const messagesResult = await loadRandomMessages(nextSession.id, 200);
-        if (!mounted) return;
+        if (!mounted || bootstrapRunId !== sessionBootstrapRunRef.current) return;
 
         if (messagesResult.error) {
           setNotice("訊息暫時無法載入，請稍後再試。");
@@ -533,11 +593,13 @@ export default function RandomSessionPage({ params }: Props) {
         }
 
       } catch {
-        if (mounted) {
+        if (mounted && bootstrapRunId === sessionBootstrapRunRef.current) {
+          sessionBootstrapStateRef.current = "missing";
+          recordSessionRouteDiagnostic("bootstrap_redirect_home", { reason: "bootstrap_error" });
           router.replace("/");
         }
       } finally {
-        if (mounted) {
+        if (mounted && bootstrapRunId === sessionBootstrapRunRef.current) {
           setLoading(false);
         }
       }
@@ -1061,7 +1123,7 @@ export default function RandomSessionPage({ params }: Props) {
       <main className="hero">
         <h1 className="hero-title">會話已結束</h1>
         <p className="hero-copy">你可以回到首頁重新開始隨機配對。</p>
-        <button className="button" onClick={() => router.replace("/")}>回到首頁</button>
+        <button className="button" type="button" onClick={() => router.replace("/")}>回到首頁</button>
       </main>
     );
   }
@@ -1070,7 +1132,7 @@ export default function RandomSessionPage({ params }: Props) {
     <main className="stack">
       <section className="panel chat-shell">
         <header className="chat-header">
-          <button className="ghost" onClick={() => router.replace("/")}>返回首頁</button>
+          <button className="ghost" type="button" onClick={() => router.replace("/")}>返回首頁</button>
           <div className="chat-header-main">
             <div className="stack" style={{ gap: 4 }}>
               <div className="title" style={{ fontSize: "1.15rem" }}>{partnerName}</div>
@@ -1084,19 +1146,19 @@ export default function RandomSessionPage({ params }: Props) {
               </div>
             </div>
           </div>
-          <button className="ghost" onClick={leave} disabled={leaveBusy}>
+          <button className="ghost" type="button" onClick={leave} disabled={leaveBusy}>
             離開
           </button>
         </header>
 
         <div className="chat-actions">
-          <button className="button secondary" onClick={goNext} disabled={nextBusy}>
+          <button className="button secondary" type="button" onClick={goNext} disabled={nextBusy}>
             {nextBusy ? "切換中…" : "下一位"}
           </button>
           <button className="button secondary" onClick={() => setSafetyMenuOpen(true)}>
             安全
           </button>
-          <button className="button secondary" onClick={leave} disabled={leaveBusy}>
+          <button className="button secondary" type="button" onClick={leave} disabled={leaveBusy}>
             {leaveBusy ? "離開中…" : "離開聊天室"}
           </button>
         </div>
@@ -1265,7 +1327,7 @@ export default function RandomSessionPage({ params }: Props) {
               <button className="ghost" onClick={closeSafetyMenus}>
                 繼續聊天
               </button>
-              <button className="button" onClick={() => void confirmBlock()} disabled={blockBusy}>
+              <button className="button" type="button" onClick={() => void confirmBlock()} disabled={blockBusy}>
                 {blockBusy ? "處理中…" : "封鎖並離開"}
               </button>
             </div>
