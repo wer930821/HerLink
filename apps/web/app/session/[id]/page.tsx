@@ -107,15 +107,6 @@ function getRandomChatErrorMessage(error: unknown) {
       : "";
 }
 
-function isSessionUnavailableError(error: unknown) {
-  const normalized = getRandomChatErrorMessage(error).toLowerCase();
-  return (
-    normalized.includes("this session is not available") ||
-    normalized.includes("this connection is no longer available") ||
-    normalized.includes("your account is not available")
-  );
-}
-
 function renderMessageContent(
   content: string,
   onOpenExternalLink: (url: string) => void
@@ -726,7 +717,37 @@ export default function RandomSessionPage({ params }: Props) {
           }
         }
       )
-      .subscribe();
+      .subscribe((status: string) => {
+        if (status === "SUBSCRIBED") {
+          recordDiagnostic("realtime_subscribed", {
+            sessionId: session.id,
+            userId: myProfile.id,
+            metadata: { channel: "session" },
+          });
+          void refreshSessionFromServerRef.current?.();
+          void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
+          return;
+        }
+
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          recordDiagnostic("realtime_subscribe_error", {
+            sessionId: session.id,
+            userId: myProfile.id,
+            safeErrorCode: status,
+            metadata: { channel: "session" },
+          });
+          return;
+        }
+
+        if (status === "CLOSED") {
+          recordDiagnostic("realtime_disconnected", {
+            sessionId: session.id,
+            userId: myProfile.id,
+            safeErrorCode: status,
+            metadata: { channel: "session" },
+          });
+        }
+      });
 
     return () => {
       recordDiagnostic("realtime_disconnected", {
@@ -847,9 +868,9 @@ export default function RandomSessionPage({ params }: Props) {
     } catch (error) {
       stopTyping();
       clearPartnerTyping();
-      if (isSessionUnavailableError(error)) {
-        void refreshSessionFromServerRef.current?.();
-        void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
+      const refreshedSession = await refreshSessionFromServerRef.current?.();
+      if (refreshedSession?.status === "active") {
+        await refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
       }
       setNotice(getFriendlyRandomChatError(error, "訊息傳送失敗，請稍後再試。"));
     } finally {
