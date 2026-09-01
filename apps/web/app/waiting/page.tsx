@@ -126,7 +126,7 @@ export default function WaitingPage() {
         (payload: RealtimePayload<RandomQueueRow>) => {
           const nextQueue = payload.new as RandomQueueRow;
           setQueue(nextQueue);
-          if (nextQueue.status === "matched" && nextQueue.matched_session_id) {
+          if (!debug && nextQueue.status === "matched" && nextQueue.matched_session_id) {
             router.replace(`/session/${nextQueue.matched_session_id}`);
           }
         }
@@ -136,7 +136,7 @@ export default function WaitingPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [router, userId]);
+  }, [debug, router, userId]);
 
   useEffect(() => {
     if (MAINTENANCE_MODE) return;
@@ -184,6 +184,8 @@ export default function WaitingPage() {
     };
   }, [loading, queue?.joined_at, queue?.matched_session_id, queue?.status, session]);
 
+  const debugDiagnostics = debug && userId ? <PushPermissionCard forceDebug /> : null;
+
   if (MAINTENANCE_MODE) {
     return (
       <main className="stack">
@@ -205,7 +207,7 @@ export default function WaitingPage() {
     return (
       <main className="stack">
         <PageHero title="正在尋找聊天對象…" description="請先保持頁面開啟，配對成功後會自動跳轉。" />
-        {debug ? <PushPermissionCard forceDebug /> : null}
+        {debugDiagnostics}
       </main>
     );
   }
@@ -249,7 +251,7 @@ export default function WaitingPage() {
           </Surface>
         ) : null}
       </PageHero>
-      <PushPermissionCard forceDebug={debug} />
+      {debug ? debugDiagnostics : <PushPermissionCard />}
     </main>
   );
 }
