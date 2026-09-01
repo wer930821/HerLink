@@ -28,10 +28,10 @@ export function AdminStat({
   tone?: "default" | "success" | "warning" | "danger";
 }) {
   return (
-    <div className={`admin-stat admin-stat-${tone}`}>
+    <Surface elevation="inset" tone={tone}>
       <div className="admin-stat-label">{label}</div>
       <div className="admin-stat-value">{value}</div>
-    </div>
+    </Surface>
   );
 }
 

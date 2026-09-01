@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAdminSession, fetchAdminJson } from "../../../lib/admin-client";
 import type { AdminFraudRiskEventRow, AdminModerationEnforcementRow } from "../../../lib/admin-types";
-import { AdminBadge, AdminEmpty, AdminSection, AdminTable, AdminTableWrap, formatAdminTime, shortId } from "../_components";
+import { AdminBadge, AdminEmpty, AdminSection, AdminStat, AdminStatGrid, AdminTable, AdminTableWrap, formatAdminTime, shortId } from "../_components";
 import { Button, Notice } from "../../../components/ui";
 
 type SafetyPayload = {
@@ -72,20 +72,11 @@ export default function AdminSafetyPage() {
         {error ? <Notice variant="danger">{error}</Notice> : null}
         {data ? (
           <div className="stack">
-            <div className="admin-stat-grid">
-              <div className="admin-stat admin-stat-warning">
-                <div className="admin-stat-label">有效 temporary suspension</div>
-                <div className="admin-stat-value">{data.stats.active_temporary_suspensions}</div>
-              </div>
-              <div className="admin-stat admin-stat-danger">
-                <div className="admin-stat-label">有效 permanent ban</div>
-                <div className="admin-stat-value">{data.stats.active_permanent_bans}</div>
-              </div>
-              <div className="admin-stat">
-                <div className="admin-stat-label">有效 warnings</div>
-                <div className="admin-stat-value">{data.stats.active_warnings}</div>
-              </div>
-            </div>
+            <AdminStatGrid>
+              <AdminStat label="有效 temporary suspension" value={data.stats.active_temporary_suspensions} tone="warning" />
+              <AdminStat label="有效 permanent ban" value={data.stats.active_permanent_bans} tone="danger" />
+              <AdminStat label="有效 warnings" value={data.stats.active_warnings} />
+            </AdminStatGrid>
 
             <AdminSection title="Moderation enforcements">
               {data.moderation_enforcements.length ? (
