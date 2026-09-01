@@ -30,6 +30,7 @@ import {
   type WebProfile,
 } from "../../../lib/supabase";
 import { recordRealtimeDiagnostic } from "../../../lib/realtime-diagnostics";
+import { Button, Modal } from "../../../components/ui";
 
 type RealtimePayload<T> = {
   new: T;
@@ -1363,6 +1364,7 @@ export default function RandomSessionPage() {
         >
           <textarea
             className="textarea chat-input"
+            aria-label="輸入訊息"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {
@@ -1387,142 +1389,135 @@ export default function RandomSessionPage() {
         </div>
       </section>
 
-      {safetyMenuOpen ? (
-        <div className="modal-backdrop" role="presentation" onClick={closeSafetyMenus}>
-          <div className="modal-card safety-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-title">安全選單</div>
-            <p className="hero-copy">你可以封鎖這位使用者或檢舉這段對話。</p>
-            <div className="modal-actions">
-              <button
-                className="button secondary"
-                onClick={() => {
-                  setSafetyMenuOpen(false);
-                  setBlockConfirmOpen(true);
-                }}
-                disabled={blockBusy}
-              >
-                封鎖
-              </button>
-              <button
-                className="button secondary"
-                onClick={() => {
-                  setSafetyMenuOpen(false);
-                  setReportOpen(true);
-                }}
-                disabled={reportBusy}
-              >
-                檢舉
-              </button>
-              <button className="ghost" onClick={closeSafetyMenus}>
-                取消
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <Modal
+        open={safetyMenuOpen}
+        title="安全選單"
+        className="safety-modal"
+        onClose={closeSafetyMenus}
+        actions={
+          <>
+            <Button variant="secondary" type="button" onClick={() => { setSafetyMenuOpen(false); setBlockConfirmOpen(true); }} disabled={blockBusy}>
+              封鎖
+            </Button>
+            <Button variant="secondary" type="button" onClick={() => { setSafetyMenuOpen(false); setReportOpen(true); }} disabled={reportBusy}>
+              檢舉
+            </Button>
+            <Button variant="ghost" type="button" onClick={closeSafetyMenus}>
+              取消
+            </Button>
+          </>
+        }
+      >
+        <p className="hero-copy">你可以封鎖這位使用者或檢舉這段對話。</p>
+      </Modal>
 
-      {blockConfirmOpen ? (
-        <div className="modal-backdrop" role="presentation" onClick={closeSafetyMenus}>
-          <div className="modal-card" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-title">封鎖使用者</div>
-            <p className="hero-copy">確定要封鎖這位使用者嗎？封鎖後將無法再繼續這段對話。</p>
-            <div className="modal-actions">
-              <button className="ghost" onClick={closeSafetyMenus}>
-                取消
-              </button>
-              <button className="button" onClick={() => void confirmBlock()} disabled={blockBusy}>
-                {blockBusy ? "處理中…" : "封鎖"}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <Modal
+        open={blockConfirmOpen}
+        title="封鎖使用者"
+        tone="danger"
+        onClose={closeSafetyMenus}
+        actions={
+          <>
+            <Button variant="ghost" type="button" onClick={closeSafetyMenus}>
+              取消
+            </Button>
+            <Button type="button" onClick={() => void confirmBlock()} disabled={blockBusy}>
+              {blockBusy ? "處理中…" : "封鎖"}
+            </Button>
+          </>
+        }
+      >
+        <p className="hero-copy">確定要封鎖這位使用者嗎？封鎖後將無法再繼續這段對話。</p>
+      </Modal>
 
-      {reportOpen ? (
-        <div className="modal-backdrop" role="presentation" onClick={closeSafetyMenus}>
-          <div className="modal-card" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-title">檢舉對話</div>
-            <p className="hero-copy">請選擇最接近的原因，HerLink 會依據內容處理。</p>
-            <div className="field">
-              <label className="label" htmlFor="report-category">
-                檢舉原因
-              </label>
-              <select
-                id="report-category"
-                className="input"
-                value={reportCategory}
-                onChange={(event) => setReportCategory(event.target.value as RandomReportCategory)}
-              >
-                {RANDOM_REPORT_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {REPORT_CATEGORY_LABELS[category]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label className="label" htmlFor="report-description">
-                補充說明
-              </label>
-              <textarea
-                id="report-description"
-                className="textarea"
-                rows={4}
-                maxLength={500}
-                value={reportDescription}
-                onChange={(event) => setReportDescription(event.target.value)}
-                placeholder="可簡短補充讓我們更快理解狀況。"
-              />
-              <div className="muted mini">{reportDescription.trim().length} / 500</div>
-            </div>
-            <div className="modal-actions">
-              <button className="ghost" onClick={closeSafetyMenus}>
-                取消
-              </button>
-              <button className="button" onClick={() => void submitReport()} disabled={reportBusy}>
-                {reportBusy ? "送出中…" : "送出檢舉"}
-              </button>
-            </div>
-          </div>
+      <Modal
+        open={reportOpen}
+        title="檢舉對話"
+        onClose={closeSafetyMenus}
+        actions={
+          <>
+            <Button variant="ghost" type="button" onClick={closeSafetyMenus}>
+              取消
+            </Button>
+            <Button type="button" onClick={() => void submitReport()} disabled={reportBusy}>
+              {reportBusy ? "送出中…" : "送出檢舉"}
+            </Button>
+          </>
+        }
+      >
+        <p className="hero-copy">請選擇最接近的原因，HerLink 會依據內容處理。</p>
+        <div className="field">
+          <label className="label" htmlFor="report-category">
+            檢舉原因
+          </label>
+          <select
+            id="report-category"
+            className="input"
+            value={reportCategory}
+            onChange={(event) => setReportCategory(event.target.value as RandomReportCategory)}
+          >
+            {RANDOM_REPORT_CATEGORIES.map((category) => (
+              <option key={category} value={category}>
+                {REPORT_CATEGORY_LABELS[category]}
+              </option>
+            ))}
+          </select>
         </div>
-      ) : null}
+        <div className="field">
+          <label className="label" htmlFor="report-description">
+            補充說明
+          </label>
+          <textarea
+            id="report-description"
+            className="textarea"
+            rows={4}
+            maxLength={500}
+            value={reportDescription}
+            onChange={(event) => setReportDescription(event.target.value)}
+            placeholder="可簡短補充讓我們更快理解狀況。"
+          />
+          <div className="muted mini">{reportDescription.trim().length} / 500</div>
+        </div>
+      </Modal>
 
-      {reportFollowupOpen ? (
-        <div className="modal-backdrop" role="presentation" onClick={closeSafetyMenus}>
-          <div className="modal-card" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-title">檢舉已送出</div>
-            <p className="hero-copy">你可以繼續聊天，也可以封鎖對方並離開這段對話。</p>
-            <div className="modal-actions">
-              <button className="ghost" onClick={closeSafetyMenus}>
-                繼續聊天
-              </button>
-              <button className="button" type="button" onClick={() => void confirmBlock()} disabled={blockBusy}>
-                {blockBusy ? "處理中…" : "封鎖並離開"}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <Modal
+        open={reportFollowupOpen}
+        title="檢舉已送出"
+        onClose={closeSafetyMenus}
+        actions={
+          <>
+            <Button variant="ghost" type="button" onClick={closeSafetyMenus}>
+              繼續聊天
+            </Button>
+            <Button type="button" onClick={() => void confirmBlock()} disabled={blockBusy}>
+              {blockBusy ? "處理中…" : "封鎖並離開"}
+            </Button>
+          </>
+        }
+      >
+        <p className="hero-copy">你可以繼續聊天，也可以封鎖對方並離開這段對話。</p>
+      </Modal>
 
-      {pendingExternalUrl ? (
-        <div className="modal-backdrop" role="presentation" onClick={() => setPendingExternalUrl(null)}>
-          <div className="modal-card" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-title">你即將離開 HerLink</div>
-            <p className="hero-copy">前往外部網站前，請再次確認網址安全。</p>
-            <div className="notice" style={{ wordBreak: "break-all" }}>
-              {pendingExternalUrl}
-            </div>
-            <div className="modal-actions">
-              <button className="ghost" onClick={() => setPendingExternalUrl(null)}>
-                取消
-              </button>
-              <button className="button" onClick={submitExternalLink}>
-                繼續前往
-              </button>
-            </div>
-          </div>
+      <Modal
+        open={Boolean(pendingExternalUrl)}
+        title="你即將離開 HerLink"
+        onClose={() => setPendingExternalUrl(null)}
+        actions={
+          <>
+            <Button variant="ghost" type="button" onClick={() => setPendingExternalUrl(null)}>
+              取消
+            </Button>
+            <Button type="button" onClick={submitExternalLink}>
+              繼續前往
+            </Button>
+          </>
+        }
+      >
+        <p className="hero-copy">前往外部網站前，請再次確認網址安全。</p>
+        <div className="notice" style={{ wordBreak: "break-all" }}>
+          {pendingExternalUrl}
         </div>
-      ) : null}
+      </Modal>
       {debugPanel}
     </main>
   );

@@ -13,9 +13,10 @@ type ModalProps = {
   onClose: () => void;
   closeLabel?: string;
   tone?: "default" | "danger";
+  className?: string;
 };
 
-export function Modal({ open, title, children, actions, onClose, closeLabel = "關閉", tone = "default" }: ModalProps) {
+export function Modal({ open, title, children, actions, onClose, closeLabel = "關閉", tone = "default", className }: ModalProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
@@ -85,7 +86,7 @@ export function Modal({ open, title, children, actions, onClose, closeLabel = "�
   return (
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <div
-        className={`modal-card${tone === "danger" ? " modal-danger" : ""}`}
+        className={`modal-card${tone === "danger" ? " modal-danger" : ""}${className ? ` ${className}` : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
