@@ -805,6 +805,12 @@ select {
   max-height: 180px;
   resize: none;
   font-size: 16px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.chat-input::-webkit-scrollbar {
+  display: none;
 }
 
 .chat-media-button {
