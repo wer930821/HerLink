@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   getShortId,
@@ -1125,8 +1125,9 @@ export default function RandomSessionPage({ params }: Props) {
     }
   };
 
-  const leave = async () => {
-    if (!session || leaveBusy) return;
+  const leave = async (event: MouseEvent<HTMLButtonElement>) => {
+    if (!event.nativeEvent.isTrusted || !session || leaveBusy) return;
+    if (!window.confirm("確定要離開這個聊天室嗎？")) return;
     setLeaveBusy(true);
     try {
       stopTyping();

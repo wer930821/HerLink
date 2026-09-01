@@ -126,8 +126,12 @@ export default function HomePage() {
     router.push(withNavigationDebugParam(`/session/${state.activeSession.id}`));
   };
 
-  const leaveActiveSession = async () => {
-    if (!state.activeSession?.id) {
+  const leaveActiveSession = async (event: MouseEvent<HTMLButtonElement>) => {
+    if (!event.nativeEvent.isTrusted || !state.activeSession?.id) {
+      return;
+    }
+
+    if (!window.confirm("確定要離開這個聊天室嗎？")) {
       return;
     }
 
@@ -346,7 +350,7 @@ export default function HomePage() {
                 <button type="button" className="button secondary" onClick={continueActiveSession} disabled={actionBusy}>
                   繼續聊天
                 </button>
-                <button type="button" className="ghost" onClick={() => void leaveActiveSession()} disabled={actionBusy}>
+                <button type="button" className="ghost" onClick={(event) => void leaveActiveSession(event)} disabled={actionBusy}>
                   離開聊天室
                 </button>
               </div>
@@ -566,7 +570,7 @@ export default function HomePage() {
               >
                 繼續聊天
               </button>
-              <button type="button" className="ghost" onClick={() => void leaveActiveSession()} disabled={actionBusy}>
+              <button type="button" className="ghost" onClick={(event) => void leaveActiveSession(event)} disabled={actionBusy}>
                 離開聊天室
               </button>
             </div>
