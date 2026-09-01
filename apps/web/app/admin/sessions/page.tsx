@@ -81,7 +81,7 @@ export default function AdminSessionsPage() {
         </AdminToolbar>
         {data?.items?.length ? (
           <AdminTableWrap>
-            <AdminTable>
+            <AdminTable label="Sessions 列表">
               <thead>
                 <tr>
                   <th scope="col">Session</th>

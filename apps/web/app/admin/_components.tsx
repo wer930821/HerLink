@@ -43,8 +43,13 @@ export function AdminTableWrap({ children }: { children: ReactNode }) {
   return <div className="admin-table-wrap">{children}</div>;
 }
 
-export function AdminTable({ children }: { children: ReactNode }) {
-  return <table className="admin-table">{children}</table>;
+export function AdminTable({ children, label }: { children: ReactNode; label?: string }) {
+  return (
+    <table className="admin-table">
+      {label ? <caption className="sr-only">{label}</caption> : null}
+      {children}
+    </table>
+  );
 }
 
 export function AdminEmpty({ children }: { children: ReactNode }) {

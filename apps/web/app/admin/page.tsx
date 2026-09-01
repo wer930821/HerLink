@@ -99,7 +99,7 @@ export default function AdminDashboardPage() {
       <AdminSection title="最近 Realtime 診斷" description="僅保留安全事件與連線診斷，不含訊息正文。">
         {data?.recent_realtime_diagnostics?.length ? (
           <AdminTableWrap>
-            <AdminTable>
+            <AdminTable label="最近 Realtime 診斷">
               <thead>
                 <tr>
                   <th scope="col">時間</th>

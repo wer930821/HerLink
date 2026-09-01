@@ -81,7 +81,7 @@ export default function AdminSafetyPage() {
             <AdminSection title="Moderation enforcements">
               {data.moderation_enforcements.length ? (
                 <AdminTableWrap>
-                  <AdminTable>
+                  <AdminTable label="Moderation enforcements">
                     <thead>
                       <tr>
                         <th scope="col">時間</th>
@@ -118,7 +118,7 @@ export default function AdminSafetyPage() {
             <AdminSection title="Fraud risk events">
               {data.fraud_risk_events.length ? (
                 <AdminTableWrap>
-                  <AdminTable>
+                  <AdminTable label="Fraud risk events">
                     <thead>
                       <tr>
                         <th scope="col">時間</th>

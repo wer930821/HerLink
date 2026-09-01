@@ -81,7 +81,7 @@ export default function AdminReportsPage() {
         </AdminToolbar>
         {data?.items?.length ? (
           <AdminTableWrap>
-            <AdminTable>
+            <AdminTable label="檢舉列表">
               <thead>
                 <tr>
                   <th scope="col">時間</th>

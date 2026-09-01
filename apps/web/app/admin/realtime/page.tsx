@@ -98,7 +98,7 @@ export default function AdminRealtimePage() {
         </AdminToolbar>
         {data?.items?.length ? (
           <AdminTableWrap>
-            <AdminTable>
+            <AdminTable label="Realtime 事件">
               <thead>
                 <tr>
                   <th scope="col">時間</th>

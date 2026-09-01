@@ -91,7 +91,7 @@ export default function AdminSessionDetailPage() {
             <AdminSection title="Reports">
               {data.reports.length ? (
                 <AdminTableWrap>
-                  <AdminTable>
+                  <AdminTable label="Reports">
                     <thead>
                       <tr>
                         <th scope="col">時間</th>
@@ -129,7 +129,7 @@ export default function AdminSessionDetailPage() {
             <AdminSection title="Blocks">
               {data.blocks.length ? (
                 <AdminTableWrap>
-                  <AdminTable>
+                  <AdminTable label="Blocks">
                     <thead>
                       <tr>
                         <th scope="col">時間</th>
@@ -156,7 +156,7 @@ export default function AdminSessionDetailPage() {
             <AdminSection title="Fraud risk events">
               {data.fraud_risk_events.length ? (
                 <AdminTableWrap>
-                  <AdminTable>
+                  <AdminTable label="Fraud risk events">
                     <thead>
                       <tr>
                         <th scope="col">時間</th>
