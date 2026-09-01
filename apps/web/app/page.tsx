@@ -32,6 +32,7 @@ import {
   type RandomSessionRow,
   type LatestRandomSessionDiagnosticRow,
   type Session,
+  type AnonymousAbusePrecheckRow,
   type WebProfile,
 } from "../lib/supabase";
 import { Badge, Button, Notice, PageHero, Surface } from "../components/ui";
@@ -297,6 +298,25 @@ export default function HomePage() {
     }
   };
 
+  const showAbuseBlockMessage = (check: AnonymousAbusePrecheckRow) => {
+    if (check.decision === "cooldown") {
+      if (check.cooldown_until) {
+        const minutes = Math.max(1, Math.ceil((Date.parse(check.cooldown_until) - Date.now()) / 60000));
+        setMessage(`操作太頻繁，請約 ${minutes} 分鐘後再試。`);
+      } else {
+        setMessage("操作太頻繁，請稍後再試。");
+      }
+      return;
+    }
+
+    if (check.decision === "temporary_suspension") {
+      setMessage("帳號暫時停權中，請稍後再試。");
+      return;
+    }
+
+    setMessage("此帳號目前無法使用配對功能，請稍後再試。");
+  };
+
   const debugPanel = debugEnabled ? (
     <div className="debug-panel">
       <div>path: {pathname}</div>
@@ -410,7 +430,7 @@ export default function HomePage() {
           queue: null,
           activeSession: null,
         });
-        setMessage("此帳號目前無法使用配對功能，請稍後再試。");
+        showAbuseBlockMessage(abuseCheck.data);
         return;
       }
 
@@ -469,21 +489,22 @@ export default function HomePage() {
     setActionBusy(true);
     setMessage(null);
     try {
-      const runAbuseCheck = async () => {
+      const runAbuseCheck = async (): Promise<AnonymousAbusePrecheckRow | null> => {
         const abuseCheck = await registerAnonymousAbuseIdentity();
         if (abuseCheck.error) {
           throw abuseCheck.error;
         }
 
         if (abuseCheck.data && abuseCheck.data.decision !== "allow") {
-          return false;
+          return abuseCheck.data;
         }
 
-        return true;
+        return null;
       };
 
-      if (!(await runAbuseCheck())) {
-        setMessage("此帳號目前無法使用配對功能，請稍後再試。");
+      const abuseBlock = await runAbuseCheck();
+      if (abuseBlock) {
+        showAbuseBlockMessage(abuseBlock);
         return;
       }
 
