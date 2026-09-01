@@ -207,6 +207,12 @@ export type RandomChatMessageRow = {
   is_mine: boolean;
   risk_level: "low" | "medium" | "high" | "critical";
   risk_types: string[];
+  message_type: "text" | "image";
+  media_path: string | null;
+  media_mime: string | null;
+  media_size: number | null;
+  media_width: number | null;
+  media_height: number | null;
 };
 
 export type RandomChatMessageRealtimeRow = {
@@ -217,6 +223,17 @@ export type RandomChatMessageRealtimeRow = {
   created_at: string;
   risk_level: "low" | "medium" | "high" | "critical" | null;
   risk_types: string[] | null;
+  message_type: "text" | "image" | null;
+  media_path: string | null;
+  media_mime: string | null;
+  media_size: number | null;
+  media_width: number | null;
+  media_height: number | null;
+};
+
+export type RandomChatMessageCursor = {
+  created_at: string;
+  id: string;
 };
 
 export type SafeAnonymousRow = {
@@ -402,10 +419,21 @@ export async function loadMyRandomQueue(userId: string) {
     .maybeSingle() as Promise<{ data: RandomQueueRow | null; error: { message?: string } | null }>);
 }
 
-export async function loadRandomMessages(sessionId: string, limit = 100) {
+export async function loadRandomMessages(
+  sessionId: string,
+  limit = 50,
+  cursor?: {
+    before?: RandomChatMessageCursor;
+    after?: RandomChatMessageCursor;
+  }
+) {
   return supabase.rpc("list_random_messages", {
     p_session_id: sessionId,
     p_limit: limit,
+    p_before_created_at: cursor?.before?.created_at ?? null,
+    p_before_id: cursor?.before?.id ?? null,
+    p_after_created_at: cursor?.after?.created_at ?? null,
+    p_after_id: cursor?.after?.id ?? null,
   }) as unknown as Promise<{
     data: RandomChatMessageRow[] | null;
     error: { message?: string } | null;
@@ -502,10 +530,54 @@ export async function sendRandomMessage(sessionId: string, content: string) {
   return supabase.rpc("send_random_message", {
     p_session_id: sessionId,
     p_content: content,
+    p_message_type: "text",
   }) as unknown as Promise<{
     data: RandomChatMessageRow[] | null;
     error: { message?: string } | null;
   }>;
+}
+
+export async function sendImageMessage(
+  sessionId: string,
+  media: {
+    path: string;
+    mime: string;
+    size: number;
+    width: number;
+    height: number;
+  }
+) {
+  return supabase.rpc("send_random_message", {
+    p_session_id: sessionId,
+    p_content: null,
+    p_message_type: "image",
+    p_media_path: media.path,
+    p_media_mime: media.mime,
+    p_media_size: media.size,
+    p_media_width: media.width,
+    p_media_height: media.height,
+  }) as unknown as Promise<{
+    data: RandomChatMessageRow[] | null;
+    error: { message?: string } | null;
+  }>;
+}
+
+export async function uploadChatMedia(sessionId: string, userId: string, blob: Blob, extension: string) {
+  const objectPath = `${sessionId}/${userId}/${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage.from("chat-media").upload(objectPath, blob, {
+    contentType: blob.type,
+    cacheControl: "3600",
+    upsert: false,
+  });
+  return { path: objectPath, error };
+}
+
+export async function removeChatMedia(path: string) {
+  return supabase.storage.from("chat-media").remove([path]);
+}
+
+export async function createChatMediaSignedUrl(path: string, expiresIn = 300) {
+  return supabase.storage.from("chat-media").createSignedUrl(path, expiresIn);
 }
 
 export async function nextRandomMatch(sessionId: string) {
