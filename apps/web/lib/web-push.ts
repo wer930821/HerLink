@@ -84,14 +84,7 @@ async function registerSubscriptionOnServer(subscription: PushSubscription): Pro
 export async function syncPushSubscription(): Promise<boolean> {
   if (!isPushSupported()) return false;
   if (Notification.permission !== "granted") return false;
-
-  const registration = await registerPushServiceWorker();
-  if (!registration) return false;
-
-  const subscription = await registration.pushManager.getSubscription();
-  if (!subscription) return false;
-
-  return registerSubscriptionOnServer(subscription);
+  return subscribeAndRegister();
 }
 
 async function subscribeAndRegister(): Promise<boolean> {
