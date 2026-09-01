@@ -630,6 +630,7 @@ select {
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
+  align-content: start;
   gap: var(--space-3);
   overflow-y: auto;
   overflow-x: hidden;
