@@ -356,17 +356,50 @@ async function recordWebPushDelivery(
   providerStatus: number | null,
   errorCode: string | null
 ) {
-  const { error } = await supabaseAdmin.from("web_push_deliveries").insert({
-    event_id: eventId,
-    subscription_id: subscriptionId,
-    user_id: userId,
-    status,
-    provider_status: providerStatus,
-    error_code: errorCode,
-  });
+  const { data, error } = await supabaseAdmin
+    .from("web_push_deliveries")
+    .insert({ event_id: eventId, subscription_id: subscriptionId, user_id: userId, status, provider_status: providerStatus, error_code: errorCode })
+    .select("id")
+    .single();
 
   if (error) {
     throw error;
+  }
+
+  return data?.id ?? null;
+}
+
+async function sendDirectWebPushTest(
+  supabaseAdmin: ReturnType<typeof buildAdminClient>,
+  userId: string,
+  endpoint: string
+) {
+  const { data: subscription, error } = await supabaseAdmin
+    .from("web_push_subscriptions")
+    .select("id,endpoint,p256dh,auth_key")
+    .eq("user_id", userId)
+    .eq("endpoint", endpoint)
+    .is("revoked_at", null)
+    .maybeSingle();
+  if (error) throw error;
+  if (!subscription) return { ok: false, error: "subscription_not_found" };
+  if (!VAPID_SUBJECT || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    return { ok: false, error: "vapid_not_configured" };
+  }
+
+  const endpointHost = new URL(subscription.endpoint).host;
+  try {
+    const result = await webpush.sendNotification(
+      { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth_key } },
+      JSON.stringify({ title: "HerLink 測試通知", body: "如果看到這則通知，代表 Web Push 已成功。", target_url: "/" }),
+      { TTL: 60, urgency: "high", vapidDetails: { subject: VAPID_SUBJECT, publicKey: VAPID_PUBLIC_KEY, privateKey: VAPID_PRIVATE_KEY } }
+    );
+    const deliveryId = await recordWebPushDelivery(supabaseAdmin, null, subscription.id, userId, "sent", result?.statusCode ?? 201, null);
+    return { ok: true, endpoint_host: endpointHost, provider_status: result?.statusCode ?? 201, delivery_audit_id: deliveryId };
+  } catch (caught) {
+    const failure = caught as { statusCode?: number; message?: string };
+    const deliveryId = await recordWebPushDelivery(supabaseAdmin, null, subscription.id, userId, "failed", failure.statusCode ?? null, String(failure.message ?? "web_push_failed").slice(0, 500));
+    return { ok: false, endpoint_host: endpointHost, provider_status: failure.statusCode ?? null, error: failure.message ?? "web_push_failed", delivery_audit_id: deliveryId };
   }
 }
 
@@ -676,11 +709,14 @@ Deno.serve(async (req) => {
   try {
     const supabaseAdmin = buildAdminClient();
     const authorization = await ensureAuthorized(req, supabaseAdmin);
+    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     if (authorization.kind === "user") {
+      const endpoint = body && typeof body === "object" && typeof body.endpoint === "string" ? body.endpoint : null;
+      if (body && typeof body === "object" && body.directTest === true && endpoint) {
+        return json(await sendDirectWebPushTest(supabaseAdmin, authorization.userId, endpoint));
+      }
       return json({ ok: false, error: "Service authorization required." }, 403);
     }
-
-    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const requestedLimit =
       body && typeof body === "object" && typeof body.limit === "number" ? body.limit : 10;
     const requestedEventType =

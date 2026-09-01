@@ -1,6 +1,7 @@
 import { supabase } from "./supabase";
 
 export type PushPermissionState = "unsupported" | "default" | "granted" | "denied";
+export type PushDiagnostics = Record<string, string>;
 
 const SUBSCRIPTION_CHANGE_MESSAGE = "herlink-push-subscription-changed";
 
@@ -53,6 +54,23 @@ function subscriptionUsesVapidKey(subscription: PushSubscription, publicKey: str
   return received.length === expected.length && received.every((value, index) => value === expected[index]);
 }
 
+function maskEndpoint(endpoint: string | null | undefined) {
+  if (!endpoint) return "none";
+  try {
+    const url = new URL(endpoint);
+    return `${url.host}/…${url.pathname.slice(-10)}`;
+  } catch {
+    return "invalid";
+  }
+}
+
+async function fingerprint(value: string | ArrayBuffer | null) {
+  if (!value || !crypto.subtle) return "unavailable";
+  const bytes = typeof value === "string" ? new TextEncoder().encode(value) : new Uint8Array(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].slice(0, 8).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 export async function registerPushServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!isPushSupported()) return null;
   try {
@@ -85,6 +103,68 @@ export async function syncPushSubscription(): Promise<boolean> {
   if (!isPushSupported()) return false;
   if (Notification.permission !== "granted") return false;
   return subscribeAndRegister();
+}
+
+export async function recreatePushSubscription(): Promise<boolean> {
+  if (!isPushSupported() || Notification.permission !== "granted") return false;
+  const registration = await registerPushServiceWorker();
+  if (!registration) return false;
+  const oldSubscription = await registration.pushManager.getSubscription();
+  if (oldSubscription) await oldSubscription.unsubscribe();
+  return subscribeAndRegister();
+}
+
+export async function getPushDiagnostics(): Promise<PushDiagnostics> {
+  const diagnostics: PushDiagnostics = {
+    permission: typeof Notification === "undefined" ? "unsupported" : Notification.permission,
+    service_worker_supported: String(isPushSupported()),
+    registration_scope: "none",
+    worker_script: "none",
+    worker_state: "none",
+    subscription_exists: "false",
+    browser_endpoint: "none",
+    subscription_vapid_fingerprint: "none",
+    production_vapid_fingerprint: await fingerprint(getVapidPublicKey()),
+    subscription_vapid_matches: "false",
+    db_subscription_exists: "false",
+    db_endpoint: "none",
+    db_revoked_at: "n/a",
+  };
+  if (!isPushSupported()) return diagnostics;
+
+  const registration = await navigator.serviceWorker.ready;
+  diagnostics.registration_scope = registration.scope;
+  diagnostics.worker_script = registration.active?.scriptURL ?? "none";
+  diagnostics.worker_state = registration.active?.state ?? "none";
+  const subscription = await registration.pushManager.getSubscription();
+  if (!subscription) return diagnostics;
+
+  const endpoint = subscription.endpoint;
+  diagnostics.subscription_exists = "true";
+  diagnostics.browser_endpoint = maskEndpoint(endpoint);
+  diagnostics.subscription_vapid_fingerprint = await fingerprint(subscription.options.applicationServerKey);
+  diagnostics.subscription_vapid_matches = String(subscriptionUsesVapidKey(subscription, getVapidPublicKey()));
+  const { data, error } = await supabase
+    .from("web_push_subscriptions")
+    .select("endpoint,revoked_at")
+    .eq("endpoint", endpoint)
+    .maybeSingle();
+  if (!error && data) {
+    diagnostics.db_subscription_exists = "true";
+    diagnostics.db_endpoint = maskEndpoint(data.endpoint);
+    diagnostics.db_revoked_at = data.revoked_at ?? "null";
+  }
+  return diagnostics;
+}
+
+export async function sendDirectPushTest() {
+  if (!isPushSupported()) return { data: null, error: new Error("Push unsupported.") };
+  const registration = await navigator.serviceWorker.ready;
+  const subscription = await registration.pushManager.getSubscription();
+  if (!subscription) return { data: null, error: new Error("No push subscription.") };
+  return supabase.functions.invoke("send-push", {
+    body: { directTest: true, endpoint: subscription.endpoint },
+  });
 }
 
 async function subscribeAndRegister(): Promise<boolean> {

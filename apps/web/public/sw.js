@@ -1,4 +1,4 @@
-/* HerLink Web Push service worker (V1) */
+/* HerLink Web Push service worker (V2) */
 const HERLINK_ORIGIN = self.location.origin;
 
 self.addEventListener("install", () => {
@@ -27,6 +27,12 @@ function safeTargetUrl(raw) {
   }
 }
 
+async function reportPushDiagnostic(type, detail) {
+  console.info("[herlink-sw]", type, detail || "");
+  const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  for (const client of clients) client.postMessage({ type: "herlink-push-diagnostic", event: type, detail: detail || null });
+}
+
 self.addEventListener("push", (event) => {
   let data = null;
   try {
@@ -48,15 +54,15 @@ self.addEventListener("push", (event) => {
   const targetUrl = safeTargetUrl(data.target_url);
   const sessionId = typeof data.session_id === "string" ? data.session_id : null;
 
-  event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
-      tag: sessionId ? `herlink:${sessionId}` : "herlink:general",
-      data: { url: targetUrl },
-    })
-  );
+  event.waitUntil((async () => {
+    await reportPushDiagnostic("sw_push_received");
+    try {
+      await self.registration.showNotification(title, { body, tag: sessionId ? `herlink:${sessionId}` : "herlink:general", data: { url: targetUrl } });
+      await reportPushDiagnostic("sw_notification_shown");
+    } catch (error) {
+      await reportPushDiagnostic("sw_notification_error", error && error.name ? `${error.name}: ${error.message || ""}`.slice(0, 160) : "unknown");
+    }
+  })());
 });
 
 self.addEventListener("notificationclick", (event) => {
