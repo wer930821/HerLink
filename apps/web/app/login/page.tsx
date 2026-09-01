@@ -65,7 +65,7 @@ export default function LoginPage() {
             autoComplete="current-password"
           />
         </label>
-        {error ? <div className="notice" style={{ color: "#ffb3b3" }}>{error}</div> : null}
+        {error ? <div className="notice" style={{ color: "var(--color-danger)" }}>{error}</div> : null}
         <button className="button" type="submit" disabled={loading}>
           {loading ? "登入中…" : "登入"}
         </button>

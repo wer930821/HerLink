@@ -118,7 +118,7 @@ export default function OnboardingPage() {
           </button>
         </div>
 
-        {error ? <div className="notice" style={{ color: "#ffb3b3" }}>{error}</div> : null}
+        {error ? <div className="notice" style={{ color: "var(--color-danger)" }}>{error}</div> : null}
         <button className="button" type="submit" disabled={saving || !ready}>
           {saving ? "儲存中…" : "開始聊天"}
         </button>

@@ -73,7 +73,7 @@ export default function SignupPage() {
             autoComplete="new-password"
           />
         </label>
-        {error ? <div className="notice" style={{ color: "#ffb3b3" }}>{error}</div> : null}
+        {error ? <div className="notice" style={{ color: "var(--color-danger)" }}>{error}</div> : null}
         {message ? <div className="notice">{message}</div> : null}
         <button className="button" type="submit" disabled={loading}>
           {loading ? "註冊中…" : "註冊"}

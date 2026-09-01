@@ -335,7 +335,7 @@ export default function HomePage() {
     return (
       <main className="stack">
         <section className="hero">
-          <div className="status-badge" style={{ color: "var(--accent-strong)", borderColor: "rgba(255, 111, 97, 0.24)" }}>
+          <div className="status-badge accent">
             維護中
           </div>
           <h1 className="hero-title">{MAINTENANCE_TITLE}</h1>
