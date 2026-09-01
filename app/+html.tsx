@@ -29,11 +29,9 @@ export default function Root({ children }: { children: ReactNode }) {
 }
 
 const responsiveBackground = `
-body {
-  background-color: #fff;
+html, body {
+  background-color: #0E0F14;
 }
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: #000;
-  }
+body {
+  background-color: #0E0F14;
 }`;

@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { BrandLogo } from "../components/BrandLogo";
 import { getAuthCallbackUrl, supabase, withSupabaseTimeout } from "../lib/supabase";
 import { colors } from "../theme/colors";
 import { radii, spacing, typography } from "../theme";
@@ -52,6 +53,9 @@ export default function ForgotPasswordScreen() {
       <KeyboardAvoidingView style={styles.keyboard} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
     <View style={styles.container}>
+      <View style={styles.brandHeader}>
+        <BrandLogo size={64} variant="iconWithName" />
+      </View>
       <View style={styles.card}>
       <Text style={styles.title}>忘記密碼</Text>
       <Text style={styles.body}>輸入妳的 Email，如果帳號存在，HerLink 會寄出重設密碼信。</Text>
@@ -99,6 +103,9 @@ const styles = StyleSheet.create({
   },
   container: {
     gap: spacing.lg,
+  },
+  brandHeader: {
+    alignItems: "center",
   },
   card: {
     borderRadius: radii.lg,

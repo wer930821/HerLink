@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { BrandLogo } from "../components/BrandLogo";
 import { supabase, withSupabaseTimeout } from "../lib/supabase";
 import { colors } from "../theme/colors";
 import { radii, spacing, typography } from "../theme";
@@ -59,6 +60,9 @@ export default function ResetPasswordScreen() {
       <KeyboardAvoidingView style={styles.keyboard} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
     <View style={styles.container}>
+      <View style={styles.brandHeader}>
+        <BrandLogo size={64} variant="iconWithName" />
+      </View>
       <View style={styles.card}>
       <Text style={styles.title}>重設密碼</Text>
       <Text style={styles.body}>請輸入新密碼。Beta 期間建議使用長度足夠且不重複的密碼。</Text>
@@ -118,6 +122,9 @@ const styles = StyleSheet.create({
   },
   container: {
     gap: spacing.lg,
+  },
+  brandHeader: {
+    alignItems: "center",
   },
   card: {
     borderRadius: radii.lg,

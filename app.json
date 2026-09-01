@@ -4,7 +4,7 @@
     "slug": "herlink",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/brand-launcher-icon.png",
     "scheme": "herlink",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -14,10 +14,9 @@
     "android": {
       "package": "com.wer93.herlink",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#120A3D",
+        "foregroundImage": "./assets/images/brand-symbol.png",
+        "monochromeImage": "./assets/images/brand-symbol-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -28,7 +27,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/brand-launcher-icon.png"
     },
     "plugins": [
       "expo-router",
@@ -43,9 +42,9 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/brand-symbol.png",
           "resizeMode": "contain",
-          "backgroundColor": "#F4EFE8"
+          "backgroundColor": "#120A3D"
         }
       ]
     ],
