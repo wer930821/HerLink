@@ -293,6 +293,7 @@ export default function RandomSessionPage({ params }: Props) {
       pathname,
       event: eventType,
       reason: typeof metadata.reason === "string" ? metadata.reason : null,
+      redirectReason: eventType === "REDIRECT_HOME" ? typeof metadata.reason === "string" ? metadata.reason : "UNKNOWN_REDIRECT" : null,
       authState: nextAuthState,
       sessionState: nextSessionState,
       routeSessionIdShort: getShortId(params.id),
@@ -1256,10 +1257,12 @@ export default function RandomSessionPage({ params }: Props) {
       <div>path: {pathname}</div>
       <div>auth: {authState}</div>
       <div>session: {sessionState}</div>
-      <div>event: {lastDiagnostic?.event ?? "none"}</div>
-      <div>reason: {lastDiagnostic?.reason ?? "none"}</div>
-      <div>route id: {getShortId(params.id) ?? "none"}</div>
-      <div>server id: {getShortId(session?.id ?? null) ?? lastDiagnostic?.serverSessionIdShort ?? "none"}</div>
+      <div>LAST SESSION EVENT: {lastDiagnostic?.event ?? "none"}</div>
+      <div>LAST REDIRECT REASON: {lastDiagnostic?.redirectReason ?? lastDiagnostic?.reason ?? "none"}</div>
+      <div>AUTH STATE: {authState}</div>
+      <div>SESSION STATE: {sessionState}</div>
+      <div>ROUTE SESSION ID: {getShortId(params.id) ?? "none"}</div>
+      <div>SERVER SESSION ID: {getShortId(session?.id ?? null) ?? lastDiagnostic?.serverSessionIdShort ?? "none"}</div>
     </div>
   ) : null;
 

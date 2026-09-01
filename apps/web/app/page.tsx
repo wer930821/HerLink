@@ -69,6 +69,7 @@ export default function HomePage() {
       pathname,
       event: eventType === "continue_clicked" ? "HOME_CONTINUE_CLICK" : "HOME_CONTINUE_ROUTE",
       reason: typeof metadata.reason === "string" ? metadata.reason : null,
+      redirectReason: typeof metadata.reason === "string" ? metadata.reason : null,
       authState: state.session ? "ready" : bootstrapping ? "loading" : "missing",
       sessionState: state.activeSession?.status === "active" ? "active" : "missing",
       routeSessionIdShort: getShortId(targetSessionId),
@@ -177,10 +178,12 @@ export default function HomePage() {
       <div>path: {pathname}</div>
       <div>auth: {state.session ? "ready" : bootstrapping ? "loading" : "missing"}</div>
       <div>session: {state.activeSession?.status ?? "missing"}</div>
-      <div>event: {lastDiagnostic?.event ?? "none"}</div>
-      <div>reason: {lastDiagnostic?.reason ?? "none"}</div>
-      <div>route id: {lastDiagnostic?.routeSessionIdShort ?? "none"}</div>
-      <div>server id: {getShortId(state.activeSession?.id ?? null) ?? lastDiagnostic?.serverSessionIdShort ?? "none"}</div>
+      <div>LAST SESSION EVENT: {lastDiagnostic?.event ?? "none"}</div>
+      <div>LAST REDIRECT REASON: {lastDiagnostic?.redirectReason ?? lastDiagnostic?.reason ?? "none"}</div>
+      <div>AUTH STATE: {lastDiagnostic?.authState ?? (state.session ? "ready" : bootstrapping ? "loading" : "missing")}</div>
+      <div>SESSION STATE: {lastDiagnostic?.sessionState ?? state.activeSession?.status ?? "missing"}</div>
+      <div>ROUTE SESSION ID: {lastDiagnostic?.routeSessionIdShort ?? "none"}</div>
+      <div>SERVER SESSION ID: {getShortId(state.activeSession?.id ?? null) ?? lastDiagnostic?.serverSessionIdShort ?? "none"}</div>
     </div>
   ) : null;
 

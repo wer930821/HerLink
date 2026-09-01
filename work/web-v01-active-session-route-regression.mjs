@@ -128,6 +128,11 @@ expect(sessionPage.includes('goHome("SESSION_CONFIRMED_MISSING"'), "session conf
 expect(sessionPage.includes('reason: "BOOTSTRAP_EXCEPTION"'), "bootstrap exception should be diagnostic-only");
 expect(sessionPage.includes("聊天室載入失敗，正在重試。"), "temporary bootstrap failure should show retry notice");
 
+const diagnostics = read("apps/web/lib/navigation-diagnostics.ts");
+expect(diagnostics.includes('"herlink-navigation-debug"'), "diagnostics should use sessionStorage debug key");
+expect(diagnostics.includes("window.sessionStorage.setItem"), "diagnostics should persist to sessionStorage");
+expect(diagnostics.includes("redirectReason"), "diagnostics should save redirect reason");
+
 const slowRoute = await simulateRouteLifecycle({ authDelayMs: 500, sessionDelayMs: 500 });
 expect(slowRoute.pathname === "/session/session-123", "slow auth/session restore should stay on session route");
 expect(slowRoute.redirects.length === 0, "slow auth/session restore should not bounce home");

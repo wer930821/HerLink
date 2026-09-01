@@ -3,6 +3,7 @@ export type NavigationDiagnosticEvent = {
   pathname: string;
   event: string;
   reason: string | null;
+  redirectReason: string | null;
   authState: "loading" | "ready" | "missing";
   sessionState: "loading" | "active" | "ended" | "missing";
   routeSessionIdShort: string | null;
@@ -10,7 +11,7 @@ export type NavigationDiagnosticEvent = {
   bootstrapRunId: number | null;
 };
 
-const STORAGE_KEY = "herlink_navigation_diagnostics";
+const STORAGE_KEY = "herlink-navigation-debug";
 
 export function getShortId(value: string | null | undefined) {
   if (!value) return null;
@@ -32,12 +33,13 @@ export function recordNavigationDiagnostic(event: NavigationDiagnosticEvent) {
   const safeEvent = {
     ...event,
     timestamp: event.timestamp || new Date().toISOString(),
+    redirectReason: event.redirectReason ?? event.reason ?? null,
   };
 
   try {
-    const previous = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "[]");
+    const previous = JSON.parse(window.sessionStorage.getItem(STORAGE_KEY) || "[]");
     const next = [...(Array.isArray(previous) ? previous : []), safeEvent].slice(-50);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch {
     // Diagnostics must never affect navigation.
   }
@@ -49,7 +51,7 @@ export function readLastNavigationDiagnostic(): NavigationDiagnosticEvent | null
   if (typeof window === "undefined") return null;
 
   try {
-    const previous = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "[]");
+    const previous = JSON.parse(window.sessionStorage.getItem(STORAGE_KEY) || "[]");
     if (!Array.isArray(previous) || previous.length === 0) return null;
     return previous[previous.length - 1] as NavigationDiagnosticEvent;
   } catch {
