@@ -1296,7 +1296,18 @@ export default function RandomSessionPage() {
     <main className="stack">
       <section className="panel chat-shell">
         <header className="chat-header">
-          <button className="ghost" type="button" onClick={() => goHome("USER_TAPPED_HEADER_HOME", { serverSessionId: session.id })}>返回首頁</button>
+          <button
+            className="ghost chat-back"
+            type="button"
+            aria-label="返回首頁"
+            title="返回首頁"
+            onClick={() => goHome("USER_TAPPED_HEADER_HOME", { serverSessionId: session.id })}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M19 12H5" />
+              <path d="m12 19-7-7 7-7" />
+            </svg>
+          </button>
           <div className="chat-header-main">
             <div className="chat-identity">
               <div className="title" style={{ fontSize: "1.15rem" }}>{partnerName}</div>
@@ -1311,13 +1322,13 @@ export default function RandomSessionPage() {
         </header>
 
         <div className="chat-actions">
-          <button className="button secondary" type="button" onClick={goNext} disabled={nextBusy}>
+          <button className="button chat-next" type="button" onClick={goNext} disabled={nextBusy}>
             {nextBusy ? "切換中…" : "下一位"}
           </button>
-          <button className="button secondary" onClick={() => setSafetyMenuOpen(true)}>
+          <button className="button secondary chat-safety" onClick={() => setSafetyMenuOpen(true)}>
             安全
           </button>
-          <button className="button secondary" type="button" onClick={leave} disabled={leaveBusy}>
+          <button className="button chat-leave" type="button" onClick={leave} disabled={leaveBusy}>
             {leaveBusy ? "離開中…" : "離開聊天室"}
           </button>
         </div>
@@ -1360,7 +1371,7 @@ export default function RandomSessionPage() {
                 void sendMessage();
               }
             }}
-            rows={3}
+            rows={1}
             placeholder={isEnded ? "聊天室已結束，無法再傳送訊息。" : "輸入訊息…"}
             disabled={sendBusy}
           />
