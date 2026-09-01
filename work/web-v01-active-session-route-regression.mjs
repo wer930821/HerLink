@@ -112,6 +112,30 @@ async function simulateRouteLifecycle({
   return { pathname, redirects, authReady, profileReady, sessionReady };
 }
 
+async function simulateLatestWinsBootstrap() {
+  let generation = 0;
+  let pathname = "/session/session-123";
+  let session = null;
+  const redirects = [];
+
+  const fetchSession = async (delayMs, result) => {
+    const requestGeneration = ++generation;
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    if (requestGeneration !== generation) return;
+    if (!result) {
+      redirects.push("/");
+      return;
+    }
+    session = result;
+  };
+
+  await Promise.all([
+    fetchSession(30, null),
+    fetchSession(0, { id: "session-123", status: "active" }),
+  ]);
+  return { pathname, session, redirects };
+}
+
 const homePage = read("apps/web/app/page.tsx");
 const sessionPage = read("apps/web/app/session/[id]/page.tsx");
 
@@ -123,6 +147,8 @@ expect(homePage.includes('type="button"'), "homepage continue buttons should be 
 expect(homePage.includes("recordNavigationDiagnostic(nextEvent)"), "homepage continue should record navigation diagnostics");
 expect(homePage.includes("withNavigationDebugParam(`/session/${state.activeSession.id}`)"), "homepage should preserve debug param");
 expect(sessionPage.includes("waitForCurrentSession(2500, 100)"), "session bootstrap should wait for restored auth");
+expect(sessionPage.includes("useParams"), "client session route must read its dynamic id with useParams");
+expect(sessionPage.includes("const routeSessionId"), "route id must be explicit loading state");
 expect(sessionPage.includes('sessionBootstrapStateRef.current = "loading"'), "session bootstrap state should be explicit");
 expect(sessionPage.includes('goHome("SESSION_CONFIRMED_MISSING"'), "session confirmed missing should be reason-coded");
 expect(sessionPage.includes('reason: "BOOTSTRAP_EXCEPTION"'), "bootstrap exception should be diagnostic-only");
@@ -144,6 +170,11 @@ expect(temporaryFailure.redirects.length === 0, "temporary session fetch failure
 const persistentTemporaryFailure = await simulateRouteLifecycle({ temporarySessionFailureCount: 3 });
 expect(persistentTemporaryFailure.pathname === "/session/session-123", "persistent temporary fetch failure should stay on session route");
 expect(persistentTemporaryFailure.redirects.length === 0, "persistent temporary fetch failure should not be treated as missing");
+
+const latestWins = await simulateLatestWinsBootstrap();
+expect(latestWins.pathname === "/session/session-123", "double bootstrap must retain the session route");
+expect(latestWins.session?.status === "active", "newer active session result must win");
+expect(latestWins.redirects.length === 0, "stale missing response must not redirect home");
 
 const authMissing = await simulateRouteLifecycle({ authMissing: true });
 expect(authMissing.pathname === "/", "missing auth should return home");

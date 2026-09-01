@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import {
   getShortId,
   isNavigationDebugEnabled,
@@ -30,10 +30,6 @@ import {
   type WebProfile,
 } from "../../../lib/supabase";
 import { recordRealtimeDiagnostic } from "../../../lib/realtime-diagnostics";
-
-type Props = {
-  params: { id: string };
-};
 
 type RealtimePayload<T> = {
   new: T;
@@ -185,10 +181,12 @@ function renderMessageContent(
   return nodes;
 }
 
-export default function RandomSessionPage({ params }: Props) {
+export default function RandomSessionPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const sessionRouteIdRef = useRef(params.id);
+  const params = useParams<{ id?: string | string[] }>();
+  const routeSessionId = typeof params.id === "string" ? params.id : null;
+  const sessionRouteIdRef = useRef(routeSessionId);
   const sessionBootstrapRunRef = useRef(0);
   const sessionBootstrapStateRef = useRef<"loading" | "ready" | "ended" | "missing" | "unauthorized">("loading");
   const messageListRef = useRef<HTMLDivElement | null>(null);
@@ -294,9 +292,10 @@ export default function RandomSessionPage({ params }: Props) {
       event: eventType,
       reason: typeof metadata.reason === "string" ? metadata.reason : null,
       redirectReason: eventType === "REDIRECT_HOME" ? typeof metadata.reason === "string" ? metadata.reason : "UNKNOWN_REDIRECT" : null,
+      redirectSource: typeof metadata.redirectSource === "string" ? metadata.redirectSource : null,
       authState: nextAuthState,
       sessionState: nextSessionState,
-      routeSessionIdShort: getShortId(params.id),
+      routeSessionIdShort: getShortId(routeSessionId),
       serverSessionIdShort: getShortId(typeof metadata.serverSessionId === "string" ? metadata.serverSessionId : session?.id ?? null),
       bootstrapRunId: typeof metadata.bootstrapRunId === "number" ? metadata.bootstrapRunId : sessionBootstrapRunRef.current,
     };
@@ -306,7 +305,7 @@ export default function RandomSessionPage({ params }: Props) {
   };
 
   const goHome = (reason: string, metadata: Record<string, unknown> = {}) => {
-    recordSessionRouteDiagnostic("REDIRECT_HOME", { ...metadata, reason });
+    recordSessionRouteDiagnostic("REDIRECT_HOME", { ...metadata, reason, redirectSource: "session/[id].goHome" });
     router.replace(withNavigationDebugParam("/"));
   };
 
@@ -528,8 +527,8 @@ export default function RandomSessionPage({ params }: Props) {
   };
 
   useEffect(() => {
-    sessionRouteIdRef.current = params.id;
-  }, [params.id]);
+    sessionRouteIdRef.current = routeSessionId;
+  }, [routeSessionId]);
 
   useEffect(() => {
     setDebugEnabled(isNavigationDebugEnabled());
@@ -550,7 +549,7 @@ export default function RandomSessionPage({ params }: Props) {
         serverSessionId: session?.id ?? null,
       });
     };
-  }, [params.id]);
+  }, [routeSessionId]);
 
   const isNearBottom = () => {
     const container = messageListRef.current;
@@ -613,6 +612,11 @@ export default function RandomSessionPage({ params }: Props) {
       });
       setLoading(true);
       try {
+        if (!routeSessionId) {
+          setNotice("聊天室路徑載入中，正在重試。");
+          return;
+        }
+
         const { data } = await waitForCurrentSession(2500, 100);
         const authSession = data.session;
 
@@ -753,7 +757,7 @@ export default function RandomSessionPage({ params }: Props) {
     return () => {
       mounted = false;
     };
-  }, [params.id, router]);
+  }, [routeSessionId, router]);
 
   useEffect(() => {
     return () => {
@@ -1260,9 +1264,10 @@ export default function RandomSessionPage({ params }: Props) {
       <div>session: {sessionState}</div>
       <div>LAST SESSION EVENT: {lastDiagnostic?.event ?? "none"}</div>
       <div>LAST REDIRECT REASON: {lastDiagnostic?.redirectReason ?? lastDiagnostic?.reason ?? "none"}</div>
+      <div>REDIRECT SOURCE: {lastDiagnostic?.redirectSource ?? "none"}</div>
       <div>AUTH STATE: {authState}</div>
       <div>SESSION STATE: {sessionState}</div>
-      <div>ROUTE SESSION ID: {getShortId(params.id) ?? "none"}</div>
+      <div>ROUTE SESSION ID: {getShortId(routeSessionId) ?? "loading"}</div>
       <div>SERVER SESSION ID: {getShortId(session?.id ?? null) ?? lastDiagnostic?.serverSessionIdShort ?? "none"}</div>
     </div>
   ) : null;

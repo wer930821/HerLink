@@ -4,6 +4,7 @@ export type NavigationDiagnosticEvent = {
   event: string;
   reason: string | null;
   redirectReason: string | null;
+  redirectSource?: string | null;
   authState: "loading" | "ready" | "missing";
   sessionState: "loading" | "active" | "ended" | "missing" | "error";
   routeSessionIdShort: string | null;
