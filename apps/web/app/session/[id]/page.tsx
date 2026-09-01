@@ -74,6 +74,11 @@ function upsertMessage(list: RandomChatMessageRow[], next: RandomChatMessageRow)
   return [...map.values()].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
 }
 
+function withReplyPreviewState(message: RandomChatMessageRow): RandomChatMessageRow {
+  if (!message.reply_to_message_id || message.reply_preview_state) return message;
+  return { ...message, reply_preview_state: message.reply_message_id ? "loaded" : "not_found" };
+}
+
 function normalizeExternalUrl(raw: string) {
   const trimmed = raw.trim().replace(/[)\].,!?]+$/, "");
   const candidate = trimmed.startsWith("www.") ? `https://${trimmed}` : trimmed;
@@ -442,7 +447,7 @@ export default function RandomSessionPage() {
         return;
       }
 
-      const olderMessages = result.data;
+      const olderMessages = result.data.map(withReplyPreviewState);
       setMessages((current) => {
         const map = new Map(current.map((item) => [item.id, item] as const));
         for (const item of olderMessages) {
@@ -480,7 +485,17 @@ export default function RandomSessionPage() {
     pendingReplyPreviewRef.current.add(targetMessageId);
     try {
       const { data, error } = await getRandomMessageReplyPreview(session.id, targetMessageId);
-      if (error || !Array.isArray(data) || !data[0]) {
+      if (error) {
+        setMessages((current) =>
+          current.map((item) => item.id === ownerMessageId ? { ...item, reply_preview_state: "error" } : item)
+        );
+        return;
+      }
+
+      if (!Array.isArray(data) || !data[0]) {
+        setMessages((current) =>
+          current.map((item) => item.id === ownerMessageId ? { ...item, reply_preview_state: "not_found" } : item)
+        );
         return;
       }
 
@@ -497,6 +512,7 @@ export default function RandomSessionPage() {
             reply_message_type: preview.reply_message_type,
             reply_body: preview.reply_body,
             reply_media_path: preview.reply_media_path,
+            reply_preview_state: "loaded",
           };
         })
       );
@@ -507,8 +523,13 @@ export default function RandomSessionPage() {
 
   const handleReplyQuoteClick = async (message: RandomChatMessageRow) => {
     const targetId = message.reply_to_message_id;
-    if (!targetId) {
+    if (!targetId || message.reply_preview_state === "not_found") {
       setNotice("原訊息已無法查看。");
+      return;
+    }
+
+    if (message.reply_preview_state === "loading" || message.reply_preview_state === "error") {
+      void fetchReplyPreview(targetId, message.id);
       return;
     }
 
@@ -540,7 +561,7 @@ export default function RandomSessionPage() {
       }
     }
 
-    setNotice("原訊息已無法查看。");
+    setNotice("原訊息尚未載入。請稍後再試。");
   };
 
   const clearPendingMedia = () => {
@@ -690,7 +711,7 @@ export default function RandomSessionPage() {
         return;
       }
 
-      const freshMessages = Array.isArray(result.data) ? result.data : [];
+      const freshMessages = Array.isArray(result.data) ? result.data.map(withReplyPreviewState) : [];
       if (freshMessages.length === 0) {
         return;
       }
@@ -1003,7 +1024,9 @@ export default function RandomSessionPage() {
         if (messagesResult.error) {
           setNotice("訊息暫時無法載入，請稍後再試。");
         } else {
-          const nextMessages = Array.isArray(messagesResult.data) ? messagesResult.data : [];
+          const nextMessages = Array.isArray(messagesResult.data)
+            ? messagesResult.data.map(withReplyPreviewState)
+            : [];
           seenMessageIdsRef.current = new Set(nextMessages.map((item) => item.id));
           setMessages(nextMessages);
           updateMessageCursors(nextMessages);
@@ -1171,6 +1194,7 @@ export default function RandomSessionPage() {
             reply_message_type: null,
             reply_body: null,
             reply_media_path: null,
+            reply_preview_state: nextMessage.reply_to_message_id ? "loading" : "loaded",
           };
           setMessages((current) => upsertMessage(current, mappedMessage));
           updateMessageCursors([mappedMessage]);
@@ -1539,9 +1563,15 @@ export default function RandomSessionPage() {
                     : "回覆"}
               </span>
               <span className="chat-reply-quote-body">
-                {message.reply_message_type === "image"
-                  ? "📷 圖片"
-                  : message.reply_body || "原訊息已無法查看"}
+                {message.reply_preview_state === "loading"
+                  ? "載入引用訊息中…"
+                  : message.reply_preview_state === "error"
+                    ? "引用訊息暫時無法載入"
+                    : message.reply_message_type === "image"
+                      ? "📷 圖片"
+                      : message.reply_preview_state === "not_found"
+                        ? "原訊息已無法查看"
+                        : message.reply_body || "原訊息"}
               </span>
             </button>
           ) : null}

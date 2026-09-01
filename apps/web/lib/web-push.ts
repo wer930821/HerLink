@@ -45,6 +45,14 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   return outputArray;
 }
 
+function subscriptionUsesVapidKey(subscription: PushSubscription, publicKey: string): boolean {
+  const actual = subscription.options.applicationServerKey;
+  if (!actual || !publicKey) return false;
+  const expected = urlBase64ToUint8Array(publicKey);
+  const received = new Uint8Array(actual);
+  return received.length === expected.length && received.every((value, index) => value === expected[index]);
+}
+
 export async function registerPushServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!isPushSupported()) return null;
   try {
@@ -90,13 +98,17 @@ async function subscribeAndRegister(): Promise<boolean> {
   const registration = await registerPushServiceWorker();
   if (!registration) return false;
 
+  const publicKey = getVapidPublicKey();
+  if (!publicKey) return false;
+
   const existing = await registration.pushManager.getSubscription();
-  if (existing) {
+  if (existing && subscriptionUsesVapidKey(existing, publicKey)) {
     return registerSubscriptionOnServer(existing);
   }
 
-  const publicKey = getVapidPublicKey();
-  if (!publicKey) return false;
+  if (existing) {
+    await existing.unsubscribe();
+  }
 
   try {
     const subscription = await registration.pushManager.subscribe({

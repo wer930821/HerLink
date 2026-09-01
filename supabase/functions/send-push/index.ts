@@ -675,13 +675,18 @@ async function processEvent(
 Deno.serve(async (req) => {
   try {
     const supabaseAdmin = buildAdminClient();
-    await ensureAuthorized(req, supabaseAdmin);
+    const authorization = await ensureAuthorized(req, supabaseAdmin);
+    if (authorization.kind === "user") {
+      return json({ ok: false, error: "Service authorization required." }, 403);
+    }
 
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const requestedLimit =
       body && typeof body === "object" && typeof body.limit === "number" ? body.limit : 10;
     const requestedEventType =
       body && typeof body === "object" && typeof body.eventType === "string" ? body.eventType : null;
+    const requestedEventId =
+      body && typeof body === "object" && typeof body.eventId === "string" ? body.eventId : null;
     const limit = Math.max(1, Math.min(50, Math.trunc(requestedLimit)));
     const eventTypeFilter =
       requestedEventType &&
@@ -697,6 +702,9 @@ Deno.serve(async (req) => {
 
     if (eventTypeFilter) {
       query = query.eq("event_type", eventTypeFilter);
+    }
+    if (requestedEventId) {
+      query = query.eq("id", requestedEventId);
     }
 
     const { data: events, error } = await query.limit(limit);

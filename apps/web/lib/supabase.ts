@@ -219,6 +219,7 @@ export type RandomChatMessageRow = {
   reply_message_type: "text" | "image" | null;
   reply_body: string | null;
   reply_media_path: string | null;
+  reply_preview_state?: "loading" | "loaded" | "error" | "not_found";
 };
 
 export type RandomChatMessageRealtimeRow = {
