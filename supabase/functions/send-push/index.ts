@@ -44,12 +44,18 @@ const PUSH_CRON_SECRET = Deno.env.get("PUSH_CRON_SECRET") ?? "";
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "";
 const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "https://her-link-ten.vercel.app",
+  "Access-Control-Allow-Headers": "authorization, apikey, x-client-info, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
+      ...CORS_HEADERS,
     },
   });
 }
@@ -371,15 +377,14 @@ async function recordWebPushDelivery(
 
 async function sendDirectWebPushTest(
   supabaseAdmin: ReturnType<typeof buildAdminClient>,
-  userId: string,
-  endpoint: string
+  userId: string
 ) {
   const { data: subscription, error } = await supabaseAdmin
     .from("web_push_subscriptions")
     .select("id,endpoint,p256dh,auth_key")
     .eq("user_id", userId)
-    .eq("endpoint", endpoint)
     .is("revoked_at", null)
+    .order("updated_at", { ascending: false })
     .maybeSingle();
   if (error) throw error;
   if (!subscription) return { ok: false, error: "subscription_not_found" };
@@ -707,13 +712,13 @@ async function processEvent(
 
 Deno.serve(async (req) => {
   try {
+    if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
     const supabaseAdmin = buildAdminClient();
     const authorization = await ensureAuthorized(req, supabaseAdmin);
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     if (authorization.kind === "user") {
-      const endpoint = body && typeof body === "object" && typeof body.endpoint === "string" ? body.endpoint : null;
-      if (body && typeof body === "object" && body.directTest === true && endpoint) {
-        return json(await sendDirectWebPushTest(supabaseAdmin, authorization.userId, endpoint));
+      if (body && typeof body === "object" && body.mode === "self_test") {
+        return json(await sendDirectWebPushTest(supabaseAdmin, authorization.userId));
       }
       return json({ ok: false, error: "Service authorization required." }, 403);
     }

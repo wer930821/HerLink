@@ -92,7 +92,10 @@ export function PushPermissionCard({ forceDebug = false }: { forceDebug?: boolea
     setBusy(true);
     try {
       const { data, error: testError } = await sendDirectPushTest();
-      setTestResult(testError ? testError.message : JSON.stringify(data));
+      const detail = testError as { name?: string; message?: string; status?: number; code?: string; context?: { status?: number } } | null;
+      setTestResult(testError
+        ? JSON.stringify({ function: "send-push", name: detail?.name ?? "Error", message: detail?.message ?? String(testError), status: detail?.status ?? detail?.context?.status ?? null, code: detail?.code ?? null })
+        : JSON.stringify(data));
     } finally {
       await refreshDiagnostics();
       setBusy(false);

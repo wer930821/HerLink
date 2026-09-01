@@ -64,9 +64,11 @@ function maskEndpoint(endpoint: string | null | undefined) {
   }
 }
 
-async function fingerprint(value: string | ArrayBuffer | null) {
+async function fingerprint(value: string | ArrayBuffer | Uint8Array | null) {
   if (!value || !crypto.subtle) return "unavailable";
-  const bytes = typeof value === "string" ? new TextEncoder().encode(value) : new Uint8Array(value);
+  const source = typeof value === "string" ? new TextEncoder().encode(value) : value instanceof Uint8Array ? value : new Uint8Array(value);
+  const bytes = new Uint8Array(source.byteLength);
+  bytes.set(source);
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)].slice(0, 8).map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
@@ -124,7 +126,7 @@ export async function getPushDiagnostics(): Promise<PushDiagnostics> {
     subscription_exists: "false",
     browser_endpoint: "none",
     subscription_vapid_fingerprint: "none",
-    production_vapid_fingerprint: await fingerprint(getVapidPublicKey()),
+    production_vapid_fingerprint: await fingerprint(urlBase64ToUint8Array(getVapidPublicKey())),
     subscription_vapid_matches: "false",
     db_subscription_exists: "false",
     db_endpoint: "none",
@@ -162,9 +164,7 @@ export async function sendDirectPushTest() {
   const registration = await navigator.serviceWorker.ready;
   const subscription = await registration.pushManager.getSubscription();
   if (!subscription) return { data: null, error: new Error("No push subscription.") };
-  return supabase.functions.invoke("send-push", {
-    body: { directTest: true, endpoint: subscription.endpoint },
-  });
+  return supabase.functions.invoke("send-push", { body: { mode: "self_test" } });
 }
 
 async function subscribeAndRegister(): Promise<boolean> {
