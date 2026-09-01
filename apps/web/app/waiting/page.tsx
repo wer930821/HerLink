@@ -15,6 +15,7 @@ import {
   type RandomSessionRow,
   type WebProfile,
 } from "../../lib/supabase";
+import { Badge, Button, Notice, PageHero } from "../../components/ui";
 
 type RealtimePayload<T> = {
   new: T;
@@ -180,30 +181,24 @@ export default function WaitingPage() {
   if (MAINTENANCE_MODE) {
     return (
       <main className="stack">
-        <section className="hero">
-          <div className="status-badge accent">
-            維護中
-          </div>
-          <h1 className="hero-title">{MAINTENANCE_TITLE}</h1>
-          <p className="hero-copy">{MAINTENANCE_MESSAGE}</p>
-          <div className="notice">
+        <PageHero
+          kicker={<Badge variant="accent">維護中</Badge>}
+          title={MAINTENANCE_TITLE}
+          description={MAINTENANCE_MESSAGE}
+          actions={<Button variant="ghost" onClick={() => router.replace("/")}>返回首頁</Button>}
+        >
+          <Notice>
             目前不開放新的等待配對。若你已經在匿名對話中，現有聊天室不會被強制關閉。
-          </div>
-          <div className="row">
-            <button className="ghost" onClick={() => router.replace("/")}>
-              返回首頁
-            </button>
-          </div>
-        </section>
+          </Notice>
+        </PageHero>
       </main>
     );
   }
 
   if (loading) {
     return (
-      <main className="hero">
-        <h1 className="hero-title">正在尋找聊天對象…</h1>
-        <p className="hero-copy">請先保持頁面開啟，配對成功後會自動跳轉。</p>
+      <main className="stack">
+        <PageHero title="正在尋找聊天對象…" description="請先保持頁面開啟，配對成功後會自動跳轉。" />
       </main>
     );
   }
