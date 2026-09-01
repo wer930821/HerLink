@@ -24,6 +24,7 @@ import {
   leaveRandomQueue,
   leaveRandomSession,
   loadMyActiveRandomSession,
+  loadMyLatestRandomSessionDiagnostic,
   loadMyProfile,
   loadMyRandomQueue,
   registerAnonymousAbuseIdentity,
@@ -31,6 +32,7 @@ import {
   signOut,
   type RandomQueueRow,
   type RandomSessionRow,
+  type LatestRandomSessionDiagnosticRow,
   type Session,
   type WebProfile,
 } from "../lib/supabase";
@@ -84,6 +86,9 @@ export default function HomePage() {
   const [debugEnabled, setDebugEnabled] = useState(false);
   const [lastDiagnostic, setLastDiagnostic] = useState<NavigationDiagnosticEvent | null>(null);
   const [activeSessionLookup, setActiveSessionLookup] = useState<ActiveSessionLookup>(initialActiveSessionLookup);
+  const [latestSessionDiagnostic, setLatestSessionDiagnostic] = useState<LatestRandomSessionDiagnosticRow | null>(null);
+  const [latestSessionDiagnosticLoaded, setLatestSessionDiagnosticLoaded] = useState(false);
+  const [latestSessionDiagnosticError, setLatestSessionDiagnosticError] = useState(false);
   const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
 
   const recordHomeRouteDiagnostic = (eventType: "continue_clicked" | "continue_routed", metadata: Record<string, unknown> = {}) => {
@@ -199,6 +204,15 @@ export default function HomePage() {
           queue: queueResult.data ?? null,
           activeSession: rpcError ? null : sessionResult.data ?? null,
         });
+
+        if (isNavigationDebugEnabled()) {
+          const latestResult = await loadMyLatestRandomSessionDiagnostic();
+          if (mounted) {
+            setLatestSessionDiagnostic(latestResult.error ? null : latestResult.data);
+            setLatestSessionDiagnosticError(Boolean(latestResult.error));
+            setLatestSessionDiagnosticLoaded(true);
+          }
+        }
       } catch {
         if (mounted) {
           setState(emptyBootstrapState);
@@ -273,6 +287,11 @@ export default function HomePage() {
       <div>CURRENT AUTH UID: {getShortId(state.session?.user.id ?? null) ?? "none"}</div>
       <div>ACTIVE SESSION ID: {getShortId(state.activeSession?.id ?? null) ?? "none"}</div>
       {activeSessionLookup.error ? <div>RPC ERROR: {activeSessionLookup.error}</div> : null}
+      <div>LATEST RANDOM SESSION: {latestSessionDiagnosticError ? "unavailable" : latestSessionDiagnosticLoaded ? getShortId(latestSessionDiagnostic?.session_id ?? null) ?? "none" : "loading"}</div>
+      <div>STATUS: {latestSessionDiagnostic?.status ?? "none"}</div>
+      <div>ENDED REASON: {latestSessionDiagnostic?.ended_reason ?? "none"}</div>
+      <div>ENDED BY: {latestSessionDiagnostic?.ended_by_me ? "me" : latestSessionDiagnostic?.ended_by_partner ? "partner" : "unknown"}</div>
+      <div>ENDED AT: {latestSessionDiagnostic?.ended_at ?? "none"}</div>
       <div>LAST SESSION EVENT: {lastDiagnostic?.event ?? "none"}</div>
       <div>LAST REDIRECT REASON: {lastDiagnostic?.redirectReason ?? lastDiagnostic?.reason ?? "none"}</div>
       <div>AUTH STATE: {lastDiagnostic?.authState ?? (state.session ? "ready" : bootstrapping ? "loading" : "missing")}</div>

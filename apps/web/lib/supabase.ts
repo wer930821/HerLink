@@ -177,6 +177,16 @@ export type RandomSessionRow = {
   partner_city: string | null;
 };
 
+export type LatestRandomSessionDiagnosticRow = {
+  session_id: string;
+  status: "active" | "ended";
+  ended_reason: string | null;
+  ended_at: string | null;
+  created_at: string;
+  ended_by_me: boolean | null;
+  ended_by_partner: boolean | null;
+};
+
 export type RandomMatchRow = {
   status: "waiting" | "matched";
   session_id: string | null;
@@ -335,6 +345,17 @@ export async function loadMyActiveRandomSession() {
     error: result.error,
   } as {
     data: RandomSessionRow | null;
+    error: { message?: string } | null;
+  };
+}
+
+export async function loadMyLatestRandomSessionDiagnostic() {
+  const result = await supabase.rpc("get_my_latest_random_session_diagnostic");
+  return {
+    data: Array.isArray(result.data) ? result.data[0] ?? null : result.data ?? null,
+    error: result.error,
+  } as {
+    data: LatestRandomSessionDiagnosticRow | null;
     error: { message?: string } | null;
   };
 }
