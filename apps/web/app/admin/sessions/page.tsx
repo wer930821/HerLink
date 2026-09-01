@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useAdminSession, fetchAdminJson } from "../../../lib/admin-client";
 import type { AdminPaginationResult, AdminSessionListItem } from "../../../lib/admin-types";
 import { AdminBadge, AdminEmpty, AdminSection, AdminTable, AdminTableWrap, AdminToolbar, formatAdminTime, shortId } from "../_components";
+import { Button, Notice } from "../../../components/ui";
 
 type SessionListPayload = AdminPaginationResult<AdminSessionListItem>;
 
@@ -60,22 +60,23 @@ export default function AdminSessionsPage() {
         title="Sessions"
         description="依狀態瀏覽會話，點入可查看完整對話與安全事件。"
         action={
-          <button className="button secondary" type="button" onClick={() => void load()} disabled={refreshing}>
+          <Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>
             {refreshing ? "重新整理中…" : "重新整理"}
-          </button>
+          </Button>
         }
       >
-        {error ? <div className="banner">{error}</div> : null}
+        {error ? <Notice variant="danger">{error}</Notice> : null}
         <AdminToolbar>
           {statusOptions.map((item) => (
-            <button
+            <Button
               key={item}
-              className={status === item ? "button" : "button secondary"}
+              variant={status === item ? "primary" : "secondary"}
+              size="sm"
               type="button"
               onClick={() => setStatus(item)}
             >
               {item === "all" ? "全部" : item}
-            </button>
+            </Button>
           ))}
         </AdminToolbar>
         {data?.items?.length ? (
@@ -83,11 +84,11 @@ export default function AdminSessionsPage() {
             <AdminTable>
               <thead>
                 <tr>
-                  <th>Session</th>
-                  <th>狀態</th>
-                  <th>訊息</th>
-                  <th>最後訊息</th>
-                  <th>標記</th>
+                  <th scope="col">Session</th>
+                  <th scope="col">狀態</th>
+                  <th scope="col">訊息</th>
+                  <th scope="col">最後訊息</th>
+                  <th scope="col">標記</th>
                   <th />
                 </tr>
               </thead>
@@ -108,9 +109,7 @@ export default function AdminSessionsPage() {
                       </div>
                     </td>
                     <td>
-                      <Link className="admin-link" href={`/admin/sessions/${item.id}`}>
-                        檢視
-                      </Link>
+                      <Button variant="secondary" size="sm" href={`/admin/sessions/${item.id}`}>檢視</Button>
                     </td>
                   </tr>
                 ))}

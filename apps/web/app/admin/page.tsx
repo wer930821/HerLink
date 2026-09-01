@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useOnlinePresence } from "../../lib/realtime-presence";
 import { fetchAdminJson, useAdminSession } from "../../lib/admin-client";
 import type { AdminRealtimeDiagnosticRow, AdminSummary } from "../../lib/admin-types";
 import { AdminBadge, AdminEmpty, AdminSection, AdminStat, AdminStatGrid, AdminTable, AdminTableWrap, formatAdminTime, shortId } from "./_components";
+import { Button, Notice } from "../../components/ui";
 
 type DashboardPayload = AdminSummary & {
   recent_realtime_diagnostics: AdminRealtimeDiagnosticRow[];
@@ -65,9 +65,7 @@ export default function AdminDashboardPage() {
       <AdminSection title="需要登入" description="先以 HerLink 帳號登入，再開啟後台。">
         <AdminEmpty>
           <p className="muted">請先登入後再使用後台。</p>
-          <Link className="button secondary" href="/login">
-            前往登入
-          </Link>
+          <Button variant="secondary" href="/login">前往登入</Button>
         </AdminEmpty>
       </AdminSection>
     );
@@ -79,12 +77,12 @@ export default function AdminDashboardPage() {
         title="總覽"
         description="目前在線、等待池、活躍對話與今日安全事件的即時摘要。"
         action={
-          <button className="button secondary" type="button" onClick={() => void load()} disabled={refreshing}>
+          <Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>
             {refreshing ? "重新整理中…" : "重新整理"}
-          </button>
+          </Button>
         }
       >
-        {error ? <div className="banner">{error}</div> : null}
+        {error ? <Notice variant="danger">{error}</Notice> : null}
         <AdminStatGrid>
           <AdminStat label="目前在線" value={onlineCount === null ? "—" : `${onlineCount} 人`} tone={onlineCountConnected ? "success" : "default"} />
           <AdminStat label="等待中" value={formatCount(data?.waiting_count)} />
@@ -104,11 +102,11 @@ export default function AdminDashboardPage() {
             <AdminTable>
               <thead>
                 <tr>
-                  <th>時間</th>
-                  <th>事件</th>
-                  <th>Session</th>
-                  <th>Message</th>
-                  <th>Safe code</th>
+                  <th scope="col">時間</th>
+                  <th scope="col">事件</th>
+                  <th scope="col">Session</th>
+                  <th scope="col">Message</th>
+                  <th scope="col">Safe code</th>
                 </tr>
               </thead>
               <tbody>

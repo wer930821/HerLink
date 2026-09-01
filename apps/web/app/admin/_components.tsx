@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { Badge, Button, EmptyState, Surface } from "../../components/ui";
 
 export function AdminSection({ title, description, action, children }: { title: string; description?: string; action?: ReactNode; children: ReactNode }) {
   return (
-    <section className="admin-card">
+    <Surface elevation={1}>
       <div className="admin-card-header">
         <div>
           <h2 className="admin-card-title">{title}</h2>
@@ -14,7 +14,7 @@ export function AdminSection({ title, description, action, children }: { title: 
         {action ? <div>{action}</div> : null}
       </div>
       {children}
-    </section>
+    </Surface>
   );
 }
 
@@ -48,7 +48,7 @@ export function AdminTable({ children }: { children: ReactNode }) {
 }
 
 export function AdminEmpty({ children }: { children: ReactNode }) {
-  return <div className="admin-empty">{children}</div>;
+  return <EmptyState>{children}</EmptyState>;
 }
 
 export function AdminToolbar({ children }: { children: ReactNode }) {
@@ -62,15 +62,12 @@ export function AdminBadge({
   children: ReactNode;
   tone?: "default" | "success" | "warning" | "danger" | "accent";
 }) {
-  return <span className={`admin-badge admin-badge-${tone}`}>{children}</span>;
+  const variant = tone === "default" ? "neutral" : tone;
+  return <Badge variant={variant}>{children}</Badge>;
 }
 
 export function AdminLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <Link className="admin-link" href={href}>
-      {children}
-    </Link>
-  );
+  return <Button variant="secondary" size="sm" href={href}>{children}</Button>;
 }
 
 export function formatAdminTime(value: string | null | undefined) {

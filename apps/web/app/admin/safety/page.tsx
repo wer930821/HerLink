@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAdminSession, fetchAdminJson } from "../../../lib/admin-client";
 import type { AdminFraudRiskEventRow, AdminModerationEnforcementRow } from "../../../lib/admin-types";
 import { AdminBadge, AdminEmpty, AdminSection, AdminTable, AdminTableWrap, formatAdminTime, shortId } from "../_components";
+import { Button, Notice } from "../../../components/ui";
 
 type SafetyPayload = {
   moderation_enforcements: AdminModerationEnforcementRow[];
@@ -63,12 +64,12 @@ export default function AdminSafetyPage() {
         title="Safety"
         description="檢視 moderation / fraud 事件與目前有效的安全處置。"
         action={
-          <button className="button secondary" type="button" onClick={() => void load()} disabled={refreshing}>
+          <Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>
             {refreshing ? "重新整理中…" : "重新整理"}
-          </button>
+          </Button>
         }
       >
-        {error ? <div className="banner">{error}</div> : null}
+        {error ? <Notice variant="danger">{error}</Notice> : null}
         {data ? (
           <div className="stack">
             <div className="admin-stat-grid">
@@ -92,12 +93,12 @@ export default function AdminSafetyPage() {
                   <AdminTable>
                     <thead>
                       <tr>
-                        <th>時間</th>
-                        <th>Subject</th>
-                        <th>Type</th>
-                        <th>Reason</th>
-                        <th>Status</th>
-                        <th>Expires</th>
+                        <th scope="col">時間</th>
+                        <th scope="col">Subject</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Reason</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Expires</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -129,11 +130,11 @@ export default function AdminSafetyPage() {
                   <AdminTable>
                     <thead>
                       <tr>
-                        <th>時間</th>
-                        <th>Level</th>
-                        <th>User</th>
-                        <th>Session</th>
-                        <th>Types</th>
+                        <th scope="col">時間</th>
+                        <th scope="col">Level</th>
+                        <th scope="col">User</th>
+                        <th scope="col">Session</th>
+                        <th scope="col">Types</th>
                       </tr>
                     </thead>
                     <tbody>

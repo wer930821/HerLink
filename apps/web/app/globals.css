@@ -1073,6 +1073,15 @@ select {
   box-shadow: var(--shadow-card);
 }
 
+.hero-compact {
+  padding: clamp(var(--space-4), 3vw, var(--space-5));
+}
+
+.hero-compact .hero-title {
+  font-size: 1.5rem;
+  letter-spacing: var(--tracking-tight);
+}
+
 .surface-inset {
   gap: var(--space-2);
   padding: 14px var(--space-4);
@@ -1367,5 +1376,18 @@ select {
 
   .chat-actions .button.chat-leave {
     padding: 6px 2px;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-nav .btn {
+    flex: 0 0 auto;
   }
 }

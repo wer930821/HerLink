@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAdminSession, fetchAdminJson } from "../../../lib/admin-client";
 import type { AdminPaginationResult, AdminReportListItem } from "../../../lib/admin-types";
 import { AdminBadge, AdminEmpty, AdminSection, AdminTable, AdminTableWrap, AdminToolbar, formatAdminTime, shortId } from "../_components";
+import { Button, Notice } from "../../../components/ui";
 
 type ReportPayload = AdminPaginationResult<AdminReportListItem>;
 
@@ -59,22 +60,23 @@ export default function AdminReportsPage() {
         title="Reports"
         description="依狀態檢視檢舉資料與關聯 session。"
         action={
-          <button className="button secondary" type="button" onClick={() => void load()} disabled={refreshing}>
+          <Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>
             {refreshing ? "重新整理中…" : "重新整理"}
-          </button>
+          </Button>
         }
       >
-        {error ? <div className="banner">{error}</div> : null}
+        {error ? <Notice variant="danger">{error}</Notice> : null}
         <AdminToolbar>
           {statusOptions.map((item) => (
-            <button
+            <Button
               key={item}
-              className={status === item ? "button" : "button secondary"}
+              variant={status === item ? "primary" : "secondary"}
+              size="sm"
               type="button"
               onClick={() => setStatus(item)}
             >
               {item === "all" ? "全部" : item}
-            </button>
+            </Button>
           ))}
         </AdminToolbar>
         {data?.items?.length ? (
@@ -82,13 +84,13 @@ export default function AdminReportsPage() {
             <AdminTable>
               <thead>
                 <tr>
-                  <th>時間</th>
-                  <th>Session</th>
-                  <th>分類</th>
-                  <th>Reporter</th>
-                  <th>Reported</th>
-                  <th>狀態</th>
-                  <th>標記</th>
+                  <th scope="col">時間</th>
+                  <th scope="col">Session</th>
+                  <th scope="col">分類</th>
+                  <th scope="col">Reporter</th>
+                  <th scope="col">Reported</th>
+                  <th scope="col">狀態</th>
+                  <th scope="col">標記</th>
                 </tr>
               </thead>
               <tbody>

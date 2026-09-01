@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAdminSession, fetchAdminJson } from "../../../../lib/admin-client";
 import type { AdminSessionDetail } from "../../../../lib/admin-types";
 import { AdminBadge, AdminEmpty, AdminSection, AdminTable, AdminTableWrap, AdminToolbar, formatAdminTime, shortId } from "../../_components";
+import { Button, Notice } from "../../../../components/ui";
 
 export default function AdminSessionDetailPage() {
   const { session, loading, accessToken } = useAdminSession();
@@ -62,16 +62,14 @@ export default function AdminSessionDetailPage() {
         description={shortId(sessionId, 12)}
         action={
           <div className="row">
-            <Link className="button secondary" href="/admin/sessions">
-              返回列表
-            </Link>
-            <button className="button secondary" type="button" onClick={() => void load()} disabled={refreshing}>
+            <Button variant="secondary" size="sm" href="/admin/sessions">返回列表</Button>
+            <Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>
               {refreshing ? "重新整理中…" : "重新整理"}
-            </button>
+            </Button>
           </div>
         }
       >
-        {error ? <div className="banner">{error}</div> : null}
+        {error ? <Notice variant="danger">{error}</Notice> : null}
         {!data ? (
           <AdminEmpty>目前沒有資料。</AdminEmpty>
         ) : (
@@ -96,12 +94,12 @@ export default function AdminSessionDetailPage() {
                   <AdminTable>
                     <thead>
                       <tr>
-                        <th>時間</th>
-                        <th>Category</th>
-                        <th>Reporter</th>
-                        <th>Reported</th>
-                        <th>狀態</th>
-                        <th>標記</th>
+                        <th scope="col">時間</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Reporter</th>
+                        <th scope="col">Reported</th>
+                        <th scope="col">狀態</th>
+                        <th scope="col">標記</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -134,9 +132,9 @@ export default function AdminSessionDetailPage() {
                   <AdminTable>
                     <thead>
                       <tr>
-                        <th>時間</th>
-                        <th>Blocker</th>
-                        <th>Blocked</th>
+                        <th scope="col">時間</th>
+                        <th scope="col">Blocker</th>
+                        <th scope="col">Blocked</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -161,11 +159,11 @@ export default function AdminSessionDetailPage() {
                   <AdminTable>
                     <thead>
                       <tr>
-                        <th>時間</th>
-                        <th>等級</th>
-                        <th>User</th>
-                        <th>Message</th>
-                        <th>Types</th>
+                        <th scope="col">時間</th>
+                        <th scope="col">等級</th>
+                        <th scope="col">User</th>
+                        <th scope="col">Message</th>
+                        <th scope="col">Types</th>
                       </tr>
                     </thead>
                     <tbody>

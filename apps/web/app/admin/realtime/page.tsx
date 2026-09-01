@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAdminSession, fetchAdminJson } from "../../../lib/admin-client";
 import type { AdminPaginationResult, AdminRealtimeDiagnosticRow } from "../../../lib/admin-types";
 import { AdminBadge, AdminEmpty, AdminSection, AdminTable, AdminTableWrap, AdminToolbar, formatAdminTime, shortId } from "../_components";
+import { Button, Notice } from "../../../components/ui";
 
 type RealtimePayload = AdminPaginationResult<AdminRealtimeDiagnosticRow>;
 
@@ -71,12 +72,12 @@ export default function AdminRealtimePage() {
         title="Realtime"
         description="查看聊天室即時連線與訊息事件，不含訊息正文以外的敏感資料。"
         action={
-          <button className="button secondary" type="button" onClick={() => void load()} disabled={refreshing}>
+          <Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>
             {refreshing ? "重新整理中…" : "重新整理"}
-          </button>
+          </Button>
         }
       >
-        {error ? <div className="banner">{error}</div> : null}
+        {error ? <Notice variant="danger">{error}</Notice> : null}
         <AdminToolbar>
           <input
             className="input"
@@ -91,21 +92,21 @@ export default function AdminRealtimePage() {
               </option>
             ))}
           </select>
-          <button className="button secondary" type="button" onClick={() => void load()} disabled={refreshing}>
+          <Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>
             套用
-          </button>
+          </Button>
         </AdminToolbar>
         {data?.items?.length ? (
           <AdminTableWrap>
             <AdminTable>
               <thead>
                 <tr>
-                  <th>時間</th>
-                  <th>事件</th>
-                  <th>Session</th>
-                  <th>User</th>
-                  <th>Message</th>
-                  <th>Safe code</th>
+                  <th scope="col">時間</th>
+                  <th scope="col">事件</th>
+                  <th scope="col">Session</th>
+                  <th scope="col">User</th>
+                  <th scope="col">Message</th>
+                  <th scope="col">Safe code</th>
                 </tr>
               </thead>
               <tbody>
