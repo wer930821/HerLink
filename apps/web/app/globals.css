@@ -617,14 +617,24 @@ select {
 
 .chat-identity {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+}
+
+.chat-identity .title {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-badge {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   min-height: 22px;
   padding: 2px 8px;
   border-radius: 999px;
@@ -642,7 +652,15 @@ select {
 .chat-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
+}
+
+.chat-actions .button {
+  flex: 1 1 auto;
+  min-height: 40px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 0.88rem;
 }
 
 .chat-warning,
@@ -899,6 +917,25 @@ select {
     padding: 8px;
   }
 
+  .chat-header {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+    padding-bottom: 0;
+  }
+
+  .chat-header .ghost {
+    min-height: 34px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: 0.84rem;
+    white-space: nowrap;
+  }
+
+  .chat-header-main {
+    width: 100%;
+    align-items: center;
+  }
+
   .chat-messages {
     margin-top: 8px;
   }
@@ -908,15 +945,13 @@ select {
   }
 
   .chat-actions {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    flex-wrap: nowrap;
   }
 
   .chat-actions .button {
-    width: 100%;
-  }
-
-  .chat-actions .button:last-child {
-    grid-column: 1 / -1;
+    flex: 1 1 0;
+    padding: 8px 4px;
+    font-size: 0.84rem;
+    white-space: nowrap;
   }
 }
