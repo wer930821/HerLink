@@ -16,6 +16,7 @@ import {
   type WebProfile,
 } from "../../lib/supabase";
 import { Badge, Button, Notice, PageHero, Surface } from "../../components/ui";
+import { PushPermissionCard } from "../../components/push/PushPermissionCard";
 
 type RealtimePayload<T> = {
   new: T;
@@ -242,6 +243,7 @@ export default function WaitingPage() {
           </Surface>
         ) : null}
       </PageHero>
+      <PushPermissionCard />
     </main>
   );
 }

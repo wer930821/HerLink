@@ -37,6 +37,13 @@ const supabaseAnonKey =
   fallbackEnv.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
   "";
 
+const vapidPublicKey =
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
+  process.env.EXPO_PUBLIC_VAPID_PUBLIC_KEY ||
+  rootEnv.EXPO_PUBLIC_VAPID_PUBLIC_KEY ||
+  fallbackEnv.EXPO_PUBLIC_VAPID_PUBLIC_KEY ||
+  "";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
@@ -45,6 +52,7 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: vapidPublicKey,
   },
 };
 

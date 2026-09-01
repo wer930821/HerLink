@@ -147,6 +147,10 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     todayReportCountResult,
     todayBlockCountResult,
     todayFraudCountResult,
+    activePushSubscriptionResult,
+    pendingPushEventResult,
+    todayWebPushDeliveredResult,
+    todayWebPushRevokedResult,
   ] = await Promise.all([
     client.from("random_match_queue").select("user_id", { count: "exact", head: true }).eq("status", "waiting"),
     client.from("random_chat_sessions").select("id", { count: "exact", head: true }).eq("status", "active"),
@@ -160,6 +164,10 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     client.from("reports").select("id", { count: "exact", head: true }).gte("created_at", dayStart),
     client.from("blocks").select("id", { count: "exact", head: true }).gte("created_at", dayStart),
     client.from("fraud_risk_events").select("id", { count: "exact", head: true }).gte("created_at", dayStart),
+    client.from("web_push_subscriptions").select("id", { count: "exact", head: true }).is("revoked_at", null),
+    client.from("push_notification_events").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    client.from("web_push_deliveries").select("id", { count: "exact", head: true }).eq("status", "sent").gte("created_at", dayStart),
+    client.from("web_push_deliveries").select("id", { count: "exact", head: true }).eq("status", "revoked").gte("created_at", dayStart),
   ]);
 
   const results = [
@@ -171,6 +179,10 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     todayReportCountResult,
     todayBlockCountResult,
     todayFraudCountResult,
+    activePushSubscriptionResult,
+    pendingPushEventResult,
+    todayWebPushDeliveredResult,
+    todayWebPushRevokedResult,
   ];
 
   for (const result of results) {
@@ -189,6 +201,10 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     today_report_count: todayReportCountResult.count ?? 0,
     today_block_count: todayBlockCountResult.count ?? 0,
     today_fraud_risk_event_count: todayFraudCountResult.count ?? 0,
+    active_push_subscription_count: activePushSubscriptionResult.count ?? 0,
+    pending_push_event_count: pendingPushEventResult.count ?? 0,
+    today_web_push_delivered_count: todayWebPushDeliveredResult.count ?? 0,
+    today_web_push_revoked_count: todayWebPushRevokedResult.count ?? 0,
   };
 }
 

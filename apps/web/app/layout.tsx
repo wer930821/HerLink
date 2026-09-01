@@ -1,10 +1,19 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { SiteChrome } from "../components/layout/SiteChrome";
 
 export const metadata: Metadata = {
   title: "HerLink Web V0.1",
   description: "純匿名隨機配對網站 + 即時聊天 + 防詐騙",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0d0b16",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

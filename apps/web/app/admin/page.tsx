@@ -93,6 +93,10 @@ export default function AdminDashboardPage() {
           <AdminStat label="今日檢舉" value={formatCount(data?.today_report_count)} tone="warning" />
           <AdminStat label="今日封鎖" value={formatCount(data?.today_block_count)} tone="warning" />
           <AdminStat label="今日 fraud events" value={formatCount(data?.today_fraud_risk_event_count)} tone="danger" />
+          <AdminStat label="Web Push 訂閱" value={formatCount(data?.active_push_subscription_count)} />
+          <AdminStat label="待發送 Push" value={formatCount(data?.pending_push_event_count)} />
+          <AdminStat label="今日 Push 成功" value={formatCount(data?.today_web_push_delivered_count)} tone="success" />
+          <AdminStat label="今日 Push 失效" value={formatCount(data?.today_web_push_revoked_count)} tone="warning" />
         </AdminStatGrid>
       </AdminSection>
 

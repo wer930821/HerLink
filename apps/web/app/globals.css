@@ -218,6 +218,18 @@ select {
   flex-wrap: wrap;
 }
 
+.push-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.push-card p {
+  margin: var(--space-1) 0 0;
+}
+
 .stack {
   display: grid;
   gap: var(--space-3);

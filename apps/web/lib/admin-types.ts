@@ -8,6 +8,10 @@ export type AdminSummary = {
   today_report_count: number;
   today_block_count: number;
   today_fraud_risk_event_count: number;
+  active_push_subscription_count: number;
+  pending_push_event_count: number;
+  today_web_push_delivered_count: number;
+  today_web_push_revoked_count: number;
 };
 
 export type AdminSessionListItem = {
