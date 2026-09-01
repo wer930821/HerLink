@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Button, PageHero, Surface } from "../../components/ui";
 
 const rules = [
   "HerLink 是匿名隨機聊天服務，主要提供使用者在不公開真實身份的情況下進行配對與對話。",
@@ -15,18 +15,18 @@ const rules = [
 export default function TermsPage() {
   return (
     <main className="stack">
-      <section className="hero">
-        <p className="muted small">法律文件</p>
-        <h1 className="hero-title">服務條款</h1>
-        <p className="hero-copy">請在使用 HerLink 前閱讀本條款。繼續使用本服務，即表示您同意遵守以下內容。</p>
-      </section>
+      <PageHero
+        kicker="法律文件"
+        title="服務條款"
+        description="請在使用 HerLink 前閱讀本條款。繼續使用本服務，即表示您同意遵守以下內容。"
+      />
 
-      <section className="panel">
+      <Surface elevation={1}>
         <div className="title">適用範圍</div>
         <p className="hero-copy">本條款適用於 HerLink 的匿名登入、配對、聊天、檢舉、封鎖及其他相關功能。</p>
-      </section>
+      </Surface>
 
-      <section className="panel">
+      <Surface elevation={1}>
         <div className="title">主要條款</div>
         <ul>
           {rules.map((rule) => (
@@ -35,25 +35,19 @@ export default function TermsPage() {
             </li>
           ))}
         </ul>
-      </section>
+      </Surface>
 
-      <section className="panel">
+      <Surface elevation={1}>
         <div className="title">補充說明</div>
         <p className="hero-copy">
           若您不同意本條款任何內容，請立即停止使用 HerLink。繼續使用本服務，即視為您已理解並接受本條款及其後續更新。
         </p>
-        <div className="link-row" style={{ marginTop: 20 }}>
-          <Link className="link" href="/">
-            返回首頁
-          </Link>
-          <Link className="link" href="/privacy">
-            隱私權政策
-          </Link>
-          <Link className="link" href="/safety">
-            安全說明
-          </Link>
+        <div className="link-row link-row-spaced">
+          <Button variant="link" href="/">返回首頁</Button>
+          <Button variant="link" href="/privacy">隱私權政策</Button>
+          <Button variant="link" href="/safety">安全說明</Button>
         </div>
-      </section>
+      </Surface>
     </main>
   );
 }

@@ -1,4 +1,4 @@
-import { createElement, type HTMLAttributes, type ReactNode } from "react";
+import { createElement, type FormHTMLAttributes, type ReactNode } from "react";
 
 export type SurfaceElevation = 1 | 2 | "inset";
 export type SurfaceTone = "default" | "accent" | "success" | "warning" | "danger";
@@ -10,7 +10,7 @@ type SurfaceProps = {
   tone?: SurfaceTone;
   className?: string;
   children: ReactNode;
-} & HTMLAttributes<HTMLElement>;
+} & FormHTMLAttributes<HTMLFormElement>;
 
 export function Surface({
   as = "section",

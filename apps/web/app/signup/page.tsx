@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
 import { signUp, supabase } from "../../lib/supabase";
+import { Button, Field, Notice, PageHero, Surface } from "../../components/ui";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -48,40 +49,37 @@ export default function SignupPage() {
 
   return (
     <main className="stack">
-      <section className="hero">
-        <h1 className="hero-title">註冊 HerLink</h1>
-        <p className="hero-copy">只需要電子郵件與密碼，接著設定匿名身份即可開始。</p>
-      </section>
-      <form className="panel" onSubmit={onSubmit}>
-        <label className="field">
-          <span className="label">電子郵件</span>
+      <PageHero title="註冊 HerLink" description="只需要電子郵件與密碼，接著設定匿名身份即可開始。" />
+      <Surface as="form" elevation={1} onSubmit={onSubmit}>
+        <Field label="電子郵件" htmlFor="signup-email">
           <input
+            id="signup-email"
             className="input"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
             placeholder="name@example.com"
           />
-        </label>
-        <label className="field">
-          <span className="label">密碼</span>
+        </Field>
+        <Field label="密碼" htmlFor="signup-password">
           <input
+            id="signup-password"
             className="input"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             type="password"
             autoComplete="new-password"
           />
-        </label>
-        {error ? <div className="notice" style={{ color: "var(--color-danger)" }}>{error}</div> : null}
-        {message ? <div className="notice">{message}</div> : null}
-        <button className="button" type="submit" disabled={loading}>
+        </Field>
+        {error ? <Notice variant="danger">{error}</Notice> : null}
+        {message ? <Notice variant="success">{message}</Notice> : null}
+        <Button type="submit" size="lg" disabled={loading}>
           {loading ? "註冊中…" : "註冊"}
-        </button>
-        <button className="ghost" type="button" onClick={() => router.push("/login")} disabled={loading}>
+        </Button>
+        <Button variant="ghost" size="lg" type="button" onClick={() => router.push("/login")} disabled={loading}>
           已有帳號？前往登入
-        </button>
-      </form>
+        </Button>
+      </Surface>
     </main>
   );
 }

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Button, PageHero, Surface } from "../../components/ui";
 
 const safetyTips = [
   "絕不向陌生人匯款。",
@@ -15,13 +15,13 @@ const safetyTips = [
 export default function SafetyPage() {
   return (
     <main className="stack">
-      <section className="hero">
-        <p className="muted small">安全說明</p>
-        <h1 className="hero-title">使用安全守則</h1>
-        <p className="hero-copy">HerLink 的核心是匿名互動；在與陌生人聊天時，請把安全放在第一位。</p>
-      </section>
+      <PageHero
+        kicker="安全說明"
+        title="使用安全守則"
+        description="HerLink 的核心是匿名互動；在與陌生人聊天時，請把安全放在第一位。"
+      />
 
-      <section className="panel">
+      <Surface elevation={1}>
         <div className="title">請務必注意</div>
         <ul>
           {safetyTips.map((tip) => (
@@ -30,25 +30,19 @@ export default function SafetyPage() {
             </li>
           ))}
         </ul>
-      </section>
+      </Surface>
 
-      <section className="panel">
+      <Surface elevation={1}>
         <div className="title">遇到風險怎麼做</div>
         <p className="hero-copy">
           如果您懷疑對方涉及詐騙、威脅或騷擾，請優先封鎖並檢舉；若情況嚴重，也請停止互動並保留對話紀錄。
         </p>
-        <div className="link-row" style={{ marginTop: 20 }}>
-          <Link className="link" href="/">
-            返回首頁
-          </Link>
-          <Link className="link" href="/terms">
-            服務條款
-          </Link>
-          <Link className="link" href="/privacy">
-            隱私權政策
-          </Link>
+        <div className="link-row link-row-spaced">
+          <Button variant="link" href="/">返回首頁</Button>
+          <Button variant="link" href="/terms">服務條款</Button>
+          <Button variant="link" href="/privacy">隱私權政策</Button>
         </div>
-      </section>
+      </Surface>
     </main>
   );
 }

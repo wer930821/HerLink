@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
 import { signIn, supabase } from "../../lib/supabase";
+import { Button, Field, Notice, PageHero, Surface } from "../../components/ui";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,39 +41,36 @@ export default function LoginPage() {
 
   return (
     <main className="stack">
-      <section className="hero">
-        <h1 className="hero-title">登入 HerLink</h1>
-        <p className="hero-copy">登入後會先進入匿名設定，再開始隨機配對。</p>
-      </section>
-      <form className="panel" onSubmit={onSubmit}>
-        <label className="field">
-          <span className="label">電子郵件</span>
+      <PageHero title="登入 HerLink" description="登入後會先進入匿名設定，再開始隨機配對。" />
+      <Surface as="form" elevation={1} onSubmit={onSubmit}>
+        <Field label="電子郵件" htmlFor="login-email">
           <input
+            id="login-email"
             className="input"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
             placeholder="name@example.com"
           />
-        </label>
-        <label className="field">
-          <span className="label">密碼</span>
+        </Field>
+        <Field label="密碼" htmlFor="login-password">
           <input
+            id="login-password"
             className="input"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             type="password"
             autoComplete="current-password"
           />
-        </label>
-        {error ? <div className="notice" style={{ color: "var(--color-danger)" }}>{error}</div> : null}
-        <button className="button" type="submit" disabled={loading}>
+        </Field>
+        {error ? <Notice variant="danger">{error}</Notice> : null}
+        <Button type="submit" size="lg" disabled={loading}>
           {loading ? "登入中…" : "登入"}
-        </button>
-        <button className="ghost" type="button" onClick={() => router.push("/signup")} disabled={loading}>
+        </Button>
+        <Button variant="ghost" size="lg" type="button" onClick={() => router.push("/signup")} disabled={loading}>
           還沒有帳號？前往註冊
-        </button>
-      </form>
+        </Button>
+      </Surface>
     </main>
   );
 }

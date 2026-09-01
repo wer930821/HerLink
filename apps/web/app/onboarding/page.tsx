@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { generateNextAnonymousDisplayName } from "../../../../lib/anonymous";
 import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
+import { Button, Field, Notice, PageHero, Surface } from "../../components/ui";
 import {
   isAnonymousProfileReady,
   loadMyProfile,
@@ -83,46 +84,43 @@ export default function OnboardingPage() {
 
   if (loading) {
     return (
-      <main className="hero">
-        <h1 className="hero-title">設定匿名身份</h1>
-        <p className="hero-copy">正在載入你的匿名設定…</p>
+      <main className="stack">
+        <PageHero title="設定匿名身份" description="正在載入你的匿名設定…" />
       </main>
     );
   }
 
   return (
     <main className="stack">
-      <section className="hero">
-        <h1 className="hero-title">設定匿名身份</h1>
-        <p className="hero-copy">在 HerLink，你只需要一個匿名名稱，不必公開任何真實身份資訊。</p>
-      </section>
+      <PageHero title="設定匿名身份" description="在 HerLink，你只需要一個匿名名稱，不必公開任何真實身份資訊。" />
 
-      <form className="panel" onSubmit={onSubmit}>
+      <Surface as="form" elevation={1} onSubmit={onSubmit}>
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-          <div className="field" style={{ flex: 1 }}>
-            <span className="label">匿名名稱</span>
+          <Field label="匿名名稱" htmlFor="onboarding-name" className="grow">
             <input
+              id="onboarding-name"
               className="input"
               value={anonymousDisplayName}
               onChange={(e) => setAnonymousDisplayName(e.target.value)}
               placeholder="例如：本人很正常"
               maxLength={24}
             />
-          </div>
-          <button
-            className="ghost"
+          </Field>
+          <Button
+            variant="ghost"
+            size="lg"
             type="button"
             onClick={() => setAnonymousDisplayName((current) => generateNextAnonymousDisplayName(current))}
           >
             換一個
-          </button>
+          </Button>
         </div>
 
-        {error ? <div className="notice" style={{ color: "var(--color-danger)" }}>{error}</div> : null}
-        <button className="button" type="submit" disabled={saving || !ready}>
+        {error ? <Notice variant="danger">{error}</Notice> : null}
+        <Button type="submit" size="lg" disabled={saving || !ready}>
           {saving ? "儲存中…" : "開始聊天"}
-        </button>
-      </form>
+        </Button>
+      </Surface>
     </main>
   );
 }

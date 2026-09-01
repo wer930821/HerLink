@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Button, PageHero, Surface } from "../../components/ui";
 
 const items = [
   "HerLink 不要求您以公開真實姓名、Email、生日、城市或照片作為匿名聊天的必要條件。",
@@ -15,13 +15,13 @@ const items = [
 export default function PrivacyPage() {
   return (
     <main className="stack">
-      <section className="hero">
-        <p className="muted small">法律文件</p>
-        <h1 className="hero-title">隱私權政策</h1>
-        <p className="hero-copy">本政策說明 HerLink 目前實際會處理哪些資料，以及我們如何保護您的匿名性與安全。</p>
-      </section>
+      <PageHero
+        kicker="法律文件"
+        title="隱私權政策"
+        description="本政策說明 HerLink 目前實際會處理哪些資料，以及我們如何保護您的匿名性與安全。"
+      />
 
-      <section className="panel">
+      <Surface elevation={1}>
         <div className="title">我們會處理的資料</div>
         <ul>
           {items.map((item) => (
@@ -30,25 +30,19 @@ export default function PrivacyPage() {
             </li>
           ))}
         </ul>
-      </section>
+      </Surface>
 
-      <section className="panel">
+      <Surface elevation={1}>
         <div className="title">資料使用原則</div>
         <p className="hero-copy">
           HerLink 僅在提供匿名聊天、配對、檢舉、封鎖與安全防護所必要的範圍內使用資料，不會為未提供的功能額外蒐集或虛構用途。
         </p>
-        <div className="link-row" style={{ marginTop: 20 }}>
-          <Link className="link" href="/">
-            返回首頁
-          </Link>
-          <Link className="link" href="/terms">
-            服務條款
-          </Link>
-          <Link className="link" href="/safety">
-            安全說明
-          </Link>
+        <div className="link-row link-row-spaced">
+          <Button variant="link" href="/">返回首頁</Button>
+          <Button variant="link" href="/terms">服務條款</Button>
+          <Button variant="link" href="/safety">安全說明</Button>
         </div>
-      </section>
+      </Surface>
     </main>
   );
 }
