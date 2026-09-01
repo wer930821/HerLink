@@ -239,8 +239,6 @@ export default function RandomSessionPage() {
   const isEnded = session?.status === "ended";
   const partnerName = session?.partner_anonymous_display_name ?? "匿名使用者";
   const partnerVerified = session?.partner_verified ?? false;
-  const sessionEndedText =
-    session?.ended_by_me ? "你已離開這個聊天室。" : "對方已離開聊天。";
   const typingIndicatorText = partnerTyping ? `${partnerName} 正在輸入…` : "\u00a0";
 
   const messageWarning = useMemo(() => {
@@ -1300,21 +1298,16 @@ export default function RandomSessionPage() {
         <header className="chat-header">
           <button className="ghost" type="button" onClick={() => goHome("USER_TAPPED_HEADER_HOME", { serverSessionId: session.id })}>返回首頁</button>
           <div className="chat-header-main">
-            <div className="stack" style={{ gap: 4 }}>
+            <div className="chat-identity">
               <div className="title" style={{ fontSize: "1.15rem" }}>{partnerName}</div>
-              <div className="row chat-header-badges">
-                <span className="status-badge">{isEnded ? "已結束" : "配對中"}</span>
-                {partnerVerified ? (
-                  <span className="status-badge success">已驗證</span>
-                ) : (
-                  <span className="status-badge">未驗證</span>
-                )}
-              </div>
+              <span className="status-badge">{isEnded ? "已結束" : "配對中"}</span>
+              {partnerVerified ? (
+                <span className="status-badge success">已驗證</span>
+              ) : (
+                <span className="status-badge">未驗證</span>
+              )}
             </div>
           </div>
-          <button className="ghost" type="button" onClick={leave} disabled={leaveBusy}>
-            離開
-          </button>
         </header>
 
         <div className="chat-actions">
@@ -1372,7 +1365,6 @@ export default function RandomSessionPage() {
             disabled={sendBusy}
           />
           <div className="chat-composer-row">
-            <div className="muted small">{isEnded ? sessionEndedText : "按 Enter 送出，按 Shift+Enter 換行。"}</div>
             <button className="button" type="submit" disabled={sendBusy || draft.trim().length === 0}>
               {sendBusy ? "送出中…" : "送出"}
             </button>

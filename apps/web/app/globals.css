@@ -615,20 +615,23 @@ select {
   min-width: 0;
 }
 
-.chat-header-badges {
+.chat-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
 }
 
 .status-badge {
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
-  padding: 4px 10px;
+  min-height: 22px;
+  padding: 2px 8px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.72rem;
 }
 
 .status-badge.success {
@@ -704,13 +707,14 @@ select {
 .chat-bubble {
   width: fit-content;
   max-width: min(90%, 520px);
-  padding: 12px 14px;
+  padding: 14px 16px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--border);
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .chat-bubble.risky {
@@ -721,6 +725,7 @@ select {
 .chat-message-content {
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .chat-risk-badge {
@@ -825,7 +830,7 @@ select {
 .chat-composer-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
 }
 
@@ -895,6 +900,10 @@ select {
   }
 
   .chat-messages {
+    margin-top: 8px;
+  }
+
+  .chat-composer {
     margin-top: 4px;
   }
 
