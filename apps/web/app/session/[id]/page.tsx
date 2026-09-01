@@ -17,6 +17,7 @@ import {
   loadMyProfile,
   loadMyRandomSession,
   loadRandomMessages,
+  getRandomMessageReplyPreview,
   nextRandomMatch,
   removeChatMedia,
   reportRandomUser,
@@ -224,6 +225,7 @@ export default function RandomSessionPage() {
   const oldestMessageCursorRef = useRef<RandomChatMessageCursor | null>(null);
   const historyLoadingRef = useRef(false);
   const historyExhaustedRef = useRef(false);
+  const pendingReplyPreviewRef = useRef<Set<string>>(new Set());
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const realtimeClientInstanceIdRef = useRef(
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
@@ -260,6 +262,7 @@ export default function RandomSessionPage() {
   } | null>(null);
   const [mediaUploading, setMediaUploading] = useState(false);
   const [previewMessage, setPreviewMessage] = useState<RandomChatMessageRow | null>(null);
+  const [replyTarget, setReplyTarget] = useState<RandomChatMessageRow | null>(null);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [authState, setAuthState] = useState<NavigationDiagnosticEvent["authState"]>("loading");
   const [sessionState, setSessionState] = useState<NavigationDiagnosticEvent["sessionState"]>("loading");
@@ -461,6 +464,85 @@ export default function RandomSessionPage() {
     }
   };
 
+  const startReply = (message: RandomChatMessageRow) => {
+    setReplyTarget(message);
+  };
+
+  const clearReply = () => {
+    setReplyTarget(null);
+  };
+
+  const fetchReplyPreview = async (targetMessageId: string, ownerMessageId: string) => {
+    if (!session?.id || pendingReplyPreviewRef.current.has(targetMessageId)) {
+      return;
+    }
+
+    pendingReplyPreviewRef.current.add(targetMessageId);
+    try {
+      const { data, error } = await getRandomMessageReplyPreview(session.id, targetMessageId);
+      if (error || !Array.isArray(data) || !data[0]) {
+        return;
+      }
+
+      const preview = data[0];
+      setMessages((current) =>
+        current.map((item) => {
+          if (item.id !== ownerMessageId) {
+            return item;
+          }
+          return {
+            ...item,
+            reply_message_id: preview.reply_message_id,
+            reply_is_mine: preview.reply_is_mine,
+            reply_message_type: preview.reply_message_type,
+            reply_body: preview.reply_body,
+            reply_media_path: preview.reply_media_path,
+          };
+        })
+      );
+    } finally {
+      pendingReplyPreviewRef.current.delete(targetMessageId);
+    }
+  };
+
+  const handleReplyQuoteClick = async (message: RandomChatMessageRow) => {
+    const targetId = message.reply_to_message_id;
+    if (!targetId) {
+      setNotice("原訊息已無法查看。");
+      return;
+    }
+
+    const scrollToTarget = () => {
+      const element = document.getElementById(`chat-msg-${targetId}`);
+      if (!element) {
+        return false;
+      }
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      element.classList.add("chat-message-highlight");
+      window.setTimeout(() => {
+        element.classList.remove("chat-message-highlight");
+      }, 1600);
+      return true;
+    };
+
+    if (scrollToTarget()) {
+      return;
+    }
+
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      await loadOlderMessages();
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+      if (scrollToTarget()) {
+        return;
+      }
+      if (historyExhaustedRef.current) {
+        break;
+      }
+    }
+
+    setNotice("原訊息已無法查看。");
+  };
+
   const clearPendingMedia = () => {
     setPendingMedia((current) => {
       if (current?.previewUrl) {
@@ -510,13 +592,17 @@ export default function RandomSessionPage() {
         throw uploadError;
       }
 
-      const { data, error: messageError } = await sendImageMessage(session.id, {
-        path,
-        mime: blob.type,
-        size: blob.size,
-        width,
-        height,
-      });
+      const { data, error: messageError } = await sendImageMessage(
+        session.id,
+        {
+          path,
+          mime: blob.type,
+          size: blob.size,
+          width,
+          height,
+        },
+        replyTarget?.id
+      );
       if (messageError) {
         await removeChatMedia(path).catch(() => undefined);
         throw messageError;
@@ -524,13 +610,24 @@ export default function RandomSessionPage() {
 
       const sent = Array.isArray(data) ? data[0] : data;
       if (sent) {
-        seenMessageIdsRef.current.add(sent.id);
-        setMessages((current) => upsertMessage(current, sent));
-        updateMessageCursors([sent]);
+        const enriched = replyTarget && sent.reply_to_message_id
+          ? {
+              ...sent,
+              reply_message_id: replyTarget.id,
+              reply_is_mine: replyTarget.is_mine,
+              reply_message_type: replyTarget.message_type,
+              reply_body: replyTarget.content,
+              reply_media_path: replyTarget.media_path,
+            }
+          : sent;
+        seenMessageIdsRef.current.add(enriched.id);
+        setMessages((current) => upsertMessage(current, enriched));
+        updateMessageCursors([enriched]);
         pendingScrollToBottomRef.current = true;
       }
       stopTyping();
       clearPendingMedia();
+      clearReply();
     } catch (error) {
       stopTyping();
       setNotice(getFriendlyRandomChatError(error, "照片傳送失敗，請稍後再試。"));
@@ -1068,9 +1165,21 @@ export default function RandomSessionPage() {
             media_size: nextMessage.media_size ?? null,
             media_width: nextMessage.media_width ?? null,
             media_height: nextMessage.media_height ?? null,
+            reply_to_message_id: nextMessage.reply_to_message_id ?? null,
+            reply_message_id: null,
+            reply_is_mine: null,
+            reply_message_type: null,
+            reply_body: null,
+            reply_media_path: null,
           };
           setMessages((current) => upsertMessage(current, mappedMessage));
           updateMessageCursors([mappedMessage]);
+          if (
+            mappedMessage.reply_to_message_id &&
+            !seenMessageIdsRef.current.has(mappedMessage.reply_to_message_id)
+          ) {
+            void fetchReplyPreview(mappedMessage.reply_to_message_id, mappedMessage.id);
+          }
           if (shouldAutoScroll) {
             pendingScrollToBottomRef.current = true;
           }
@@ -1140,6 +1249,7 @@ export default function RandomSessionPage() {
       });
       stopTyping();
       clearPartnerTyping();
+      clearReply();
       typingChannelRef.current = null;
       void supabase.removeChannel(chatChannel);
     };
@@ -1149,6 +1259,7 @@ export default function RandomSessionPage() {
     if (isEnded) {
       stopTyping();
       clearPartnerTyping();
+      clearReply();
     }
   }, [isEnded]);
 
@@ -1242,23 +1353,34 @@ export default function RandomSessionPage() {
         return;
       }
 
-      const { data, error } = await sendRandomMessage(refreshedSession.id, content);
+      const { data, error } = await sendRandomMessage(refreshedSession.id, content, replyTarget?.id);
       if (error) {
         throw error;
       }
 
       const nextMessage = Array.isArray(data) ? data[0] : data;
       if (nextMessage) {
-        seenMessageIdsRef.current.add(nextMessage.id);
-        setMessages((current) => upsertMessage(current, nextMessage));
-        updateMessageCursors([nextMessage]);
+        const enriched = replyTarget && nextMessage.reply_to_message_id
+          ? {
+              ...nextMessage,
+              reply_message_id: replyTarget.id,
+              reply_is_mine: replyTarget.is_mine,
+              reply_message_type: replyTarget.message_type,
+              reply_body: replyTarget.content,
+              reply_media_path: replyTarget.media_path,
+            }
+          : nextMessage;
+        seenMessageIdsRef.current.add(enriched.id);
+        setMessages((current) => upsertMessage(current, enriched));
+        updateMessageCursors([enriched]);
         pendingScrollToBottomRef.current = true;
-        if (nextMessage.risk_level && nextMessage.risk_level !== "low") {
+        if (enriched.risk_level && enriched.risk_level !== "low") {
           setNotice("這則訊息含有可疑內容，請提高警覺。");
         }
       }
       stopTyping();
       setDraft("");
+      clearReply();
     } catch (error) {
       stopTyping();
       clearPartnerTyping();
@@ -1286,6 +1408,7 @@ export default function RandomSessionPage() {
     try {
       stopTyping();
       clearPartnerTyping();
+      clearReply();
       await leaveRandomSession(session.id);
       goHome("USER_LEFT_SESSION", { serverSessionId: session.id });
     } catch {
@@ -1302,6 +1425,7 @@ export default function RandomSessionPage() {
     try {
       stopTyping();
       clearPartnerTyping();
+      clearReply();
       const { data, error } = await nextRandomMatch(session.id);
       if (error) {
         throw error;
@@ -1328,6 +1452,7 @@ export default function RandomSessionPage() {
     try {
       stopTyping();
       clearPartnerTyping();
+      clearReply();
       const { error } = await blockRandomUser(session.id);
       if (error) {
         throw error;
@@ -1397,9 +1522,29 @@ export default function RandomSessionPage() {
         : null;
 
     return (
-      <article key={message.id} className={`chat-message ${message.is_mine ? "mine" : "theirs"}`}>
+      <article key={message.id} id={`chat-msg-${message.id}`} className={`chat-message ${message.is_mine ? "mine" : "theirs"}`}>
         <div className={`chat-bubble ${message.risk_level !== "low" ? "risky" : ""}`}>
           {riskLabel ? <div className="chat-risk-badge">{riskLabel}</div> : null}
+          {message.reply_to_message_id ? (
+            <button
+              type="button"
+              className="chat-reply-quote"
+              onClick={() => void handleReplyQuoteClick(message)}
+            >
+              <span className="chat-reply-quote-label">
+                {message.reply_is_mine === true
+                  ? "回覆自己"
+                  : message.reply_is_mine === false
+                    ? "回覆對方"
+                    : "回覆"}
+              </span>
+              <span className="chat-reply-quote-body">
+                {message.reply_message_type === "image"
+                  ? "📷 圖片"
+                  : message.reply_body || "原訊息已無法查看"}
+              </span>
+            </button>
+          ) : null}
           {message.message_type === "image" && message.media_path ? (
             <ChatImage
               path={message.media_path}
@@ -1409,7 +1554,21 @@ export default function RandomSessionPage() {
           ) : (
             <div className="chat-message-content">{renderMessageContent(message.content, openExternalLink)}</div>
           )}
-          <div className="chat-meta">{formatTime(message.created_at)}</div>
+          <div className="chat-message-footer">
+            <div className="chat-meta">{formatTime(message.created_at)}</div>
+            <button
+              type="button"
+              className="chat-reply-button"
+              aria-label="回覆這則訊息"
+              title="回覆"
+              onClick={() => startReply(message)}
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M9 17 4 12l5-5" />
+                <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+              </svg>
+            </button>
+          </div>
         </div>
       </article>
     );
@@ -1525,6 +1684,26 @@ export default function RandomSessionPage() {
             void sendMessage();
           }}
         >
+          {replyTarget ? (
+            <div className="chat-reply-preview">
+              <div className="chat-reply-preview-text">
+                <div className="chat-reply-preview-label">
+                  {replyTarget.is_mine ? "回覆自己" : "回覆對方"}
+                </div>
+                <div className="chat-reply-preview-body">
+                  {replyTarget.message_type === "image" ? "📷 圖片" : replyTarget.content}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="chat-reply-preview-remove"
+                aria-label="取消回覆"
+                onClick={clearReply}
+              >
+                ×
+              </button>
+            </div>
+          ) : null}
           {pendingMedia ? (
             <div className="chat-media-preview" aria-live="polite">
               <img className="chat-media-preview-image" src={pendingMedia.previewUrl} alt="待傳送照片預覽" />

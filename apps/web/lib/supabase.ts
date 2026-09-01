@@ -213,6 +213,12 @@ export type RandomChatMessageRow = {
   media_size: number | null;
   media_width: number | null;
   media_height: number | null;
+  reply_to_message_id: string | null;
+  reply_message_id: string | null;
+  reply_is_mine: boolean | null;
+  reply_message_type: "text" | "image" | null;
+  reply_body: string | null;
+  reply_media_path: string | null;
 };
 
 export type RandomChatMessageRealtimeRow = {
@@ -229,6 +235,7 @@ export type RandomChatMessageRealtimeRow = {
   media_size: number | null;
   media_width: number | null;
   media_height: number | null;
+  reply_to_message_id: string | null;
 };
 
 export type RandomChatMessageCursor = {
@@ -526,11 +533,12 @@ export async function reportRandomUser(
   }>;
 }
 
-export async function sendRandomMessage(sessionId: string, content: string) {
+export async function sendRandomMessage(sessionId: string, content: string, replyToMessageId?: string | null) {
   return supabase.rpc("send_random_message", {
     p_session_id: sessionId,
     p_content: content,
     p_message_type: "text",
+    p_reply_to_message_id: replyToMessageId ?? null,
   }) as unknown as Promise<{
     data: RandomChatMessageRow[] | null;
     error: { message?: string } | null;
@@ -545,7 +553,8 @@ export async function sendImageMessage(
     size: number;
     width: number;
     height: number;
-  }
+  },
+  replyToMessageId?: string | null
 ) {
   return supabase.rpc("send_random_message", {
     p_session_id: sessionId,
@@ -556,8 +565,27 @@ export async function sendImageMessage(
     p_media_size: media.size,
     p_media_width: media.width,
     p_media_height: media.height,
+    p_reply_to_message_id: replyToMessageId ?? null,
   }) as unknown as Promise<{
     data: RandomChatMessageRow[] | null;
+    error: { message?: string } | null;
+  }>;
+}
+
+export async function getRandomMessageReplyPreview(sessionId: string, messageId: string) {
+  return supabase.rpc("get_random_message_reply_preview", {
+    p_session_id: sessionId,
+    p_message_id: messageId,
+  }) as unknown as Promise<{
+    data:
+      | {
+          reply_message_id: string;
+          reply_is_mine: boolean;
+          reply_message_type: "text" | "image";
+          reply_body: string | null;
+          reply_media_path: string | null;
+        }[]
+      | null;
     error: { message?: string } | null;
   }>;
 }
