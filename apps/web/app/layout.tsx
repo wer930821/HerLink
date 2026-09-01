@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { SiteChrome } from "../components/layout/SiteChrome";
 
 export const metadata: Metadata = {
   title: "HerLink Web V0.1",
@@ -13,11 +14,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <a className="skip-link" href="#main-content">
           跳到主要內容
         </a>
-        <div className="shell">
-          <div className="container" id="main-content">
-            {children}
+        <SiteChrome>
+          <div className="shell">
+            <div className="container" id="main-content">
+              {children}
+            </div>
           </div>
-        </div>
+        </SiteChrome>
       </body>
     </html>
   );
