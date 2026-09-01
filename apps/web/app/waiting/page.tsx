@@ -24,6 +24,7 @@ type RealtimePayload<T> = {
 
 export default function WaitingPage() {
   const router = useRouter();
+  const [debug, setDebug] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<WebProfile | null>(null);
   const [queue, setQueue] = useState<RandomQueueRow | null>(null);
@@ -34,6 +35,10 @@ export default function WaitingPage() {
   const waitingMountedAtRef = useRef<number>(Date.now());
   const waitingStartedAtRef = useRef<number | null>(null);
   const { onlineCount } = useOnlinePresence(userId);
+
+  useEffect(() => {
+    setDebug(new URLSearchParams(window.location.search).get("debug") === "1");
+  }, []);
 
   const waitingTitle = useMemo(() => {
     if (elapsedSeconds >= 30) {
@@ -136,7 +141,7 @@ export default function WaitingPage() {
   useEffect(() => {
     if (MAINTENANCE_MODE) return;
 
-    if (!loading && (!profile || !isAnonymousProfileReady(profile))) {
+    if (!debug && !loading && (!profile || !isAnonymousProfileReady(profile))) {
       router.replace("/onboarding");
     }
   }, [loading, profile, router]);
@@ -144,10 +149,10 @@ export default function WaitingPage() {
   useEffect(() => {
     if (MAINTENANCE_MODE) return;
 
-    if (!loading && session) {
+    if (!debug && !loading && session) {
       router.replace(`/session/${session.id}`);
     }
-  }, [loading, router, session]);
+  }, [debug, loading, router, session]);
 
   useEffect(() => {
     if (MAINTENANCE_MODE || loading || session) {
@@ -200,6 +205,7 @@ export default function WaitingPage() {
     return (
       <main className="stack">
         <PageHero title="正在尋找聊天對象…" description="請先保持頁面開啟，配對成功後會自動跳轉。" />
+        {debug ? <PushPermissionCard forceDebug /> : null}
       </main>
     );
   }
@@ -243,7 +249,7 @@ export default function WaitingPage() {
           </Surface>
         ) : null}
       </PageHero>
-      <PushPermissionCard />
+      <PushPermissionCard forceDebug={debug} />
     </main>
   );
 }

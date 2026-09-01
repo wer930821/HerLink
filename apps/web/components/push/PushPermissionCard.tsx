@@ -16,17 +16,17 @@ import {
   type PushPermissionState,
 } from "../../lib/web-push";
 
-export function PushPermissionCard() {
+export function PushPermissionCard({ forceDebug = false }: { forceDebug?: boolean }) {
   const [state, setState] = useState<PushPermissionState>("default");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [debug, setDebug] = useState(false);
+  const [debug, setDebug] = useState(forceDebug);
   const [diagnostics, setDiagnostics] = useState<PushDiagnostics | null>(null);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [iosHint] = useState(() => isIosSafariWithoutStandalone());
 
   useEffect(() => {
-    setDebug(new URLSearchParams(window.location.search).get("debug") === "1");
+    setDebug(forceDebug || new URLSearchParams(window.location.search).get("debug") === "1");
     if (!isPushSupported()) {
       setState("unsupported");
       return;
@@ -38,7 +38,7 @@ export function PushPermissionCard() {
     if (Notification.permission === "granted") {
       void syncPushSubscription();
     }
-  }, []);
+  }, [forceDebug]);
 
   const refreshDiagnostics = useCallback(async () => {
     setDiagnostics(await getPushDiagnostics().catch(() => null));
@@ -112,8 +112,12 @@ export function PushPermissionCard() {
     </details>
   ) : null;
 
-  if (state === "unsupported") {
+  if (state === "unsupported" && !debug) {
     return null;
+  }
+
+  if (state === "unsupported") {
+    return <Surface elevation="inset">{debugPanel}</Surface>;
   }
 
   if (state === "granted") {
