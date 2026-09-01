@@ -42,12 +42,36 @@ type BootstrapState = {
   activeSession: RandomSessionRow | null;
 };
 
+type ActiveSessionLookup = {
+  result: "loading" | "RPC SUCCESS" | "NOT FOUND" | "RPC ERROR";
+  error: string | null;
+};
+
 const emptyBootstrapState: BootstrapState = {
   session: null,
   profile: null,
   queue: null,
   activeSession: null,
 };
+
+const initialActiveSessionLookup: ActiveSessionLookup = {
+  result: "loading",
+  error: null,
+};
+
+function summarizeActiveSessionRpcError(error: { code?: unknown; message?: unknown } | null) {
+  const code = typeof error?.code === "string" && error.code ? error.code.slice(0, 40) : "RPC_ERROR";
+  const message = typeof error?.message === "string" && error.message
+    ? error.message
+      .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "[id]")
+      .replace(/[^\s@]+@[^\s@]+/g, "[email]")
+      .replace(/[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}/g, "[token]")
+      .replace(/(token|apikey|authorization)\s*[=:]\s*\S+/gi, "$1=[redacted]")
+      .replace(/\s+/g, " ")
+      .slice(0, 160)
+    : "Active session RPC failed.";
+  return `${code}: ${message}`;
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -59,6 +83,7 @@ export default function HomePage() {
   const [message, setMessage] = useState<string | null>(null);
   const [debugEnabled, setDebugEnabled] = useState(false);
   const [lastDiagnostic, setLastDiagnostic] = useState<NavigationDiagnosticEvent | null>(null);
+  const [activeSessionLookup, setActiveSessionLookup] = useState<ActiveSessionLookup>(initialActiveSessionLookup);
   const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
 
   const recordHomeRouteDiagnostic = (eventType: "continue_clicked" | "continue_routed", metadata: Record<string, unknown> = {}) => {
@@ -112,12 +137,14 @@ export default function HomePage() {
 
   useEffect(() => {
     let mounted = true;
+    let authUserId: string | null = null;
 
     async function bootstrap() {
       setBootstrapping(true);
       try {
         const { data } = await getCurrentSession();
         const session = data.session ?? null;
+        authUserId = session?.user.id ?? null;
 
         if (!session) {
           if (mounted) {
@@ -136,15 +163,64 @@ export default function HomePage() {
           return;
         }
 
+        const rpcError = sessionResult.error as { code?: unknown; message?: unknown } | null;
+        const lookup = rpcError
+          ? { result: "RPC ERROR" as const, error: summarizeActiveSessionRpcError(rpcError) }
+          : sessionResult.data
+            ? { result: "RPC SUCCESS" as const, error: null }
+            : { result: "NOT FOUND" as const, error: null };
+        const diagnostic: NavigationDiagnosticEvent = {
+          timestamp: new Date().toISOString(),
+          pathname,
+          event: lookup.result === "RPC SUCCESS"
+            ? "RPC_SUCCESS_ACTIVE_SESSION"
+            : lookup.result === "NOT FOUND"
+              ? "ACTIVE_SESSION_NOT_FOUND"
+              : "ACTIVE_SESSION_RPC_ERROR",
+          reason: null,
+          redirectReason: null,
+          authState: "ready",
+          sessionState: lookup.result === "RPC ERROR" ? "error" : sessionResult.data?.status === "active" ? "active" : "missing",
+          routeSessionIdShort: null,
+          serverSessionIdShort: getShortId(sessionResult.data?.id ?? null),
+          bootstrapRunId: null,
+          activeSessionResult: lookup.result,
+          authUserIdShort: getShortId(session.user.id),
+          activeSessionError: lookup.error,
+        };
+
+        setActiveSessionLookup(lookup);
+        recordNavigationDiagnostic(diagnostic);
+        setLastDiagnostic(diagnostic);
+
         setState({
           session,
           profile: profileResult.data ?? null,
           queue: queueResult.data ?? null,
-          activeSession: sessionResult.data ?? null,
+          activeSession: rpcError ? null : sessionResult.data ?? null,
         });
       } catch {
         if (mounted) {
           setState(emptyBootstrapState);
+          const error = "BOOTSTRAP_ERROR: Active session lookup did not complete.";
+          const diagnostic: NavigationDiagnosticEvent = {
+            timestamp: new Date().toISOString(),
+            pathname,
+            event: "ACTIVE_SESSION_RPC_ERROR",
+            reason: null,
+            redirectReason: null,
+            authState: authUserId ? "ready" : "missing",
+            sessionState: "error",
+            routeSessionIdShort: null,
+            serverSessionIdShort: null,
+            bootstrapRunId: null,
+            activeSessionResult: "RPC ERROR",
+            authUserIdShort: getShortId(authUserId),
+            activeSessionError: error,
+          };
+          setActiveSessionLookup({ result: "RPC ERROR", error });
+          recordNavigationDiagnostic(diagnostic);
+          setLastDiagnostic(diagnostic);
           setMessage("目前無法載入狀態，請重新整理後再試。");
         }
       } finally {
@@ -192,7 +268,11 @@ export default function HomePage() {
     <div className="debug-panel">
       <div>path: {pathname}</div>
       <div>auth: {state.session ? "ready" : bootstrapping ? "loading" : "missing"}</div>
-      <div>session: {state.activeSession?.status ?? "missing"}</div>
+      <div>session: {activeSessionLookup.result === "RPC ERROR" ? "error" : state.activeSession?.status ?? "missing"}</div>
+      <div>ACTIVE SESSION RESULT: {activeSessionLookup.result}</div>
+      <div>CURRENT AUTH UID: {getShortId(state.session?.user.id ?? null) ?? "none"}</div>
+      <div>ACTIVE SESSION ID: {getShortId(state.activeSession?.id ?? null) ?? "none"}</div>
+      {activeSessionLookup.error ? <div>RPC ERROR: {activeSessionLookup.error}</div> : null}
       <div>LAST SESSION EVENT: {lastDiagnostic?.event ?? "none"}</div>
       <div>LAST REDIRECT REASON: {lastDiagnostic?.redirectReason ?? lastDiagnostic?.reason ?? "none"}</div>
       <div>AUTH STATE: {lastDiagnostic?.authState ?? (state.session ? "ready" : bootstrapping ? "loading" : "missing")}</div>

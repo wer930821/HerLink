@@ -5,10 +5,13 @@ export type NavigationDiagnosticEvent = {
   reason: string | null;
   redirectReason: string | null;
   authState: "loading" | "ready" | "missing";
-  sessionState: "loading" | "active" | "ended" | "missing";
+  sessionState: "loading" | "active" | "ended" | "missing" | "error";
   routeSessionIdShort: string | null;
   serverSessionIdShort: string | null;
   bootstrapRunId: number | null;
+  activeSessionResult?: "RPC SUCCESS" | "NOT FOUND" | "RPC ERROR";
+  authUserIdShort?: string | null;
+  activeSessionError?: string | null;
 };
 
 const STORAGE_KEY = "herlink-navigation-debug";
