@@ -39,7 +39,7 @@ export function AdminAccessGate({ children }: { children: ReactNode }) {
     return (
       <EmptyState>
         <p>請先登入後再使用後台。</p>
-        <Button variant="secondary" href="/login">前往登入</Button>
+        <Button variant="secondary" href="/login?next=/admin">前往登入</Button>
       </EmptyState>
     );
   }

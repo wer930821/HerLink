@@ -7,17 +7,26 @@ import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
 import { signIn, supabase } from "../../lib/supabase";
 import { Button, Field, Notice, PageHero, Surface } from "../../components/ui";
 
+function getLoginDestination() {
+  if (typeof window === "undefined") return "/";
+  return new URLSearchParams(window.location.search).get("next") === "/admin" ? "/admin" : "/";
+}
+
 export default function LoginPage() {
   const router = useRouter();
+  const [destination, setDestination] = useState("/");
+  const isAdminLogin = destination === "/admin";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const nextDestination = getLoginDestination();
+    setDestination(nextDestination);
     void supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
       if (data.session) {
-        router.replace("/");
+        router.replace(nextDestination);
       }
     });
   }, [router]);
@@ -31,7 +40,7 @@ export default function LoginPage() {
       if (authError) {
         throw authError;
       }
-      router.replace("/");
+      router.replace(getLoginDestination());
     } catch (err) {
       setError(getFriendlyAuthErrorMessage(err, "登入失敗，請稍後再試。"));
     } finally {
@@ -41,7 +50,10 @@ export default function LoginPage() {
 
   return (
     <main className="stack">
-      <PageHero title="登入 HerLink" description="登入後會先進入匿名設定，再開始隨機配對。" />
+      <PageHero
+        title={isAdminLogin ? "登入管理員帳號" : "登入 HerLink"}
+        description={isAdminLogin ? "使用固定管理員 Email/Password 登入後台。" : "登入後會先進入匿名設定，再開始隨機配對。"}
+      />
       <Surface as="form" elevation={1} onSubmit={onSubmit}>
         <Field label="電子郵件" htmlFor="login-email">
           <input
@@ -67,9 +79,11 @@ export default function LoginPage() {
         <Button type="submit" size="lg" disabled={loading}>
           {loading ? "登入中…" : "登入"}
         </Button>
-        <Button variant="ghost" size="lg" type="button" onClick={() => router.push("/signup")} disabled={loading}>
-          還沒有帳號？前往註冊
-        </Button>
+        {!isAdminLogin ? (
+          <Button variant="ghost" size="lg" type="button" onClick={() => router.push("/signup")} disabled={loading}>
+            還沒有帳號？前往註冊
+          </Button>
+        ) : null}
         <Button variant="link" type="button" onClick={() => router.push("/forgot-password")} disabled={loading}>
           忘記密碼？
         </Button>
