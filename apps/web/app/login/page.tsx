@@ -25,7 +25,11 @@ export default function LoginPage() {
     const nextDestination = getLoginDestination();
     setDestination(nextDestination);
     void supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
-      if (data.session) {
+      if (nextDestination === "/admin" && data.session?.user.is_anonymous) {
+        void supabase.auth.signOut();
+        return;
+      }
+      if (data.session && nextDestination !== "/admin") {
         router.replace(nextDestination);
       }
     });

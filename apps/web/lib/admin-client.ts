@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getCurrentSession, type Session } from "./supabase";
+import { getCurrentSession, supabase, type Session } from "./supabase";
 
 export function useAdminSession() {
   const [session, setSession] = useState<Session | null>(null);
@@ -22,8 +22,16 @@ export function useAdminSession() {
 
     void loadSession();
 
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event: string, nextSession: Session | null) => {
+      if (mounted) {
+        setSession(nextSession);
+        setLoading(false);
+      }
+    });
+
     return () => {
       mounted = false;
+      authListener.subscription.unsubscribe();
     };
   }, []);
 

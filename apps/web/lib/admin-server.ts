@@ -14,6 +14,16 @@ type AdminContextError = {
 
 type AdminContextResult = { ok: true; context: AdminContext } | AdminContextError;
 
+type AdminMembership = {
+  user_id: string;
+  role: string;
+  active: boolean;
+} | null;
+
+type AdminRequestState =
+  | { ok: true; client: SupabaseClient; user: User; adminRow: AdminMembership }
+  | AdminContextError;
+
 function getSupabaseServerConfig() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
@@ -44,7 +54,7 @@ function createAuthedClient(accessToken: string) {
   });
 }
 
-export async function requireAdminRequest(request: Request): Promise<AdminContextResult> {
+async function getAdminRequestState(request: Request): Promise<AdminRequestState> {
   const authHeader = request.headers.get("authorization") ?? request.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return {
@@ -78,7 +88,6 @@ export async function requireAdminRequest(request: Request): Promise<AdminContex
       .from("admin_users")
       .select("user_id, role, active")
       .eq("user_id", userData.user.id)
-      .eq("active", true)
       .maybeSingle();
 
     if (adminError) {
@@ -89,21 +98,11 @@ export async function requireAdminRequest(request: Request): Promise<AdminContex
       };
     }
 
-    if (!adminRow || adminRow.role !== "admin") {
-      return {
-        ok: false,
-        status: 403,
-        message: "你沒有後台權限。",
-      };
-    }
-
     return {
       ok: true,
-      context: {
-        client,
-        user: userData.user,
-        role: adminRow.role,
-      },
+      client,
+      user: userData.user,
+      adminRow,
     };
   } catch {
     return {
@@ -112,4 +111,43 @@ export async function requireAdminRequest(request: Request): Promise<AdminContex
       message: "後台目前無法使用。",
     };
   }
+}
+
+export async function requireAdminRequest(request: Request): Promise<AdminContextResult> {
+  const state = await getAdminRequestState(request);
+  if (!state.ok) return state;
+
+  if (!state.adminRow || !state.adminRow.active || state.adminRow.role !== "admin") {
+    return {
+      ok: false,
+      status: 403,
+      message: "你沒有後台權限。",
+    };
+  }
+
+  return {
+    ok: true,
+    context: {
+      client: state.client,
+      user: state.user,
+      role: state.adminRow.role,
+    },
+  };
+}
+
+export async function getAdminRequestDebug(request: Request) {
+  const state = await getAdminRequestState(request);
+  if (!state.ok) return state;
+
+  return {
+    ok: true as const,
+    debug: {
+      user_id: state.user.id,
+      email: state.user.email ?? null,
+      admin_row_exists: Boolean(state.adminRow),
+      role: state.adminRow?.role ?? null,
+      active: state.adminRow?.active ?? false,
+      authorized: state.adminRow?.role === "admin" && state.adminRow.active === true,
+    },
+  };
 }
