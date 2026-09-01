@@ -588,7 +588,9 @@ select {
 }
 
 .chat-shell {
-  min-height: calc(100dvh - 48px);
+  height: calc(100dvh - 48px);
+  max-height: calc(100dvh - 48px);
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -848,6 +850,11 @@ select {
   .chat-header {
     grid-template-columns: 1fr;
     justify-items: start;
+  }
+
+  .chat-shell {
+    height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 
   .chat-header-main {
