@@ -10,8 +10,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="zh-Hant">
       <body>
+        <a className="skip-link" href="#main-content">
+          跳到主要內容
+        </a>
         <div className="shell">
-          <div className="container">{children}</div>
+          <div className="container" id="main-content">
+            {children}
+          </div>
         </div>
       </body>
     </html>
