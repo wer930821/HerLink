@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type MouseEvent, type ReactNode } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import {
   getShortId,
@@ -18,19 +18,29 @@ import {
   loadMyRandomSession,
   loadRandomMessages,
   nextRandomMatch,
+  removeChatMedia,
   reportRandomUser,
+  sendImageMessage,
   sendRandomMessage,
   supabase,
+  uploadChatMedia,
   waitForCurrentSession,
   RANDOM_REPORT_CATEGORIES,
   type RandomChatMessageRealtimeRow,
   type RandomChatMessageRow,
+  type RandomChatMessageCursor,
   type RandomSessionRow,
   type RandomReportCategory,
   type WebProfile,
 } from "../../../lib/supabase";
 import { recordRealtimeDiagnostic } from "../../../lib/realtime-diagnostics";
 import { Button, Modal } from "../../../components/ui";
+import { ChatImage } from "../../../components/chat/ChatImage";
+import {
+  loadChatImageDimensions,
+  prepareChatImage,
+  validateChatImageFile,
+} from "../../../lib/chat-media";
 
 type RealtimePayload<T> = {
   new: T;
@@ -94,6 +104,12 @@ function getFriendlyRandomChatError(error: unknown, fallback: string) {
   if (normalized.includes("this session is not available")) return "這段對話目前不可用。";
   if (normalized.includes("message cannot be blank")) return "訊息不能為空。";
   if (normalized.includes("message is too long")) return "訊息太長了，請縮短後再試。";
+  if (normalized.includes("unsupported media type")) return "只支援 JPEG / PNG / WebP 圖片。";
+  if (normalized.includes("media size is not allowed")) return "圖片大小超過限制（最大 5MB）。";
+  if (normalized.includes("media dimensions are not allowed")) return "圖片尺寸不合法。";
+  if (normalized.includes("media file was not found")) return "照片上傳驗證失敗，請重新選取。";
+  if (normalized.includes("media file does not match")) return "照片上傳驗證失敗，請重新選取。";
+  if (normalized.includes("media path is not allowed")) return "照片上傳驗證失敗，請重新選取。";
   if (normalized.includes("unsupported report category")) return "檢舉原因不合法，請重新選擇。";
   if (normalized.includes("report description is too long")) return "檢舉說明太長了，請縮短後再試。";
   if (normalized.includes("your account is not available")) return "目前帳號無法使用此功能。";
@@ -204,6 +220,11 @@ export default function RandomSessionPage() {
   const typingReceiverTimerRef = useRef<number | null>(null);
   const typingReceiverDeadlineRef = useRef<number | null>(null);
   const typingActiveRef = useRef(false);
+  const latestMessageCursorRef = useRef<RandomChatMessageCursor | null>(null);
+  const oldestMessageCursorRef = useRef<RandomChatMessageCursor | null>(null);
+  const historyLoadingRef = useRef(false);
+  const historyExhaustedRef = useRef(false);
+  const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const realtimeClientInstanceIdRef = useRef(
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
@@ -231,6 +252,14 @@ export default function RandomSessionPage() {
   const [reportCategory, setReportCategory] = useState<RandomReportCategory>("harassment");
   const [reportDescription, setReportDescription] = useState("");
   const [partnerTyping, setPartnerTyping] = useState(false);
+  const [pendingMedia, setPendingMedia] = useState<{
+    file: File;
+    previewUrl: string;
+    width: number;
+    height: number;
+  } | null>(null);
+  const [mediaUploading, setMediaUploading] = useState(false);
+  const [previewMessage, setPreviewMessage] = useState<RandomChatMessageRow | null>(null);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [authState, setAuthState] = useState<NavigationDiagnosticEvent["authState"]>("loading");
   const [sessionState, setSessionState] = useState<NavigationDiagnosticEvent["sessionState"]>("loading");
@@ -360,6 +389,156 @@ export default function RandomSessionPage() {
     setPartnerTyping(false);
   };
 
+  const updateMessageCursors = (list: RandomChatMessageRow[]) => {
+    if (list.length === 0) {
+      return;
+    }
+
+    const sorted = [...list].sort(
+      (a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)
+    );
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+
+    const currentLatest = latestMessageCursorRef.current;
+    if (
+      !currentLatest ||
+      last.created_at > currentLatest.created_at ||
+      (last.created_at === currentLatest.created_at && last.id > currentLatest.id)
+    ) {
+      latestMessageCursorRef.current = { created_at: last.created_at, id: last.id };
+    }
+
+    const currentOldest = oldestMessageCursorRef.current;
+    if (
+      !currentOldest ||
+      first.created_at < currentOldest.created_at ||
+      (first.created_at === currentOldest.created_at && first.id < currentOldest.id)
+    ) {
+      oldestMessageCursorRef.current = { created_at: first.created_at, id: first.id };
+    }
+  };
+
+  const loadOlderMessages = async () => {
+    if (!session?.id || historyLoadingRef.current || historyExhaustedRef.current) {
+      return;
+    }
+
+    const cursor = oldestMessageCursorRef.current;
+    if (!cursor) {
+      return;
+    }
+
+    historyLoadingRef.current = true;
+    try {
+      const container = messageListRef.current;
+      const previousHeight = container?.scrollHeight ?? 0;
+      const result = await loadRandomMessages(session.id, 50, { before: cursor });
+      if (result.error || !Array.isArray(result.data) || result.data.length === 0) {
+        historyExhaustedRef.current = true;
+        return;
+      }
+
+      const olderMessages = result.data;
+      setMessages((current) => {
+        const map = new Map(current.map((item) => [item.id, item] as const));
+        for (const item of olderMessages) {
+          map.set(item.id, item);
+        }
+        return [...map.values()].sort(
+          (a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)
+        );
+      });
+      updateMessageCursors(olderMessages);
+
+      window.requestAnimationFrame(() => {
+        if (container) {
+          container.scrollTop += container.scrollHeight - previousHeight;
+        }
+      });
+    } finally {
+      historyLoadingRef.current = false;
+    }
+  };
+
+  const clearPendingMedia = () => {
+    setPendingMedia((current) => {
+      if (current?.previewUrl) {
+        URL.revokeObjectURL(current.previewUrl);
+      }
+      return null;
+    });
+  };
+
+  const handleMediaInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !session || isEnded) {
+      return;
+    }
+
+    const validationError = validateChatImageFile(file);
+    if (validationError) {
+      setNotice(validationError.message);
+      return;
+    }
+
+    try {
+      const dimensions = await loadChatImageDimensions(file);
+      setPendingMedia({
+        file,
+        previewUrl: URL.createObjectURL(file),
+        width: dimensions.width,
+        height: dimensions.height,
+      });
+    } catch {
+      setNotice("這張圖片無法讀取，請換一張試試。");
+    }
+  };
+
+  const sendMedia = async () => {
+    if (!pendingMedia || !session || !myProfile?.id || mediaUploading || sendBusy) {
+      return;
+    }
+
+    setMediaUploading(true);
+    setNotice(null);
+    try {
+      const { blob, width, height, extension } = await prepareChatImage(pendingMedia.file);
+      const { path, error: uploadError } = await uploadChatMedia(session.id, myProfile.id, blob, extension);
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data, error: messageError } = await sendImageMessage(session.id, {
+        path,
+        mime: blob.type,
+        size: blob.size,
+        width,
+        height,
+      });
+      if (messageError) {
+        await removeChatMedia(path).catch(() => undefined);
+        throw messageError;
+      }
+
+      const sent = Array.isArray(data) ? data[0] : data;
+      if (sent) {
+        seenMessageIdsRef.current.add(sent.id);
+        setMessages((current) => upsertMessage(current, sent));
+        updateMessageCursors([sent]);
+        pendingScrollToBottomRef.current = true;
+      }
+      stopTyping();
+      clearPendingMedia();
+    } catch (error) {
+      stopTyping();
+      setNotice(getFriendlyRandomChatError(error, "照片傳送失敗，請稍後再試。"));
+    } finally {
+      setMediaUploading(false);
+    }
+  };
+
   const recordDiagnostic = (
     eventType:
       | "realtime_subscribe_started"
@@ -406,7 +585,10 @@ export default function RandomSessionPage() {
     messageSyncInFlightRef.current = true;
 
     try {
-      const result = await loadRandomMessages(session.id, 200);
+      const cursor = latestMessageCursorRef.current;
+      const result = cursor
+        ? await loadRandomMessages(session.id, 100, { after: cursor })
+        : await loadRandomMessages(session.id, 50);
       if (result.error) {
         return;
       }
@@ -432,6 +614,7 @@ export default function RandomSessionPage() {
       for (const item of freshMessages) {
         seenMessageIdsRef.current.add(item.id);
       }
+      updateMessageCursors(freshMessages);
 
       if ((forceScroll || receivedNewMessage) && stickToBottomRef.current) {
         pendingScrollToBottomRef.current = true;
@@ -711,7 +894,7 @@ export default function RandomSessionPage() {
           bootstrapRunId,
         });
 
-        const messagesResult = await loadRandomMessages(nextSession.id, 200);
+        const messagesResult = await loadRandomMessages(nextSession.id, 50);
         if (!mounted || bootstrapRunId !== sessionBootstrapRunRef.current) {
           recordSessionRouteDiagnostic("STALE_BOOTSTRAP_DISCARDED", {
             reason: "STALE_BOOTSTRAP_DISCARDED",
@@ -726,6 +909,7 @@ export default function RandomSessionPage() {
           const nextMessages = Array.isArray(messagesResult.data) ? messagesResult.data : [];
           seenMessageIdsRef.current = new Set(nextMessages.map((item) => item.id));
           setMessages(nextMessages);
+          updateMessageCursors(nextMessages);
           recordDiagnostic("message_loaded_from_db", {
             sessionId: nextSession.id,
             userId: authSession.user.id,
@@ -836,15 +1020,17 @@ export default function RandomSessionPage() {
   useEffect(() => {
     if (!session || !myProfile?.id) return;
 
-    let messagesChannelSubscribed = false;
+    let chatChannelSubscribed = false;
     recordDiagnostic("realtime_subscribe_started", {
       sessionId: session.id,
       userId: myProfile.id,
-      metadata: { channel: "messages" },
+      metadata: { channel: "chat" },
     });
 
-    const messagesChannel = supabase.channel(`random-chat-messages-${session.id}`);
-    messagesChannel
+    const chatChannel = supabase.channel(`random-chat-${session.id}`);
+    typingChannelRef.current = chatChannel;
+
+    chatChannel
       .on(
         "postgres_changes",
         {
@@ -868,59 +1054,28 @@ export default function RandomSessionPage() {
 
           const shouldAutoScroll = stickToBottomRef.current;
           seenMessageIdsRef.current.add(nextMessage.id);
-          setMessages((current) =>
-            upsertMessage(current, {
-              id: nextMessage.id,
-              session_id: nextMessage.session_id,
-              content: nextMessage.content,
-              created_at: nextMessage.created_at,
-              is_mine: nextMessage.sender_id === myProfile.id,
-              risk_level: nextMessage.risk_level ?? "low",
-              risk_types: nextMessage.risk_types ?? [],
-            })
-          );
+          const mappedMessage: RandomChatMessageRow = {
+            id: nextMessage.id,
+            session_id: nextMessage.session_id,
+            content: nextMessage.content,
+            created_at: nextMessage.created_at,
+            is_mine: nextMessage.sender_id === myProfile.id,
+            risk_level: nextMessage.risk_level ?? "low",
+            risk_types: nextMessage.risk_types ?? [],
+            message_type: nextMessage.message_type ?? "text",
+            media_path: nextMessage.media_path ?? null,
+            media_mime: nextMessage.media_mime ?? null,
+            media_size: nextMessage.media_size ?? null,
+            media_width: nextMessage.media_width ?? null,
+            media_height: nextMessage.media_height ?? null,
+          };
+          setMessages((current) => upsertMessage(current, mappedMessage));
+          updateMessageCursors([mappedMessage]);
           if (shouldAutoScroll) {
             pendingScrollToBottomRef.current = true;
           }
         }
       )
-      .subscribe((status: string) => {
-        if (status === "SUBSCRIBED") {
-          recordDiagnostic(messagesChannelSubscribed ? "realtime_reconnected" : "realtime_subscribed", {
-            sessionId: session.id,
-            userId: myProfile.id,
-            metadata: { channel: "messages" },
-          });
-          messagesChannelSubscribed = true;
-          void refreshSessionFromServerRef.current?.();
-          void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
-          return;
-        }
-
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          recordDiagnostic("realtime_subscribe_error", {
-            sessionId: session.id,
-            userId: myProfile.id,
-            safeErrorCode: status,
-            metadata: { channel: "messages" },
-          });
-          return;
-        }
-
-        if (status === "CLOSED") {
-          recordDiagnostic("realtime_disconnected", {
-            sessionId: session.id,
-            userId: myProfile.id,
-            safeErrorCode: status,
-            metadata: { channel: "messages" },
-          });
-        }
-      });
-
-    const typingChannel = supabase.channel(`random-chat-typing-${session.id}`);
-    typingChannelRef.current = typingChannel;
-
-    typingChannel
       .on("broadcast", { event: "typing" }, (payload: { payload?: { typing?: unknown } }) => {
         const typing = Boolean(payload?.payload?.typing);
 
@@ -932,10 +1087,6 @@ export default function RandomSessionPage() {
         setPartnerTyping(true);
         armPartnerTypingTimeout();
       })
-      .subscribe();
-
-    const sessionChannel = supabase
-      .channel(`random-chat-session-${session.id}`)
       .on(
         "postgres_changes",
         {
@@ -950,11 +1101,12 @@ export default function RandomSessionPage() {
       )
       .subscribe((status: string) => {
         if (status === "SUBSCRIBED") {
-          recordDiagnostic("realtime_subscribed", {
+          recordDiagnostic(chatChannelSubscribed ? "realtime_reconnected" : "realtime_subscribed", {
             sessionId: session.id,
             userId: myProfile.id,
-            metadata: { channel: "session" },
+            metadata: { channel: "chat" },
           });
+          chatChannelSubscribed = true;
           void refreshSessionFromServerRef.current?.();
           void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
           return;
@@ -965,7 +1117,7 @@ export default function RandomSessionPage() {
             sessionId: session.id,
             userId: myProfile.id,
             safeErrorCode: status,
-            metadata: { channel: "session" },
+            metadata: { channel: "chat" },
           });
           return;
         }
@@ -975,7 +1127,7 @@ export default function RandomSessionPage() {
             sessionId: session.id,
             userId: myProfile.id,
             safeErrorCode: status,
-            metadata: { channel: "session" },
+            metadata: { channel: "chat" },
           });
         }
       });
@@ -984,14 +1136,12 @@ export default function RandomSessionPage() {
       recordDiagnostic("realtime_disconnected", {
         sessionId: session.id,
         userId: myProfile.id,
-        metadata: { channel: "messages" },
+        metadata: { channel: "chat" },
       });
       stopTyping();
       clearPartnerTyping();
       typingChannelRef.current = null;
-      void supabase.removeChannel(messagesChannel);
-      void supabase.removeChannel(typingChannel);
-      void supabase.removeChannel(sessionChannel);
+      void supabase.removeChannel(chatChannel);
     };
   }, [myProfile?.id, session?.id]);
 
@@ -1101,6 +1251,7 @@ export default function RandomSessionPage() {
       if (nextMessage) {
         seenMessageIdsRef.current.add(nextMessage.id);
         setMessages((current) => upsertMessage(current, nextMessage));
+        updateMessageCursors([nextMessage]);
         pendingScrollToBottomRef.current = true;
         if (nextMessage.risk_level && nextMessage.risk_level !== "low") {
           setNotice("這則訊息含有可疑內容，請提高警覺。");
@@ -1249,7 +1400,15 @@ export default function RandomSessionPage() {
       <article key={message.id} className={`chat-message ${message.is_mine ? "mine" : "theirs"}`}>
         <div className={`chat-bubble ${message.risk_level !== "low" ? "risky" : ""}`}>
           {riskLabel ? <div className="chat-risk-badge">{riskLabel}</div> : null}
-          <div className="chat-message-content">{renderMessageContent(message.content, openExternalLink)}</div>
+          {message.message_type === "image" && message.media_path ? (
+            <ChatImage
+              path={message.media_path}
+              alt={message.is_mine ? "你傳送的圖片" : "對方傳送的圖片"}
+              onOpen={() => setPreviewMessage(message)}
+            />
+          ) : (
+            <div className="chat-message-content">{renderMessageContent(message.content, openExternalLink)}</div>
+          )}
           <div className="chat-meta">{formatTime(message.created_at)}</div>
         </div>
       </article>
@@ -1342,6 +1501,10 @@ export default function RandomSessionPage() {
           ref={messageListRef}
           onScroll={() => {
             stickToBottomRef.current = isNearBottom();
+            const container = messageListRef.current;
+            if (container && container.scrollTop < 80) {
+              void loadOlderMessages();
+            }
           }}
         >
           {messages.length === 0 ? (
@@ -1362,23 +1525,58 @@ export default function RandomSessionPage() {
             void sendMessage();
           }}
         >
-          <textarea
-            className="textarea chat-input"
-            aria-label="輸入訊息"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                void sendMessage();
-              }
-            }}
-            rows={1}
-            placeholder={isEnded ? "聊天室已結束，無法再傳送訊息。" : "輸入訊息…"}
-            disabled={sendBusy}
-          />
-          <div className="chat-composer-row">
-            <button className="button" type="submit" disabled={sendBusy || draft.trim().length === 0}>
+          {pendingMedia ? (
+            <div className="chat-media-preview" aria-live="polite">
+              <img className="chat-media-preview-image" src={pendingMedia.previewUrl} alt="待傳送照片預覽" />
+              <div className="chat-media-preview-actions">
+                <Button size="sm" type="button" onClick={() => void sendMedia()} disabled={mediaUploading || sendBusy || isEnded}>
+                  {mediaUploading ? "上傳中…" : "送出照片"}
+                </Button>
+                <Button variant="ghost" size="sm" type="button" onClick={clearPendingMedia} disabled={mediaUploading}>
+                  取消
+                </Button>
+              </div>
+            </div>
+          ) : null}
+          <div className="chat-composer-main">
+            <input
+              ref={mediaInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              hidden
+              onChange={(event) => void handleMediaInputChange(event)}
+              disabled={isEnded}
+            />
+            <button
+              type="button"
+              className="chat-media-button"
+              aria-label="傳送照片"
+              title="傳送照片"
+              onClick={() => mediaInputRef.current?.click()}
+              disabled={isEnded || mediaUploading || sendBusy}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="3" />
+                <circle cx="9" cy="9" r="2" />
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+              </svg>
+            </button>
+            <textarea
+              className="textarea chat-input"
+              aria-label="輸入訊息"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void sendMessage();
+                }
+              }}
+              rows={1}
+              placeholder={isEnded ? "聊天室已結束，無法再傳送訊息。" : "輸入訊息…"}
+              disabled={sendBusy}
+            />
+            <button className="button chat-send" type="submit" disabled={sendBusy || mediaUploading || draft.trim().length === 0}>
               {sendBusy ? "送出中…" : "送出"}
             </button>
           </div>
@@ -1517,6 +1715,16 @@ export default function RandomSessionPage() {
         <div className="notice" style={{ wordBreak: "break-all" }}>
           {pendingExternalUrl}
         </div>
+      </Modal>
+
+      <Modal
+        open={Boolean(previewMessage)}
+        title="圖片預覽"
+        onClose={() => setPreviewMessage(null)}
+      >
+        {previewMessage?.media_path ? (
+          <ChatImage path={previewMessage.media_path} alt="聊天室圖片" large />
+        ) : null}
       </Modal>
       {debugPanel}
     </main>
