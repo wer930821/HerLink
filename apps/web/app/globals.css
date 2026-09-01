@@ -957,6 +957,273 @@ select {
   appearance: none;
 }
 
+/* Shared UI components */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-bold);
+  font-size: 0.92rem;
+  min-height: 44px;
+  padding: 10px var(--space-4);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: var(--transition-fast);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
+.btn:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--color-accent) 80%, transparent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.btn-sm {
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.86rem;
+}
+
+.btn-md {
+  min-height: 44px;
+  padding: 10px var(--space-4);
+  font-size: 0.92rem;
+}
+
+.btn-lg {
+  min-height: 48px;
+  padding: 12px 18px;
+  font-size: 1rem;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.btn-secondary {
+  background: var(--color-surface-3);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--color-danger);
+  border-color: transparent;
+  font-weight: var(--weight-semibold);
+}
+
+.btn-link {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-accent-strong);
+  padding: 4px 8px;
+  min-height: auto;
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-sm);
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+  transform: none;
+}
+
+.surface {
+  display: grid;
+  gap: 14px; /* legacy panel rhythm, intentionally off the 4px scale */
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--color-surface-1) 92%, transparent);
+}
+
+.surface-elevation-2 {
+  border-radius: 28px; /* display surface, legacy hero radius */
+  background: color-mix(in srgb, var(--color-surface-1) 88%, transparent);
+  box-shadow: var(--shadow-card);
+}
+
+.surface-inset {
+  gap: var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-3);
+}
+
+.surface-tone-accent {
+  border-color: color-mix(in srgb, var(--color-accent) 24%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.surface-tone-success {
+  border-color: color-mix(in srgb, var(--color-success) 24%, transparent);
+  background: var(--color-success-soft);
+}
+
+.surface-tone-warning {
+  border-color: color-mix(in srgb, var(--color-warning) 22%, transparent);
+  background: color-mix(in srgb, var(--color-warning) 7%, transparent);
+}
+
+.surface-tone-danger {
+  border-color: color-mix(in srgb, var(--color-danger) 22%, transparent);
+  background: var(--color-danger-soft);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 22px;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-3-strong);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.badge-sm {
+  min-height: 18px;
+  padding: 1px 7px;
+  font-size: 0.66rem;
+}
+
+.badge-accent {
+  color: var(--color-accent-strong);
+  border-color: color-mix(in srgb, var(--color-accent) 24%, transparent);
+}
+
+.badge-success {
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 24%, transparent);
+}
+
+.badge-warning {
+  color: var(--color-warning-text-strong);
+  border-color: color-mix(in srgb, var(--color-warning) 24%, transparent);
+}
+
+.badge-danger {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 24%, transparent);
+}
+
+.notice-title {
+  font-weight: var(--weight-bold);
+  margin-bottom: 4px;
+}
+
+.notice-success {
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 24%, transparent);
+  background: var(--color-success-soft);
+}
+
+.notice-warning {
+  color: var(--color-warning-text);
+  border-color: color-mix(in srgb, var(--color-warning) 24%, transparent);
+  background: var(--color-warning-soft);
+}
+
+.notice-danger {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 24%, transparent);
+  background: var(--color-danger-soft);
+}
+
+.empty-state {
+  display: grid;
+  place-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.empty-state .title {
+  font-size: 0.95rem;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.field-hint {
+  font-size: var(--text-meta);
+  color: var(--color-text-muted);
+}
+
+.field-error {
+  font-size: var(--text-meta);
+  color: var(--color-danger);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  min-height: 34px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.modal-close:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text);
+}
+
+.modal-danger {
+  border-color: color-mix(in srgb, var(--color-danger) 32%, transparent);
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.link-row-spaced {
+  margin-top: var(--space-5);
+}
+
 @media (max-width: 520px) {
   .shell {
     padding:
@@ -966,7 +1233,9 @@ select {
   }
 
   .hero,
-  .panel {
+  .panel,
+  .surface-elevation-1,
+  .surface-elevation-2 {
     border-radius: 22px;
     padding: 18px;
   }

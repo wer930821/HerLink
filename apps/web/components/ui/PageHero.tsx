@@ -1,0 +1,22 @@
+import type { ReactNode } from "react";
+
+type PageHeroProps = {
+  kicker?: ReactNode;
+  title: ReactNode;
+  description?: ReactNode;
+  actions?: ReactNode;
+  children?: ReactNode;
+  className?: string;
+};
+
+export function PageHero({ kicker, title, description, actions, children, className }: PageHeroProps) {
+  return (
+    <section className={`hero${className ? ` ${className}` : ""}`}>
+      {kicker ? <p className="muted small">{kicker}</p> : null}
+      <h1 className="hero-title">{title}</h1>
+      {description ? <p className="hero-copy">{description}</p> : null}
+      {children}
+      {actions ? <div className="row">{actions}</div> : null}
+    </section>
+  );
+}
