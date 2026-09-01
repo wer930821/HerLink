@@ -1,6 +1,13 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import webpush from "npm:web-push@3.6.7";
 
-type EventType = "new_match" | "new_message" | "verification_result" | "push_test";
+type EventType =
+  | "new_match"
+  | "new_message"
+  | "verification_result"
+  | "push_test"
+  | "random_match"
+  | "random_message";
 
 interface PushEventRow {
   id: string;
@@ -10,6 +17,7 @@ interface PushEventRow {
   match_id: string | null;
   message_id: string | null;
   verification_id: string | null;
+  session_id: string | null;
   title: string;
   body: string;
   payload: Record<string, unknown> | null;
@@ -23,7 +31,19 @@ interface PushTokenRow {
   active: boolean;
 }
 
+interface WebPushSubscriptionRow {
+  id: string;
+  endpoint: string;
+  p256dh: string;
+  auth_key: string;
+}
+
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+
+const PUSH_CRON_SECRET = Deno.env.get("PUSH_CRON_SECRET") ?? "";
+const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "";
+const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
+const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -61,6 +81,13 @@ function looksLikeExpoPushToken(token: string) {
 }
 
 async function ensureAuthorized(req: Request, supabaseAdmin: ReturnType<typeof buildAdminClient>) {
+  if (PUSH_CRON_SECRET) {
+    const cronSecret = req.headers.get("x-push-cron-secret");
+    if (cronSecret && cronSecret === PUSH_CRON_SECRET) {
+      return { kind: "cron" as const, userId: null };
+    }
+  }
+
   const authHeader = req.headers.get("Authorization");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -203,6 +230,51 @@ async function isConversationPushStillAllowed(
   return !hasBlock;
 }
 
+async function isRandomConversationPushStillAllowed(
+  supabaseAdmin: ReturnType<typeof buildAdminClient>,
+  event: PushEventRow
+) {
+  const sessionId =
+    event.session_id ??
+    (event.payload && typeof event.payload.session_id === "string"
+      ? event.payload.session_id
+      : null);
+
+  if (!sessionId) {
+    return false;
+  }
+
+  const { data: sessionRow, error: sessionError } = await supabaseAdmin
+    .from("random_chat_sessions")
+    .select("id,status,user_a,user_b")
+    .eq("id", sessionId)
+    .maybeSingle();
+
+  if (sessionError) {
+    throw sessionError;
+  }
+
+  if (!sessionRow || sessionRow.status !== "active") {
+    return false;
+  }
+
+  const actorId = event.actor_user_id;
+  if (!actorId) {
+    return true;
+  }
+
+  const { data: hasBlock, error: blockError } = await supabaseAdmin.rpc("has_block_between", {
+    user_a: actorId,
+    user_b: event.user_id,
+  });
+
+  if (blockError) {
+    throw blockError;
+  }
+
+  return !hasBlock;
+}
+
 async function loadActiveTokens(
   supabaseAdmin: ReturnType<typeof buildAdminClient>,
   userId: string
@@ -258,26 +330,222 @@ async function sendExpoPush(messages: Array<Record<string, unknown>>) {
   return payload;
 }
 
-async function processEvent(
+async function loadActiveWebPushSubscriptions(
+  supabaseAdmin: ReturnType<typeof buildAdminClient>,
+  userId: string
+) {
+  const { data, error } = await supabaseAdmin
+    .from("web_push_subscriptions")
+    .select("id,endpoint,p256dh,auth_key")
+    .eq("user_id", userId)
+    .is("revoked_at", null);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as WebPushSubscriptionRow[];
+}
+
+async function recordWebPushDelivery(
+  supabaseAdmin: ReturnType<typeof buildAdminClient>,
+  eventId: string | null,
+  subscriptionId: string,
+  userId: string,
+  status: "sent" | "failed" | "revoked" | "skipped",
+  providerStatus: number | null,
+  errorCode: string | null
+) {
+  const { error } = await supabaseAdmin.from("web_push_deliveries").insert({
+    event_id: eventId,
+    subscription_id: subscriptionId,
+    user_id: userId,
+    status,
+    provider_status: providerStatus,
+    error_code: errorCode,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function revokeWebPushSubscription(
+  supabaseAdmin: ReturnType<typeof buildAdminClient>,
+  subscriptionId: string
+) {
+  const { error } = await supabaseAdmin
+    .from("web_push_subscriptions")
+    .update({
+      revoked_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", subscriptionId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function touchWebPushSubscription(
+  supabaseAdmin: ReturnType<typeof buildAdminClient>,
+  subscriptionId: string
+) {
+  const { error } = await supabaseAdmin
+    .from("web_push_subscriptions")
+    .update({
+      last_used_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", subscriptionId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+function buildWebPushPayload(event: PushEventRow): Record<string, unknown> {
+  const sessionId =
+    event.session_id ??
+    (event.payload && typeof event.payload.session_id === "string"
+      ? event.payload.session_id
+      : null);
+  const messageId =
+    event.message_id ??
+    (event.payload && typeof event.payload.message_id === "string"
+      ? event.payload.message_id
+      : null);
+
+  return {
+    type: event.event_type === "random_match" ? "match" : "message",
+    event_id: event.id,
+    event_type: event.event_type,
+    session_id: sessionId,
+    message_id: messageId,
+    title: event.title,
+    body: event.body,
+    target_url: sessionId ? `/session/${sessionId}` : "/",
+  };
+}
+
+async function deliverWebPush(
   supabaseAdmin: ReturnType<typeof buildAdminClient>,
   event: PushEventRow
 ) {
-  if (!(await shouldSendEvent(supabaseAdmin, event))) {
-    await markSkipped(supabaseAdmin, event, "recipient_not_eligible");
+  const subscriptions = await loadActiveWebPushSubscriptions(supabaseAdmin, event.user_id);
+
+  if (subscriptions.length === 0) {
+    await markSkipped(supabaseAdmin, event, "no_active_subscriptions");
     return { sent: 0, skipped: 1, failed: 0 };
   }
 
-  if ((event.event_type === "new_match" || event.event_type === "new_message") &&
-      !(await isConversationPushStillAllowed(supabaseAdmin, event))) {
-    await markSkipped(supabaseAdmin, event, "conversation_not_available");
-    return { sent: 0, skipped: 1, failed: 0 };
+  if (!VAPID_SUBJECT || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    await updateEventStatus(supabaseAdmin, event.id, {
+      status: "failed",
+      last_error: "vapid_not_configured",
+      processed_at: new Date().toISOString(),
+      delivery_attempts: event.delivery_attempts + 1,
+    });
+    return { sent: 0, skipped: 0, failed: 1 };
   }
 
-  if (event.event_type === "new_message" && event.actor_user_id === event.user_id) {
-    await markSkipped(supabaseAdmin, event, "self_message_no_push");
-    return { sent: 0, skipped: 1, failed: 0 };
+  const payload = JSON.stringify(buildWebPushPayload(event));
+  const now = new Date().toISOString();
+  let delivered = 0;
+  let revoked = 0;
+  let transientFailed = 0;
+  let lastError: string | null = null;
+
+  for (const subscription of subscriptions) {
+    try {
+      const result = await webpush.sendNotification(
+        {
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: subscription.p256dh,
+            auth: subscription.auth_key,
+          },
+        },
+        payload,
+        {
+          TTL: 86400,
+          urgency: "high",
+          vapidDetails: {
+            subject: VAPID_SUBJECT,
+            publicKey: VAPID_PUBLIC_KEY,
+            privateKey: VAPID_PRIVATE_KEY,
+          },
+        }
+      );
+
+      delivered += 1;
+      await touchWebPushSubscription(supabaseAdmin, subscription.id);
+      await recordWebPushDelivery(
+        supabaseAdmin,
+        event.id,
+        subscription.id,
+        event.user_id,
+        "sent",
+        typeof result?.statusCode === "number" ? result.statusCode : 201,
+        null
+      );
+    } catch (error) {
+      const err = error as { statusCode?: number; message?: string };
+      const statusCode = typeof err?.statusCode === "number" ? err.statusCode : null;
+
+      if (statusCode === 404 || statusCode === 410) {
+        revoked += 1;
+        await revokeWebPushSubscription(supabaseAdmin, subscription.id);
+        await recordWebPushDelivery(
+          supabaseAdmin,
+          event.id,
+          subscription.id,
+          event.user_id,
+          "revoked",
+          statusCode,
+          "subscription_gone"
+        );
+      } else {
+        transientFailed += 1;
+        lastError = err?.message ? String(err.message) : `web_push_failed_${statusCode ?? "unknown"}`;
+        await recordWebPushDelivery(
+          supabaseAdmin,
+          event.id,
+          subscription.id,
+          event.user_id,
+          "failed",
+          statusCode,
+          String(err?.message ?? "web_push_failed")
+        );
+      }
+    }
   }
 
+  if (delivered > 0 || revoked > 0) {
+    await updateEventStatus(supabaseAdmin, event.id, {
+      status: "sent",
+      sent_at: now,
+      processed_at: now,
+      last_error: transientFailed > 0 ? `${transientFailed} subscription(s) failed` : null,
+      delivery_attempts: event.delivery_attempts + 1,
+    });
+    return { sent: delivered > 0 ? 1 : 0, skipped: 0, failed: transientFailed };
+  }
+
+  await updateEventStatus(supabaseAdmin, event.id, {
+    status: "failed",
+    last_error: lastError ?? "web_push_delivery_failed",
+    processed_at: now,
+    delivery_attempts: event.delivery_attempts + 1,
+  });
+
+  return { sent: 0, skipped: 0, failed: 1 };
+}
+
+async function deliverExpoPush(
+  supabaseAdmin: ReturnType<typeof buildAdminClient>,
+  event: PushEventRow
+) {
   const activeTokens = await loadActiveTokens(supabaseAdmin, event.user_id);
   const validTokens = await handleMalformedTokens(supabaseAdmin, activeTokens);
 
@@ -365,6 +633,45 @@ async function processEvent(
   }
 }
 
+async function processEvent(
+  supabaseAdmin: ReturnType<typeof buildAdminClient>,
+  event: PushEventRow
+) {
+  if (!(await shouldSendEvent(supabaseAdmin, event))) {
+    await markSkipped(supabaseAdmin, event, "recipient_not_eligible");
+    return { sent: 0, skipped: 1, failed: 0 };
+  }
+
+  const isRandomEvent = event.event_type === "random_match" || event.event_type === "random_message";
+
+  if (isRandomEvent) {
+    if (!(await isRandomConversationPushStillAllowed(supabaseAdmin, event))) {
+      await markSkipped(supabaseAdmin, event, "conversation_not_available");
+      return { sent: 0, skipped: 1, failed: 0 };
+    }
+
+    if (event.event_type === "random_message" && event.actor_user_id === event.user_id) {
+      await markSkipped(supabaseAdmin, event, "self_message_no_push");
+      return { sent: 0, skipped: 1, failed: 0 };
+    }
+
+    return await deliverWebPush(supabaseAdmin, event);
+  }
+
+  if ((event.event_type === "new_match" || event.event_type === "new_message") &&
+      !(await isConversationPushStillAllowed(supabaseAdmin, event))) {
+    await markSkipped(supabaseAdmin, event, "conversation_not_available");
+    return { sent: 0, skipped: 1, failed: 0 };
+  }
+
+  if (event.event_type === "new_message" && event.actor_user_id === event.user_id) {
+    await markSkipped(supabaseAdmin, event, "self_message_no_push");
+    return { sent: 0, skipped: 1, failed: 0 };
+  }
+
+  return await deliverExpoPush(supabaseAdmin, event);
+}
+
 Deno.serve(async (req) => {
   try {
     const supabaseAdmin = buildAdminClient();
@@ -377,13 +684,14 @@ Deno.serve(async (req) => {
       body && typeof body === "object" && typeof body.eventType === "string" ? body.eventType : null;
     const limit = Math.max(1, Math.min(50, Math.trunc(requestedLimit)));
     const eventTypeFilter =
-      requestedEventType && ["new_match", "new_message", "verification_result", "push_test"].includes(requestedEventType)
+      requestedEventType &&
+      ["new_match", "new_message", "verification_result", "push_test", "random_match", "random_message"].includes(requestedEventType)
         ? requestedEventType
         : null;
 
     let query = supabaseAdmin
       .from("push_notification_events")
-      .select("id,event_type,user_id,actor_user_id,match_id,message_id,verification_id,title,body,payload,status,delivery_attempts")
+      .select("id,event_type,user_id,actor_user_id,match_id,message_id,verification_id,session_id,title,body,payload,status,delivery_attempts")
       .eq("status", "pending")
       .order("created_at", { ascending: true });
 
