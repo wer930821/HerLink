@@ -89,7 +89,7 @@ export async function requireAdminRequest(request: Request): Promise<AdminContex
       };
     }
 
-    if (!adminRow || !["reviewer", "moderator", "admin"].includes(adminRow.role)) {
+    if (!adminRow || adminRow.role !== "admin") {
       return {
         ok: false,
         status: 403,
