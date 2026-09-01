@@ -77,6 +77,12 @@ function createMissingSupabaseClient() {
       async signOut() {
         return { error: null };
       },
+      async resetPasswordForEmail() {
+        return { data: {}, error: authError };
+      },
+      async updateUser() {
+        return { data: { user: null }, error: authError };
+      },
       onAuthStateChange(callback: (event: string, session: { session: null }) => void) {
         callback("SIGNED_OUT", { session: null });
         return {
@@ -282,6 +288,21 @@ export async function signInAnonymously() {
 
 export async function signOut() {
   return supabase.auth.signOut();
+}
+
+export async function sendPasswordResetEmail(email: string, redirectTo?: string) {
+  return supabase.auth.resetPasswordForEmail(email, redirectTo ? { redirectTo } : undefined);
+}
+
+export async function updatePassword(password: string) {
+  return supabase.auth.updateUser({ password });
+}
+
+export function getWebAuthCallbackUrl() {
+  if (typeof window === "undefined") {
+    return "/auth/callback?next=/reset-password";
+  }
+  return `${window.location.origin}/auth/callback?next=/reset-password`;
 }
 
 export async function loadMyProfile(userId: string) {

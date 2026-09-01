@@ -70,6 +70,9 @@ export default function LoginPage() {
         <Button variant="ghost" size="lg" type="button" onClick={() => router.push("/signup")} disabled={loading}>
           還沒有帳號？前往註冊
         </Button>
+        <Button variant="link" type="button" onClick={() => router.push("/forgot-password")} disabled={loading}>
+          忘記密碼？
+        </Button>
       </Surface>
     </main>
   );
