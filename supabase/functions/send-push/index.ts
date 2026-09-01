@@ -385,6 +385,7 @@ async function sendDirectWebPushTest(
     .eq("user_id", userId)
     .is("revoked_at", null)
     .order("updated_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
   if (error) throw error;
   if (!subscription) return { ok: false, error: "subscription_not_found" };
