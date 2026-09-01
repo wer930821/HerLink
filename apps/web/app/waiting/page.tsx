@@ -15,7 +15,7 @@ import {
   type RandomSessionRow,
   type WebProfile,
 } from "../../lib/supabase";
-import { Badge, Button, Notice, PageHero } from "../../components/ui";
+import { Badge, Button, Notice, PageHero, Surface } from "../../components/ui";
 
 type RealtimePayload<T> = {
   new: T;
@@ -215,30 +215,33 @@ export default function WaitingPage() {
 
   return (
     <main className="stack">
-      <section className="hero">
-        <h1 className="hero-title waiting-title">{waitingTitle}</h1>
+      <PageHero
+        title={<span className="waiting-title">{waitingTitle}</span>}
+        actions={
+          <>
+            <Button variant="secondary" size="lg" onClick={cancelWaiting} disabled={actionBusy}>
+              取消配對
+            </Button>
+            <Button variant="ghost" size="lg" onClick={() => router.replace("/")}>
+              返回首頁
+            </Button>
+          </>
+        }
+      >
         <div className="waiting-meta">
           <div className="muted">已等待 {formattedElapsed}</div>
           <div className="muted small">目前在線 {onlineCount ?? 0} 人</div>
         </div>
         <p className="hero-copy">系統會自動把你配對給另一位等待中的匿名使用者。</p>
         {profile ? (
-          <div className="row">
-            <div>
-              <div className="title">{profile.anonymous_display_name ?? "匿名使用者"}</div>
-              <div className="muted small">你目前在等待池中</div>
+          <Surface elevation="inset">
+            <div className="row">
+              <Badge variant="accent">等待中</Badge>
+              <strong>{profile.anonymous_display_name ?? "匿名使用者"}</strong>
             </div>
-          </div>
+          </Surface>
         ) : null}
-        <div className="row">
-          <button className="button secondary" onClick={cancelWaiting} disabled={actionBusy}>
-            取消配對
-          </button>
-          <button className="ghost" onClick={() => router.replace("/")}>
-            返回首頁
-          </button>
-        </div>
-      </section>
+      </PageHero>
     </main>
   );
 }

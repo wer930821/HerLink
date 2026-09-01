@@ -16,7 +16,6 @@ import { MAINTENANCE_MESSAGE, MAINTENANCE_MODE, MAINTENANCE_TITLE } from "../lib
 import {
   findOrJoinRandomMatch,
   getCurrentSession,
-  getSupabaseDiagnostics,
   ensureAnonymousBootstrapProfile,
   isAnonymousProfileReady,
   isSupabaseConfigured,
@@ -35,6 +34,7 @@ import {
   type Session,
   type WebProfile,
 } from "../lib/supabase";
+import { Badge, Button, Notice, PageHero, Surface } from "../components/ui";
 
 type BootstrapState = {
   session: Session | null;
@@ -334,39 +334,33 @@ export default function HomePage() {
   if (MAINTENANCE_MODE) {
     return (
       <main className="stack">
-        <section className="hero">
-          <div className="status-badge accent">
-            維護中
-          </div>
-          <h1 className="hero-title">{MAINTENANCE_TITLE}</h1>
-          <p className="hero-copy">{MAINTENANCE_MESSAGE}</p>
-          <div className="notice">
-            目前先暫停新的隨機配對。已經在聊天中的匿名對話不會被強制中斷。
-          </div>
+        <PageHero
+          kicker={<Badge variant="accent">維護中</Badge>}
+          title={MAINTENANCE_TITLE}
+          description={MAINTENANCE_MESSAGE}
+        >
+          <Notice>目前先暫停新的隨機配對。已經在聊天中的匿名對話不會被強制中斷。</Notice>
           {state.activeSession ? (
-            <div className="banner">
-              你有一個尚未結束的聊天室。
-              <div style={{ marginTop: 12 }} className="row">
-                <button type="button" className="button secondary" onClick={continueActiveSession} disabled={actionBusy}>
-                  繼續聊天
-                </button>
-                <button type="button" className="ghost" onClick={(event) => void leaveActiveSession(event)} disabled={actionBusy}>
-                  離開聊天室
-                </button>
+            <Notice variant="info" title="你有一個尚未結束的聊天室。">
+              <div className="row">
+                <Button size="md" onClick={continueActiveSession} disabled={actionBusy}>繼續聊天</Button>
+                <Button variant="danger" size="md" onClick={(event) => void leaveActiveSession(event)} disabled={actionBusy}>離開聊天室</Button>
               </div>
-            </div>
+            </Notice>
           ) : null}
-          {debugPanel}
-        </section>
+        </PageHero>
+        {debugPanel}
       </main>
     );
   }
 
   if (!isSupabaseConfigured()) {
     return (
-      <main className="panel">
-        <h1 className="hero-title">HerLink Web V0.1</h1>
-        <p className="hero-copy">缺少 Supabase 設定，請先補上 `NEXT_PUBLIC_SUPABASE_URL` 和 `NEXT_PUBLIC_SUPABASE_ANON_KEY`。</p>
+      <main className="stack">
+        <PageHero
+          title="HerLink Web V0.1"
+          description="缺少 Supabase 設定，請先補上 NEXT_PUBLIC_SUPABASE_URL 和 NEXT_PUBLIC_SUPABASE_ANON_KEY。"
+        />
         {debugPanel}
       </main>
     );
@@ -374,9 +368,8 @@ export default function HomePage() {
 
   if (bootstrapping) {
     return (
-      <main className="hero">
-        <h1 className="hero-title">HerLink</h1>
-        <p className="hero-copy">正在檢查登入狀態…</p>
+      <main className="stack">
+        <PageHero title="HerLink" description="正在檢查登入狀態…" />
         {debugPanel}
       </main>
     );
@@ -432,29 +425,32 @@ export default function HomePage() {
   if (!state.session) {
     return (
       <main className="stack">
-        <section className="hero">
-          <h1 className="hero-title">HerLink</h1>
-          <p className="hero-copy">不用註冊、不用公開真實資料，直接建立匿名身份開始聊天。</p>
-        <div className="row">
-          <button type="button" className="button" onClick={startAnonymous} disabled={actionBusy}>
-            {actionBusy ? "建立匿名身份中…" : "開始匿名聊天"}
-          </button>
-        </div>
-        {onlineCountConnected ? <div className="muted small">目前在線 {onlineCount} 人</div> : null}
-        {message ? <div className="notice">{message}</div> : null}
-      </section>
-        <section className="panel">
-          <p className="notice">請勿向陌生人匯款、投資或提供銀行資料、信用卡資訊與驗證碼。</p>
-          <p className="muted small" style={{ marginTop: 12 }}>
-            使用 HerLink 即表示你已年滿 18 歲，並同意服務條款與隱私權政策。
-          </p>
+        <PageHero
+          title="HerLink"
+          description="不用註冊、不用公開真實資料，直接建立匿名身份開始聊天。"
+          actions={
+            <>
+              <Button size="lg" onClick={startAnonymous} disabled={actionBusy}>
+                {actionBusy ? "建立匿名身份中…" : "開始匿名聊天"}
+              </Button>
+              {onlineCountConnected ? <Badge variant="success">目前在線 {onlineCount} 人</Badge> : null}
+            </>
+          }
+        >
+          {message ? <Notice variant="warning">{message}</Notice> : null}
+        </PageHero>
+        <Surface elevation={1}>
+          <Notice variant="danger" title="安全提醒">
+            請勿向陌生人匯款、投資或提供銀行資料、信用卡資訊與驗證碼。
+          </Notice>
+          <p className="muted small">使用 HerLink 即表示你已年滿 18 歲，並同意服務條款與隱私權政策。</p>
           <div className="link-row">
-            <a className="link" href="/terms">服務條款</a>
-            <a className="link" href="/privacy">隱私權政策</a>
-            <a className="link" href="/safety">安全說明</a>
+            <Button variant="link" href="/terms">服務條款</Button>
+            <Button variant="link" href="/privacy">隱私權政策</Button>
+            <Button variant="link" href="/safety">安全說明</Button>
           </div>
-          {debugPanel}
-        </section>
+        </Surface>
+        {debugPanel}
       </main>
     );
   }
@@ -534,79 +530,57 @@ export default function HomePage() {
 
   return (
     <main className="stack">
-      <section className="hero">
-        <div className="row" style={{ justifyContent: "space-between" }}>
-          <div>
-            <h1 className="hero-title" style={{ marginBottom: 8 }}>HerLink</h1>
-            <p className="hero-copy">匿名聊天，不需要公開自己。</p>
-          </div>
-        </div>
+      <PageHero title="HerLink" description="匿名聊天，不需要公開自己。">
         {MAINTENANCE_MODE ? (
-          <div className="notice">
-            <strong>HerLink 維護中。</strong>
-            <div style={{ marginTop: 8 }}>{MAINTENANCE_MESSAGE}</div>
-          </div>
+          <Notice variant="warning" title="HerLink 維護中。">{MAINTENANCE_MESSAGE}</Notice>
         ) : null}
-        <div className="notice">
-          你目前的匿名身份是 <strong>{anonymousSummary?.name ?? "匿名使用者"}</strong>。
-        </div>
+        <Surface elevation="inset">
+          <div className="row">
+            <Badge variant="accent">匿名身份</Badge>
+            <strong>{anonymousSummary?.name ?? "匿名使用者"}</strong>
+          </div>
+        </Surface>
+      </PageHero>
+
+      <Surface elevation={1}>
         <div className="row">
-          <button type="button" className="button" onClick={startMatching} disabled={actionBusy || MAINTENANCE_MODE}>
+          <Button size="lg" onClick={startMatching} disabled={actionBusy || MAINTENANCE_MODE}>
             {actionBusy ? "處理中…" : MAINTENANCE_MODE ? "維護中" : state.activeSession ? "繼續聊天" : "開始隨機配對"}
-          </button>
-          <button type="button" className="ghost" onClick={() => router.push("/onboarding")} disabled={actionBusy || MAINTENANCE_MODE}>
+          </Button>
+          <Button variant="ghost" size="lg" onClick={() => router.push("/onboarding")} disabled={actionBusy || MAINTENANCE_MODE}>
             重新設定匿名身份
-          </button>
+          </Button>
         </div>
         {state.activeSession ? (
-          <div className="banner">
-            你有一個尚未結束的聊天室。
-            <div style={{ marginTop: 12 }} className="row">
-              <button
-                className="button secondary"
-                type="button"
-                onClick={continueActiveSession}
-                disabled={actionBusy}
-              >
-                繼續聊天
-              </button>
-              <button type="button" className="ghost" onClick={(event) => void leaveActiveSession(event)} disabled={actionBusy}>
-                離開聊天室
-              </button>
+          <Notice variant="info" title="你有一個尚未結束的聊天室。">
+            <div className="row">
+              <Button size="md" onClick={continueActiveSession} disabled={actionBusy}>繼續聊天</Button>
+              <Button variant="danger" size="md" onClick={(event) => void leaveActiveSession(event)} disabled={actionBusy}>離開聊天室</Button>
             </div>
-          </div>
+          </Notice>
         ) : null}
         {state.queue?.status === "waiting" ? (
-          <div className="banner">
-            你正在等待配對中。
-            <div style={{ marginTop: 12 }}>
-              <button type="button" className="button secondary" onClick={leaveQueue} disabled={actionBusy}>
-                取消等待
-              </button>
+          <Notice variant="info" title="你正在等待配對中。">
+            <div className="row">
+              <Button variant="secondary" size="md" onClick={leaveQueue} disabled={actionBusy}>取消等待</Button>
             </div>
-          </div>
+          </Notice>
         ) : null}
-        {message ? <div className="notice">{message}</div> : null}
-      </section>
+        {message ? <Notice variant="warning">{message}</Notice> : null}
+      </Surface>
 
-      <section className="panel">
-        <p className="title">安全提醒</p>
+      <Surface elevation={1}>
+        <div className="title">安全提醒</div>
         <p className="hero-copy">請勿匯款、投資或提供驗證碼。若遇到可疑內容，請直接封鎖、檢舉並離開。</p>
         <div className="row">
-          <button type="button" className="ghost" onClick={logout} disabled={actionBusy}>
-            登出
-          </button>
+          <Button variant="secondary" onClick={logout} disabled={actionBusy}>登出</Button>
           <div className="muted small">
             目前會話：{state.activeSession ? "已配對" : "未配對"}
           </div>
         </div>
         {onlineCountConnected ? <div className="muted small">目前在線 {onlineCount} 人</div> : null}
-      </section>
+      </Surface>
 
-      <section className="footer">
-        <div>Supabase 連線：{getSupabaseDiagnostics().hasUrl ? "URL 已設定" : "URL 未設定"}</div>
-        <div>匿名金鑰：{getSupabaseDiagnostics().hasAnonKey ? "已設定" : "未設定"}</div>
-      </section>
       {debugPanel}
     </main>
   );
