@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 export type ReportCategory =
   | "suspected_male_impersonation"
@@ -890,3 +891,99 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
+
+export const SUPABASE_TIMEOUT_MS = 10_000;
+
+export function withSupabaseTimeout<T>(
+  promiseLike: PromiseLike<T>,
+  label: string,
+  timeoutMs = SUPABASE_TIMEOUT_MS
+) {
+  let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+  const promise = Promise.resolve(promiseLike);
+
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutHandle = setTimeout(() => {
+      reject(new Error(`${label} 逾時，請重試`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }) as Promise<T>;
+}
+
+const NATIVE_AUTH_CALLBACK_URL = "herlink://auth/callback";
+
+export function getAuthCallbackUrl() {
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    return new URL("/auth/callback", window.location.origin).toString();
+  }
+
+  return NATIVE_AUTH_CALLBACK_URL;
+}
+
+function parseAuthCallbackUrl(rawUrl: string) {
+  const [baseWithQuery, hash = ""] = rawUrl.split("#");
+  const queryIndex = baseWithQuery.indexOf("?");
+  const query = queryIndex >= 0 ? baseWithQuery.slice(queryIndex + 1) : "";
+  const queryParams = new URLSearchParams(query);
+  const hashParams = new URLSearchParams(hash);
+
+  return {
+    accessToken: hashParams.get("access_token") ?? queryParams.get("access_token"),
+    refreshToken: hashParams.get("refresh_token") ?? queryParams.get("refresh_token"),
+    code: queryParams.get("code") ?? hashParams.get("code"),
+    type: queryParams.get("type") ?? hashParams.get("type") ?? "signup",
+    error: queryParams.get("error") ?? hashParams.get("error"),
+    errorDescription:
+      queryParams.get("error_description") ?? hashParams.get("error_description"),
+  };
+}
+
+export async function completeAuthFromUrl(rawUrl: string) {
+  const parsed = parseAuthCallbackUrl(rawUrl);
+
+  if (parsed.error) {
+    throw new Error(parsed.errorDescription ?? parsed.error);
+  }
+
+  if (parsed.code) {
+    const { data, error } = await withSupabaseTimeout(
+      supabase.auth.exchangeCodeForSession(parsed.code),
+      "驗證連結處理"
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      session: data.session,
+      type: parsed.type,
+    };
+  }
+
+  if (parsed.accessToken && parsed.refreshToken) {
+    const { data, error } = await withSupabaseTimeout(
+      supabase.auth.setSession({
+        access_token: parsed.accessToken,
+        refresh_token: parsed.refreshToken,
+      }),
+      "驗證連結處理"
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      session: data.session,
+      type: parsed.type,
+    };
+  }
+
+  throw new Error("驗證連結缺少可用的登入資訊。");
+}

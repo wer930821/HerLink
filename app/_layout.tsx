@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { AuthProvider, useAuth } from "../context/auth";
 import { useEffect } from "react";
 import { SplashScreen } from "expo-router";
+import { colors } from "../theme/colors";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -41,6 +42,31 @@ function RootLayoutNav() {
       <Stack.Screen name="person/[userId]" />
       <Stack.Screen name="modal" options={{ presentation: "modal", headerShown: true, title: "Modal" }} />
       <Stack.Screen name="signup" options={{ presentation: "modal", headerShown: true, title: "註冊" }} />
+      <Stack.Screen
+        name="forgot-password"
+        options={{
+          presentation: "modal",
+          headerShown: true,
+          title: "忘記密碼",
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
+        }}
+      />
+      <Stack.Screen
+        name="reset-password"
+        options={{
+          headerShown: true,
+          title: "重設密碼",
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
+        }}
+      />
+      <Stack.Screen name="auth/callback" />
+      <Stack.Screen name="privacy" options={{ headerShown: true, title: "隱私權政策" }} />
+      <Stack.Screen name="terms" options={{ headerShown: true, title: "服務條款" }} />
+      <Stack.Screen name="community-guidelines" options={{ headerShown: true, title: "社群守則" }} />
     </Stack>
   );
 }

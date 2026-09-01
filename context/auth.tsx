@@ -26,6 +26,7 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  retryAuthRestore: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -72,17 +73,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ]);
   };
 
+  const restoreAuth = async () => {
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    setSession(currentSession);
+    setUser(currentSession?.user ?? null);
+    if (currentSession?.user) {
+      await hydrateSignedInUser(currentSession.user);
+    } else {
+      setProfile(null);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
     // 取得當前 Session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        hydrateSignedInUser(session.user).then(() => setLoading(false));
-      } else {
-        setLoading(false);
-      }
-    });
+    void restoreAuth();
 
     // 監聽 Auth 狀態
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -112,8 +117,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   };
 
+  const retryAuthRestore = async () => {
+    await restoreAuth();
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, signOut, refreshProfile, retryAuthRestore }}>
       {children}
     </AuthContext.Provider>
   );
