@@ -1060,12 +1060,14 @@ select {
 .surface {
   display: grid;
   gap: 14px; /* legacy panel rhythm, intentionally off the 4px scale */
+  padding: clamp(var(--space-4), 3vw, var(--space-6));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   background: color-mix(in srgb, var(--color-surface-1) 92%, transparent);
 }
 
 .surface-elevation-2 {
+  padding: clamp(18px, 3.5vw, 26px);
   border-radius: 28px; /* display surface, legacy hero radius */
   background: color-mix(in srgb, var(--color-surface-1) 88%, transparent);
   box-shadow: var(--shadow-card);
@@ -1073,6 +1075,7 @@ select {
 
 .surface-inset {
   gap: var(--space-2);
+  padding: 14px var(--space-4);
   border-radius: var(--radius-lg);
   background: var(--color-surface-3);
 }
