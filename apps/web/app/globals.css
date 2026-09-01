@@ -891,7 +891,11 @@ select {
 
 @media (max-width: 480px) {
   .panel.chat-shell {
-    padding: 12px;
+    padding: 8px;
+  }
+
+  .chat-messages {
+    margin-top: 4px;
   }
 
   .chat-actions {
