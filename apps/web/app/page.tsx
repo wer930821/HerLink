@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../lib/auth-ui";
-import { clearAnonymousInstallationId } from "../lib/anonymous-install";
 import {
   getShortId,
   isNavigationDebugEnabled,
@@ -408,8 +407,12 @@ export default function HomePage() {
       }
 
       if (abuseCheck.data && abuseCheck.data.decision !== "allow") {
-        await signOut();
-        setState(emptyBootstrapState);
+        setState({
+          session: data.session,
+          profile: profileResult.data ?? null,
+          queue: null,
+          activeSession: null,
+        });
         setMessage("此帳號目前無法使用配對功能，請稍後再試。");
         return;
       }
@@ -479,13 +482,7 @@ export default function HomePage() {
         return true;
       };
 
-      let allowed = await runAbuseCheck();
-      if (!allowed) {
-        clearAnonymousInstallationId();
-        allowed = await runAbuseCheck();
-      }
-
-      if (!allowed) {
+      if (!(await runAbuseCheck())) {
         setMessage("此帳號目前無法使用配對功能，請稍後再試。");
         return;
       }
