@@ -353,7 +353,7 @@ select {
   font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 11px;
   line-height: 1.45;
-  pointer-events: none;
+  pointer-events: auto;
   text-align: left;
 }
 
