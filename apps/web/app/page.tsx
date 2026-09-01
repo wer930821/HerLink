@@ -89,6 +89,8 @@ export default function HomePage() {
   const [latestSessionDiagnostic, setLatestSessionDiagnostic] = useState<LatestRandomSessionDiagnosticRow | null>(null);
   const [latestSessionDiagnosticLoaded, setLatestSessionDiagnosticLoaded] = useState(false);
   const [latestSessionDiagnosticError, setLatestSessionDiagnosticError] = useState(false);
+  const [showTestUid, setShowTestUid] = useState(false);
+  const [testUidCopied, setTestUidCopied] = useState(false);
   const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
 
   const recordHomeRouteDiagnostic = (eventType: "continue_clicked" | "continue_routed", metadata: Record<string, unknown> = {}) => {
@@ -278,6 +280,20 @@ export default function HomePage() {
     };
   }, [state.profile]);
 
+  const copyTestUid = async () => {
+    const userId = state.session?.user.id;
+    if (!userId || !navigator.clipboard) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(userId);
+      setTestUidCopied(true);
+    } catch {
+      setTestUidCopied(false);
+    }
+  };
+
   const debugPanel = debugEnabled ? (
     <div className="debug-panel">
       <div>path: {pathname}</div>
@@ -287,6 +303,17 @@ export default function HomePage() {
       <div>CURRENT AUTH UID: {getShortId(state.session?.user.id ?? null) ?? "none"}</div>
       <div>ACTIVE SESSION ID: {getShortId(state.activeSession?.id ?? null) ?? "none"}</div>
       {activeSessionLookup.error ? <div>RPC ERROR: {activeSessionLookup.error}</div> : null}
+      <div className="row" style={{ marginTop: 8 }}>
+        <button type="button" className="ghost" onClick={() => setShowTestUid(true)} disabled={!state.session?.user.id}>
+          顯示本機測試 UID
+        </button>
+        {showTestUid && state.session?.user.id ? (
+          <button type="button" className="ghost" onClick={() => void copyTestUid()}>
+            {testUidCopied ? "UID 已複製" : "複製 UID"}
+          </button>
+        ) : null}
+      </div>
+      {showTestUid && state.session?.user.id ? <div>TEST UID: {state.session.user.id}</div> : null}
       <div>LATEST RANDOM SESSION: {latestSessionDiagnosticError ? "unavailable" : latestSessionDiagnosticLoaded ? getShortId(latestSessionDiagnostic?.session_id ?? null) ?? "none" : "loading"}</div>
       <div>STATUS: {latestSessionDiagnostic?.status ?? "none"}</div>
       <div>ENDED REASON: {latestSessionDiagnostic?.ended_reason ?? "none"}</div>
