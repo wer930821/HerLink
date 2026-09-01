@@ -95,6 +95,21 @@ export default function HomePage() {
     router.push(withNavigationDebugParam(`/session/${state.activeSession.id}`));
   };
 
+  const leaveActiveSession = async () => {
+    if (!state.activeSession?.id) {
+      return;
+    }
+
+    setActionBusy(true);
+    try {
+      await leaveRandomSession(state.activeSession.id);
+      setState((prev) => ({ ...prev, activeSession: null }));
+      setMessage("已離開聊天室。");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -187,7 +202,7 @@ export default function HomePage() {
     </div>
   ) : null;
 
-  if (MAINTENANCE_MODE && !state.activeSession) {
+  if (MAINTENANCE_MODE) {
     return (
       <main className="stack">
         <section className="hero">
@@ -199,6 +214,19 @@ export default function HomePage() {
           <div className="notice">
             目前先暫停新的隨機配對。已經在聊天中的匿名對話不會被強制中斷。
           </div>
+          {state.activeSession ? (
+            <div className="banner">
+              你有一個尚未結束的聊天室。
+              <div style={{ marginTop: 12 }} className="row">
+                <button type="button" className="button secondary" onClick={continueActiveSession} disabled={actionBusy}>
+                  繼續聊天
+                </button>
+                <button type="button" className="ghost" onClick={() => void leaveActiveSession()} disabled={actionBusy}>
+                  離開聊天室
+                </button>
+              </div>
+            </div>
+          ) : null}
           {debugPanel}
         </section>
       </main>
@@ -361,21 +389,6 @@ export default function HomePage() {
       await leaveRandomQueue();
       setState((prev) => ({ ...prev, queue: null }));
       setMessage("已離開等待池。");
-    } finally {
-      setActionBusy(false);
-    }
-  };
-
-  const leaveActiveSession = async () => {
-    if (!state.activeSession?.id) {
-      return;
-    }
-
-    setActionBusy(true);
-    try {
-      await leaveRandomSession(state.activeSession.id);
-      setState((prev) => ({ ...prev, activeSession: null }));
-      setMessage("已離開聊天室。");
     } finally {
       setActionBusy(false);
     }
