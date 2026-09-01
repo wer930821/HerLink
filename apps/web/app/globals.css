@@ -703,7 +703,7 @@ select {
 
 .chat-bubble {
   width: fit-content;
-  max-width: min(82%, 520px);
+  max-width: min(90%, 520px);
   padding: 12px 14px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.06);
@@ -886,5 +886,24 @@ select {
 
   .admin-table {
     min-width: 660px;
+  }
+}
+
+@media (max-width: 480px) {
+  .panel.chat-shell {
+    padding: 12px;
+  }
+
+  .chat-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chat-actions .button {
+    width: 100%;
+  }
+
+  .chat-actions .button:last-child {
+    grid-column: 1 / -1;
   }
 }
