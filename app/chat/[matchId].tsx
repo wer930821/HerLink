@@ -376,7 +376,9 @@ export default function ChatRoomScreen() {
             </View>
           )}
           <View style={styles.headerBody}>
-            <Text style={styles.headerTitle}>{profile?.display_name || "配對對象"}</Text>
+            <Text numberOfLines={1} ellipsizeMode="tail" style={styles.headerTitle}>
+              {profile?.display_name || "配對對象"}
+            </Text>
             <View style={styles.headerMetaRow}>
               <VerifiedBadge verified={profile?.verified ?? false} />
               <Text style={styles.headerSubtitle}>{isActive ? "active match" : "這段連線目前不可再互動。"}</Text>
@@ -629,7 +631,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   messageBubble: {
-    maxWidth: "80%",
+    maxWidth: "88%",
     borderRadius: 20,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
