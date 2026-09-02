@@ -509,6 +509,7 @@ select {
 
 .chat-header {
   display: grid;
+  flex: 0 0 auto;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: var(--space-3);
   align-items: center;
@@ -582,6 +583,7 @@ select {
 
 .chat-actions {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   gap: var(--space-2);
 }
@@ -628,6 +630,7 @@ select {
 
 .icebreaker-card {
   display: grid;
+  flex: 0 0 auto;
   gap: var(--space-2);
   padding: var(--space-3);
   border: 1px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-border));
