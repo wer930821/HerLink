@@ -21,8 +21,12 @@ interface PushEventRow {
   title: string;
   body: string;
   payload: Record<string, unknown> | null;
-  status: "pending" | "sent" | "failed" | "skipped";
+  status: "pending" | "processing" | "sent" | "failed" | "skipped";
   delivery_attempts: number;
+  event_created_at: string;
+  delivery_started_at: string | null;
+  delivered_at: string | null;
+  processing_claim_token: string | null;
 }
 
 interface PushTokenRow {
@@ -120,16 +124,24 @@ async function ensureAuthorized(req: Request, supabaseAdmin: ReturnType<typeof b
 
 async function updateEventStatus(
   supabaseAdmin: ReturnType<typeof buildAdminClient>,
-  eventId: string,
+  event: PushEventRow,
   values: Record<string, unknown>
 ) {
-  const { error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from("push_notification_events")
-    .update(values)
-    .eq("id", eventId);
+    .update({ ...values, processing_claimed_at: null, processing_claim_token: null })
+    .eq("id", event.id)
+    .eq("status", "processing")
+    .eq("processing_claim_token", event.processing_claim_token)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw error;
+  }
+
+  if (!data) {
+    console.warn(JSON.stringify({ scope: "push", message: "event_claim_lost", eventId: event.id }));
   }
 }
 
@@ -159,7 +171,7 @@ async function markSkipped(
   event: PushEventRow,
   reason: string
 ) {
-  await updateEventStatus(supabaseAdmin, event.id, {
+  await updateEventStatus(supabaseAdmin, event, {
     status: "skipped",
     last_error: reason,
     processed_at: new Date().toISOString(),
@@ -479,7 +491,7 @@ async function deliverWebPush(
   }
 
   if (!VAPID_SUBJECT || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-    await updateEventStatus(supabaseAdmin, event.id, {
+    await updateEventStatus(supabaseAdmin, event, {
       status: "failed",
       last_error: "vapid_not_configured",
       processed_at: new Date().toISOString(),
@@ -561,17 +573,18 @@ async function deliverWebPush(
   }
 
   if (delivered > 0 || revoked > 0) {
-    await updateEventStatus(supabaseAdmin, event.id, {
+    await updateEventStatus(supabaseAdmin, event, {
       status: "sent",
       sent_at: now,
       processed_at: now,
+      delivered_at: now,
       last_error: transientFailed > 0 ? `${transientFailed} subscription(s) failed` : null,
       delivery_attempts: event.delivery_attempts + 1,
     });
     return { sent: delivered > 0 ? 1 : 0, skipped: 0, failed: transientFailed };
   }
 
-  await updateEventStatus(supabaseAdmin, event.id, {
+  await updateEventStatus(supabaseAdmin, event, {
     status: "failed",
     last_error: lastError ?? "web_push_delivery_failed",
     processed_at: now,
@@ -628,10 +641,11 @@ async function deliverExpoPush(
       await disableTokens(supabaseAdmin, invalidTokenIds);
     }
 
-    await updateEventStatus(supabaseAdmin, event.id, {
+    await updateEventStatus(supabaseAdmin, event, {
       status: "sent",
       sent_at: now,
       processed_at: now,
+      delivered_at: now,
       last_error: null,
       delivery_attempts: event.delivery_attempts + 1,
     });
@@ -650,7 +664,7 @@ async function deliverExpoPush(
 
     return { sent: 1, skipped: 0, failed: 0 };
   } catch (error) {
-    await updateEventStatus(supabaseAdmin, event.id, {
+    await updateEventStatus(supabaseAdmin, event, {
       status: "failed",
       last_error: error instanceof Error ? error.message : String(error),
       processed_at: now,
@@ -725,49 +739,18 @@ Deno.serve(async (req) => {
     }
     const requestedLimit =
       body && typeof body === "object" && typeof body.limit === "number" ? body.limit : 10;
-    const requestedEventType =
-      body && typeof body === "object" && typeof body.eventType === "string" ? body.eventType : null;
     const requestedEventId =
       body && typeof body === "object" && typeof body.eventId === "string" ? body.eventId : null;
     const limit = Math.max(1, Math.min(50, Math.trunc(requestedLimit)));
-    const eventTypeFilter =
-      requestedEventType &&
-      ["new_match", "new_message", "verification_result", "push_test", "random_match", "random_message"].includes(requestedEventType)
-        ? requestedEventType
-        : null;
 
-    const { data: subscriptionUsers, error: subscriptionUsersError } = await supabaseAdmin
-      .from("web_push_subscriptions")
-      .select("user_id")
-      .is("revoked_at", null);
-    if (subscriptionUsersError) {
-      return json({ ok: false, error: subscriptionUsersError.message }, 500);
-    }
-
-    const activeSubscriptionUserIds = [...new Set((subscriptionUsers ?? []).map((row) => row.user_id))];
-
-    let query = supabaseAdmin
-      .from("push_notification_events")
-      .select("id,event_type,user_id,actor_user_id,match_id,message_id,verification_id,session_id,title,body,payload,status,delivery_attempts")
-      .eq("status", "pending")
-      // Deliver current conversation events first.  A historical backlog must
-      // never delay a newly matched user or a newly received message.
-      .order("created_at", { ascending: false });
-
-    // The queue contains historical events for users without a Web Push
-    // subscription. Prefer recipients that can actually receive a browser push.
-    if (activeSubscriptionUserIds.length > 0) {
-      query = query.in("user_id", activeSubscriptionUserIds);
-    }
-
-    if (eventTypeFilter) {
-      query = query.eq("event_type", eventTypeFilter);
-    }
-    if (requestedEventId) {
-      query = query.eq("id", requestedEventId);
-    }
-
-    const { data: events, error } = await query.limit(limit);
+    // This is the sole transition into `processing`. PostgreSQL row locks make
+    // the immediate pg_net invocation and the minutely cron fallback mutually
+    // exclusive for every event.
+    const { data: events, error } = await supabaseAdmin.rpc("claim_push_notification_events", {
+      p_event_id: requestedEventId,
+      p_limit: requestedEventId ? 1 : limit,
+      p_include_failed: !requestedEventId,
+    });
 
     if (error) {
       return json({ ok: false, error: error.message }, 500);
