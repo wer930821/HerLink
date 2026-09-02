@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { SplashScreen } from "expo-router";
 import { colors } from "../theme/colors";
 import * as Notifications from "expo-notifications";
-import { pushNavigationSessionId, syncNativePushToken } from "../lib/native-push";
+import { pushNavigationTarget, syncNativePushToken } from "../lib/native-push";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -32,9 +32,14 @@ function RootLayoutNav() {
       void syncNativePushToken(token.data).catch((error) => console.warn("Native push token refresh failed", error));
     });
     const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      const sessionId = pushNavigationSessionId(response);
-      if (session && sessionId) {
-        router.replace({ pathname: "/random-session/[sessionId]", params: { sessionId } } as never);
+      const target = pushNavigationTarget(response);
+      if (session && target.kind === "random_session") {
+        router.replace({
+          pathname: "/random-session/[sessionId]",
+          params: { sessionId: target.sessionId },
+        } as never);
+      } else if (session && target.kind === "match_chat") {
+        router.replace({ pathname: "/chat/[matchId]", params: { matchId: target.matchId } } as never);
       } else {
         router.replace("/(tabs)");
       }

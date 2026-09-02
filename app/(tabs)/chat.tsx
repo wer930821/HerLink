@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { ScreenState } from "../../components/ScreenState";
 import { VerifiedBadge } from "../../components/VerifiedBadge";
 import { useAuth } from "../../context/auth";
@@ -95,6 +96,23 @@ export default function ChatScreen() {
     >
       <Text style={styles.eyebrow}>Chat</Text>
       <Text style={styles.title}>把互相想認識的人，留在真正可以延續對話的地方。</Text>
+
+      <Pressable
+        style={styles.randomCard}
+        onPress={() => router.push("/random" as never)}
+        accessibilityRole="button"
+      >
+        <View style={styles.randomIcon}>
+          <Ionicons name="flash-outline" size={22} color={colors.primary} />
+        </View>
+        <View style={styles.randomBody}>
+          <Text style={styles.randomTitle}>匿名即時聊天</Text>
+          <Text style={styles.randomSubtitle}>
+            用匿名身份跟陌生人即時聊天，可以隨時下一位、封鎖或檢舉。
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.textSoft} />
+      </Pressable>
 
       {matches.length === 0 ? (
         <View style={styles.emptyCard}>
@@ -189,6 +207,37 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.md,
     ...shadows.card,
+  },
+  randomCard: {
+    marginTop: spacing.xl,
+    padding: spacing.lg,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  randomIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  randomBody: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  randomTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  randomSubtitle: {
+    color: colors.textMuted,
+    ...typography.caption,
   },
   avatarImage: {
     width: 60,

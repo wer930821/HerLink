@@ -5,7 +5,7 @@ import { supabase } from "./supabase";
 import { getDeviceHash } from "./device";
 
 export type HerLinkPushData = {
-  event_type?: "random_match" | "random_message";
+  event_type?: string;
   session_id?: string;
   target_url?: string;
 };
@@ -65,4 +65,39 @@ export async function disableNativePushToken(token: string | null | undefined) {
 export function pushNavigationSessionId(response: Notifications.NotificationResponse) {
   const data = response.notification.request.content.data as HerLinkPushData;
   return typeof data.session_id === "string" ? data.session_id : null;
+}
+
+export type PushNavigationTarget =
+  | { kind: "random_session"; sessionId: string }
+  | { kind: "match_chat"; matchId: string }
+  | { kind: "home" };
+
+export function pushNavigationTarget(
+  response: Notifications.NotificationResponse
+): PushNavigationTarget {
+  const data = response.notification.request.content.data as HerLinkPushData;
+  const targetUrl = typeof data.target_url === "string" ? data.target_url : "";
+  const randomPrefix = "/random-session/";
+  const chatPrefix = "/chat/";
+
+  if (targetUrl.startsWith(randomPrefix)) {
+    const sessionId = decodeURIComponent(targetUrl.slice(randomPrefix.length));
+    if (sessionId) {
+      return { kind: "random_session", sessionId };
+    }
+  }
+
+  if (targetUrl.startsWith(chatPrefix)) {
+    const matchId = decodeURIComponent(targetUrl.slice(chatPrefix.length));
+    if (matchId) {
+      return { kind: "match_chat", matchId };
+    }
+  }
+
+  const sessionId = pushNavigationSessionId(response);
+  if (sessionId) {
+    return { kind: "random_session", sessionId };
+  }
+
+  return { kind: "home" };
 }

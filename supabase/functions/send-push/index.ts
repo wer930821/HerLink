@@ -9,6 +9,10 @@ type EventType =
   | "random_match"
   | "random_message";
 
+type DeliveryTarget = "web" | "native" | "both";
+type TargetName = "web" | "native";
+type TargetStatus = "sent" | "failed" | "skipped";
+
 interface PushEventRow {
   id: string;
   event_type: EventType;
@@ -27,10 +31,18 @@ interface PushEventRow {
   delivery_started_at: string | null;
   delivered_at: string | null;
   processing_claim_token: string | null;
+  delivery_target: DeliveryTarget;
+  web_delivery_status: TargetStatus | null;
+  native_delivery_status: TargetStatus | null;
+  web_last_error: string | null;
+  native_last_error: string | null;
+  web_delivered_at: string | null;
+  native_delivered_at: string | null;
 }
 
 interface PushTokenRow {
   id: string;
+  user_id: string;
   expo_push_token: string;
   active: boolean;
 }
@@ -42,7 +54,18 @@ interface WebPushSubscriptionRow {
   auth_key: string;
 }
 
+interface DeliveryResult {
+  target: TargetName;
+  status: TargetStatus;
+  error: string | null;
+  sent: number;
+  failed: number;
+  skipped: number;
+  revoked: number;
+}
+
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+const REVOCABLE_EXPO_ERRORS = new Set(["DeviceNotRegistered", "MessageTooBig", "InvalidCredentials"]);
 
 const PUSH_CRON_SECRET = Deno.env.get("PUSH_CRON_SECRET") ?? "";
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "";
@@ -122,6 +145,12 @@ async function ensureAuthorized(req: Request, supabaseAdmin: ReturnType<typeof b
   return { kind: "user" as const, userId: data.user.id };
 }
 
+/**
+ * Final event-level transition: clears the processing claim so the immediate
+ * dispatcher / cron fallback can claim the event again only when it stays in a
+ * retryable state. Per-target states are persisted independently beforehand, so
+ * a later retry never re-sends a target that already reached a terminal state.
+ */
 async function updateEventStatus(
   supabaseAdmin: ReturnType<typeof buildAdminClient>,
   event: PushEventRow,
@@ -142,6 +171,55 @@ async function updateEventStatus(
 
   if (!data) {
     console.warn(JSON.stringify({ scope: "push", message: "event_claim_lost", eventId: event.id }));
+  }
+}
+
+/**
+ * Persists one target's terminal result while keeping the event claim intact.
+ * The other target and the overall event status remain independent of this
+ * write, and a crash after this write cannot cause a duplicate for this target.
+ */
+async function persistTargetResult(
+  supabaseAdmin: ReturnType<typeof buildAdminClient>,
+  event: PushEventRow,
+  result: DeliveryResult
+) {
+  const now = new Date().toISOString();
+  const targetPatch =
+    result.target === "web"
+      ? {
+          web_delivery_status: result.status,
+          web_last_error: result.error,
+          web_delivered_at: result.status === "sent" ? now : null,
+        }
+      : {
+          native_delivery_status: result.status,
+          native_last_error: result.error,
+          native_delivered_at: result.status === "sent" ? now : null,
+        };
+
+  const { data, error } = await supabaseAdmin
+    .from("push_notification_events")
+    .update(targetPatch)
+    .eq("id", event.id)
+    .eq("status", "processing")
+    .eq("processing_claim_token", event.processing_claim_token)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    console.warn(
+      JSON.stringify({
+        scope: "push",
+        message: "target_claim_lost",
+        eventId: event.id,
+        target: result.target,
+      })
+    );
   }
 }
 
@@ -299,7 +377,7 @@ async function loadActiveTokens(
 ) {
   const { data, error } = await supabaseAdmin
     .from("push_tokens")
-    .select("id,expo_push_token,active")
+    .select("id,user_id,expo_push_token,active")
     .eq("user_id", userId)
     .eq("active", true)
     .order("updated_at", { ascending: false });
@@ -311,9 +389,39 @@ async function loadActiveTokens(
   return (data ?? []) as PushTokenRow[];
 }
 
+async function recordNativePushDelivery(
+  supabaseAdmin: ReturnType<typeof buildAdminClient>,
+  values: {
+    eventId: string | null;
+    tokenId: string;
+    userId: string;
+    status: "sent" | "failed" | "revoked" | "skipped";
+    errorCode: string | null;
+  }
+) {
+  const { data, error } = await supabaseAdmin
+    .from("native_push_deliveries")
+    .insert({
+      event_id: values.eventId,
+      token_id: values.tokenId,
+      user_id: values.userId,
+      status: values.status,
+      error_code: values.errorCode,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data?.id ?? null;
+}
+
 async function handleMalformedTokens(
   supabaseAdmin: ReturnType<typeof buildAdminClient>,
-  tokens: PushTokenRow[]
+  tokens: PushTokenRow[],
+  event: PushEventRow
 ) {
   const malformed = tokens.filter((token) => !looksLikeExpoPushToken(token.expo_push_token));
   if (malformed.length > 0) {
@@ -321,6 +429,15 @@ async function handleMalformedTokens(
       supabaseAdmin,
       malformed.map((token) => token.id)
     );
+    for (const token of malformed) {
+      await recordNativePushDelivery(supabaseAdmin, {
+        eventId: event.id,
+        tokenId: token.id,
+        userId: token.user_id,
+        status: "revoked",
+        errorCode: "malformed_token",
+      });
+    }
   }
 
   return tokens.filter((token) => looksLikeExpoPushToken(token.expo_push_token));
@@ -455,12 +572,17 @@ async function touchWebPushSubscription(
   }
 }
 
-function buildWebPushPayload(event: PushEventRow): Record<string, unknown> {
-  const sessionId =
+function eventSessionId(event: PushEventRow) {
+  return (
     event.session_id ??
     (event.payload && typeof event.payload.session_id === "string"
       ? event.payload.session_id
-      : null);
+      : null)
+  );
+}
+
+function buildWebPushPayload(event: PushEventRow): Record<string, unknown> {
+  const sessionId = eventSessionId(event);
   const messageId =
     event.message_id ??
     (event.payload && typeof event.payload.message_id === "string"
@@ -479,29 +601,82 @@ function buildWebPushPayload(event: PushEventRow): Record<string, unknown> {
   };
 }
 
+/**
+ * Native push payload is intentionally minimal: navigation metadata only.
+ * Never includes message content, image content, or sensitive profile data.
+ * The Expo token set is always loaded by event.user_id server-side, so a token
+ * cannot be addressed unless it is owned by the event's validated receiver.
+ */
+function buildNativePushData(event: PushEventRow): Record<string, unknown> {
+  const sessionId = eventSessionId(event);
+  const isRandomEvent = event.event_type === "random_match" || event.event_type === "random_message";
+  const matchId =
+    event.match_id ??
+    (event.payload && typeof event.payload.match_id === "string"
+      ? event.payload.match_id
+      : null);
+
+  let targetUrl = "/";
+  if (isRandomEvent && sessionId) {
+    targetUrl = `/random-session/${sessionId}`;
+  } else if (matchId) {
+    targetUrl = `/chat/${matchId}`;
+  }
+
+  return {
+    event_type: event.event_type,
+    session_id: sessionId,
+    target_url: targetUrl,
+  };
+}
+
+function targetsForDeliveryTarget(target: DeliveryTarget | null, event: PushEventRow): TargetName[] {
+  const normalized =
+    target ??
+    (event.event_type === "random_match" || event.event_type === "random_message"
+      ? "both"
+      : "native");
+
+  if (normalized === "both") {
+    return ["web", "native"];
+  }
+
+  if (normalized === "web") {
+    return ["web"];
+  }
+
+  return ["native"];
+}
+
+function storedTargetResult(event: PushEventRow, target: TargetName): DeliveryResult {
+  const status = target === "web" ? event.web_delivery_status : event.native_delivery_status;
+  const lastError = target === "web" ? event.web_last_error : event.native_last_error;
+  return {
+    target,
+    status: status ?? "failed",
+    error: lastError,
+    sent: 0,
+    failed: 0,
+    skipped: 0,
+    revoked: 0,
+  };
+}
+
 async function deliverWebPush(
   supabaseAdmin: ReturnType<typeof buildAdminClient>,
   event: PushEventRow
-) {
+): Promise<DeliveryResult> {
   const subscriptions = await loadActiveWebPushSubscriptions(supabaseAdmin, event.user_id);
 
   if (subscriptions.length === 0) {
-    await markSkipped(supabaseAdmin, event, "no_active_subscriptions");
-    return { sent: 0, skipped: 1, failed: 0 };
+    return { target: "web", status: "skipped", error: "no_active_subscriptions", sent: 0, failed: 0, skipped: 1, revoked: 0 };
   }
 
   if (!VAPID_SUBJECT || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-    await updateEventStatus(supabaseAdmin, event, {
-      status: "failed",
-      last_error: "vapid_not_configured",
-      processed_at: new Date().toISOString(),
-      delivery_attempts: event.delivery_attempts + 1,
-    });
-    return { sent: 0, skipped: 0, failed: 1 };
+    return { target: "web", status: "failed", error: "vapid_not_configured", sent: 0, failed: 1, skipped: 0, revoked: 0 };
   }
 
   const payload = JSON.stringify(buildWebPushPayload(event));
-  const now = new Date().toISOString();
   let delivered = 0;
   let revoked = 0;
   let transientFailed = 0;
@@ -573,117 +748,178 @@ async function deliverWebPush(
   }
 
   if (delivered > 0 || revoked > 0) {
-    await updateEventStatus(supabaseAdmin, event, {
+    return {
+      target: "web",
       status: "sent",
-      sent_at: now,
-      processed_at: now,
-      delivered_at: now,
-      last_error: transientFailed > 0 ? `${transientFailed} subscription(s) failed` : null,
-      delivery_attempts: event.delivery_attempts + 1,
-    });
-    return { sent: delivered > 0 ? 1 : 0, skipped: 0, failed: transientFailed };
+      error: transientFailed > 0 ? `${transientFailed} subscription(s) failed` : null,
+      sent: delivered,
+      failed: transientFailed,
+      skipped: 0,
+      revoked,
+    };
   }
 
-  await updateEventStatus(supabaseAdmin, event, {
+  return {
+    target: "web",
     status: "failed",
-    last_error: lastError ?? "web_push_delivery_failed",
-    processed_at: now,
-    delivery_attempts: event.delivery_attempts + 1,
-  });
-
-  return { sent: 0, skipped: 0, failed: 1 };
+    error: lastError ?? "web_push_delivery_failed",
+    sent: 0,
+    failed: transientFailed,
+    skipped: 0,
+    revoked,
+  };
 }
 
-async function deliverExpoPush(
+async function deliverNativePush(
   supabaseAdmin: ReturnType<typeof buildAdminClient>,
   event: PushEventRow
-) {
+): Promise<DeliveryResult> {
+  // Server-side receiver binding: only active tokens owned by event.user_id are
+  // eligible. There is no client-supplied token or receiver id in the payload.
   const activeTokens = await loadActiveTokens(supabaseAdmin, event.user_id);
-  const validTokens = await handleMalformedTokens(supabaseAdmin, activeTokens);
+  const validTokens = await handleMalformedTokens(supabaseAdmin, activeTokens, event);
 
   if (validTokens.length === 0) {
-    await markSkipped(supabaseAdmin, event, "no_active_tokens");
-    return { sent: 0, skipped: 1, failed: 0 };
+    return { target: "native", status: "skipped", error: "no_active_tokens", sent: 0, failed: 0, skipped: 1, revoked: 0 };
   }
 
-  const now = new Date().toISOString();
   const messages = validTokens.map((token) => ({
     to: token.expo_push_token,
     title: event.title,
     body: event.body,
     sound: "default",
-    data: {
-      eventType: event.event_type,
-      matchId: event.match_id,
-      messageId: event.message_id,
-      verificationId: event.verification_id,
-      ...(event.payload ?? {}),
-    },
+    data: buildNativePushData(event),
   }));
 
+  let responsePayload: Record<string, unknown>;
   try {
-    const result = await sendExpoPush(messages);
-    const receipts = Array.isArray(result?.data) ? result.data : [];
-    const invalidTokenIds: string[] = [];
+    responsePayload = await sendExpoPush(messages);
+  } catch (error) {
+    return {
+      target: "native",
+      status: "failed",
+      error: error instanceof Error ? error.message : String(error),
+      sent: 0,
+      failed: messages.length,
+      skipped: 0,
+      revoked: 0,
+    };
+  }
 
-    receipts.forEach((receipt: Record<string, unknown>, index: number) => {
-      const details =
-        receipt && typeof receipt === "object" && receipt.details && typeof receipt.details === "object"
-          ? receipt.details as Record<string, unknown>
-          : null;
-      const errorCode = typeof details?.error === "string" ? details.error : null;
-      if (errorCode === "DeviceNotRegistered" || errorCode === "MessageTooBig" || errorCode === "InvalidCredentials") {
-        invalidTokenIds.push(validTokens[index].id);
-      }
-    });
+  const tickets = Array.isArray(responsePayload?.data) ? (responsePayload.data as Array<Record<string, unknown>>) : [];
+  if (tickets.length !== messages.length) {
+    return {
+      target: "native",
+      status: "failed",
+      error: "expo_push_ticket_mismatch",
+      sent: 0,
+      failed: messages.length,
+      skipped: 0,
+      revoked: 0,
+    };
+  }
 
-    if (invalidTokenIds.length > 0) {
-      await disableTokens(supabaseAdmin, invalidTokenIds);
+  const disableIds: string[] = [];
+  let sent = 0;
+  let failed = 0;
+  let revoked = 0;
+  let lastError: string | null = null;
+
+  for (let index = 0; index < messages.length; index += 1) {
+    const token = validTokens[index];
+    const ticket = tickets[index] ?? {};
+    const details =
+      ticket && typeof ticket === "object" && ticket.details && typeof ticket.details === "object"
+        ? (ticket.details as Record<string, unknown>)
+        : null;
+    const errorCode = typeof details?.error === "string" ? details.error : null;
+    const ticketOk = ticket?.status === "ok" && !errorCode;
+
+    if (ticketOk) {
+      sent += 1;
+      await recordNativePushDelivery(supabaseAdmin, {
+        eventId: event.id,
+        tokenId: token.id,
+        userId: token.user_id,
+        status: "sent",
+        errorCode: null,
+      });
+      continue;
     }
 
-    await updateEventStatus(supabaseAdmin, event, {
-      status: "sent",
-      sent_at: now,
-      processed_at: now,
-      delivered_at: now,
-      last_error: null,
-      delivery_attempts: event.delivery_attempts + 1,
-    });
-
-    console.info(
-      JSON.stringify({
-        scope: "push",
-        message: "event_sent",
+    const normalizedError = errorCode ?? "expo_push_ticket_error";
+    if (errorCode && REVOCABLE_EXPO_ERRORS.has(errorCode)) {
+      revoked += 1;
+      disableIds.push(token.id);
+      await recordNativePushDelivery(supabaseAdmin, {
         eventId: event.id,
-        eventType: event.event_type,
-        userId: event.user_id,
-        tokenCount: validTokens.length,
-        invalidatedTokenCount: invalidTokenIds.length,
-      })
-    );
-
-    return { sent: 1, skipped: 0, failed: 0 };
-  } catch (error) {
-    await updateEventStatus(supabaseAdmin, event, {
-      status: "failed",
-      last_error: error instanceof Error ? error.message : String(error),
-      processed_at: now,
-      delivery_attempts: event.delivery_attempts + 1,
-    });
-
-    console.error(
-      JSON.stringify({
-        scope: "push",
-        message: "event_failed",
+        tokenId: token.id,
+        userId: token.user_id,
+        status: "revoked",
+        errorCode: normalizedError,
+      });
+    } else {
+      failed += 1;
+      lastError = normalizedError;
+      await recordNativePushDelivery(supabaseAdmin, {
         eventId: event.id,
-        eventType: event.event_type,
-        userId: event.user_id,
-        error: error instanceof Error ? error.message : String(error),
-      })
-    );
-
-    return { sent: 0, skipped: 0, failed: 1 };
+        tokenId: token.id,
+        userId: token.user_id,
+        status: "failed",
+        errorCode: normalizedError,
+      });
+    }
   }
+
+  if (disableIds.length > 0) {
+    await disableTokens(supabaseAdmin, disableIds);
+  }
+
+  if (sent > 0) {
+    return {
+      target: "native",
+      status: "sent",
+      error: failed > 0 ? `${failed} token(s) failed` : null,
+      sent,
+      failed,
+      skipped: 0,
+      revoked,
+    };
+  }
+
+  return {
+    target: "native",
+    status: "failed",
+    error: lastError ?? "expo_push_delivery_failed",
+    sent: 0,
+    failed,
+    skipped: 0,
+    revoked,
+  };
+}
+
+function finalizeOverallStatus(results: DeliveryResult[]) {
+  const failedTargets = results.filter((result) => result.status === "failed");
+  const sentTargets = results.filter((result) => result.status === "sent");
+  const status: "sent" | "failed" | "skipped" =
+    failedTargets.length > 0
+      ? "failed"
+      : sentTargets.length > 0
+        ? "sent"
+        : "skipped";
+
+  let lastError: string | null = null;
+  if (failedTargets.length > 0) {
+    lastError = failedTargets
+      .map((result) => `${result.target}:${result.error ?? "delivery_failed"}`)
+      .join("; ");
+  } else if (status === "skipped") {
+    lastError = results
+      .map((result) => `${result.target}:${result.error ?? "skipped"}`)
+      .join("; ");
+  }
+
+  return { status, lastError };
 }
 
 async function processEvent(
@@ -707,22 +943,79 @@ async function processEvent(
       await markSkipped(supabaseAdmin, event, "self_message_no_push");
       return { sent: 0, skipped: 1, failed: 0 };
     }
-
-    return await deliverWebPush(supabaseAdmin, event);
-  }
-
-  if ((event.event_type === "new_match" || event.event_type === "new_message") &&
-      !(await isConversationPushStillAllowed(supabaseAdmin, event))) {
+  } else if (
+    (event.event_type === "new_match" || event.event_type === "new_message") &&
+    !(await isConversationPushStillAllowed(supabaseAdmin, event))
+  ) {
     await markSkipped(supabaseAdmin, event, "conversation_not_available");
     return { sent: 0, skipped: 1, failed: 0 };
-  }
-
-  if (event.event_type === "new_message" && event.actor_user_id === event.user_id) {
+  } else if (event.event_type === "new_message" && event.actor_user_id === event.user_id) {
     await markSkipped(supabaseAdmin, event, "self_message_no_push");
     return { sent: 0, skipped: 1, failed: 0 };
   }
 
-  return await deliverExpoPush(supabaseAdmin, event);
+  const targets = targetsForDeliveryTarget(event.delivery_target, event);
+  const results: DeliveryResult[] = [];
+
+  for (const target of targets) {
+    const storedStatus = target === "web" ? event.web_delivery_status : event.native_delivery_status;
+
+    if (storedStatus === "sent" || storedStatus === "skipped") {
+      results.push(storedTargetResult(event, target));
+      continue;
+    }
+
+    const result =
+      target === "web"
+        ? await deliverWebPush(supabaseAdmin, event)
+        : await deliverNativePush(supabaseAdmin, event);
+
+    await persistTargetResult(supabaseAdmin, event, result);
+    results.push(result);
+  }
+
+  const overall = finalizeOverallStatus(results);
+  const now = new Date().toISOString();
+  const sentAny = overall.status === "sent";
+
+  await updateEventStatus(supabaseAdmin, event, {
+    status: overall.status,
+    last_error: overall.lastError,
+    sent_at: sentAny ? now : null,
+    delivered_at: sentAny ? now : null,
+    processed_at: now,
+    delivery_attempts: event.delivery_attempts + 1,
+  });
+
+  console.info(
+    JSON.stringify({
+      scope: "push",
+      message: "event_processed",
+      eventId: event.id,
+      eventType: event.event_type,
+      userId: event.user_id,
+      deliveryTarget: event.delivery_target,
+      targets: results.map((result) => ({
+        target: result.target,
+        status: result.status,
+        error: result.error,
+        sent: result.sent,
+        failed: result.failed,
+        revoked: result.revoked,
+      })),
+      overallStatus: overall.status,
+    })
+  );
+
+  if (overall.status === "sent") {
+    return { sent: 1, skipped: 0, failed: 0 };
+  }
+
+  if (overall.status === "skipped") {
+    return { sent: 0, skipped: 1, failed: 0 };
+  }
+
+  return { sent: 0, skipped: 0, failed: 1 };
 }
 
 Deno.serve(async (req) => {
