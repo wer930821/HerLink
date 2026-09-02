@@ -315,7 +315,14 @@ export default function RandomSessionPage() {
       const result = await advanceRandomSessionIcebreaker(session.id);
       if (result.error) throw result.error;
       if (result.data) setIcebreaker(result.data);
-    } catch {
+    } catch (error) {
+      console.error("[herlink] icebreaker advance failed", {
+        sessionId: session.id,
+        code: typeof error === "object" && error && "code" in error ? (error as { code?: unknown }).code : undefined,
+        message: getRandomChatErrorMessage(error),
+        details: typeof error === "object" && error && "details" in error ? (error as { details?: unknown }).details : undefined,
+        hint: typeof error === "object" && error && "hint" in error ? (error as { hint?: unknown }).hint : undefined,
+      });
       setNotice("目前無法換題，請稍後再試。");
     } finally {
       setIcebreakerBusy(false);
