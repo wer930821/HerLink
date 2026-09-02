@@ -181,6 +181,11 @@ export type RandomSessionRow = {
   partner_verified: boolean;
   partner_age_display: string | null;
   partner_city: string | null;
+  icebreaker_turn: number | null;
+  icebreaker_question_code: string | null;
+  icebreaker_prompt: string | null;
+  icebreaker_category: string | null;
+  icebreaker_advanced_at: string | null;
 };
 
 export type LatestRandomSessionDiagnosticRow = {

@@ -165,6 +165,22 @@ function getSessionLifecycleNotice(nextSession: RandomSessionRow) {
       : "對方已離開聊天。";
 }
 
+function icebreakerFromSession(session: RandomSessionRow): RandomSessionIcebreakerRow | null {
+  if (!session.icebreaker_prompt || !session.icebreaker_question_code || !session.icebreaker_category) {
+    return null;
+  }
+
+  return {
+    session_id: session.id,
+    turn: session.icebreaker_turn ?? 0,
+    question_code: session.icebreaker_question_code,
+    prompt: session.icebreaker_prompt,
+    category: session.icebreaker_category,
+    advanced_at: session.icebreaker_advanced_at ?? session.created_at,
+    advanced_by_me: false,
+  };
+}
+
 function renderMessageContent(
   content: string,
   onOpenExternalLink: (url: string) => void
@@ -831,6 +847,7 @@ export default function RandomSessionPage() {
 
     const previousStatus = session?.status ?? null;
     setSession(nextSession);
+    setIcebreaker(icebreakerFromSession(nextSession));
     setSessionState(nextSession.status === "active" ? "active" : "ended");
     recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
       reason: null,
