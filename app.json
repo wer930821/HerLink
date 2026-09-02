@@ -21,7 +21,8 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.READ_MEDIA_IMAGES"
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -45,6 +46,14 @@
           "image": "./assets/images/brand-symbol.png",
           "resizeMode": "contain",
           "backgroundColor": "#120A3D"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/brand-symbol-monochrome.png",
+          "color": "#6E4EE8",
+          "defaultChannel": "herlink-chat"
         }
       ]
     ],

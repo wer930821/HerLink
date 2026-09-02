@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Button, ActivityIndicator, Alert, StyleSheet } from "react-native";
 import { supabase } from "../lib/supabase";
 import { Link } from "expo-router";
+import { useAuth } from "../context/auth";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { signInAnonymously } = useAuth();
 
   async function signInWithEmail() {
     setLoading(true);
@@ -14,6 +16,17 @@ export default function LoginScreen() {
 
     if (error) Alert.alert("登入失敗", error.message);
     setLoading(false);
+  }
+
+  async function continueAnonymously() {
+    setLoading(true);
+    try {
+      await signInAnonymously();
+    } catch (error) {
+      Alert.alert("暫時無法開始", error instanceof Error ? error.message : "匿名登入失敗，請稍後再試。");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -39,6 +52,7 @@ export default function LoginScreen() {
         onPress={signInWithEmail}
         disabled={loading}
       />
+      <Button title={loading ? "準備中..." : "匿名開始"} onPress={continueAnonymously} disabled={loading} />
       <Link href="/signup" style={styles.link}>還沒有帳號？註冊</Link>
     </View>
   );

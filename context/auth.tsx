@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { registerCurrentDevice } from "../lib/device";
 import { supabase } from "../lib/supabase";
+import { disableNativePushToken, registerNativePushToken } from "../lib/native-push";
 
 export interface Profile {
   id: string;
@@ -27,6 +28,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   retryAuthRestore: () => Promise<void>;
+  signInAnonymously: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,6 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const nativePushTokenRef = useRef<string | null>(null);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -70,6 +73,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await Promise.allSettled([
       fetchProfile(currentUser.id),
       registerCurrentDevice(),
+      registerNativePushToken().then((token) => {
+        nativePushTokenRef.current = token;
+      }),
     ]);
   };
 
@@ -110,6 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     setLoading(true);
+    await disableNativePushToken(nativePushTokenRef.current).catch((error) => console.warn("Native push token cleanup failed", error));
+    nativePushTokenRef.current = null;
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
@@ -117,12 +125,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   };
 
+  const signInAnonymously = async () => {
+    const { error } = await supabase.auth.signInAnonymously();
+    if (error) throw error;
+  };
+
   const retryAuthRestore = async () => {
     await restoreAuth();
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signOut, refreshProfile, retryAuthRestore }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, signOut, refreshProfile, retryAuthRestore, signInAnonymously }}>
       {children}
     </AuthContext.Provider>
   );
