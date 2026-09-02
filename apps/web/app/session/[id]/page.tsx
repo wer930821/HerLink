@@ -706,6 +706,13 @@ export default function RandomSessionPage() {
       clearReply();
     } catch (error) {
       stopTyping();
+      console.error("[herlink] random chat media send failed", {
+        sessionId: session.id,
+        code: typeof error === "object" && error && "code" in error ? (error as { code?: unknown }).code : undefined,
+        message: getRandomChatErrorMessage(error),
+        details: typeof error === "object" && error && "details" in error ? (error as { details?: unknown }).details : undefined,
+        hint: typeof error === "object" && error && "hint" in error ? (error as { hint?: unknown }).hint : undefined,
+      });
       setNotice(getFriendlyRandomChatError(error, "照片傳送失敗，請稍後再試。"));
     } finally {
       setMediaUploading(false);
@@ -1477,13 +1484,13 @@ export default function RandomSessionPage() {
       stopTyping();
       clearPartnerTyping();
       const refreshedSession = await refreshSessionFromServerRef.current?.();
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("[herlink] random chat send failed", {
-          code: getRandomChatSendErrorCode(error, refreshedSession),
-          sessionId: session.id,
-          message: getRandomChatErrorMessage(error),
-        });
-      }
+      console.error("[herlink] random chat send failed", {
+        code: getRandomChatSendErrorCode(error, refreshedSession),
+        sessionId: session.id,
+        message: getRandomChatErrorMessage(error),
+        details: typeof error === "object" && error && "details" in error ? (error as { details?: unknown }).details : undefined,
+        hint: typeof error === "object" && error && "hint" in error ? (error as { hint?: unknown }).hint : undefined,
+      });
       if (refreshedSession?.status === "active") {
         await refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
       }
