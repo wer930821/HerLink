@@ -222,6 +222,16 @@ export type RandomChatMessageRow = {
   reply_preview_state?: "loading" | "loaded" | "error" | "not_found";
 };
 
+export type RandomSessionIcebreakerRow = {
+  session_id: string;
+  turn: number;
+  question_code: string;
+  prompt: string;
+  category: string;
+  advanced_at: string;
+  advanced_by_me: boolean;
+};
+
 export type RandomChatMessageRealtimeRow = {
   id: string;
   session_id: string;
@@ -446,6 +456,22 @@ export async function loadRandomMessages(
     data: RandomChatMessageRow[] | null;
     error: { message?: string } | null;
   }>;
+}
+
+export async function loadRandomSessionIcebreaker(sessionId: string) {
+  const result = await supabase.rpc("get_random_session_icebreaker", { p_session_id: sessionId });
+  return {
+    data: Array.isArray(result.data) ? result.data[0] ?? null : result.data ?? null,
+    error: result.error,
+  } as { data: RandomSessionIcebreakerRow | null; error: { message?: string } | null };
+}
+
+export async function advanceRandomSessionIcebreaker(sessionId: string) {
+  const result = await supabase.rpc("advance_random_chat_icebreaker", { p_session_id: sessionId });
+  return {
+    data: Array.isArray(result.data) ? result.data[0] ?? null : result.data ?? null,
+    error: result.error,
+  } as { data: RandomSessionIcebreakerRow | null; error: { message?: string } | null };
 }
 
 export async function loadSafeAnonymousProfiles(userIds: string[]) {

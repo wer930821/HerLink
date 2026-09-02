@@ -626,6 +626,31 @@ select {
   z-index: 1;
 }
 
+.icebreaker-card {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface));
+}
+
+.icebreaker-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.icebreaker-label {
+  color: var(--color-accent-strong);
+  font-size: var(--text-badge);
+  font-weight: var(--weight-semibold);
+}
+
+.icebreaker-card p { margin: 0; line-height: 1.55; }
+.icebreaker-advance { justify-self: start; min-height: 32px; padding: 4px 10px; font-size: 0.82rem; }
+
 .chat-messages {
   flex: 1 1 auto;
   min-height: 0;
