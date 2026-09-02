@@ -736,11 +736,29 @@ Deno.serve(async (req) => {
         ? requestedEventType
         : null;
 
+    const { data: subscriptionUsers, error: subscriptionUsersError } = await supabaseAdmin
+      .from("web_push_subscriptions")
+      .select("user_id")
+      .is("revoked_at", null);
+    if (subscriptionUsersError) {
+      return json({ ok: false, error: subscriptionUsersError.message }, 500);
+    }
+
+    const activeSubscriptionUserIds = [...new Set((subscriptionUsers ?? []).map((row) => row.user_id))];
+
     let query = supabaseAdmin
       .from("push_notification_events")
       .select("id,event_type,user_id,actor_user_id,match_id,message_id,verification_id,session_id,title,body,payload,status,delivery_attempts")
       .eq("status", "pending")
-      .order("created_at", { ascending: true });
+      // Deliver current conversation events first.  A historical backlog must
+      // never delay a newly matched user or a newly received message.
+      .order("created_at", { ascending: false });
+
+    // The queue contains historical events for users without a Web Push
+    // subscription. Prefer recipients that can actually receive a browser push.
+    if (activeSubscriptionUserIds.length > 0) {
+      query = query.in("user_id", activeSubscriptionUserIds);
+    }
 
     if (eventTypeFilter) {
       query = query.eq("event_type", eventTypeFilter);
