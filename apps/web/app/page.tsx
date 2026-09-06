@@ -17,7 +17,6 @@ import {
   findOrJoinRandomMatch,
   getCurrentSession,
   ensureAnonymousBootstrapProfile,
-  isAnonymousProfileReady,
   isSupabaseConfigured,
   leaveRandomQueue,
   leaveRandomSession,
@@ -164,11 +163,15 @@ export default function HomePage() {
           return;
         }
 
-        const [profileResult, queueResult, sessionResult] = await Promise.all([
+        const [loadedProfileResult, queueResult, sessionResult] = await Promise.all([
           loadMyProfile(session.user.id),
           loadMyRandomQueue(session.user.id),
           loadMyActiveRandomSession(),
         ]);
+
+        const profileResult = loadedProfileResult.data || loadedProfileResult.error
+          ? loadedProfileResult
+          : await ensureAnonymousBootstrapProfile(session.user.id);
 
         if (!mounted) {
           return;
@@ -262,15 +265,10 @@ export default function HomePage() {
     if (!state.session) return;
     if (navigatingToSessionRef.current || pathname !== "/") return;
 
-    if (!state.profile || !isAnonymousProfileReady(state.profile)) {
-      router.replace("/onboarding");
-      return;
-    }
-
     if (state.queue?.status === "waiting" && !state.queue.matched_session_id) {
       router.replace("/waiting");
     }
-  }, [bootstrapping, pathname, router, state.profile, state.queue, state.session]);
+  }, [bootstrapping, pathname, router, state.queue, state.session]);
 
   useEffect(() => {
     setDebugEnabled(isNavigationDebugEnabled());
@@ -434,7 +432,7 @@ export default function HomePage() {
         return;
       }
 
-      router.replace("/onboarding");
+      router.replace("/");
     } catch (error) {
       setMessage(getFriendlyAuthErrorMessage(error, "目前無法建立匿名身份，請稍後再試。"));
     } finally {
@@ -567,9 +565,6 @@ export default function HomePage() {
         <div className="row">
           <Button size="lg" onClick={startMatching} disabled={actionBusy || MAINTENANCE_MODE}>
             {actionBusy ? "處理中…" : MAINTENANCE_MODE ? "維護中" : state.activeSession ? "繼續聊天" : "開始隨機配對"}
-          </Button>
-          <Button variant="ghost" size="lg" onClick={() => router.push("/onboarding")} disabled={actionBusy || MAINTENANCE_MODE}>
-            重新設定匿名身份
           </Button>
         </div>
         {state.activeSession ? (

@@ -1,5 +1,5 @@
 import { createClient, type Session } from "@supabase/supabase-js";
-import { ANONYMOUS_AVATAR_OPTIONS, generateNextAnonymousDisplayName, isAnonymousAvatarId, validateAnonymousDisplayName } from "../../../lib/anonymous";
+import { ANONYMOUS_AVATAR_OPTIONS, generateNextAnonymousDisplayName, isAnonymousAvatarId } from "../../../lib/anonymous";
 import { getAnonymousInstallationId } from "./anonymous-install";
 
 const supabaseUrl =
@@ -157,7 +157,6 @@ export type WebProfile = {
   anonymous_mode_enabled: boolean | null;
   anonymous_display_name: string | null;
   anonymous_avatar: string | null;
-  onboarding_completed: boolean | null;
   account_status: string | null;
 };
 
@@ -278,14 +277,6 @@ export type AnonymousAbusePrecheckRow = {
   review_required: boolean;
 };
 
-export function isAnonymousProfileReady(profile: WebProfile | null | undefined) {
-  if (!profile?.onboarding_completed || !profile.anonymous_mode_enabled) {
-    return false;
-  }
-
-  return !validateAnonymousDisplayName(profile.anonymous_display_name);
-}
-
 export async function getCurrentSession() {
   return supabase.auth.getSession();
 }
@@ -348,24 +339,9 @@ export function getWebAuthCallbackUrl() {
 export async function loadMyProfile(userId: string) {
   return (supabase
     .from("profiles")
-    .select("id, anonymous_mode_enabled, anonymous_display_name, anonymous_avatar, onboarding_completed, account_status")
+    .select("id, anonymous_mode_enabled, anonymous_display_name, anonymous_avatar, account_status")
     .eq("id", userId)
     .maybeSingle() as Promise<{ data: WebProfile | null; error: { message?: string } | null }>);
-}
-
-export async function upsertAnonymousProfile(userId: string, profile: {
-  anonymous_display_name: string;
-  anonymous_avatar?: AnonymousAvatarId;
-  anonymous_mode_enabled?: boolean;
-  onboarding_completed?: boolean;
-}) {
-  return supabase.from("profiles").upsert({
-    id: userId,
-    anonymous_mode_enabled: profile.anonymous_mode_enabled ?? true,
-    anonymous_display_name: profile.anonymous_display_name,
-    anonymous_avatar: profile.anonymous_avatar ?? "avatar_01",
-    onboarding_completed: profile.onboarding_completed ?? true,
-  });
 }
 
 export async function ensureAnonymousBootstrapProfile(userId: string) {
@@ -378,25 +354,12 @@ export async function ensureAnonymousBootstrapProfile(userId: string) {
     .from("profiles")
     .insert({
       id: userId,
-      anonymous_mode_enabled: false,
+      anonymous_mode_enabled: true,
       anonymous_display_name: generateNextAnonymousDisplayName(),
       anonymous_avatar: "avatar_01",
-      onboarding_completed: false,
     })
-    .select("id, anonymous_mode_enabled, anonymous_display_name, anonymous_avatar, onboarding_completed, account_status")
+    .select("id, anonymous_mode_enabled, anonymous_display_name, anonymous_avatar, account_status")
     .maybeSingle() as Promise<{ data: WebProfile | null; error: { message?: string } | null }>;
-}
-
-export async function saveAnonymousProfile(
-  userId: string,
-  profile: {
-    anonymous_display_name: string;
-    anonymous_avatar?: AnonymousAvatarId;
-    anonymous_mode_enabled?: boolean;
-    onboarding_completed?: boolean;
-  }
-) {
-  return upsertAnonymousProfile(userId, profile);
 }
 
 export async function loadMyActiveRandomSession() {

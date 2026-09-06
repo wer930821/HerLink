@@ -652,6 +652,17 @@ select {
 }
 
 .icebreaker-card p { margin: 0; line-height: 1.55; }
+.icebreaker-card:has(.icebreaker-collapse) { gap: 0; }
+.icebreaker-toggle { width: 100%; border: 0; padding: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; text-align: left; }
+.icebreaker-collapse { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 220ms ease, opacity 180ms ease; }
+.icebreaker-collapse.is-expanded { grid-template-rows: 1fr; opacity: 1; }
+.icebreaker-content { min-height: 0; overflow: hidden; }
+.icebreaker-content-inner { display: grid; gap: var(--space-2); padding-top: var(--space-2); }
+.session-safety-warning { display: flex; align-items: flex-start; gap: 12px; }
+.session-safety-warning > div { flex: 1; }
+.session-safety-warning small { display: block; }
+.session-safety-warning > button { border: 0; background: transparent; color: inherit; font-size: 22px; cursor: pointer; min-width: 32px; min-height: 32px; }
+@media (prefers-reduced-motion: reduce) { .icebreaker-collapse { transition: none; } }
 .icebreaker-advance { justify-self: start; min-height: 32px; padding: 4px 10px; font-size: 0.82rem; }
 
 .chat-messages {

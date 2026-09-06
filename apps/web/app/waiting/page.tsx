@@ -5,17 +5,14 @@ import { useRouter } from "next/navigation";
 import { useOnlinePresence } from "../../lib/realtime-presence";
 import { MAINTENANCE_MESSAGE, MAINTENANCE_MODE, MAINTENANCE_TITLE } from "../../lib/site-config";
 import {
-  isAnonymousProfileReady,
   leaveRandomQueue,
   loadMyActiveRandomSession,
-  loadMyProfile,
   loadMyRandomQueue,
   supabase,
   type RandomQueueRow,
   type RandomSessionRow,
-  type WebProfile,
 } from "../../lib/supabase";
-import { Badge, Button, Notice, PageHero, Surface } from "../../components/ui";
+import { Badge, Button, Notice, PageHero } from "../../components/ui";
 import { PushPermissionCard } from "../../components/push/PushPermissionCard";
 
 type RealtimePayload<T> = {
@@ -26,7 +23,6 @@ export default function WaitingPage() {
   const router = useRouter();
   const [debug, setDebug] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [profile, setProfile] = useState<WebProfile | null>(null);
   const [queue, setQueue] = useState<RandomQueueRow | null>(null);
   const [session, setSession] = useState<RandomSessionRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,8 +76,7 @@ export default function WaitingPage() {
           return;
         }
 
-        const [profileResult, queueResult, sessionResult] = await Promise.all([
-          loadMyProfile(sessionData.user.id),
+        const [queueResult, sessionResult] = await Promise.all([
           loadMyRandomQueue(sessionData.user.id),
           loadMyActiveRandomSession(),
         ]);
@@ -89,7 +84,6 @@ export default function WaitingPage() {
         if (!mounted) return;
 
         setUserId(sessionData.user.id);
-        setProfile(profileResult.data ?? null);
         setQueue(queueResult.data ?? null);
         setSession(sessionResult.data ?? null);
       } catch {
@@ -137,14 +131,6 @@ export default function WaitingPage() {
       void supabase.removeChannel(channel);
     };
   }, [debug, router, userId]);
-
-  useEffect(() => {
-    if (MAINTENANCE_MODE) return;
-
-    if (!debug && !loading && (!profile || !isAnonymousProfileReady(profile))) {
-      router.replace("/onboarding");
-    }
-  }, [loading, profile, router]);
 
   useEffect(() => {
     if (MAINTENANCE_MODE) return;
@@ -242,14 +228,6 @@ export default function WaitingPage() {
           <div className="muted small">目前在線 {onlineCount ?? 0} 人</div>
         </div>
         <p className="hero-copy">系統會自動把你配對給另一位等待中的匿名使用者。</p>
-        {profile ? (
-          <Surface elevation="inset">
-            <div className="row">
-              <Badge variant="accent">等待中</Badge>
-              <strong>{profile.anonymous_display_name ?? "匿名使用者"}</strong>
-            </div>
-          </Surface>
-        ) : null}
       </PageHero>
       {debug ? debugDiagnostics : <PushPermissionCard />}
     </main>

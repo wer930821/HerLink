@@ -35,7 +35,7 @@ export default function SignupPage() {
       }
 
       if (data.session) {
-        router.replace("/onboarding");
+        router.replace("/");
         return;
       }
 
@@ -49,7 +49,7 @@ export default function SignupPage() {
 
   return (
     <main className="stack">
-      <PageHero title="註冊 HerLink" description="只需要電子郵件與密碼，接著設定匿名身份即可開始。" />
+      <PageHero title="註冊 HerLink" description="只需要電子郵件與密碼，即可直接開始使用。" />
       <Surface as="form" elevation={1} onSubmit={onSubmit}>
         <Field label="電子郵件" htmlFor="signup-email">
           <input

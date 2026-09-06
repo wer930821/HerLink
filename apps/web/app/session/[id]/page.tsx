@@ -12,7 +12,7 @@ import {
 } from "../../../lib/navigation-diagnostics";
 import {
   blockRandomUser,
-  isAnonymousProfileReady,
+  ensureAnonymousBootstrapProfile,
   leaveRandomSession,
   loadMyProfile,
   loadMyRandomSession,
@@ -39,6 +39,7 @@ import {
 } from "../../../lib/supabase";
 import { recordRealtimeDiagnostic } from "../../../lib/realtime-diagnostics";
 import { Button, Modal } from "../../../components/ui";
+import { SessionSafetyWarning } from "../../../components/session-safety-warning";
 import { ChatImage } from "../../../components/chat/ChatImage";
 import {
   loadChatImageDimensions,
@@ -263,6 +264,8 @@ export default function RandomSessionPage() {
   const [session, setSession] = useState<RandomSessionRow | null>(null);
   const [icebreaker, setIcebreaker] = useState<RandomSessionIcebreakerRow | null>(null);
   const [icebreakerBusy, setIcebreakerBusy] = useState(false);
+  const [icebreakerExpanded, setIcebreakerExpanded] = useState(false);
+  useEffect(() => { setIcebreakerExpanded(false); }, [routeSessionId]);
   const [messages, setMessages] = useState<RandomChatMessageRow[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
@@ -364,7 +367,6 @@ export default function RandomSessionPage() {
       | "SESSION_ACTIVE"
       | "SESSION_ENDED"
       | "REDIRECT_HOME"
-      | "REDIRECT_ONBOARDING"
       | "SESSION_ROUTE_UNMOUNT"
       | "STALE_BOOTSTRAP_DISCARDED",
     metadata: Record<string, unknown> = {}
@@ -398,11 +400,6 @@ export default function RandomSessionPage() {
   const goHome = (reason: string, metadata: Record<string, unknown> = {}) => {
     recordSessionRouteDiagnostic("REDIRECT_HOME", { ...metadata, reason, redirectSource: "session/[id].goHome" });
     router.replace(withNavigationDebugParam("/"));
-  };
-
-  const goOnboarding = (reason: string, metadata: Record<string, unknown> = {}) => {
-    recordSessionRouteDiagnostic("REDIRECT_ONBOARDING", { ...metadata, reason });
-    router.replace(withNavigationDebugParam("/onboarding"));
   };
 
   const clearSenderTypingTimer = () => {
@@ -1002,7 +999,10 @@ export default function RandomSessionPage() {
           bootstrapRunId,
         });
 
-        const [profileResult] = await Promise.all([loadMyProfile(authSession.user.id)]);
+        const loadedProfileResult = await loadMyProfile(authSession.user.id);
+        const profileResult = loadedProfileResult.data || loadedProfileResult.error
+          ? loadedProfileResult
+          : await ensureAnonymousBootstrapProfile(authSession.user.id);
 
         if (!mounted || bootstrapRunId !== sessionBootstrapRunRef.current) {
           recordSessionRouteDiagnostic("STALE_BOOTSTRAP_DISCARDED", {
@@ -1016,13 +1016,7 @@ export default function RandomSessionPage() {
         setMyProfile(nextProfile);
         if (!nextProfile) {
           sessionBootstrapStateRef.current = "unauthorized";
-          goOnboarding("PROFILE_NOT_READY", { authState: "ready", bootstrapRunId });
-          return;
-        }
-
-        if (!isAnonymousProfileReady(nextProfile)) {
-          sessionBootstrapStateRef.current = "unauthorized";
-          goOnboarding("PROFILE_NOT_READY", { authState: "ready", bootstrapRunId });
+          goHome("PROFILE_UNAVAILABLE", { authState: "ready", bootstrapRunId });
           return;
         }
 
@@ -1216,60 +1210,10 @@ export default function RandomSessionPage() {
     chatChannel
       .on(
         "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "random_chat_messages",
-          filter: `session_id=eq.${session.id}`,
-        },
-        (payload: RealtimePayload<RandomChatMessageRealtimeRow>) => {
-          const nextMessage = payload.new as RandomChatMessageRealtimeRow;
-          if (seenMessageIdsRef.current.has(nextMessage.id)) {
-            return;
-          }
-
-          recordDiagnostic("message_received_realtime", {
-            sessionId: session.id,
-            userId: myProfile.id,
-            messageId: nextMessage.id,
-            metadata: { channel: "messages" },
-          });
-
-          const shouldAutoScroll = stickToBottomRef.current;
-          seenMessageIdsRef.current.add(nextMessage.id);
-          const mappedMessage: RandomChatMessageRow = {
-            id: nextMessage.id,
-            session_id: nextMessage.session_id,
-            content: nextMessage.content,
-            created_at: nextMessage.created_at,
-            is_mine: nextMessage.sender_id === myProfile.id,
-            risk_level: nextMessage.risk_level ?? "low",
-            risk_types: nextMessage.risk_types ?? [],
-            message_type: nextMessage.message_type ?? "text",
-            media_path: nextMessage.media_path ?? null,
-            media_mime: nextMessage.media_mime ?? null,
-            media_size: nextMessage.media_size ?? null,
-            media_width: nextMessage.media_width ?? null,
-            media_height: nextMessage.media_height ?? null,
-            reply_to_message_id: nextMessage.reply_to_message_id ?? null,
-            reply_message_id: null,
-            reply_is_mine: null,
-            reply_message_type: null,
-            reply_body: null,
-            reply_media_path: null,
-            reply_preview_state: nextMessage.reply_to_message_id ? "loading" : "loaded",
-          };
-          setMessages((current) => upsertMessage(current, mappedMessage));
-          updateMessageCursors([mappedMessage]);
-          if (
-            mappedMessage.reply_to_message_id &&
-            !seenMessageIdsRef.current.has(mappedMessage.reply_to_message_id)
-          ) {
-            void fetchReplyPreview(mappedMessage.reply_to_message_id, mappedMessage.id);
-          }
-          if (shouldAutoScroll) {
-            pendingScrollToBottomRef.current = true;
-          }
+        { event: "*", schema: "public", table: "random_chat_signals", filter: `session_id=eq.${session.id}` },
+        () => {
+          void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
+          void refreshSessionFromServerRef.current?.();
         }
       )
       .on("broadcast", { event: "typing" }, (payload: { payload?: { typing?: unknown } }) => {
@@ -1283,18 +1227,7 @@ export default function RandomSessionPage() {
         setPartnerTyping(true);
         armPartnerTypingTimeout();
       })
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "random_chat_sessions",
-          filter: `id=eq.${session.id}`,
-        },
-        () => {
-          void refreshSessionFromServerRef.current?.();
-        }
-      )
+
       .on(
         "postgres_changes",
         {
@@ -1758,18 +1691,24 @@ export default function RandomSessionPage() {
         </div>
 
         {notice ? <div className="notice">{notice}</div> : null}
-        {messageWarning ? <div className="notice safety-notice">{messageWarning}</div> : null}
+        {session ? <SessionSafetyWarning key={session.id} sessionId={session.id} warning={messageWarning}
+          highRiskAt={messages.reduce((latest, message) =>
+            (message.risk_level === "high" || message.risk_level === "critical") && message.created_at > latest
+              ? message.created_at : latest, "")} /> : null}
 
         {icebreaker ? (
           <section className="icebreaker-card" aria-live="polite">
-            <div className="icebreaker-heading">
+            <button type="button" className="icebreaker-heading icebreaker-toggle" aria-expanded={icebreakerExpanded} aria-controls="icebreaker-content" onClick={() => setIcebreakerExpanded((expanded) => !expanded)}>
               <span className="icebreaker-label">破冰題 · {icebreaker.category}</span>
-              <span className="muted">第 {icebreaker.turn + 1} 題</span>
-            </div>
+              <span className="muted">第 {icebreaker.turn + 1} 題 <span aria-hidden="true">{icebreakerExpanded ? "⌃" : "⌄"}</span></span>
+            </button>
+            <div id="icebreaker-content" className={`icebreaker-collapse${icebreakerExpanded ? " is-expanded" : ""}`} inert={!icebreakerExpanded} aria-hidden={!icebreakerExpanded}>
+            <div className="icebreaker-content"><div className="icebreaker-content-inner">
             <p>{icebreaker.prompt}</p>
             <button className="ghost icebreaker-advance" type="button" onClick={() => void advanceIcebreaker()} disabled={isEnded || icebreakerBusy}>
               {icebreakerBusy ? "換題中…" : "換一題"}
             </button>
+            </div></div></div>
           </section>
         ) : null}
 
