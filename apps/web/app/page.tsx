@@ -451,7 +451,7 @@ export default function HomePage() {
               <Button size="lg" onClick={startAnonymous} disabled={actionBusy}>
                 {actionBusy ? "建立匿名身份中…" : "開始匿名聊天"}
               </Button>
-              {onlineCountConnected ? <Badge variant="success">目前在線 {onlineCount} 人</Badge> : null}
+              {onlineCountConnected ? <Badge variant="success">目前有 {onlineCount} 人在線</Badge> : null}
             </>
           }
         >
@@ -594,7 +594,7 @@ export default function HomePage() {
             目前會話：{state.activeSession ? "已配對" : "未配對"}
           </div>
         </div>
-        {onlineCountConnected ? <div className="muted small">目前在線 {onlineCount} 人</div> : null}
+        {onlineCountConnected ? <div className="muted small">目前有 {onlineCount} 位使用者在線（不代表都在等待配對）</div> : null}
       </Surface>
 
       {debugPanel}

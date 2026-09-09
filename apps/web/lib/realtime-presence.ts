@@ -1,18 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
 
-type PresenceState = Record<string, unknown[]>;
+const ONLINE_HEARTBEAT_MS = 30_000;
+const ONLINE_INSTANCE_STORAGE_KEY = "herlink:web-online-instance-id";
 
-function getUniquePresenceCount(channel: { presenceState?: () => PresenceState }) {
-  const state = channel.presenceState?.() ?? {};
-  return Object.keys(state).length;
+function getOnlineInstanceId() {
+  const existing = window.sessionStorage.getItem(ONLINE_INSTANCE_STORAGE_KEY);
+  if (existing) return existing;
+
+  const instanceId = window.crypto.randomUUID();
+  window.sessionStorage.setItem(ONLINE_INSTANCE_STORAGE_KEY, instanceId);
+  return instanceId;
 }
 
 export function useOnlinePresence(userId: string | null | undefined) {
   const [onlineCount, setOnlineCount] = useState<number | null>(null);
   const [connected, setConnected] = useState(false);
+  const instanceIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!userId) {
@@ -22,47 +28,47 @@ export function useOnlinePresence(userId: string | null | undefined) {
     }
 
     let mounted = true;
-    const channel = supabase.channel("herlink-online-users", {
-      config: {
-        presence: {
-          key: userId,
-        },
-      },
-    });
+    let syncing = false;
+    const instanceId = instanceIdRef.current ?? getOnlineInstanceId();
+    instanceIdRef.current = instanceId;
 
-    const syncCount = () => {
-      if (!mounted) return;
-      setOnlineCount(getUniquePresenceCount(channel));
+    const syncCount = async () => {
+      if (!mounted || syncing) return;
+      syncing = true;
+      try {
+        const heartbeat = await supabase.rpc("touch_online_activity", { p_instance_id: instanceId });
+        if (heartbeat.error) throw heartbeat.error;
+
+        const count = await supabase.rpc("get_online_user_count");
+        if (count.error) throw count.error;
+
+        if (mounted) {
+          setOnlineCount(typeof count.data === "number" ? count.data : null);
+          setConnected(true);
+        }
+      } catch {
+        if (mounted) {
+          setOnlineCount(null);
+          setConnected(false);
+        }
+      } finally {
+        syncing = false;
+      }
     };
 
-    channel.on("presence", { event: "sync" }, syncCount);
-    channel.on("presence", { event: "join" }, syncCount);
-    channel.on("presence", { event: "leave" }, syncCount);
-
-    channel.subscribe(async (status: string) => {
-      if (!mounted) return;
-
-      if (status === "SUBSCRIBED") {
-        setConnected(true);
-        try {
-          await channel.track({});
-        } catch {
-          // Keep the hook resilient; the next sync/leave/join will correct the count.
-        }
-        syncCount();
-        return;
-      }
-
-      if (status === "CHANNEL_ERROR" || status === "CLOSED") {
-        setConnected(false);
-      }
-    });
+    void syncCount();
+    const interval = window.setInterval(() => void syncCount(), ONLINE_HEARTBEAT_MS);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void syncCount();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
       mounted = false;
       setConnected(false);
       setOnlineCount(null);
-      void supabase.removeChannel(channel);
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [userId]);
 

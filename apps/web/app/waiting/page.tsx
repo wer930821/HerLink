@@ -133,6 +133,43 @@ export default function WaitingPage() {
   }, [debug, router, userId]);
 
   useEffect(() => {
+    if (MAINTENANCE_MODE || !userId) return;
+
+    let mounted = true;
+    let syncing = false;
+    const syncMatchState = async () => {
+      if (!mounted || syncing) return;
+      syncing = true;
+      try {
+        const [queueResult, sessionResult] = await Promise.all([
+          loadMyRandomQueue(userId),
+          loadMyActiveRandomSession(),
+        ]);
+        if (!mounted) return;
+
+        if (!queueResult.error) setQueue(queueResult.data ?? null);
+        if (!sessionResult.error) setSession(sessionResult.data ?? null);
+
+        const matchedSessionId = queueResult.data?.status === "matched"
+          ? queueResult.data.matched_session_id
+          : null;
+        if (!debug && (sessionResult.data?.id ?? matchedSessionId)) {
+          router.replace(`/session/${sessionResult.data?.id ?? matchedSessionId}`);
+        }
+      } finally {
+        syncing = false;
+      }
+    };
+
+    void syncMatchState();
+    const interval = window.setInterval(() => void syncMatchState(), 5_000);
+    return () => {
+      mounted = false;
+      window.clearInterval(interval);
+    };
+  }, [debug, router, userId]);
+
+  useEffect(() => {
     if (MAINTENANCE_MODE) return;
 
     if (!debug && !loading && session) {
@@ -225,7 +262,7 @@ export default function WaitingPage() {
       >
         <div className="waiting-meta">
           <div className="muted">已等待 {formattedElapsed}</div>
-          <div className="muted small">目前在線 {onlineCount ?? 0} 人</div>
+          <div className="muted small">目前有 {onlineCount ?? 0} 位使用者在線（不代表都在等待配對）</div>
         </div>
         <p className="hero-copy">系統會自動把你配對給另一位等待中的匿名使用者。</p>
       </PageHero>
