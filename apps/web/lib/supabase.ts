@@ -344,6 +344,49 @@ export async function loadMyProfile(userId: string) {
     .maybeSingle() as Promise<{ data: WebProfile | null; error: { message?: string } | null }>);
 }
 
+export type AnonymousNameRpcRow = {
+  status: "OK" | "NAME_TAKEN" | string | null;
+  anonymous_display_name: string | null;
+};
+
+export type AnonymousNameRpcResult = {
+  data: AnonymousNameRpcRow | null;
+  error: SupabaseClientError | null;
+};
+
+// Both alias RPCs share one shape: a one-row table of (status, anonymous_display_name).
+function normalizeAnonymousNameRpcResult(result: { data?: unknown; error?: unknown } | null | undefined): AnonymousNameRpcResult {
+  const error = (result?.error ?? null) as SupabaseClientError | null;
+  const row = Array.isArray(result?.data) ? result?.data[0] ?? null : result?.data ?? null;
+
+  if (!row || typeof row !== "object") {
+    return { data: null, error };
+  }
+
+  const record = row as { status?: unknown; anonymous_display_name?: unknown };
+  const name = typeof record.anonymous_display_name === "string" && record.anonymous_display_name.trim()
+    ? record.anonymous_display_name.trim()
+    : null;
+
+  return {
+    data: {
+      status: typeof record.status === "string" ? record.status : null,
+      anonymous_display_name: name,
+    },
+    error,
+  };
+}
+
+export async function setMyAnonymousDisplayName(name: string) {
+  const result = await supabase.rpc("set_my_anonymous_display_name", { p_name: name });
+  return normalizeAnonymousNameRpcResult(result);
+}
+
+export async function rotateMyAnonymousDisplayName() {
+  const result = await supabase.rpc("rotate_my_anonymous_display_name");
+  return normalizeAnonymousNameRpcResult(result);
+}
+
 export async function ensureAnonymousBootstrapProfile(userId: string) {
   const existing = await loadMyProfile(userId);
   if (existing.error || existing.data?.anonymous_display_name) {
@@ -363,9 +406,12 @@ export async function ensureAnonymousBootstrapProfile(userId: string) {
     }
   }
 
-  const rotated = await supabase.rpc("rotate_my_anonymous_display_name");
-  if (rotated.error) {
-    return { data: null, error: rotated.error };
+  const rotated = await rotateMyAnonymousDisplayName();
+  if (rotated.error || !rotated.data?.anonymous_display_name) {
+    return {
+      data: null,
+      error: rotated.error ?? createSupabaseClientError("目前無法產生匿名暱稱，請稍後再試。"),
+    };
   }
 
   return loadMyProfile(userId);

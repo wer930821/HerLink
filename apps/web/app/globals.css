@@ -1360,6 +1360,22 @@ select {
   border-color: color-mix(in srgb, var(--color-danger) 32%, transparent);
 }
 
+.rename-modal {
+  width: min(100%, 440px);
+}
+
+.rename-form {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.rename-form .input {
+  font-size: var(--text-body);
+  min-height: 48px;
+  max-width: 100%;
+}
+
 .grow {
   flex: 1;
   min-width: 0;
@@ -1554,11 +1570,19 @@ select {
 
   .modal-backdrop {
     padding: 14px;
+    align-content: start;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .modal-card {
     padding: 18px;
     border-radius: 20px;
+    max-height: calc(100dvh - 28px - env(safe-area-inset-bottom));
+  }
+
+  .rename-modal .modal-actions > .btn {
+    flex: 1 1 160px;
   }
 
   .admin-table {

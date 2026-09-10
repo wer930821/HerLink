@@ -1,7 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import {
+  ANONYMOUS_DISPLAY_NAME_MAX_LENGTH,
+  randomizeAnonymousDisplayName,
+  renameAnonymousDisplayName,
+  validateAnonymousDisplayNameDraft,
+  anonymousRenameErrorMessage,
+} from "../lib/anonymous-rename";
 import { getFriendlyAuthErrorMessage } from "../lib/auth-ui";
 import {
   getShortId,
@@ -34,7 +41,7 @@ import {
   type AnonymousAbusePrecheckRow,
   type WebProfile,
 } from "../lib/supabase";
-import { Badge, Button, Notice, PageHero, Surface } from "../components/ui";
+import { Badge, Button, Field, Modal, Notice, PageHero, Surface } from "../components/ui";
 
 type BootstrapState = {
   session: Session | null;
@@ -90,6 +97,12 @@ export default function HomePage() {
   const [latestSessionDiagnosticError, setLatestSessionDiagnosticError] = useState(false);
   const [showTestUid, setShowTestUid] = useState(false);
   const [testUidCopied, setTestUidCopied] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [renameBusy, setRenameBusy] = useState(false);
+  const [randomBusy, setRandomBusy] = useState(false);
+  const [renameNotice, setRenameNotice] = useState<string | null>(null);
   const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
 
   const recordHomeRouteDiagnostic = (eventType: "continue_clicked" | "continue_routed", metadata: Record<string, unknown> = {}) => {
@@ -281,6 +294,103 @@ export default function HomePage() {
       name: state.profile.anonymous_display_name ?? "匿名使用者",
     };
   }, [state.profile]);
+
+  const renameBusyAny = renameBusy || randomBusy;
+
+  // The rename result always replaces the local profile name with what the RPC
+  // returned, so the header, the modal and every later read agree without an F5.
+  const applyAnonymousName = (name: string) => {
+    setState((prev) => {
+      if (prev.profile) {
+        return { ...prev, profile: { ...prev.profile, anonymous_display_name: name } };
+      }
+
+      if (!prev.session) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        profile: {
+          id: prev.session.user.id,
+          anonymous_mode_enabled: true,
+          anonymous_display_name: name,
+          anonymous_avatar: null,
+          account_status: null,
+        },
+      };
+    });
+    setRenameDraft(name);
+    setRenameError(null);
+    setRenameNotice(`匿名暱稱已更新為「${name}」`);
+  };
+
+  const openRenameDialog = () => {
+    setRenameDraft(state.profile?.anonymous_display_name ?? "");
+    setRenameError(null);
+    setRenameNotice(null);
+    setRenameOpen(true);
+  };
+
+  const closeRenameDialog = () => {
+    if (renameBusyAny) {
+      return;
+    }
+
+    setRenameOpen(false);
+    setRenameError(null);
+  };
+
+  const submitRename = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    if (renameBusyAny) {
+      return;
+    }
+
+    const invalid = validateAnonymousDisplayNameDraft(renameDraft);
+    if (invalid) {
+      setRenameNotice(null);
+      setRenameError(anonymousRenameErrorMessage(invalid));
+      return;
+    }
+
+    setRenameBusy(true);
+    setRenameError(null);
+    try {
+      const result = await renameAnonymousDisplayName(renameDraft);
+      if (!result.ok) {
+        setRenameNotice(null);
+        setRenameError(result.message);
+        return;
+      }
+
+      applyAnonymousName(result.name);
+      setRenameOpen(false);
+    } finally {
+      setRenameBusy(false);
+    }
+  };
+
+  const submitRandomRename = async () => {
+    if (renameBusyAny) {
+      return;
+    }
+
+    setRandomBusy(true);
+    setRenameError(null);
+    try {
+      const result = await randomizeAnonymousDisplayName();
+      if (!result.ok) {
+        setRenameNotice(null);
+        setRenameError(result.message);
+        return;
+      }
+
+      applyAnonymousName(result.name);
+    } finally {
+      setRandomBusy(false);
+    }
+  };
 
   const copyTestUid = async () => {
     const userId = state.session?.user.id;
@@ -557,7 +667,11 @@ export default function HomePage() {
           <div className="row">
             <Badge variant="accent">匿名身份</Badge>
             <strong>{anonymousSummary?.name ?? "匿名使用者"}</strong>
+            <Button variant="secondary" size="sm" onClick={openRenameDialog} disabled={renameBusyAny}>
+              更換匿名暱稱
+            </Button>
           </div>
+          {renameNotice ? <div className="muted small">{renameNotice}</div> : null}
         </Surface>
       </PageHero>
 
@@ -596,6 +710,52 @@ export default function HomePage() {
         </div>
         {onlineCountConnected ? <div className="muted small">目前有 {onlineCount} 位使用者在線（不代表都在等待配對）</div> : null}
       </Surface>
+
+      <Modal open={renameOpen} title="匿名暱稱" onClose={closeRenameDialog} className="rename-modal">
+        <form className="rename-form" onSubmit={(event) => void submitRename(event)}>
+          <div className="muted small">目前使用：{anonymousSummary?.name ?? "匿名使用者"}</div>
+          <Field
+            label="匿名暱稱"
+            htmlFor="anonymous-display-name"
+            hint="2–12 個字，名稱不可重複"
+            error={renameError}
+          >
+            <input
+              id="anonymous-display-name"
+              className="input"
+              type="text"
+              name="anonymous-display-name"
+              value={renameDraft}
+              onChange={(event) => {
+                setRenameDraft(event.target.value);
+                setRenameError(null);
+              }}
+              placeholder="輸入匿名名稱"
+              maxLength={ANONYMOUS_DISPLAY_NAME_MAX_LENGTH}
+              autoComplete="off"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="done"
+              disabled={renameBusyAny}
+            />
+          </Field>
+          <div className="modal-actions">
+            <Button type="submit" size="md" disabled={renameBusyAny}>
+              {renameBusy ? "儲存中…" : "使用這個名稱"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              onClick={() => void submitRandomRename()}
+              disabled={renameBusyAny}
+            >
+              {randomBusy ? "產生中…" : "隨機一個"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {debugPanel}
     </main>
