@@ -410,9 +410,9 @@ export default function HomePage() {
     if (check.decision === "cooldown") {
       if (check.cooldown_until) {
         const minutes = Math.max(1, Math.ceil((Date.parse(check.cooldown_until) - Date.now()) / 60000));
-        setMessage(`操作太頻繁，請約 ${minutes} 分鐘後再試。`);
+        setMessage(`配對操作太頻繁，請約 ${minutes} 分鐘後再試。`);
       } else {
-        setMessage("操作太頻繁，請稍後再試。");
+        setMessage("配對操作太頻繁，請稍後再試。");
       }
       return;
     }
