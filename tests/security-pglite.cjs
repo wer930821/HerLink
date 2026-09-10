@@ -16,17 +16,17 @@ const uid = n => `${String(n).padStart(8,'0')}-0000-4000-8000-000000000000`;
   };
   try {
     await db.exec(fs.readFileSync(path.join(__dirname, 'security-fixture.sql'), 'utf8'));
-    for (const file of ['20260905090000_sweep_privacy_presence.sql','20260905091000_sweep_queue_fairness.sql','20260905092000_sweep_anonymous_visibility.sql','20260909103000_web_matchmaking_presence_liveness.sql']) {
+    for (const file of ['20260905090000_sweep_privacy_presence.sql','20260905091000_sweep_queue_fairness.sql','20260905092000_sweep_anonymous_visibility.sql','20260909103000_web_matchmaking_presence_liveness.sql','20260909113000_android_unique_anonymous_names.sql','20260909114000_android_anonymous_alias_session_signal.sql','20260910090000_android_anonymous_name_length.sql']) {
       await db.exec(fs.readFileSync(path.join(root, 'supabase/migrations', file), 'utf8'));
     }
     await db.exec(`INSERT INTO auth.users SELECT ('0000000' || n || '-0000-4000-8000-000000000000')::uuid FROM generate_series(1,6) n;
-      INSERT INTO profiles(id,display_name,anonymous_display_name,bio,anonymous_intro) SELECT id,'REAL NAME','Safe Alias','private@example.com','Safe intro' FROM auth.users;
+      INSERT INTO profiles(id,display_name,anonymous_display_name,bio,anonymous_intro) SELECT id,'REAL NAME','N' || substring(id::text FROM 1 FOR 8),'private@example.com','Safe intro' FROM auth.users;
       GRANT SELECT ON public.public_profiles TO authenticated;`);
 
     await check('anonymous public projection masks real name and biography', async () => {
       await actor(1);
       const profile = (await rows(`SELECT * FROM public_profiles WHERE id='${uid(2)}'`))[0];
-      assert.equal(profile.display_name,'Safe Alias'); assert.equal(profile.bio,'Safe intro');
+      assert.equal(profile.display_name,`N${uid(2).slice(0,8)}`); assert.equal(profile.bio,'Safe intro');
     });
     await check('block applies even to direct public view queries', async () => {
       await db.exec(`RESET ROLE; INSERT INTO blocks VALUES ('${uid(1)}','${uid(2)}');`);
@@ -103,6 +103,89 @@ const uid = n => `${String(n).padStart(8,'0')}-0000-4000-8000-000000000000`;
       const queueRows = await rows(`SELECT user_id,status FROM random_match_queue WHERE user_id IN ('${uid(3)}','${uid(4)}') ORDER BY user_id`);
       assert.equal(queueRows[0].status,'left');
       assert.equal(queueRows[1].status,'waiting');
+    });
+    await check('anonymous alias RPC normalizes and rejects global collisions', async () => {
+      await actor(1);
+      const [minimum] = await rows(`SELECT * FROM set_my_anonymous_display_name('阿鵝')`);
+      assert.equal(minimum.status, 'OK');
+      const [maximum] = await rows(`SELECT * FROM set_my_anonymous_display_name('abcdefghijkl')`);
+      assert.equal(maximum.status, 'OK');
+      const [first] = await rows(`SELECT * FROM set_my_anonymous_display_name(' 阿鵝   ')`);
+      assert.equal(first.status, 'OK'); assert.equal(first.anonymous_display_name, '阿鵝');
+      await actor(2);
+      const [duplicate] = await rows(`SELECT * FROM set_my_anonymous_display_name('阿鵝')`);
+      assert.equal(duplicate.status, 'NAME_TAKEN');
+      const [spacedDuplicate] = await rows(`SELECT * FROM set_my_anonymous_display_name(' 阿鵝 ')`);
+      assert.equal(spacedDuplicate.status, 'NAME_TAKEN');
+      await actor(3);
+      const [english] = await rows(`SELECT * FROM set_my_anonymous_display_name('HerLink')`);
+      assert.equal(english.status, 'OK');
+      await actor(4);
+      const [englishDuplicate] = await rows(`SELECT * FROM set_my_anonymous_display_name(' HERLINK ')`);
+      assert.equal(englishDuplicate.status, 'NAME_TAKEN');
+      await assert.rejects(db.query(`SELECT * FROM set_my_anonymous_display_name('A')`), /TOO_SHORT/);
+      await assert.rejects(db.query(`SELECT * FROM set_my_anonymous_display_name('abcdefghijklm')`), /TOO_LONG/);
+      await assert.rejects(db.query(`SELECT * FROM set_my_anonymous_display_name(E'bad\\nname')`), /INVALID_NAME/);
+      const before = (await rows(`SELECT anonymous_display_name FROM profiles WHERE id='${uid(4)}'`))[0].anonymous_display_name;
+      const [renameCollision] = await rows(`SELECT * FROM set_my_anonymous_display_name('HerLink')`);
+      const after = (await rows(`SELECT anonymous_display_name FROM profiles WHERE id='${uid(4)}'`))[0].anonymous_display_name;
+      assert.equal(renameCollision.status, 'NAME_TAKEN'); assert.equal(after, before);
+    });
+    await check('anonymous alias validation, whitespace canonicalization, and randomized aliases are safe', async () => {
+      await actor(5);
+      const [spaced] = await rows(`SELECT * FROM set_my_anonymous_display_name('月亮   小鵝')`);
+      assert.equal(spaced.status, 'OK');
+      assert.equal(spaced.anonymous_display_name, '月亮 小鵝');
+      await actor(6);
+      const [duplicate] = await rows(`SELECT * FROM set_my_anonymous_display_name(' 月亮 小鵝 ')`);
+      assert.equal(duplicate.status, 'NAME_TAKEN');
+      for (const value of ["", "   ", "A", "x".repeat(13), "bad\t\u0001name"]) {
+        await assert.rejects(db.query(`SELECT * FROM set_my_anonymous_display_name($1)`, [value]), /TOO_SHORT|TOO_LONG|INVALID_NAME/);
+      }
+      const [random] = await rows('SELECT * FROM rotate_my_anonymous_display_name()');
+      assert.equal(random.status, 'OK');
+      assert.ok(random.anonymous_display_name);
+      const [stored] = await rows(`SELECT anonymous_display_name_normalized FROM profiles WHERE id='${uid(6)}'`);
+      assert.equal(stored.anonymous_display_name_normalized, random.anonymous_display_name.normalize('NFKC').trim().replace(/\s+/gu, ' ').toLowerCase());
+
+      const generated = [];
+      for (let index = 0; index < 100; index += 1) {
+        const [rotated] = await rows('SELECT * FROM rotate_my_anonymous_display_name()');
+        assert.equal(rotated.status, 'OK');
+        generated.push(rotated.anonymous_display_name);
+      }
+      assert.equal(generated.length, 100);
+      assert.ok(generated.every((name) => name.length >= 4 && name.length <= 10));
+      assert.ok(generated.filter((name) => name.length <= 8).length >= 90);
+      assert.ok(generated.every((name) => !name.includes('星河') && !name.startsWith('小')));
+      assert.ok(generated.every((name) => !/[，。！？]/u.test(name)));
+
+      // Replay the same first random draw after another profile claims it: the
+      // RPC must retry the server pool rather than return a fallback alias.
+      await actor(5);
+      await rows('SELECT setseed(0.5)');
+      const [firstDraw] = await rows('SELECT * FROM rotate_my_anonymous_display_name()');
+      await rows(`SELECT * FROM set_my_anonymous_display_name('保留名稱')`);
+      await actor(6);
+      const [claim] = await rows(`SELECT * FROM set_my_anonymous_display_name('${firstDraw.anonymous_display_name}')`);
+      assert.equal(claim.status, 'OK');
+      await actor(5);
+      await rows('SELECT setseed(0.5)');
+      const [retried] = await rows('SELECT * FROM rotate_my_anonymous_display_name()');
+      assert.equal(retried.status, 'OK');
+      assert.notEqual(retried.anonymous_display_name, firstDraw.anonymous_display_name);
+    });
+    await check('competing aliases leave exactly one owner and preserve the losing alias', async () => {
+      await actor(5); await rows(`SELECT * FROM set_my_anonymous_display_name('原本名稱')`);
+      const competingName = '同步搶名';
+      const [winnerResult] = await rows(`SELECT * FROM set_my_anonymous_display_name('${competingName}')`);
+      await actor(6);
+      const [loserResult] = await rows(`SELECT * FROM set_my_anonymous_display_name('${competingName}')`);
+      assert.equal(winnerResult.status, 'OK');
+      assert.equal(loserResult.status, 'NAME_TAKEN');
+      await db.exec('RESET ROLE;');
+      const [winner] = await rows(`SELECT anonymous_display_name FROM profiles WHERE anonymous_display_name_normalized=lower('${competingName}')`);
+      assert.equal(winner.anonymous_display_name, competingName);
     });
     console.log(`${passed} PostgreSQL regression checks passed.`);
   } finally { await db.close(); }

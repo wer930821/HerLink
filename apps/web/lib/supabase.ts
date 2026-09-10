@@ -1,5 +1,5 @@
 import { createClient, type Session } from "@supabase/supabase-js";
-import { ANONYMOUS_AVATAR_OPTIONS, generateNextAnonymousDisplayName, isAnonymousAvatarId } from "../../../lib/anonymous";
+import { ANONYMOUS_AVATAR_OPTIONS, isAnonymousAvatarId } from "../../../lib/anonymous";
 import { getAnonymousInstallationId } from "./anonymous-install";
 
 const supabaseUrl =
@@ -346,20 +346,29 @@ export async function loadMyProfile(userId: string) {
 
 export async function ensureAnonymousBootstrapProfile(userId: string) {
   const existing = await loadMyProfile(userId);
-  if (existing.error || existing.data) {
+  if (existing.error || existing.data?.anonymous_display_name) {
     return existing;
   }
 
-  return supabase
-    .from("profiles")
-    .insert({
+  if (!existing.data) {
+    const inserted = await supabase
+      .from("profiles")
+      .upsert({
       id: userId,
       anonymous_mode_enabled: true,
-      anonymous_display_name: generateNextAnonymousDisplayName(),
       anonymous_avatar: "avatar_01",
-    })
-    .select("id, anonymous_mode_enabled, anonymous_display_name, anonymous_avatar, account_status")
-    .maybeSingle() as Promise<{ data: WebProfile | null; error: { message?: string } | null }>;
+      }, { onConflict: "id", ignoreDuplicates: true });
+    if (inserted.error) {
+      return { data: null, error: inserted.error };
+    }
+  }
+
+  const rotated = await supabase.rpc("rotate_my_anonymous_display_name");
+  if (rotated.error) {
+    return { data: null, error: rotated.error };
+  }
+
+  return loadMyProfile(userId);
 }
 
 export async function loadMyActiveRandomSession() {
@@ -610,10 +619,6 @@ export async function nextRandomMatch(sessionId: string) {
     data: RandomMatchRow[] | null;
     error: { message?: string } | null;
   }>;
-}
-
-export function getAnonymousNameSuggestion(currentName?: string | null) {
-  return generateNextAnonymousDisplayName(currentName);
 }
 
 export function getAnonymousAvatarById(avatarId: string | null | undefined) {
