@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createChatMediaSignedUrl } from "../../lib/supabase";
+import { getCachedSignedUrl, invalidateCachedSignedUrl } from "../../../../lib/signed-url-cache";
 
 type ChatImageProps = {
   path: string;
@@ -11,45 +12,74 @@ type ChatImageProps = {
 };
 
 const SIGNED_URL_EXPIRY_SECONDS = 300;
-const RE_SIGN_INTERVAL_MS = 240000;
+const SIGNED_URL_TTL_MS = SIGNED_URL_EXPIRY_SECONDS * 1000;
+const SIGNED_URL_REFRESH_THRESHOLD_MS = 60_000;
+const MAX_IMAGE_LOAD_RETRIES = 1;
 
 export function ChatImage({ path, alt, large = false, onOpen }: ChatImageProps) {
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
-  const timerRef = useRef<number | null>(null);
+  const retryCountRef = useRef(0);
+  const requestGenerationRef = useRef(0);
 
-  useEffect(() => {
-    let mounted = true;
-
-    const sign = async () => {
-      const { data, error } = await createChatMediaSignedUrl(path, SIGNED_URL_EXPIRY_SECONDS);
-      if (!mounted) {
-        return;
+  const resolveUrl = useCallback(() => {
+    return getCachedSignedUrl(
+      path,
+      async () => {
+        const { data, error } = await createChatMediaSignedUrl(path, SIGNED_URL_EXPIRY_SECONDS);
+        if (error || !data?.signedUrl) {
+          throw error ?? new Error("Unable to sign chat media URL");
+        }
+        return data.signedUrl;
+      },
+      {
+        ttlMs: SIGNED_URL_TTL_MS,
+        refreshThresholdMs: SIGNED_URL_REFRESH_THRESHOLD_MS,
       }
-      if (!error && data?.signedUrl) {
-        setUrl(data.signedUrl);
-      } else {
-        setFailed(true);
-      }
-    };
-
-    void sign();
-    timerRef.current = window.setInterval(() => {
-      void sign();
-    }, RE_SIGN_INTERVAL_MS);
-
-    return () => {
-      mounted = false;
-      if (timerRef.current !== null) {
-        window.clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
+    );
   }, [path]);
 
-  if (failed) {
-    return <div className="chat-image chat-image-state">圖片無法載入</div>;
-  }
+  useEffect(() => {
+    const requestGeneration = ++requestGenerationRef.current;
+    retryCountRef.current = 0;
+    void resolveUrl()
+      .then((signedUrl) => {
+        if (requestGenerationRef.current === requestGeneration) {
+          setUrl((current) => (current === signedUrl ? current : signedUrl));
+          setFailed(false);
+        }
+      })
+      .catch(() => {
+        if (requestGenerationRef.current === requestGeneration) setFailed(true);
+      });
+
+    return () => {
+      if (requestGenerationRef.current === requestGeneration) {
+        requestGenerationRef.current += 1;
+      }
+    };
+  }, [resolveUrl]);
+
+  const retryOnce = () => {
+    if (retryCountRef.current >= MAX_IMAGE_LOAD_RETRIES) {
+      setFailed(true);
+      return;
+    }
+
+    retryCountRef.current += 1;
+    invalidateCachedSignedUrl(path);
+    const requestGeneration = requestGenerationRef.current;
+    void resolveUrl()
+      .then((signedUrl) => {
+        if (requestGenerationRef.current === requestGeneration) {
+          setUrl((current) => (current === signedUrl ? current : signedUrl));
+          setFailed(false);
+        }
+      })
+      .catch(() => {
+        if (requestGenerationRef.current === requestGeneration) setFailed(true);
+      });
+  };
 
   const image = url ? (
     <img
@@ -57,8 +87,10 @@ export function ChatImage({ path, alt, large = false, onOpen }: ChatImageProps) 
       src={url}
       alt={alt}
       loading="lazy"
-      onError={() => setFailed(true)}
+      onError={retryOnce}
     />
+  ) : failed ? (
+    <div className="chat-image chat-image-state">圖片無法載入</div>
   ) : (
     <div className="chat-image chat-image-state">載入中…</div>
   );
