@@ -9,6 +9,10 @@ const migration = path.join(
   root,
   'supabase/migrations/20260919043535_repair_anonymous_name_rotation.sql'
 );
+const whimsicalMigration = path.join(
+  root,
+  'supabase/migrations/20260919044609_whimsical_anonymous_names.sql'
+);
 const uid = (n) => `${String(n).padStart(8, '0')}-0000-4000-8000-000000000000`;
 
 async function actor(db, n, role = 'authenticated') {
@@ -35,6 +39,7 @@ test('anonymous name RPCs keep a large unique server-side pool available', async
       ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.sync_legacy_alias();
     `);
     await db.exec(fs.readFileSync(migration, 'utf8'));
+    await db.exec(fs.readFileSync(whimsicalMigration, 'utf8'));
     await db.exec(`
       INSERT INTO auth.users
       SELECT (lpad(n::text, 8, '0') || '-0000-4000-8000-000000000000')::uuid
@@ -49,7 +54,8 @@ test('anonymous name RPCs keep a large unique server-side pool available', async
       await actor(db, n);
       const result = (await db.query('SELECT * FROM rotate_my_anonymous_display_name()')).rows[0];
       assert.equal(result.status, 'OK');
-      assert.match(result.anonymous_display_name, /^.+[0-9]{4}$/u);
+      assert.match(result.anonymous_display_name, /^[^0-9０-９]{2,12}$/u);
+      assert.match(result.anonymous_display_name, /的/u);
       assert.equal(names.has(result.anonymous_display_name), false);
       names.add(result.anonymous_display_name);
     }
