@@ -70,13 +70,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const hydrateSignedInUser = async (currentUser: User) => {
-    await Promise.allSettled([
+    const results = await Promise.allSettled([
       fetchProfile(currentUser.id),
       registerCurrentDevice(),
       registerNativePushToken().then((token) => {
         nativePushTokenRef.current = token;
       }),
     ]);
+    for (const [index, result] of results.entries()) {
+      if (result.status === "rejected") {
+        console.warn(["Profile", "Device", "Native push token"][index] + " registration failed:", result.reason);
+      }
+    }
   };
 
   const restoreAuth = async () => {
@@ -97,11 +102,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // 監聽 Auth 狀態
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
+      (_event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         if (currentSession?.user) {
-          await hydrateSignedInUser(currentSession.user);
+          // Supabase requests inside the auth callback can block session refresh.
+          setTimeout(() => { void hydrateSignedInUser(currentSession.user); }, 0);
         } else {
           setProfile(null);
         }
@@ -148,4 +154,3 @@ export function useAuth() {
   }
   return context;
 }
-

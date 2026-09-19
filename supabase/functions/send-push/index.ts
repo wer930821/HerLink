@@ -65,7 +65,19 @@ interface DeliveryResult {
 }
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
-const REVOCABLE_EXPO_ERRORS = new Set(["DeviceNotRegistered", "MessageTooBig", "InvalidCredentials"]);
+const REVOCABLE_EXPO_ERRORS = new Set(["DeviceNotRegistered"]);
+// Provider-side failures that must stay visible in logs and on the event row
+// instead of collapsing into one anonymous "delivery failed".
+const KNOWN_EXPO_TICKET_ERRORS = new Set([
+  "DeviceNotRegistered",
+  "DeviceMessageRateExceeded",
+  "MessageTooBig",
+  "MessageRateExceeded",
+  "InvalidCredentials",
+  "MismatchSenderId",
+  "InvalidProviderToken",
+  "ProviderError",
+]);
 
 const PUSH_CRON_SECRET = Deno.env.get("PUSH_CRON_SECRET") ?? "";
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "";
@@ -263,7 +275,7 @@ async function loadRecipientProfile(
 ) {
   const { data, error } = await supabaseAdmin
     .from("profiles")
-    .select("id,account_status,onboarding_completed")
+    .select("id,account_status")
     .eq("id", userId)
     .single();
 
@@ -284,7 +296,7 @@ async function shouldSendEvent(
     return profile.account_status !== "deletion_pending";
   }
 
-  return profile.account_status === "active" && profile.onboarding_completed === true;
+  return profile.account_status === "active";
 }
 
 async function isConversationPushStillAllowed(
@@ -788,6 +800,7 @@ async function deliverNativePush(
     title: event.title,
     body: event.body,
     sound: "default",
+    channelId: "herlink-chat",
     data: buildNativePushData(event),
   }));
 
@@ -833,6 +846,8 @@ async function deliverNativePush(
         ? (ticket.details as Record<string, unknown>)
         : null;
     const errorCode = typeof details?.error === "string" ? details.error : null;
+    const providerMessage = typeof details?.message === "string" ? details.message.slice(0, 200) : null;
+    const ticketId = typeof ticket?.id === "string" ? ticket.id : null;
     const ticketOk = ticket?.status === "ok" && !errorCode;
 
     if (ticketOk) {
@@ -848,6 +863,21 @@ async function deliverNativePush(
     }
 
     const normalizedError = errorCode ?? "expo_push_ticket_error";
+    if (!KNOWN_EXPO_TICKET_ERRORS.has(normalizedError)) {
+      // Unknown provider failures stay diagnosable without leaking the token.
+      console.warn(
+        JSON.stringify({
+          scope: "push",
+          message: "native_ticket_unknown_error",
+          eventId: event.id,
+          tokenId: token.id,
+          userId: token.user_id,
+          errorCode: normalizedError,
+          providerMessage,
+        })
+      );
+    }
+
     if (errorCode && REVOCABLE_EXPO_ERRORS.has(errorCode)) {
       revoked += 1;
       disableIds.push(token.id);
@@ -860,7 +890,19 @@ async function deliverNativePush(
       });
     } else {
       failed += 1;
-      lastError = normalizedError;
+      lastError = providerMessage ? `${normalizedError}: ${providerMessage}` : normalizedError;
+      console.warn(
+        JSON.stringify({
+          scope: "push",
+          message: "native_ticket_rejected",
+          eventId: event.id,
+          tokenId: token.id,
+          userId: token.user_id,
+          errorCode: normalizedError,
+          ticketId,
+          providerMessage,
+        })
+      );
       await recordNativePushDelivery(supabaseAdmin, {
         eventId: event.id,
         tokenId: token.id,

@@ -11,11 +11,10 @@ export type HerLinkPushData = {
 };
 
 Notifications.setNotificationHandler({
-  // Active chat already receives Realtime updates; never duplicate it with an OS alert.
   handleNotification: async () => ({
-    shouldShowBanner: false,
-    shouldShowList: false,
-    shouldPlaySound: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
     shouldSetBadge: false,
   }),
 });
