@@ -40,7 +40,6 @@ import {
   type Session,
   type AnonymousAbusePrecheckRow,
   type WebProfile,
-  supabase,
 } from "../lib/supabase";
 import { Badge, Button, Field, Modal, Notice, PageHero, Surface } from "../components/ui";
 
@@ -292,22 +291,23 @@ export default function HomePage() {
 
   useEffect(() => {
     let mounted = true;
+    const accessToken = state.session?.access_token;
 
-    if (!state.session?.user.id) {
+    if (!accessToken) {
       setIsAdmin(false);
       return () => {
         mounted = false;
       };
     }
 
-    void supabase
-      .from("admin_users")
-      .select("role, active")
-      .eq("user_id", state.session.user.id)
-      .maybeSingle()
-      .then(({ data, error }: { data: { role?: string; active?: boolean } | null; error: unknown }) => {
-        if (!mounted) return;
-        setIsAdmin(!error && data?.role === "admin" && data?.active === true);
+    void fetch("/api/admin/access", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: "no-store",
+    })
+      .then((response) => {
+        if (mounted) setIsAdmin(response.ok);
       })
       .catch(() => {
         if (mounted) setIsAdmin(false);
@@ -316,7 +316,7 @@ export default function HomePage() {
     return () => {
       mounted = false;
     };
-  }, [state.session?.user.id]);
+  }, [state.session?.access_token]);
 
   const anonymousSummary = useMemo(() => {
     if (!state.profile) return null;
