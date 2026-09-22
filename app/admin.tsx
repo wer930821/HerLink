@@ -15,6 +15,7 @@ import { useAuth } from "../context/auth";
 import {
   createAdminSignedUrl,
   fetchAdminDashboardCounts,
+  fetchAnonymousChatStats,
   fetchModerationCases,
   fetchMyAdminUser,
   fetchPendingPhotos,
@@ -49,6 +50,7 @@ export default function AdminScreen() {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [adminUser, setAdminUser] = useState<Awaited<ReturnType<typeof fetchMyAdminUser>>>(null);
   const [dashboard, setDashboard] = useState<Awaited<ReturnType<typeof fetchAdminDashboardCounts>> | null>(null);
+  const [anonymousStats, setAnonymousStats] = useState<Awaited<ReturnType<typeof fetchAnonymousChatStats>> | null>(null);
   const [cases, setCases] = useState<ModerationCase[]>([]);
   const [verifications, setVerifications] = useState<Verification[]>([]);
   const [photos, setPhotos] = useState<ProfilePhoto[]>([]);
@@ -70,9 +72,10 @@ export default function AdminScreen() {
       setError(null);
 
       try {
-        const [adminRow, dashboardCounts, caseList, verificationList, photoList, reportList] = await Promise.all([
+        const [adminRow, dashboardCounts, anonymousChatStats, caseList, verificationList, photoList, reportList] = await Promise.all([
           fetchMyAdminUser(),
           fetchAdminDashboardCounts(),
+          fetchAnonymousChatStats(),
           fetchModerationCases(),
           fetchPendingVerifications(),
           fetchPendingPhotos(),
@@ -81,6 +84,7 @@ export default function AdminScreen() {
 
         setAdminUser(adminRow);
         setDashboard(dashboardCounts);
+        setAnonymousStats(anonymousChatStats);
         setCases(caseList);
         setVerifications(verificationList);
         setPhotos(photoList);
@@ -198,6 +202,58 @@ export default function AdminScreen() {
           </View>
         ))}
       </View>
+
+      <SectionTitle
+        title="匿名聊天室統計"
+        subtitle="今日以 Asia/Taipei 00:00 起算；近 7 天為最近 7×24 小時。"
+      />
+      {anonymousStats ? (
+        <View style={styles.analyticsGrid}>
+          <View style={styles.analyticsPanel}>
+            <Text style={styles.analyticsPeriod}>今日</Text>
+            <View style={styles.analyticsMetricGrid}>
+              <View style={styles.analyticsMetric}>
+                <Text style={styles.analyticsValue}>{anonymousStats.todayUsers}</Text>
+                <Text style={styles.analyticsLabel}>使用者數</Text>
+              </View>
+              <View style={styles.analyticsMetric}>
+                <Text style={styles.analyticsValue}>{anonymousStats.todayMessages}</Text>
+                <Text style={styles.analyticsLabel}>訊息數</Text>
+              </View>
+              <View style={styles.analyticsMetric}>
+                <Text style={styles.analyticsValue}>{anonymousStats.todaySessions}</Text>
+                <Text style={styles.analyticsLabel}>配對 Session</Text>
+              </View>
+              <View style={styles.analyticsMetric}>
+                <Text style={styles.analyticsValue}>{anonymousStats.todayQueueJoins}</Text>
+                <Text style={styles.analyticsLabel}>進入佇列</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.analyticsPanel}>
+            <Text style={styles.analyticsPeriod}>近 7 天</Text>
+            <View style={styles.analyticsMetricGrid}>
+              <View style={styles.analyticsMetric}>
+                <Text style={styles.analyticsValue}>{anonymousStats.sevenDayUsers}</Text>
+                <Text style={styles.analyticsLabel}>使用者數</Text>
+              </View>
+              <View style={styles.analyticsMetric}>
+                <Text style={styles.analyticsValue}>{anonymousStats.sevenDayMessages}</Text>
+                <Text style={styles.analyticsLabel}>訊息數</Text>
+              </View>
+              <View style={styles.analyticsMetric}>
+                <Text style={styles.analyticsValue}>{anonymousStats.sevenDaySessions}</Text>
+                <Text style={styles.analyticsLabel}>配對 Session</Text>
+              </View>
+              <View style={styles.analyticsMetric}>
+                <Text style={styles.analyticsValue}>{anonymousStats.sevenDayQueueJoins}</Text>
+                <Text style={styles.analyticsLabel}>進入佇列</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      ) : null}
 
       <SectionTitle title="Cases" subtitle="案件列表可做接手、帳號限制，以及 resolve / dismiss。" />
       {cases.length === 0 ? (
@@ -489,6 +545,46 @@ const styles = StyleSheet.create({
   summaryLabel: {
     marginTop: 8,
     fontSize: 14,
+    color: "#7a685e",
+  },
+  analyticsGrid: {
+    marginTop: 16,
+    gap: 14,
+  },
+  analyticsPanel: {
+    borderRadius: 22,
+    backgroundColor: "#fffaf5",
+    borderWidth: 1,
+    borderColor: "#ead9cd",
+    padding: 18,
+  },
+  analyticsPeriod: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2f221e",
+    marginBottom: 14,
+  },
+  analyticsMetricGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  analyticsMetric: {
+    minWidth: 125,
+    flexGrow: 1,
+    borderRadius: 16,
+    backgroundColor: "#f7eee6",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  analyticsValue: {
+    fontSize: 26,
+    fontWeight: "700",
+    color: "#2f221e",
+  },
+  analyticsLabel: {
+    marginTop: 5,
+    fontSize: 13,
     color: "#7a685e",
   },
   sectionHeader: {
