@@ -16,6 +16,17 @@ export interface AdminDashboardCounts {
   photosUnderReview: number;
 }
 
+export interface AnonymousChatStats {
+  todayUsers: number;
+  todayMessages: number;
+  todaySessions: number;
+  todayQueueJoins: number;
+  sevenDayUsers: number;
+  sevenDayMessages: number;
+  sevenDaySessions: number;
+  sevenDayQueueJoins: number;
+}
+
 export async function fetchMyAdminUser() {
   const { data, error } = await supabase
     .from("admin_users")
@@ -61,6 +72,27 @@ export async function fetchAdminDashboardCounts() {
     pendingReports: reports.count ?? 0,
     photosUnderReview: photos.count ?? 0,
   } satisfies AdminDashboardCounts;
+}
+
+export async function fetchAnonymousChatStats() {
+  const { data, error } = await supabase.rpc("get_admin_random_chat_stats");
+
+  if (error) {
+    throw error;
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+
+  return {
+    todayUsers: Number(row?.today_users ?? 0),
+    todayMessages: Number(row?.today_messages ?? 0),
+    todaySessions: Number(row?.today_sessions ?? 0),
+    todayQueueJoins: Number(row?.today_queue_joins ?? 0),
+    sevenDayUsers: Number(row?.seven_day_users ?? 0),
+    sevenDayMessages: Number(row?.seven_day_messages ?? 0),
+    sevenDaySessions: Number(row?.seven_day_sessions ?? 0),
+    sevenDayQueueJoins: Number(row?.seven_day_queue_joins ?? 0),
+  } satisfies AnonymousChatStats;
 }
 
 export async function fetchModerationCases() {
