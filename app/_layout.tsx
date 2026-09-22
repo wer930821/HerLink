@@ -55,7 +55,6 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       {session ? <Stack.Screen name="(tabs)" /> : <Stack.Screen name="login" />}
-      <Stack.Screen name="admin" />
       <Stack.Screen name="random-session/[sessionId]" />
       <Stack.Screen name="modal" options={{ presentation: "modal", headerShown: true, title: "Modal" }} />
       <Stack.Screen name="privacy" options={{ headerShown: true, title: "隱私權政策" }} />
