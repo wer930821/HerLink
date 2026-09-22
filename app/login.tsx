@@ -1,22 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, ActivityIndicator, Alert, StyleSheet } from "react-native";
-import { supabase } from "../lib/supabase";
-import { Link } from "expo-router";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../context/auth";
+import { colors, radii, spacing, typography } from "../theme";
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { signInAnonymously } = useAuth();
-
-  async function signInWithEmail() {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) Alert.alert("登入失敗", error.message);
-    setLoading(false);
-  }
 
   async function continueAnonymously() {
     setLoading(true);
@@ -31,29 +20,19 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>登入 HerLink</Text>
-      <TextInput
-        style={styles.input}
-        onChangeText={setEmail}
-        value={email}
-        placeholder="Email"
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        onChangeText={setPassword}
-        value={password}
-        secureTextEntry
-        placeholder="密碼"
-        autoCapitalize="none"
-      />
-      <Button
-        title={loading ? "登入中..." : "登入"}
-        onPress={signInWithEmail}
+      <Text style={styles.eyebrow}>HerLink</Text>
+      <Text style={styles.title}>匿名聊天</Text>
+      <Text style={styles.copy}>不用建立交友檔案，不公開真實資料，直接用匿名身份開始。</Text>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="匿名開始"
+        style={[styles.button, loading && styles.disabled]}
         disabled={loading}
-      />
-      <Button title={loading ? "準備中..." : "匿名開始"} onPress={continueAnonymously} disabled={loading} />
-      <Link href="/signup" style={styles.link}>還沒有帳號？註冊</Link>
+        onPress={() => void continueAnonymously()}
+      >
+        {loading ? <ActivityIndicator color={colors.primaryText} /> : <Text style={styles.buttonText}>匿名開始</Text>}
+      </Pressable>
     </View>
   );
 }
@@ -62,30 +41,37 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
-    padding: 20,
-    backgroundColor: "#f8f8f8",
+    padding: spacing.xl,
+    backgroundColor: colors.background,
+  },
+  eyebrow: {
+    color: colors.primary,
+    ...typography.eyebrow,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 30,
-    textAlign: "center",
-    color: "#333",
+    marginTop: spacing.sm,
+    color: colors.text,
+    ...typography.title,
   },
-  input: {
-    height: 50,
-    borderColor: "#ddd",
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 15,
-    paddingHorizontal: 15,
-    backgroundColor: "#fff",
-  },
-  link: {
-    marginTop: 20,
-    textAlign: "center",
-    color: "#ff69b4",
+  copy: {
+    marginTop: spacing.md,
+    color: colors.textMuted,
     fontSize: 16,
+    lineHeight: 24,
+  },
+  button: {
+    marginTop: spacing.xxl,
+    minHeight: 52,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radii.lg,
+    backgroundColor: colors.primary,
+  },
+  buttonText: {
+    color: colors.primaryText,
+    ...typography.bodyStrong,
+  },
+  disabled: {
+    opacity: 0.6,
   },
 });
-
