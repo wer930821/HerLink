@@ -38,8 +38,6 @@ function RootLayoutNav() {
           pathname: "/random-session/[sessionId]",
           params: { sessionId: target.sessionId },
         } as never);
-      } else if (session && target.kind === "match_chat") {
-        router.replace({ pathname: "/chat/[matchId]", params: { matchId: target.matchId } } as never);
       } else {
         router.replace("/(tabs)");
       }
@@ -64,9 +62,7 @@ function RootLayoutNav() {
         <Stack.Screen name="login" />
       )}
       <Stack.Screen name="admin" />
-      <Stack.Screen name="chat/[matchId]" />
       <Stack.Screen name="random-session/[sessionId]" />
-      <Stack.Screen name="person/[userId]" />
       <Stack.Screen name="modal" options={{ presentation: "modal", headerShown: true, title: "Modal" }} />
       <Stack.Screen name="signup" options={{ presentation: "modal", headerShown: true, title: "註冊" }} />
       <Stack.Screen
