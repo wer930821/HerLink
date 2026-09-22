@@ -87,8 +87,10 @@ export default function AdminDashboardPage() {
           <AdminStat label="目前在線" value={onlineCount === null ? "—" : `${onlineCount} 人`} tone={onlineCountConnected ? "success" : "default"} />
           <AdminStat label="等待中" value={formatCount(data?.waiting_count)} />
           <AdminStat label="活躍對話" value={formatCount(data?.active_session_count)} />
-          <AdminStat label="今日建立 sessions" value={formatCount(data?.today_created_session_count)} />
+          <AdminStat label="今日匿名使用者" value={formatCount(data?.today_anonymous_user_count)} />
           <AdminStat label="今日訊息" value={formatCount(data?.today_message_count)} />
+          <AdminStat label="今日建立 sessions" value={formatCount(data?.today_created_session_count)} />
+          <AdminStat label="今日進入佇列" value={formatCount(data?.today_queue_join_count)} />
           <AdminStat label="今日結束 sessions" value={formatCount(data?.today_ended_session_count)} />
           <AdminStat label="今日檢舉" value={formatCount(data?.today_report_count)} tone="warning" />
           <AdminStat label="今日封鎖" value={formatCount(data?.today_block_count)} tone="warning" />
@@ -97,6 +99,15 @@ export default function AdminDashboardPage() {
           <AdminStat label="待發送 Push" value={formatCount(data?.pending_push_event_count)} />
           <AdminStat label="今日 Push 成功" value={formatCount(data?.today_web_push_delivered_count)} tone="success" />
           <AdminStat label="今日 Push 失效" value={formatCount(data?.today_web_push_revoked_count)} tone="warning" />
+        </AdminStatGrid>
+      </AdminSection>
+
+      <AdminSection title="近 7 天匿名聊天室" description="最近 7×24 小時的實際匿名聊天活動。">
+        <AdminStatGrid>
+          <AdminStat label="使用者數" value={formatCount(data?.seven_day_anonymous_user_count)} />
+          <AdminStat label="訊息數" value={formatCount(data?.seven_day_message_count)} />
+          <AdminStat label="配對 Sessions" value={formatCount(data?.seven_day_session_count)} />
+          <AdminStat label="進入佇列" value={formatCount(data?.seven_day_queue_join_count)} />
         </AdminStatGrid>
       </AdminSection>
 
