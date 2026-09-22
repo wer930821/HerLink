@@ -138,73 +138,66 @@ function safeJsonObject(value: unknown) {
 export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSummary> {
   const dayStart = getUtcDayStartIso();
 
+  const { data: anonymousStatsData, error: anonymousStatsError } = await client.rpc("get_admin_random_chat_stats");
+  if (anonymousStatsError) {
+    throw anonymousStatsError;
+  }
+
+  const anonymousStats = Array.isArray(anonymousStatsData)
+    ? anonymousStatsData[0] ?? {}
+    : anonymousStatsData ?? {};
+
+  const safeCount = async (query: PromiseLike<{ count: number | null; error: { message?: string } | null }>) => {
+    const result = await query;
+    return result.error ? 0 : result.count ?? 0;
+  };
+
   const [
-    waitingCountResult,
-    activeSessionCountResult,
-    todayCreatedSessionCountResult,
-    todayMessageCountResult,
-    todayEndedSessionCountResult,
-    todayReportCountResult,
-    todayBlockCountResult,
-    todayFraudCountResult,
-    activePushSubscriptionResult,
-    pendingPushEventResult,
-    todayWebPushDeliveredResult,
-    todayWebPushRevokedResult,
+    waitingCount,
+    activeSessionCount,
+    todayEndedSessionCount,
+    todayReportCount,
+    todayBlockCount,
+    todayFraudCount,
+    activePushSubscriptionCount,
+    pendingPushEventCount,
+    todayWebPushDeliveredCount,
+    todayWebPushRevokedCount,
   ] = await Promise.all([
-    client.from("random_match_queue").select("user_id", { count: "exact", head: true }).eq("status", "waiting"),
-    client.from("random_chat_sessions").select("id", { count: "exact", head: true }).eq("status", "active"),
-    client.from("random_chat_sessions").select("id", { count: "exact", head: true }).gte("created_at", dayStart),
-    client.from("random_chat_messages").select("id", { count: "exact", head: true }).gte("created_at", dayStart),
-    client
-      .from("random_chat_sessions")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "ended")
-      .gte("ended_at", dayStart),
-    client.from("reports").select("id", { count: "exact", head: true }).gte("created_at", dayStart),
-    client.from("blocks").select("id", { count: "exact", head: true }).gte("created_at", dayStart),
-    client.from("fraud_risk_events").select("id", { count: "exact", head: true }).gte("created_at", dayStart),
-    client.from("web_push_subscriptions").select("id", { count: "exact", head: true }).is("revoked_at", null),
-    client.from("push_notification_events").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    client.from("web_push_deliveries").select("id", { count: "exact", head: true }).eq("status", "sent").gte("created_at", dayStart),
-    client.from("web_push_deliveries").select("id", { count: "exact", head: true }).eq("status", "revoked").gte("created_at", dayStart),
+    safeCount(client.from("random_match_queue").select("user_id", { count: "exact", head: true }).eq("status", "waiting")),
+    safeCount(client.from("random_chat_sessions").select("id", { count: "exact", head: true }).eq("status", "active")),
+    safeCount(client.from("random_chat_sessions").select("id", { count: "exact", head: true }).eq("status", "ended").gte("ended_at", dayStart)),
+    safeCount(client.from("reports").select("id", { count: "exact", head: true }).gte("created_at", dayStart)),
+    safeCount(client.from("blocks").select("id", { count: "exact", head: true }).gte("created_at", dayStart)),
+    safeCount(client.from("fraud_risk_events").select("id", { count: "exact", head: true }).gte("created_at", dayStart)),
+    safeCount(client.from("web_push_subscriptions").select("id", { count: "exact", head: true }).is("revoked_at", null)),
+    safeCount(client.from("push_notification_events").select("id", { count: "exact", head: true }).eq("status", "pending")),
+    safeCount(client.from("web_push_deliveries").select("id", { count: "exact", head: true }).eq("status", "sent").gte("created_at", dayStart)),
+    safeCount(client.from("web_push_deliveries").select("id", { count: "exact", head: true }).eq("status", "revoked").gte("created_at", dayStart)),
   ]);
 
-  const results = [
-    waitingCountResult,
-    activeSessionCountResult,
-    todayCreatedSessionCountResult,
-    todayMessageCountResult,
-    todayEndedSessionCountResult,
-    todayReportCountResult,
-    todayBlockCountResult,
-    todayFraudCountResult,
-    activePushSubscriptionResult,
-    pendingPushEventResult,
-    todayWebPushDeliveredResult,
-    todayWebPushRevokedResult,
-  ];
-
-  for (const result of results) {
-    if (result.error) {
-      throw result.error;
-    }
-  }
+  const asNumber = (value: unknown) => Number(value ?? 0);
 
   return {
     generated_at: new Date().toISOString(),
-    waiting_count: waitingCountResult.count ?? 0,
-    active_session_count: activeSessionCountResult.count ?? 0,
-    today_created_session_count: todayCreatedSessionCountResult.count ?? 0,
-    today_message_count: todayMessageCountResult.count ?? 0,
-    today_ended_session_count: todayEndedSessionCountResult.count ?? 0,
-    today_report_count: todayReportCountResult.count ?? 0,
-    today_block_count: todayBlockCountResult.count ?? 0,
-    today_fraud_risk_event_count: todayFraudCountResult.count ?? 0,
-    active_push_subscription_count: activePushSubscriptionResult.count ?? 0,
-    pending_push_event_count: pendingPushEventResult.count ?? 0,
-    today_web_push_delivered_count: todayWebPushDeliveredResult.count ?? 0,
-    today_web_push_revoked_count: todayWebPushRevokedResult.count ?? 0,
+    waiting_count: waitingCount,
+    active_session_count: activeSessionCount,
+    today_anonymous_user_count: asNumber((anonymousStats as any).today_users),
+    today_created_session_count: asNumber((anonymousStats as any).today_sessions),
+    today_message_count: asNumber((anonymousStats as any).today_messages),
+    today_queue_join_count: asNumber((anonymousStats as any).today_queue_joins),
+    seven_day_anonymous_user_count: asNumber((anonymousStats as any).seven_day_users),
+    seven_day_session_count: asNumber((anonymousStats as any).seven_day_sessions),
+    seven_day_message_count: asNumber((anonymousStats as any).seven_day_messages),
+    seven_day_queue_join_count: asNumber((anonymousStats as any).seven_day_queue_joins),
+    today_ended_session_count: todayEndedSessionCount,
+    today_report_count: todayReportCount,
+    today_block_count: todayBlockCount,
+    today_fraud_risk_event_count: todayFraudCount,
+    active_push_subscription_count: activePushSubscriptionCount,
+    pending_push_event_count: pendingPushEventCount,
+    today_web_push_delivered_count: todayWebPushDeliveredCount,
+    today_web_push_revoked_count: todayWebPushRevokedCount,
   };
 }
 
