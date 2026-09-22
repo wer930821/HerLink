@@ -388,30 +388,23 @@ export async function loadAdminRealtimeDiagnostics(
 ): Promise<AdminPaginationResult<AdminRealtimeDiagnosticRow>> {
   const page = clampPage(input.page);
   const pageSize = clampPageSize(input.pageSize, 50, 100);
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
+  const offset = (page - 1) * pageSize;
 
-  let query = client
-    .from("realtime_diagnostics")
-    .select("id,session_id,user_id,event_type,message_id,client_instance_id,safe_error_code,metadata,created_at", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(from, to);
+  const { data, error } = await client.rpc("list_admin_realtime_diagnostics", {
+    p_session_id: input.sessionId || null,
+    p_event_type: input.eventType && input.eventType !== "all" ? input.eventType : null,
+    p_offset: offset,
+    p_limit: pageSize,
+  });
 
-  if (input.sessionId) {
-    query = query.eq("session_id", input.sessionId);
-  }
-
-  if (input.eventType) {
-    query = query.eq("event_type", input.eventType);
-  }
-
-  const { data, count, error } = await query;
   if (error) {
     throw error;
   }
 
+  const rows = Array.isArray(data) ? data : [];
+
   return {
-    items: (data ?? []).map((item) => ({
+    items: rows.map((item: any) => ({
       id: item.id,
       session_id: item.session_id,
       user_id: item.user_id,
@@ -424,7 +417,7 @@ export async function loadAdminRealtimeDiagnostics(
     })),
     page,
     pageSize,
-    total: count ?? 0,
+    total: Number(rows[0]?.total_count ?? 0),
   };
 }
 
