@@ -32,11 +32,8 @@ export default function TabLayout() {
         },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "探索", tabBarIcon: tabIcon("compass-outline") }} />
-      <Tabs.Screen name="likes" options={{ title: "互動", tabBarIcon: tabIcon("heart-outline") }} />
-      <Tabs.Screen name="chat" options={{ title: "聊天", tabBarIcon: tabIcon("chatbubble-ellipses-outline") }} />
+      <Tabs.Screen name="index" options={{ title: "匿名聊天", tabBarIcon: tabIcon("chatbubble-ellipses-outline") }} />
       <Tabs.Screen name="safety" options={{ title: "安全", tabBarIcon: tabIcon("shield-checkmark-outline") }} />
-      <Tabs.Screen name="profile" options={{ title: "我的", tabBarIcon: tabIcon("person-outline") }} />
     </Tabs>
   );
 }
