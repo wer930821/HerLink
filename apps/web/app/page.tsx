@@ -40,6 +40,7 @@ import {
   type Session,
   type AnonymousAbusePrecheckRow,
   type WebProfile,
+  supabase,
 } from "../lib/supabase";
 import { Badge, Button, Field, Modal, Notice, PageHero, Surface } from "../components/ui";
 
@@ -103,6 +104,7 @@ export default function HomePage() {
   const [renameBusy, setRenameBusy] = useState(false);
   const [randomBusy, setRandomBusy] = useState(false);
   const [renameNotice, setRenameNotice] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
 
   const recordHomeRouteDiagnostic = (eventType: "continue_clicked" | "continue_routed", metadata: Record<string, unknown> = {}) => {
@@ -287,6 +289,34 @@ export default function HomePage() {
     setDebugEnabled(isNavigationDebugEnabled());
     setLastDiagnostic(readLastNavigationDiagnostic());
   }, [pathname]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    if (!state.session?.user.id) {
+      setIsAdmin(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    void supabase
+      .from("admin_users")
+      .select("role, active")
+      .eq("user_id", state.session.user.id)
+      .maybeSingle()
+      .then(({ data, error }: { data: { role?: string; active?: boolean } | null; error: unknown }) => {
+        if (!mounted) return;
+        setIsAdmin(!error && data?.role === "admin" && data?.active === true);
+      })
+      .catch(() => {
+        if (mounted) setIsAdmin(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [state.session?.user.id]);
 
   const anonymousSummary = useMemo(() => {
     if (!state.profile) return null;
@@ -703,6 +733,7 @@ export default function HomePage() {
         <div className="title">安全提醒</div>
         <p className="hero-copy">請勿匯款、投資或提供驗證碼。若遇到可疑內容，請直接封鎖、檢舉並離開。</p>
         <div className="row">
+          {isAdmin ? <Button variant="secondary" href="/admin">後台管理</Button> : null}
           <Button variant="secondary" onClick={logout} disabled={actionBusy}>登出</Button>
           <div className="muted small">
             目前會話：{state.activeSession ? "已配對" : "未配對"}
