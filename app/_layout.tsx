@@ -18,7 +18,7 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const { session, loading, profile } = useAuth();
+  const { session, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -54,39 +54,10 @@ function RootLayoutNav() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {session && profile?.onboarding_completed ? (
-        <Stack.Screen name="(tabs)" />
-      ) : session && !profile?.onboarding_completed ? (
-        <Stack.Screen name="onboarding" />
-      ) : (
-        <Stack.Screen name="login" />
-      )}
+      {session ? <Stack.Screen name="(tabs)" /> : <Stack.Screen name="login" />}
       <Stack.Screen name="admin" />
       <Stack.Screen name="random-session/[sessionId]" />
       <Stack.Screen name="modal" options={{ presentation: "modal", headerShown: true, title: "Modal" }} />
-      <Stack.Screen name="signup" options={{ presentation: "modal", headerShown: true, title: "註冊" }} />
-      <Stack.Screen
-        name="forgot-password"
-        options={{
-          presentation: "modal",
-          headerShown: true,
-          title: "忘記密碼",
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-          headerShadowVisible: false,
-        }}
-      />
-      <Stack.Screen
-        name="reset-password"
-        options={{
-          headerShown: true,
-          title: "重設密碼",
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-          headerShadowVisible: false,
-        }}
-      />
-      <Stack.Screen name="auth/callback" />
       <Stack.Screen name="privacy" options={{ headerShown: true, title: "隱私權政策" }} />
       <Stack.Screen name="terms" options={{ headerShown: true, title: "服務條款" }} />
       <Stack.Screen name="community-guidelines" options={{ headerShown: true, title: "社群守則" }} />
