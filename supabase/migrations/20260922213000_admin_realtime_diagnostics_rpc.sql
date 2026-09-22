@@ -27,10 +27,10 @@ DECLARE
 BEGIN
   IF actor_id IS NULL OR NOT EXISTS (
     SELECT 1
-    FROM public.admin_users
-    WHERE user_id = actor_id
-      AND role = 'admin'
-      AND active = TRUE
+    FROM public.admin_users AS admin_row
+    WHERE admin_row.user_id = actor_id
+      AND admin_row.role = 'admin'
+      AND admin_row.active = TRUE
   ) THEN
     RAISE EXCEPTION 'Admin access required.';
   END IF;
