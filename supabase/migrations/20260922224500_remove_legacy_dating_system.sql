@@ -275,3 +275,12 @@ BEGIN
   RETURN profile_row;
 END;
 $function$;
+
+
+-- Remove legacy profile-photo Storage policies. Physical objects must be
+-- deleted through the Storage API rather than by deleting storage.objects rows.
+DROP POLICY IF EXISTS "Admins can read all profile photo objects" ON storage.objects;
+DROP POLICY IF EXISTS "Users can read their own profile photos" ON storage.objects;
+DROP POLICY IF EXISTS "Users can upload their own profile photos" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own profile photos" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own profile photos" ON storage.objects;
