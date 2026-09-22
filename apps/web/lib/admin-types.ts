@@ -2,8 +2,14 @@ export type AdminSummary = {
   generated_at: string;
   waiting_count: number;
   active_session_count: number;
+  today_anonymous_user_count: number;
   today_created_session_count: number;
   today_message_count: number;
+  today_queue_join_count: number;
+  seven_day_anonymous_user_count: number;
+  seven_day_session_count: number;
+  seven_day_message_count: number;
+  seven_day_queue_join_count: number;
   today_ended_session_count: number;
   today_report_count: number;
   today_block_count: number;
