@@ -1587,7 +1587,15 @@ export default function RandomSessionPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ messages: textMessages }),
+        body: JSON.stringify({
+          messages: textMessages,
+          icebreaker: icebreaker
+            ? {
+                prompt: icebreaker.prompt,
+                category: icebreaker.category,
+              }
+            : null,
+        }),
         cache: "no-store",
       });
 
