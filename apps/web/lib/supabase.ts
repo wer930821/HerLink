@@ -203,6 +203,28 @@ export type RandomMatchRow = {
   matched_user_id: string | null;
 };
 
+export type AnonymousContactStatusRow = {
+  contact_id: string;
+  status: "pending" | "active";
+  my_approved: boolean;
+  partner_approved: boolean;
+};
+
+export type AnonymousContactRow = AnonymousContactStatusRow & {
+  source_session_id: string | null;
+  partner_user_id: string;
+  partner_anonymous_display_name: string;
+  partner_anonymous_avatar: string;
+  partner_verified: boolean;
+  created_at: string;
+  activated_at: string | null;
+};
+
+export type AnonymousContactSessionRow = {
+  status: "created" | "existing";
+  session_id: string;
+};
+
 export type RandomChatMessageRow = {
   id: string;
   session_id: string;
@@ -530,6 +552,61 @@ export async function registerAnonymousAbuseIdentity() {
 
 export async function findOrJoinRandomMatch() {
   return supabase.rpc("find_or_join_random_match");
+}
+
+export async function loadAnonymousContactStatus(sessionId: string) {
+  const result = await supabase.rpc("get_anonymous_contact_status", {
+    p_session_id: sessionId,
+  });
+  return {
+    data: Array.isArray(result.data) ? result.data[0] ?? null : result.data ?? null,
+    error: result.error,
+  } as {
+    data: AnonymousContactStatusRow | null;
+    error: { message?: string } | null;
+  };
+}
+
+export async function requestAnonymousContact(sessionId: string) {
+  const result = await supabase.rpc("request_anonymous_contact", {
+    p_session_id: sessionId,
+  });
+  return {
+    data: Array.isArray(result.data) ? result.data[0] ?? null : result.data ?? null,
+    error: result.error,
+  } as {
+    data: AnonymousContactStatusRow | null;
+    error: { message?: string } | null;
+  };
+}
+
+export async function listMyAnonymousContacts() {
+  return supabase.rpc("list_my_anonymous_contacts") as unknown as Promise<{
+    data: AnonymousContactRow[] | null;
+    error: { message?: string } | null;
+  }>;
+}
+
+export async function removeAnonymousContact(contactId: string) {
+  return supabase.rpc("remove_anonymous_contact", {
+    p_contact_id: contactId,
+  }) as unknown as Promise<{
+    data: boolean | null;
+    error: { message?: string } | null;
+  }>;
+}
+
+export async function startAnonymousContactSession(contactId: string) {
+  const result = await supabase.rpc("start_anonymous_contact_session", {
+    p_contact_id: contactId,
+  });
+  return {
+    data: Array.isArray(result.data) ? result.data[0] ?? null : result.data ?? null,
+    error: result.error,
+  } as {
+    data: AnonymousContactSessionRow | null;
+    error: { message?: string } | null;
+  };
 }
 
 export async function leaveRandomQueue() {

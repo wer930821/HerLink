@@ -710,6 +710,7 @@ export default function HomePage() {
           <Button size="lg" onClick={startMatching} disabled={actionBusy || MAINTENANCE_MODE}>
             {actionBusy ? "處理中…" : MAINTENANCE_MODE ? "維護中" : state.activeSession ? "繼續聊天" : "開始隨機配對"}
           </Button>
+          <Button variant="secondary" size="lg" href="/contacts">匿名聯絡人</Button>
         </div>
         {state.activeSession ? (
           <Notice variant="info" title="你有一個尚未結束的聊天室。">

@@ -16,6 +16,7 @@ import {
   leaveRandomSession,
   loadMyProfile,
   loadMyRandomSession,
+  loadAnonymousContactStatus,
   loadRandomSessionIcebreaker,
   loadRandomMessages,
   getRandomMessageReplyPreview,
@@ -23,6 +24,7 @@ import {
   advanceRandomSessionIcebreaker,
   removeChatMedia,
   reportRandomUser,
+  requestAnonymousContact,
   sendImageMessage,
   sendRandomMessage,
   supabase,
@@ -274,6 +276,8 @@ export default function RandomSessionPage() {
   const [leaveBusy, setLeaveBusy] = useState(false);
   const [blockBusy, setBlockBusy] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
+  const [contactBusy, setContactBusy] = useState(false);
+  const [contactState, setContactState] = useState<AnonymousContactStatusRow | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [safetyMenuOpen, setSafetyMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -336,6 +340,31 @@ export default function RandomSessionPage() {
     setIcebreaker(null);
     if (session?.status === "active") void refreshIcebreaker(session.id);
   }, [session?.id, session?.status]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    if (!session?.id) {
+      setContactState(null);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    void loadAnonymousContactStatus(session.id)
+      .then((result) => {
+        if (mounted && !result.error) {
+          setContactState(result.data);
+        }
+      })
+      .catch(() => {
+        if (mounted) setContactState(null);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [session?.id]);
 
   const messageWarning = useMemo(() => {
     if (messages.some((message) => message.risk_level === "high" || message.risk_level === "critical")) {
@@ -1477,6 +1506,38 @@ export default function RandomSessionPage() {
     }
   };
 
+  const handleAnonymousContact = async () => {
+    if (!session || contactBusy || contactState?.status === "active") return;
+    if (contactState?.my_approved && !contactState.partner_approved) return;
+
+    setContactBusy(true);
+    setNotice(null);
+    try {
+      const result = await requestAnonymousContact(session.id);
+      if (result.error) throw result.error;
+
+      setContactState(result.data);
+      if (result.data?.status === "active") {
+        setNotice("你們已成為匿名聯絡人，之後可以從「匿名聯絡人」再次聊天。");
+      } else {
+        setNotice("已送出匿名聯絡邀請，等對方也同意後才會保留聯絡。");
+      }
+    } catch (error) {
+      setNotice(getFriendlyRandomChatError(error, "目前無法保留匿名聯絡，請稍後再試。"));
+    } finally {
+      setContactBusy(false);
+    }
+  };
+
+  const anonymousContactLabel =
+    contactState?.status === "active"
+      ? "已保留聯絡"
+      : contactState?.partner_approved && !contactState.my_approved
+        ? "接受匿名聯絡"
+        : contactState?.my_approved
+          ? "等待對方同意"
+          : "保留匿名聯絡";
+
   const confirmBlock = async () => {
     if (!session || blockBusy) return;
     setBlockBusy(true);
@@ -1681,6 +1742,14 @@ export default function RandomSessionPage() {
         <div className="chat-actions">
           <button className="button chat-next" type="button" onClick={goNext} disabled={nextBusy}>
             {nextBusy ? "切換中…" : "下一位"}
+          </button>
+          <button
+            className="button secondary"
+            type="button"
+            onClick={() => void handleAnonymousContact()}
+            disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}
+          >
+            {contactBusy ? "處理中…" : anonymousContactLabel}
           </button>
           <button className="button secondary chat-safety" onClick={() => setSafetyMenuOpen(true)}>
             安全
