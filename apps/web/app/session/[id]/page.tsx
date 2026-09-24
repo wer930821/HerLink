@@ -37,6 +37,7 @@ import {
   type RandomSessionRow,
   type RandomSessionIcebreakerRow,
   type RandomReportCategory,
+  type AnonymousContactStatusRow,
   type WebProfile,
 } from "../../../lib/supabase";
 import { recordRealtimeDiagnostic } from "../../../lib/realtime-diagnostics";

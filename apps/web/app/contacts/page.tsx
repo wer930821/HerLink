@@ -105,9 +105,9 @@ export default function AnonymousContactsPage() {
   return (
     <main className="stack">
       <PageHero
-        eyebrow="HerLink"
+        kicker="HerLink"
         title="匿名聯絡人"
-        copy="只有雙方都同意才會保留聯絡；不會公開真實姓名、帳號或其他個人資料。"
+        description="只有雙方都同意才會保留聯絡；不會公開真實姓名、帳號或其他個人資料。"
       >
         <div className="row">
           <Button variant="secondary" href="/">返回首頁</Button>
