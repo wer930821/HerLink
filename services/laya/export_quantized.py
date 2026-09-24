@@ -1,17 +1,29 @@
 import json
 import os
+import shutil
 import sys
 
 import onnx
 import torch
 from onnxruntime.quantization import QuantType, quantize_dynamic
+from huggingface_hub import snapshot_download
 from laya.agent import Agent
 
 out_dir = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else "/bundle")
 os.makedirs(out_dir, exist_ok=True)
 
 print("[export] loading official Laya multilingual checkpoint")
-agent = Agent("convaiinnovations/laya", device="cpu", subfolder="multilingual")
+snapshot = snapshot_download(
+    "convaiinnovations/laya",
+    allow_patterns=[
+        "multilingual/rl_agent_config.json",
+        "multilingual/model.safetensors",
+        "multilingual/tokenizer/*",
+        "multilingual/encoder/*",
+    ],
+)
+model_dir = os.path.join(snapshot, "multilingual")
+agent = Agent(model_dir, device="cpu")
 model = agent.model.eval()
 cfg = agent.cfg
 
@@ -90,7 +102,13 @@ os.remove(fp32_path)
 os.remove(quant_source_path)
 
 tokenizer_dir = os.path.join(out_dir, "tokenizer")
-agent.tok.save_pretrained(tokenizer_dir)
+# Copy the checkpoint tokenizer files verbatim. Re-serializing through
+# save_pretrained can rewrite special-token metadata and break the Node runtime.
+shutil.copytree(
+    os.path.join(model_dir, "tokenizer"),
+    tokenizer_dir,
+    dirs_exist_ok=True,
+)
 
 with open(os.path.join(out_dir, "laya_config.json"), "w", encoding="utf-8") as f:
     json.dump(
