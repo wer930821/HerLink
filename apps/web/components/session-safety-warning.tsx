@@ -1,7 +1,23 @@
 "use client";
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
+
+function readDismissedAt(key: string) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeDismissedAt(key: string, value: string) {
+  try {
+    window.localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function SessionSafetyWarning({ sessionId, warning, highRiskAt }: {
   sessionId: string;
@@ -13,29 +29,37 @@ export function SessionSafetyWarning({ sessionId, warning, highRiskAt }: {
 
   useEffect(() => {
     if (!warning) return;
-    let active = true;
     const key = `herlink:safety-warning-dismissed:${sessionId}`;
-    void (async () => {
-      try {
-        const previous = await AsyncStorage.getItem(key);
-        // Persist on first display as well as dismissal: revisiting is not a new risk.
-        if (previous === null || (highRiskAt && highRiskAt > previous)) {
-          await AsyncStorage.setItem(key, highRiskAt);
-          if (active) setVisible(true);
-        }
-      } catch {
-        if (active) { setVisible(true); setStorageError(true); }
+    const previous = readDismissedAt(key);
+
+    if (previous === null || (highRiskAt && highRiskAt > previous)) {
+      if (!writeDismissedAt(key, highRiskAt)) {
+        setStorageError(true);
       }
-    })();
-    return () => { active = false; };
+      setVisible(true);
+    }
   }, [sessionId, warning, highRiskAt]);
 
   if (!visible || !warning) return null;
-  return <div className="notice safety-notice session-safety-warning" role="status">
-    <div>{warning}{storageError ? <small>此瀏覽器無法保存提示紀錄，下次進入可能再次顯示。</small> : null}</div>
-    <button type="button" aria-label="關閉安全提示" onClick={() => {
-      setVisible(false);
-      void AsyncStorage.setItem(`herlink:safety-warning-dismissed:${sessionId}`, highRiskAt).catch(() => setStorageError(true));
-    }}>×</button>
-  </div>;
+
+  return (
+    <div className="notice safety-notice session-safety-warning" role="status">
+      <div>
+        {warning}
+        {storageError ? <small>此瀏覽器無法保存提示紀錄，下次進入可能再次顯示。</small> : null}
+      </div>
+      <button
+        type="button"
+        aria-label="關閉安全提示"
+        onClick={() => {
+          setVisible(false);
+          if (!writeDismissedAt(`herlink:safety-warning-dismissed:${sessionId}`, highRiskAt)) {
+            setStorageError(true);
+          }
+        }}
+      >
+        ×
+      </button>
+    </div>
+  );
 }

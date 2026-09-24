@@ -1,7 +1,3 @@
-import {
-  getIdentityDisplayLabel,
-  getRelationshipGoalDisplayLabels,
-} from "./profile-options";
 import { containsSensitiveContactInfo } from "./contact-safety";
 
 export const ANONYMOUS_AVATAR_OPTIONS = [
@@ -214,7 +210,7 @@ export function getVisibleProfileMeta(profile: {
   return {
     city: normalizeText(profile.city),
     age: profile.age ?? null,
-    identityLabel: profile.identity_label ? getIdentityDisplayLabel(profile.identity_label) : "",
+    identityLabel: "",
   };
 }
 
@@ -223,6 +219,12 @@ export function buildAnonymousProfilePreview(profile: {
   interests?: string[] | null;
   relationship_goals?: string[] | null;
   custom_relationship_goal?: string | null;
+}) {
+  const interests = Array.isArray(profile.interests)
+    ? profile.interests.map((value) => normalizeText(value)).filter(Boolean)
+    : [];
+
+  return interests.slice(0, 2).join("、");
 }) {
   const parts: string[] = [];
   const identityLabel = getIdentityDisplayLabel(profile.identity_label);
