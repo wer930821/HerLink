@@ -225,28 +225,4 @@ export function buildAnonymousProfilePreview(profile: {
     : [];
 
   return interests.slice(0, 2).join("、");
-}) {
-  const parts: string[] = [];
-  const identityLabel = getIdentityDisplayLabel(profile.identity_label);
-  const interests = Array.isArray(profile.interests)
-    ? profile.interests.map((value) => normalizeText(value)).filter(Boolean)
-    : [];
-  const relationshipGoals = getRelationshipGoalDisplayLabels(
-    profile.relationship_goals,
-    profile.custom_relationship_goal
-  );
-
-  if (identityLabel) {
-    parts.push(identityLabel);
-  }
-
-  if (interests.length > 0) {
-    parts.push(interests.slice(0, 2).join("、"));
-  }
-
-  if (relationshipGoals.length > 0) {
-    parts.push(relationshipGoals[0]);
-  }
-
-  return parts.join(" · ");
 }
