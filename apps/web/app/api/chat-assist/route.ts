@@ -267,7 +267,10 @@ function tipFor(state: ConversationState, move: NextMove) {
 }
 
 async function askLaya(messages: ChatAssistMessage[]) {
-  const baseUrl = (process.env.LAYA_BASE_URL || "").replace(/\/$/, "");
+  const baseUrl = (
+    process.env.LAYA_BASE_URL ||
+    "https://laya-production-e3f5.up.railway.app"
+  ).replace(/\/$/, "");
   if (!baseUrl) return null;
 
   const conversation = messages
