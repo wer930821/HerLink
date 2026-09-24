@@ -113,8 +113,16 @@ shutil.copytree(
 with open(os.path.join(out_dir, "laya_config.json"), "w", encoding="utf-8") as f:
     json.dump(
         {
-            key: cfg[key]
-            for key in ("max_len", "head_max_len", "temperature", "temperature_by_options")
+            **{
+                key: cfg[key]
+                for key in ("max_len", "head_max_len", "temperature", "temperature_by_options")
+            },
+            "special_tokens": {
+                "cls": agent.tok.cls_token,
+                "sep": agent.tok.sep_token,
+                "mask": agent.tok.mask_token,
+                "pad": agent.tok.pad_token,
+            },
         },
         f,
         ensure_ascii=False,

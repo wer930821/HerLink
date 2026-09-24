@@ -22,6 +22,9 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install --omit=dev
 
+COPY patch_laya.mjs ./
+RUN node patch_laya.mjs
+
 COPY server.mjs ./
 COPY --from=exporter /bundle ./onnx
 
