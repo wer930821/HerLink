@@ -1420,6 +1420,8 @@ export default function RandomSessionPage() {
       }
       stopTyping();
       setDraft("");
+      setAssistantResult(null);
+      setAssistantError(null);
       clearReply();
     } catch (error) {
       stopTyping();
@@ -1508,6 +1510,13 @@ export default function RandomSessionPage() {
 
     if (textMessages.length === 0) {
       setAssistantError("先聊幾句後，我才能依照目前對話提供建議。");
+      setAssistantResult(null);
+      return;
+    }
+
+    if (textMessages[textMessages.length - 1]?.role !== "partner") {
+      setAssistantResult(null);
+      setAssistantError("你已經回覆了，等對方下一句再使用聊天助手。");
       return;
     }
 
