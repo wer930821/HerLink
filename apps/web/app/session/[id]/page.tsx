@@ -17,11 +17,9 @@ import {
   loadMyProfile,
   loadMyRandomSession,
   loadAnonymousContactStatus,
-  loadRandomSessionIcebreaker,
   loadRandomMessages,
   getRandomMessageReplyPreview,
   nextRandomMatch,
-  advanceRandomSessionIcebreaker,
   removeChatMedia,
   reportRandomUser,
   requestAnonymousContact,
@@ -35,7 +33,6 @@ import {
   type RandomChatMessageRow,
   type RandomChatMessageCursor,
   type RandomSessionRow,
-  type RandomSessionIcebreakerRow,
   type RandomReportCategory,
   type AnonymousContactStatusRow,
   type WebProfile,
@@ -179,22 +176,6 @@ function getSessionLifecycleNotice(nextSession: RandomSessionRow) {
       : "對方已離開聊天。";
 }
 
-function icebreakerFromSession(session: RandomSessionRow): RandomSessionIcebreakerRow | null {
-  if (!session.icebreaker_prompt || !session.icebreaker_question_code || !session.icebreaker_category) {
-    return null;
-  }
-
-  return {
-    session_id: session.id,
-    turn: session.icebreaker_turn ?? 0,
-    question_code: session.icebreaker_question_code,
-    prompt: session.icebreaker_prompt,
-    category: session.icebreaker_category,
-    advanced_at: session.icebreaker_advanced_at ?? session.created_at,
-    advanced_by_me: false,
-  };
-}
-
 function renderMessageContent(
   content: string,
   onOpenExternalLink: (url: string) => void
@@ -277,10 +258,6 @@ export default function RandomSessionPage() {
   const scrollRafRef = useRef<number | null>(null);
   const [myProfile, setMyProfile] = useState<WebProfile | null>(null);
   const [session, setSession] = useState<RandomSessionRow | null>(null);
-  const [icebreaker, setIcebreaker] = useState<RandomSessionIcebreakerRow | null>(null);
-  const [icebreakerBusy, setIcebreakerBusy] = useState(false);
-  const [icebreakerExpanded, setIcebreakerExpanded] = useState(false);
-  useEffect(() => { setIcebreakerExpanded(false); }, [routeSessionId]);
   const [messages, setMessages] = useState<RandomChatMessageRow[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
@@ -324,40 +301,6 @@ export default function RandomSessionPage() {
   const partnerName = session?.partner_anonymous_display_name ?? "匿名使用者";
   const partnerVerified = session?.partner_verified ?? false;
   const typingIndicatorText = partnerTyping ? `${partnerName} 正在輸入…` : "\u00a0";
-
-  const refreshIcebreaker = async (sessionId = session?.id) => {
-    if (!sessionId) return null;
-    const result = await loadRandomSessionIcebreaker(sessionId);
-    if (!result.error && result.data) setIcebreaker(result.data);
-    return result.data;
-  };
-
-  const advanceIcebreaker = async () => {
-    if (!session || isEnded || icebreakerBusy) return;
-    setIcebreakerBusy(true);
-    setNotice(null);
-    try {
-      const result = await advanceRandomSessionIcebreaker(session.id);
-      if (result.error) throw result.error;
-      if (result.data) setIcebreaker(result.data);
-    } catch (error) {
-      console.error("[herlink] icebreaker advance failed", {
-        sessionId: session.id,
-        code: typeof error === "object" && error && "code" in error ? (error as { code?: unknown }).code : undefined,
-        message: getRandomChatErrorMessage(error),
-        details: typeof error === "object" && error && "details" in error ? (error as { details?: unknown }).details : undefined,
-        hint: typeof error === "object" && error && "hint" in error ? (error as { hint?: unknown }).hint : undefined,
-      });
-      setNotice("目前無法換題，請稍後再試。");
-    } finally {
-      setIcebreakerBusy(false);
-    }
-  };
-
-  useEffect(() => {
-    setIcebreaker(null);
-    if (session?.status === "active") void refreshIcebreaker(session.id);
-  }, [session?.id, session?.status]);
 
   useEffect(() => {
     let mounted = true;
@@ -1589,12 +1532,6 @@ export default function RandomSessionPage() {
         },
         body: JSON.stringify({
           messages: textMessages,
-          icebreaker: icebreaker
-            ? {
-                prompt: icebreaker.prompt,
-                category: icebreaker.category,
-              }
-            : null,
         }),
         cache: "no-store",
       });
@@ -1941,22 +1878,6 @@ export default function RandomSessionPage() {
           highRiskAt={messages.reduce((latest, message) =>
             (message.risk_level === "high" || message.risk_level === "critical") && message.created_at > latest
               ? message.created_at : latest, "")} /> : null}
-
-        {icebreaker ? (
-          <section className="icebreaker-card" aria-live="polite">
-            <button type="button" className="icebreaker-heading icebreaker-toggle" aria-expanded={icebreakerExpanded} aria-controls="icebreaker-content" onClick={() => setIcebreakerExpanded((expanded) => !expanded)}>
-              <span className="icebreaker-label">破冰題 · {icebreaker.category}</span>
-              <span className="muted">第 {icebreaker.turn + 1} 題 <span aria-hidden="true">{icebreakerExpanded ? "⌃" : "⌄"}</span></span>
-            </button>
-            <div id="icebreaker-content" className={`icebreaker-collapse${icebreakerExpanded ? " is-expanded" : ""}`} inert={!icebreakerExpanded} aria-hidden={!icebreakerExpanded}>
-            <div className="icebreaker-content"><div className="icebreaker-content-inner">
-            <p>{icebreaker.prompt}</p>
-            <button className="ghost icebreaker-advance" type="button" onClick={() => void advanceIcebreaker()} disabled={isEnded || icebreakerBusy}>
-              {icebreakerBusy ? "換題中…" : "換一題"}
-            </button>
-            </div></div></div>
-          </section>
-        ) : null}
 
         <div
           className="chat-messages"

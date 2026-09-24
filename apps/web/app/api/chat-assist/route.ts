@@ -84,151 +84,13 @@ function getFallback(messages: ChatAssistMessage[]) {
   };
 }
 
-type IcebreakerContext = {
-  prompt: string;
-  category: string | null;
-} | null;
 
 function cleanQuotedChoice(text: string) {
   const match = text.match(/(?:選|是|喜歡|最常聽|最常看|最近在看|最近在聽)\s*[「『"']?([^，。！？!?、]{1,30})[」』"']?/i);
   return match?.[1]?.trim() || null;
 }
 
-function contextualQuestionSuggestions(messages: ChatAssistMessage[], icebreaker: IcebreakerContext) {
-  const lastPartner = [...messages].reverse().find((message) => message.role === "partner");
-  if (!lastPartner) return null;
-
-  const text = lastPartner.text.trim();
-  const prompt = icebreaker?.prompt?.trim() ?? "";
-  const combinedContext = `${prompt}\n${text}`;
-  const partnerChoice = cleanQuotedChoice(text);
-
-  // If the partner answers an icebreaker and asks "你呢？", don't fabricate the user's own answer.
-  // Instead, offer natural follow-ups that keep the same topic moving.
-  if (/你呢[？?]?$/.test(text) && prompt) {
-    if (/(歌|音樂|歌手|專輯|最常聽)/i.test(combinedContext)) {
-      const subject = partnerChoice ? partnerChoice.replace(/^(我應該會|我會|會)/, "").trim() : null;
-      return subject
-        ? [
-            `${subject}喔，你最喜歡這首哪一段？`,
-            `原來你會選${subject}，這首你是最近才開始常聽嗎？`,
-            `${subject}滿有記憶點的，你平常也比較常聽這類型的歌嗎？`,
-          ]
-        : [
-            "你這首是最近才開始常聽的嗎？",
-            "你最喜歡這首哪一段？",
-            "你平常也比較常聽這類型的歌嗎？",
-          ];
-    }
-
-    if (/(電影|影集|劇|動漫|動畫|綜藝|節目|最常看)/i.test(combinedContext)) {
-      return partnerChoice
-        ? [
-            `${partnerChoice}喔，你最喜歡它哪一部分？`,
-            `原來你會選${partnerChoice}，你是最近才看的嗎？`,
-            "你平常也比較常看這種類型嗎？",
-          ]
-        : [
-            "你最喜歡它哪一部分？",
-            "你是最近才開始看的嗎？",
-            "你平常也比較常看這種類型嗎？",
-          ];
-    }
-
-    if (/(吃|食物|料理|飲料|咖啡|宵夜|晚餐|午餐|早餐)/i.test(combinedContext)) {
-      return partnerChoice
-        ? [
-            `${partnerChoice}喔，你是一直都很喜歡嗎？`,
-            `原來你會選${partnerChoice}，你通常都去哪裡吃？`,
-            "如果只能再選一個第二名，你會選什麼？",
-          ]
-        : [
-            "你是一直都很喜歡這個嗎？",
-            "你通常都去哪裡吃？",
-            "如果再選一個第二名，你會選什麼？",
-          ];
-    }
-
-    return [
-      "原來你會這樣選，怎麼會想到這個？",
-      "這個答案滿有趣的，你是一直都這樣想嗎？",
-      "如果再多選一個，你第二個會選什麼？",
-    ];
-  }
-
-  const isQuestion =
-    /[？?]$/.test(text) ||
-    /^(你|妳|那你|那妳|所以你|所以妳|最近|平常|平時|今天|現在|為什麼|怎麼|哪|什麼|有沒有|會不會|喜不喜歡|最)/.test(text);
-
-  if (!isQuestion) return null;
-
-  if (/(歌|音樂|歌手|團|專輯|spotify|播放清單|歌單|循環)/i.test(text)) {
-    return [
-      "你最近是一直循環這首嗎？",
-      "你最喜歡這首哪一段？",
-      "除了這首，你最近還有哪首也很常聽？",
-    ];
-  }
-
-  if (/(電影|影集|劇|韓劇|日劇|動漫|動畫|綜藝|節目|追什麼|看什麼)/i.test(text)) {
-    return [
-      "你最近還有追別的嗎？",
-      "你最喜歡這部哪個部分？",
-      "你平常比較偏電影還是影集？",
-    ];
-  }
-
-  if (/(吃|食物|料理|餐廳|飲料|咖啡|宵夜|晚餐|午餐|早餐|最愛吃)/i.test(text)) {
-    return [
-      "你是一直都很喜歡這個嗎？",
-      "你通常最常去哪裡吃？",
-      "如果再選一個第二名，你會選什麼？",
-    ];
-  }
-
-  if (/(興趣|休假|放假|平常做什麼|平時做什麼|有空|無聊都做|喜歡做)/i.test(text)) {
-    return [
-      "你平常最常做的是哪一個？",
-      "你是一直都有這個興趣嗎？",
-      "最近有沒有特別沉迷哪一件事？",
-    ];
-  }
-
-  if (/(工作|上班|下班|今天|忙不忙|累不累|最近忙|做什麼工作)/i.test(text)) {
-    return [
-      "你今天也很忙嗎？",
-      "最近工作是不是比較累？",
-      "你下班之後通常都怎麼放鬆？",
-    ];
-  }
-
-  if (/(為什麼|怎麼會|怎麼開始|原因)/i.test(text)) {
-    return [
-      "那你自己呢？你怎麼會開始的？",
-      "這個原因滿有趣的，你後來有越來越喜歡嗎？",
-      "所以一開始其實是很偶然的嗎？",
-    ];
-  }
-
-  if (/(哪個|哪一個|哪一部|哪一首|哪種|最喜歡|最常)/i.test(text)) {
-    return [
-      "你自己第一個想到的是哪個？",
-      "如果只能留一個，你還是會選同一個嗎？",
-      "你這個答案是一直都沒變嗎？",
-    ];
-  }
-
-  return [
-    "你自己呢？怎麼會想到這個？",
-    "這個我有點好奇，可以再多說一點嗎？",
-    "那你後來還有發生什麼嗎？",
-  ];
-}
-
-function suggestionsFor(nextMove: NextMove, messages: ChatAssistMessage[], icebreaker: IcebreakerContext) {
-  const contextual = contextualQuestionSuggestions(messages, icebreaker);
-  if (contextual) return contextual;
-
+function suggestionsFor(nextMove: NextMove) {
   const sets: Record<NextMove, string[]> = {
     continue_current_topic: [
       "真的喔，那後來呢？",
@@ -359,18 +221,6 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const messages = sanitizeMessages(body?.messages);
-  const icebreaker: IcebreakerContext =
-    body?.icebreaker &&
-    typeof body.icebreaker === "object" &&
-    typeof body.icebreaker.prompt === "string"
-      ? {
-          prompt: body.icebreaker.prompt.slice(0, 300),
-          category:
-            typeof body.icebreaker.category === "string"
-              ? body.icebreaker.category.slice(0, 80)
-              : null,
-        }
-      : null;
   if (messages.length === 0) {
     return json(400, { ok: false, message: "目前沒有可分析的文字訊息。" });
   }
@@ -383,7 +233,7 @@ export async function POST(request: Request) {
     result: {
       engine: laya ? "laya" : "fallback",
       ...decision,
-      suggestions: suggestionsFor(decision.nextMove, messages, icebreaker),
+      suggestions: suggestionsFor(decision.nextMove),
       tip: tipFor(decision.conversationState, decision.nextMove),
     },
   });
