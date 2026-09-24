@@ -850,7 +850,6 @@ export default function RandomSessionPage() {
 
     const previousStatus = session?.status ?? null;
     setSession(nextSession);
-    setIcebreaker(icebreakerFromSession(nextSession));
     setSessionState(nextSession.status === "active" ? "active" : "ended");
     recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
       reason: null,
@@ -1240,19 +1239,6 @@ export default function RandomSessionPage() {
         setPartnerTyping(true);
         armPartnerTypingTimeout();
       })
-
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "random_session_icebreakers",
-          filter: `session_id=eq.${session.id}`,
-        },
-        () => {
-          void refreshIcebreaker(session.id);
-        }
-      )
       .subscribe((status: string) => {
         if (status === "SUBSCRIBED") {
           typingChannelReadyRef.current = true;
