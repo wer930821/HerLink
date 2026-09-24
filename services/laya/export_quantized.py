@@ -70,6 +70,7 @@ quantize_dynamic(
     weight_type=QuantType.QInt8,
     per_channel=True,
     reduce_range=False,
+    extra_options={"DisableShapeInference": True},
 )
 
 os.remove(fp32_path)
