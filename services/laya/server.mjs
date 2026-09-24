@@ -47,7 +47,7 @@ async function readJson(req) {
 }
 
 const server = http.createServer(async (req, res) => {
-  if (req.method === "GET" && req.url === "/health") {
+  if (req.method === "GET" && (req.url === "/health" || req.url === "/docs")) {
     return sendJson(res, model ? 200 : loading ? 200 : 503, {
       ok: Boolean(model),
       state: model ? "ready" : loading ? "loading" : "error",
