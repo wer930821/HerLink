@@ -272,6 +272,7 @@ export default function RandomSessionPage() {
   const [assistantEnabled, setAssistantEnabled] = useState(true);
   const [assistantBusy, setAssistantBusy] = useState(false);
   const [assistantResult, setAssistantResult] = useState<ChatAssistResult | null>(null);
+  const [assistantResultForMessageId, setAssistantResultForMessageId] = useState<string | null>(null);
   const [assistantError, setAssistantError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [safetyMenuOpen, setSafetyMenuOpen] = useState(false);
@@ -298,6 +299,9 @@ export default function RandomSessionPage() {
   const [lastDiagnostic, setLastDiagnostic] = useState<NavigationDiagnosticEvent | null>(null);
 
   const isEnded = session?.status === "ended";
+  const latestTextMessage = [...messages].reverse().find(
+    (message) => message.message_type === "text" && message.content.trim().length > 0
+  ) ?? null;
   const partnerName = session?.partner_anonymous_display_name ?? "匿名使用者";
   const partnerVerified = session?.partner_verified ?? false;
   const typingIndicatorText = partnerTyping ? `${partnerName} 正在輸入…` : "\u00a0";
@@ -894,10 +898,24 @@ export default function RandomSessionPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!latestTextMessage) {
+      setAssistantResult(null);
+      setAssistantResultForMessageId(null);
+      return;
+    }
+
+    if (latestTextMessage.is_mine || assistantResultForMessageId !== latestTextMessage.id) {
+      setAssistantResult(null);
+      setAssistantResultForMessageId(null);
+    }
+  }, [latestTextMessage?.id, latestTextMessage?.is_mine]);
+
   const setChatAssistantEnabled = (enabled: boolean) => {
     setAssistantEnabled(enabled);
     if (!enabled) {
       setAssistantResult(null);
+      setAssistantResultForMessageId(null);
       setAssistantError(null);
     }
     try {
@@ -1421,6 +1439,7 @@ export default function RandomSessionPage() {
       stopTyping();
       setDraft("");
       setAssistantResult(null);
+      setAssistantResultForMessageId(null);
       setAssistantError(null);
       clearReply();
     } catch (error) {
@@ -1549,7 +1568,11 @@ export default function RandomSessionPage() {
         throw new Error(payload?.message || "CHAT_ASSIST_FAILED");
       }
 
+      const newestPartnerText = [...sourceMessages].reverse().find(
+        (message) => message.message_type === "text" && !message.is_mine && message.content.trim().length > 0
+      );
       setAssistantResult(payload.result);
+      setAssistantResultForMessageId(newestPartnerText?.id ?? null);
     } catch {
       setAssistantError("聊天助手暫時無法分析，請稍後再試。");
     } finally {
@@ -1845,7 +1868,10 @@ export default function RandomSessionPage() {
 
                 {assistantError ? <div className="notice">{assistantError}</div> : null}
 
-                {assistantResult ? (
+                {assistantResult &&
+                latestTextMessage &&
+                !latestTextMessage.is_mine &&
+                assistantResultForMessageId === latestTextMessage.id ? (
                   <div className="chat-assist-result">
                     {assistantResult.riskProbability >= 0.65 ? (
                       <div className="notice warning">這段對話可能有風險，先不要提供金錢、驗證碼或敏感個資。</div>
