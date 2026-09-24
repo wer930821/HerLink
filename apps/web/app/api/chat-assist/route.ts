@@ -287,6 +287,7 @@ async function askLaya(messages: ChatAssistMessage[]) {
           : {}),
       },
       body: JSON.stringify({
+        model: "multilingual",
         state: { conversation },
         questions: {
           conversation_state: {

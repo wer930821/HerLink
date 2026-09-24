@@ -1,8 +1,10 @@
 # HerLink Laya service
 
-CPU service for HerLink using the official `@receptron/laya` ONNX runtime.
+Official Laya HTTP server configured for HerLink.
 
-- `GET /health` reports service/model state.
-- `POST /v1/systemone` exposes the decision API used by HerLink.
-- Uses Laya's multilingual checkpoint.
-- The model loads in the background so Railway health checks can pass while weights are being prepared.
+- Uses the official `laya[serve]` package.
+- Uses CPU-only PyTorch to avoid installing CUDA packages on Railway.
+- Requests explicitly select the `multilingual` checkpoint.
+- `GET /health` is used by Railway.
+- `POST /v1/systemone` is used by HerLink.
+- Bearer authentication is enabled through `LAYA_API_KEY`.

@@ -1,15 +1,17 @@
-FROM node:22-slim
+FROM python:3.11-slim
 
-WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    USE_TF=0 \
+    LAYA_DEVICE=cpu \
+    LAYA_PRELOAD=0 \
+    LAYA_MODELS=multilingual \
+    LAYA_THREADS=2 \
+    LAYA_HOST=0.0.0.0
 
-COPY package.json ./
-RUN npm install --omit=dev
-
-COPY server.mjs ./
-
-ENV NODE_ENV=production
-ENV LAYA_CACHE=/app/.cache/laya
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch \
+    && pip install --no-cache-dir "laya[serve]==0.3.20"
 
 EXPOSE 8000
 
-CMD ["node", "server.mjs"]
+CMD ["sh", "-c", "LAYA_PORT=${PORT:-8000} laya-serve"]
