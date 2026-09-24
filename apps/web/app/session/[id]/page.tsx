@@ -256,6 +256,8 @@ export default function RandomSessionPage() {
   const lastSessionFetchErrorRef = useRef(false);
   const typingChannelRef = useRef<any>(null);
   const typingSenderTimerRef = useRef<number | null>(null);
+  const typingLastSentAtRef = useRef(0);
+  const typingChannelReadyRef = useRef(false);
   const typingReceiverTimerRef = useRef<number | null>(null);
   const typingReceiverDeadlineRef = useRef<number | null>(null);
   const typingActiveRef = useRef(false);
@@ -463,8 +465,8 @@ export default function RandomSessionPage() {
 
   const sendTypingState = async (typing: boolean) => {
     const channel = typingChannelRef.current;
-    if (!channel) {
-      return;
+    if (!channel || !typingChannelReadyRef.current) {
+      return false;
     }
 
     try {
@@ -473,8 +475,10 @@ export default function RandomSessionPage() {
         event: "typing",
         payload: { typing },
       });
+      typingLastSentAtRef.current = Date.now();
+      return true;
     } catch {
-      // Typing is best-effort only.
+      return false;
     }
   };
 
@@ -1308,6 +1312,7 @@ export default function RandomSessionPage() {
       )
       .subscribe((status: string) => {
         if (status === "SUBSCRIBED") {
+          typingChannelReadyRef.current = true;
           recordDiagnostic(chatChannelSubscribed ? "realtime_reconnected" : "realtime_subscribed", {
             sessionId: session.id,
             userId: myProfile.id,
@@ -1320,6 +1325,7 @@ export default function RandomSessionPage() {
         }
 
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          typingChannelReadyRef.current = false;
           recordDiagnostic("realtime_subscribe_error", {
             sessionId: session.id,
             userId: myProfile.id,
@@ -1330,6 +1336,7 @@ export default function RandomSessionPage() {
         }
 
         if (status === "CLOSED") {
+          typingChannelReadyRef.current = false;
           recordDiagnostic("realtime_disconnected", {
             sessionId: session.id,
             userId: myProfile.id,
@@ -1348,6 +1355,7 @@ export default function RandomSessionPage() {
       stopTyping();
       clearPartnerTyping();
       clearReply();
+      typingChannelReadyRef.current = false;
       typingChannelRef.current = null;
       void supabase.removeChannel(chatChannel);
     };
@@ -1396,8 +1404,13 @@ export default function RandomSessionPage() {
       return;
     }
 
-    if (!typingActiveRef.current) {
-      typingActiveRef.current = true;
+    const now = Date.now();
+    const shouldBroadcastTyping =
+      !typingActiveRef.current ||
+      now - typingLastSentAtRef.current >= 900;
+
+    typingActiveRef.current = true;
+    if (shouldBroadcastTyping) {
       void sendTypingState(true);
     }
 
@@ -1409,7 +1422,7 @@ export default function RandomSessionPage() {
 
       typingActiveRef.current = false;
       void sendTypingState(false);
-    }, 2500);
+    }, 3000);
 
     return () => {
       clearSenderTypingTimer();
@@ -1959,6 +1972,10 @@ export default function RandomSessionPage() {
           <div ref={messagesEndRef} aria-hidden="true" />
         </div>
 
+        <div className="chat-typing-indicator" aria-live="polite" aria-atomic="true">
+          {typingIndicatorText}
+        </div>
+
         <form
           className="chat-composer"
           onSubmit={(event) => {
@@ -2042,10 +2059,6 @@ export default function RandomSessionPage() {
             </button>
           </div>
         </form>
-
-        <div className="chat-typing-indicator" aria-live="polite" aria-atomic="true">
-          {typingIndicatorText}
-        </div>
       </section>
 
       <Modal
