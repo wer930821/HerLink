@@ -2,6 +2,7 @@ import json
 import os
 import sys
 
+import onnx
 import torch
 from onnxruntime.quantization import QuantType, quantize_dynamic
 from laya.agent import Agent
@@ -62,10 +63,22 @@ program = torch.onnx.export(
 )
 program.save(fp32_path, external_data=False)
 
+# ORT's dynamic quantizer always runs ONNX shape inference first. The exported
+# graph can contain stale intermediate/output dimensions from the dynamo
+# exporter, which makes shape inference fail before quantization begins.
+# Strip non-essential inferred shapes while preserving graph input types.
+quant_source_path = os.path.join(out_dir, "laya-quant-source.onnx")
+onnx_model = onnx.load(fp32_path, load_external_data=False)
+del onnx_model.graph.value_info[:]
+for output in onnx_model.graph.output:
+    if output.type.HasField("tensor_type"):
+        output.type.tensor_type.ClearField("shape")
+onnx.save(onnx_model, quant_source_path)
+
 int8_path = os.path.join(out_dir, "laya.onnx")
 print("[export] quantizing ONNX weights to INT8")
 quantize_dynamic(
-    model_input=fp32_path,
+    model_input=quant_source_path,
     model_output=int8_path,
     weight_type=QuantType.QInt8,
     per_channel=True,
@@ -74,6 +87,7 @@ quantize_dynamic(
 )
 
 os.remove(fp32_path)
+os.remove(quant_source_path)
 
 tokenizer_dir = os.path.join(out_dir, "tokenizer")
 agent.tok.save_pretrained(tokenizer_dir)
