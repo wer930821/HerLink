@@ -1,13 +1,15 @@
-FROM python:3.11-slim
+FROM node:22-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    USE_TF=0 \
-    LAYA_DEVICE=cpu \
-    LAYA_PRELOAD=1
+WORKDIR /app
 
-RUN pip install --no-cache-dir "laya[serve]==0.3.13"
+COPY package.json ./
+RUN npm install --omit=dev
+
+COPY server.mjs ./
+
+ENV NODE_ENV=production
+ENV LAYA_CACHE=/app/.cache/laya
 
 EXPOSE 8000
 
-CMD ["laya-serve", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["node", "server.mjs"]

@@ -1,0 +1,8 @@
+{
+  "name": "herlink-laya-service",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@receptron/laya": "^0.3.0"
+  }
+}
