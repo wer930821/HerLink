@@ -54,6 +54,16 @@ type RealtimePayload<T> = {
   new: T;
 };
 
+type ChatAssistResult = {
+  engine: "laya" | "fallback";
+  conversationState: "flowing" | "quiet" | "awkward" | "tense";
+  nextMove: "continue_current_topic" | "ask_open_question" | "change_topic" | "empathize" | "slow_down";
+  riskProbability: number;
+  contactReadiness: number;
+  suggestions: string[];
+  tip: string;
+};
+
 const EXTERNAL_URL_PATTERN = /((?:https?:\/\/|www\.)[^\s<>"'`]+)/gi;
 const REPORT_CATEGORY_LABELS: Record<RandomReportCategory, string> = {
   spam: "垃圾訊息 / 廣告",
@@ -279,6 +289,11 @@ export default function RandomSessionPage() {
   const [reportBusy, setReportBusy] = useState(false);
   const [contactBusy, setContactBusy] = useState(false);
   const [contactState, setContactState] = useState<AnonymousContactStatusRow | null>(null);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [assistantEnabled, setAssistantEnabled] = useState(true);
+  const [assistantBusy, setAssistantBusy] = useState(false);
+  const [assistantResult, setAssistantResult] = useState<ChatAssistResult | null>(null);
+  const [assistantError, setAssistantError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [safetyMenuOpen, setSafetyMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -926,6 +941,27 @@ export default function RandomSessionPage() {
   }, [pathname]);
 
   useEffect(() => {
+    try {
+      setAssistantEnabled(window.localStorage.getItem("herlink:chat-assist-enabled") !== "0");
+    } catch {
+      setAssistantEnabled(true);
+    }
+  }, []);
+
+  const setChatAssistantEnabled = (enabled: boolean) => {
+    setAssistantEnabled(enabled);
+    if (!enabled) {
+      setAssistantResult(null);
+      setAssistantError(null);
+    }
+    try {
+      window.localStorage.setItem("herlink:chat-assist-enabled", enabled ? "1" : "0");
+    } catch {
+      // The feature still works for the current page when localStorage is unavailable.
+    }
+  };
+
+  useEffect(() => {
     recordSessionRouteDiagnostic("SESSION_ROUTE_MOUNT", {
       authState,
       sessionState,
@@ -1507,6 +1543,57 @@ export default function RandomSessionPage() {
     }
   };
 
+  const requestChatAssist = async () => {
+    if (!assistantEnabled || assistantBusy || isEnded) return;
+
+    const textMessages = messages
+      .filter((message) => message.message_type === "text" && message.content.trim().length > 0)
+      .slice(-12)
+      .map((message) => ({
+        role: message.is_mine ? "me" : "partner",
+        text: message.content.trim().slice(0, 500),
+      }));
+
+    if (textMessages.length === 0) {
+      setAssistantError("先聊幾句後，我才能依照目前對話提供建議。");
+      return;
+    }
+
+    setAssistantBusy(true);
+    setAssistantError(null);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+      if (!accessToken) {
+        throw new Error("AUTH_MISSING");
+      }
+
+      const response = await fetch("/api/chat-assist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ messages: textMessages }),
+        cache: "no-store",
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | { ok?: boolean; result?: ChatAssistResult; message?: string }
+        | null;
+
+      if (!response.ok || !payload?.ok || !payload.result) {
+        throw new Error(payload?.message || "CHAT_ASSIST_FAILED");
+      }
+
+      setAssistantResult(payload.result);
+    } catch {
+      setAssistantError("聊天助手暫時無法分析，請稍後再試。");
+    } finally {
+      setAssistantBusy(false);
+    }
+  };
+
   const handleAnonymousContact = async () => {
     if (!session || contactBusy || contactState?.status === "active") return;
     if (contactState?.my_approved && !contactState.partner_approved) return;
@@ -1752,6 +1839,14 @@ export default function RandomSessionPage() {
           >
             {contactBusy ? "處理中…" : anonymousContactLabel}
           </button>
+          <button
+            className="button secondary chat-assist-button"
+            type="button"
+            onClick={() => setAssistantOpen((open) => !open)}
+            aria-expanded={assistantOpen}
+          >
+            聊天助手
+          </button>
           <button className="button secondary chat-safety" onClick={() => setSafetyMenuOpen(true)}>
             安全
           </button>
@@ -1759,6 +1854,66 @@ export default function RandomSessionPage() {
             {leaveBusy ? "離開中…" : "離開聊天室"}
           </button>
         </div>
+
+        {assistantOpen ? (
+          <section className="chat-assist-card" aria-live="polite">
+            <div className="chat-assist-heading">
+              <div>
+                <strong>聊天小助手</strong>
+                <div className="muted chat-assist-subtitle">只分析最近的文字訊息，不會自動替你送出。</div>
+              </div>
+              <label className="chat-assist-toggle">
+                <input
+                  type="checkbox"
+                  checked={assistantEnabled}
+                  onChange={(event) => setChatAssistantEnabled(event.target.checked)}
+                />
+                啟用
+              </label>
+            </div>
+
+            {assistantEnabled ? (
+              <>
+                <div className="row">
+                  <Button size="sm" type="button" onClick={() => void requestChatAssist()} disabled={assistantBusy || isEnded}>
+                    {assistantBusy ? "分析中…" : "幫我想怎麼回"}
+                  </Button>
+                </div>
+
+                {assistantError ? <div className="notice">{assistantError}</div> : null}
+
+                {assistantResult ? (
+                  <div className="chat-assist-result">
+                    {assistantResult.riskProbability >= 0.65 ? (
+                      <div className="notice warning">這段對話可能有風險，先不要提供金錢、驗證碼或敏感個資。</div>
+                    ) : null}
+                    <div className="chat-assist-tip">{assistantResult.tip}</div>
+                    <div className="chat-assist-suggestions">
+                      {assistantResult.suggestions.map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          className="chat-assist-suggestion"
+                          onClick={() => {
+                            setDraft(suggestion);
+                            setAssistantOpen(false);
+                          }}
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                    {assistantResult.contactReadiness >= 0.72 && contactState?.status !== "active" ? (
+                      <div className="muted">你們目前互動看起來較穩定，也可以考慮使用「保留匿名聯絡」。</div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <div className="muted">聊天助手已關閉，訊息不會送去分析。</div>
+            )}
+          </section>
+        ) : null}
 
         {notice ? <div className="notice">{notice}</div> : null}
         {session ? <SessionSafetyWarning key={session.id} sessionId={session.id} warning={messageWarning}

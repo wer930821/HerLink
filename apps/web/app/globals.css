@@ -1682,3 +1682,83 @@ select {
     flex: 0 0 auto;
   }
 }
+
+
+/* Chat assistant */
+.chat-assist-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 22%, var(--color-border));
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface-2));
+}
+
+.chat-assist-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.chat-assist-subtitle {
+  margin-top: 3px;
+  font-size: var(--text-meta);
+}
+
+.chat-assist-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-muted);
+  font-size: var(--text-meta);
+  white-space: nowrap;
+}
+
+.chat-assist-result {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.chat-assist-tip {
+  color: var(--color-text);
+  font-size: 0.92rem;
+}
+
+.chat-assist-suggestions {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.chat-assist-suggestion {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-3);
+  color: var(--color-text);
+  text-align: left;
+  line-height: 1.45;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.chat-assist-suggestion:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
+  background: var(--color-surface-3-strong);
+}
+
+@media (max-width: 480px) {
+  .chat-actions {
+    overflow-x: auto;
+  }
+
+  .chat-actions .button {
+    flex: 0 0 auto;
+    min-width: 84px;
+  }
+
+  .chat-assist-heading {
+    align-items: center;
+  }
+}
