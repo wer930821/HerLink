@@ -1,17 +1,33 @@
-FROM python:3.11-slim
+FROM python:3.11-slim AS exporter
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    USE_TF=0 \
-    LAYA_DEVICE=cpu \
-    LAYA_PRELOAD=0 \
-    LAYA_MODELS=multilingual \
-    LAYA_THREADS=2 \
-    LAYA_HOST=0.0.0.0
+WORKDIR /build
 
 RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch \
-    && pip install --no-cache-dir "laya[serve]==0.3.20"
+    && pip install --no-cache-dir \
+      "laya==0.3.20" \
+      "onnx>=1.17" \
+      "onnxscript>=0.2" \
+      "onnxruntime>=1.22" \
+      "transformers>=4.48" \
+      "safetensors>=0.5" \
+      "huggingface_hub>=0.20"
+
+COPY export_quantized.py ./
+RUN python export_quantized.py /bundle
+
+FROM node:22-slim AS runtime
+
+WORKDIR /app
+
+COPY package.json ./
+RUN npm install --omit=dev
+
+COPY server.mjs ./
+COPY --from=exporter /bundle ./onnx
+
+ENV NODE_ENV=production
+ENV LAYA_MODEL_DIR=/app/onnx
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "LAYA_PORT=${PORT:-8000} laya-serve"]
+CMD ["node", "server.mjs"]
