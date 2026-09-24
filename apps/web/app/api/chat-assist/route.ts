@@ -146,6 +146,15 @@ function buildReplyCandidates(messages: ChatAssistMessage[], nextMove: NextMove)
       );
     }
 
+    if (/^(你|妳)?(喜歡什麼|都喜歡什麼|平常喜歡什麼|有什麼喜歡的)[？?]?$/.test(lastText)) {
+      candidates.push(
+        "很多耶哈哈，你是問興趣、吃的，還是平常會做的事？",
+        "這題範圍有點大，你想先從興趣開始問嗎？",
+        "我喜歡的東西滿雜的，你想先問哪一類？",
+        "你是想問平常的興趣嗎？如果是的話可以先從這個聊。"
+      );
+    }
+
     if (/(最近|平常|平時).*(聽|歌|音樂)/.test(lastText)) {
       candidates.push(
         "最近我比較常重複聽同幾首，你會一直單曲循環嗎？",
@@ -180,9 +189,9 @@ function buildReplyCandidates(messages: ChatAssistMessage[], nextMove: NextMove)
 
     if (/[？?]$/.test(lastText)) {
       candidates.push(
-        "這題我會先照第一直覺回答，你自己呢？",
-        "我第一個想到的是前面聊到的那個，你會怎麼選？",
-        "我覺得這題滿看當下感覺的，你的答案會一直都一樣嗎？"
+        "這題我想一下，我會先照第一直覺回答。你呢？",
+        "這個要看你問的是哪一類，你可以再縮小一點範圍嗎？",
+        "你這題問得滿廣的哈哈，你想先從哪個方向聊？"
       );
     } else {
       candidates.push(

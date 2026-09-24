@@ -1488,7 +1488,17 @@ export default function RandomSessionPage() {
   const requestChatAssist = async () => {
     if (!assistantEnabled || assistantBusy || isEnded) return;
 
-    const textMessages = messages
+    let sourceMessages = messages;
+    if (session?.id) {
+      const latest = await loadRandomMessages(session.id, 12);
+      if (!latest.error && latest.data?.length) {
+        sourceMessages = [...latest.data].sort(
+          (a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)
+        );
+      }
+    }
+
+    const textMessages = sourceMessages
       .filter((message) => message.message_type === "text" && message.content.trim().length > 0)
       .slice(-12)
       .map((message) => ({
