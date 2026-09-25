@@ -491,7 +491,7 @@ export default function HomePage() {
 
   if (MAINTENANCE_MODE) {
     return (
-      <main className="stack">
+      <main className="stack home-fixed">
         <PageHero
           kicker={<Badge variant="accent">維護中</Badge>}
           title={MAINTENANCE_TITLE}
@@ -514,7 +514,7 @@ export default function HomePage() {
 
   if (!isSupabaseConfigured()) {
     return (
-      <main className="stack">
+      <main className="stack home-fixed">
         <PageHero
           title="HerLink Web V0.1"
           description="缺少 Supabase 設定，請先補上 NEXT_PUBLIC_SUPABASE_URL 和 NEXT_PUBLIC_SUPABASE_ANON_KEY。"
@@ -526,7 +526,7 @@ export default function HomePage() {
 
   if (bootstrapping) {
     return (
-      <main className="stack">
+      <main className="stack home-fixed">
         <PageHero title="HerLink" description="正在檢查登入狀態…" />
         {debugPanel}
       </main>
@@ -582,7 +582,7 @@ export default function HomePage() {
 
   if (!state.session) {
     return (
-      <main className="stack">
+      <main className="stack home-fixed">
         <PageHero
           title="HerLink"
           description="不用註冊、不用公開真實資料，直接建立匿名身份開始聊天。"
@@ -688,7 +688,7 @@ export default function HomePage() {
   };
 
   return (
-    <main className="stack">
+    <main className="stack home-fixed">
       <PageHero title="HerLink" description="匿名聊天，不需要公開自己。">
         {MAINTENANCE_MODE ? (
           <Notice variant="warning" title="HerLink 維護中。">{MAINTENANCE_MESSAGE}</Notice>

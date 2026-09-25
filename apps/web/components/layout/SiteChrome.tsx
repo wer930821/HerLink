@@ -9,12 +9,13 @@ export function SiteChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isChromeHidden =
     pathname?.startsWith("/admin") === true || pathname?.startsWith("/session") === true;
+  const isHome = pathname === "/";
 
   return (
     <>
       {!isChromeHidden ? <SiteHeader /> : null}
-      {children}
-      {!isChromeHidden ? <SiteFooter /> : null}
+      {isHome ? <div className="site-home-viewport">{children}</div> : children}
+      {!isChromeHidden && !isHome ? <SiteFooter /> : null}
     </>
   );
 }

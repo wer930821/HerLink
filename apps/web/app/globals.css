@@ -1762,3 +1762,111 @@ select {
     align-items: center;
   }
 }
+
+
+/* Fixed Web home: keep the entire homepage inside one viewport, without page scrolling. */
+.site-home-viewport {
+  height: calc(100dvh - 56px);
+  overflow: hidden;
+}
+
+.site-home-viewport .shell {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: clamp(10px, 1.8vh, 18px);
+  padding-bottom: clamp(10px, 1.8vh, 18px);
+}
+
+.site-home-viewport .container {
+  height: 100%;
+  min-height: 0;
+}
+
+.home-fixed {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  align-content: start;
+  gap: clamp(8px, 1.2vh, 12px);
+}
+
+.home-fixed .surface,
+.home-fixed .hero {
+  padding: clamp(14px, 2vh, 20px);
+}
+
+.home-fixed .surface-inset {
+  padding: clamp(10px, 1.3vh, 14px) var(--space-4);
+}
+
+.home-fixed .hero-title {
+  font-size: clamp(2rem, 4vh, 3rem);
+}
+
+.home-fixed .hero-copy {
+  line-height: 1.5;
+}
+
+.home-fixed .btn-lg {
+  min-height: 44px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.home-fixed .notice {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+@media (max-height: 820px) {
+  .site-home-viewport .shell {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .home-fixed {
+    gap: 7px;
+  }
+
+  .home-fixed .surface,
+  .home-fixed .hero {
+    padding: 12px 14px;
+    gap: 9px;
+  }
+
+  .home-fixed .surface-inset {
+    padding: 8px 12px;
+  }
+
+  .home-fixed .hero-title {
+    font-size: 1.9rem;
+  }
+
+  .home-fixed .hero-copy,
+  .home-fixed .notice,
+  .home-fixed .muted.small {
+    line-height: 1.4;
+  }
+}
+
+@media (max-width: 520px) {
+  .site-home-viewport {
+    height: calc(100dvh - 48px);
+  }
+
+  .site-home-viewport .shell {
+    padding-top: 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  .home-fixed .surface,
+  .home-fixed .hero {
+    border-radius: 18px;
+    padding: 12px;
+  }
+
+  .home-fixed .row {
+    gap: 8px;
+  }
+}
