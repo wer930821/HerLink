@@ -138,9 +138,19 @@ export default function HomePage() {
   }
 
   const startAnonymous = async () => {
+    if (actionBusy) return;
+
     setActionBusy(true);
     setMessage(null);
+
     try {
+      // 避免使用者連點時重複建立匿名帳號。
+      const { data: existingSessionData } = await getCurrentSession();
+      if (existingSessionData.session) {
+        window.location.assign("/onboarding");
+        return;
+      }
+
       const { data, error } = await signInAnonymously();
       if (error) {
         throw error;
@@ -150,10 +160,11 @@ export default function HomePage() {
         throw new Error("匿名登入未建立工作階段");
       }
 
-      router.replace("/onboarding");
+      // 使用完整頁面導向，確保 Supabase session 已寫入瀏覽器儲存後，
+      // onboarding 頁能立即讀到登入狀態。
+      window.location.assign("/onboarding");
     } catch (error) {
       setMessage(getFriendlyAuthErrorMessage(error, "目前無法建立匿名身份，請稍後再試。"));
-    } finally {
       setActionBusy(false);
     }
   };
