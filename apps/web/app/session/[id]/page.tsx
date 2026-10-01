@@ -1891,8 +1891,8 @@ export default function RandomSessionPage() {
   }
 
   return (
-    <main className="stack chat-page">
-      <section className="panel chat-shell">
+    <main className="chat-page">
+      <section className="chat-shell">
         <header className="chat-header">
           <button
             className="ghost chat-back"
