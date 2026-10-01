@@ -94,7 +94,7 @@ export default function AdminDashboardPage() {
           <AdminStat label="今日結束聊天場次" value={formatCount(data?.today_ended_session_count)} />
           <AdminStat label="今日檢舉" value={formatCount(data?.today_report_count)} tone="warning" />
           <AdminStat label="今日封鎖" value={formatCount(data?.today_block_count)} tone="warning" />
-          <AdminStat label="今日風險事件" value={formatCount(data?.today_fraud_risk_event_count)} tone="danger" />
+          <AdminStat label="今日風險警示" value={formatCount(data?.today_fraud_risk_event_count)} tone="danger" />
           <AdminStat label="網頁通知訂閱" value={formatCount(data?.active_push_subscription_count)} />
           <AdminStat label="待發送通知" value={formatCount(data?.pending_push_event_count)} />
           <AdminStat label="今日通知成功" value={formatCount(data?.today_web_push_delivered_count)} tone="success" />
