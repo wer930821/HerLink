@@ -47,7 +47,7 @@ export type AdminSummary = {
 export type AdminSessionListItem = {
   id: string;
   created_at: string;
-  status: "waiting" | "active" | "matched" | "ended";
+  status: "waiting" | "active" | "ended";
   participant_count: number;
   message_count: number;
   last_message_at: string | null;
