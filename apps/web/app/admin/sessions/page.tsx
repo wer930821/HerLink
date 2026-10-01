@@ -14,7 +14,7 @@ function sessionStatusLabel(value: (typeof statusOptions)[number] | string) {
   if (value === "waiting") return "等待中";
   if (value === "matched") return "聊天中";
   if (value === "ended") return "已結束";
-  return value === "all" ? "全部" : value;
+  return value === "all" ? "全部" : "其他狀態";
 }
 
 export default function AdminSessionsPage() {
