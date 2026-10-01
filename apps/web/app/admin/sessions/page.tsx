@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAdminSession, fetchAdminJson } from "../../../lib/admin-client";
 import type { AdminPaginationResult, AdminSessionListItem } from "../../../lib/admin-types";
-import { AdminBadge, AdminEmpty, AdminSection, AdminTable, AdminTableWrap, AdminToolbar, formatAdminTime, shortId } from "../_components";
+import { AdminBadge, AdminEmpty, AdminSection, AdminToolbar, formatAdminTime, shortId } from "../_components";
 import { Button, Notice } from "../../../components/ui";
 
 type SessionListPayload = AdminPaginationResult<AdminSessionListItem>;
@@ -87,42 +87,39 @@ export default function AdminSessionsPage() {
           ))}
         </AdminToolbar>
         {data?.items?.length ? (
-          <AdminTableWrap>
-            <AdminTable label="聊天場次列表">
-              <thead>
-                <tr>
-                  <th scope="col">場次</th>
-                  <th scope="col">狀態</th>
-                  <th scope="col">訊息</th>
-                  <th scope="col">最後訊息</th>
-                  <th scope="col">標記</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((item) => (
-                  <tr key={item.id}>
-                    <td>{shortId(item.id)}</td>
-                    <td>
-                      <AdminBadge tone={item.status === "ended" ? "warning" : item.status === "matched" ? "success" : "default"}>{sessionStatusLabel(item.status)}</AdminBadge>
-                    </td>
-                    <td>{item.message_count}</td>
-                    <td>{formatAdminTime(item.last_message_at)}</td>
-                    <td>
-                      <div className="stack" style={{ gap: 6 }}>
-                        {item.has_report ? <AdminBadge tone="warning">檢舉</AdminBadge> : null}
-                        {item.has_block ? <AdminBadge tone="danger">封鎖</AdminBadge> : null}
-                        {item.has_fraud_risk_event ? <AdminBadge tone="danger">風險</AdminBadge> : null}
-                      </div>
-                    </td>
-                    <td>
-                      <Button variant="secondary" size="sm" href={`/admin/sessions/${item.id}`}>檢視</Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </AdminTable>
-          </AdminTableWrap>
+          <div className="admin-session-list" aria-label="聊天場次列表">
+            {data.items.map((item) => (
+              <article key={item.id} className="admin-session-row">
+                <div className="admin-session-main">
+                  <div className="admin-session-id">{shortId(item.id)}</div>
+                  <AdminBadge tone={item.status === "ended" ? "warning" : item.status === "matched" ? "success" : "default"}>
+                    {sessionStatusLabel(item.status)}
+                  </AdminBadge>
+                </div>
+
+                <div className="admin-session-meta">
+                  <div>
+                    <span>訊息</span>
+                    <strong>{item.message_count}</strong>
+                  </div>
+                  <div>
+                    <span>最後訊息</span>
+                    <strong>{formatAdminTime(item.last_message_at)}</strong>
+                  </div>
+                </div>
+
+                <div className="admin-session-bottom">
+                  <div className="admin-session-flags">
+                    {item.has_report ? <AdminBadge tone="warning">檢舉</AdminBadge> : null}
+                    {item.has_block ? <AdminBadge tone="danger">封鎖</AdminBadge> : null}
+                    {item.has_fraud_risk_event ? <AdminBadge tone="danger">風險</AdminBadge> : null}
+                    {!item.has_report && !item.has_block && !item.has_fraud_risk_event ? <span className="muted small">無標記</span> : null}
+                  </div>
+                  <Button variant="link" size="sm" href={`/admin/sessions/${item.id}`}>查看內容</Button>
+                </div>
+              </article>
+            ))}
+          </div>
         ) : (
           <AdminEmpty>目前沒有符合條件的聊天場次。</AdminEmpty>
         )}
