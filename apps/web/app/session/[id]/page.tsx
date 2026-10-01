@@ -1227,84 +1227,114 @@ export default function RandomSessionPage() {
   useEffect(() => {
     if (!session || !myProfile?.id) return;
 
+    let disposed = false;
     let chatChannelSubscribed = false;
-    recordDiagnostic("realtime_subscribe_started", {
-      sessionId: session.id,
-      userId: myProfile.id,
-      metadata: { channel: "chat" },
-    });
+    let chatChannel: ReturnType<typeof supabase.channel> | null = null;
 
-    const chatChannel = supabase.channel(`random-chat-${session.id}`);
-    typingChannelRef.current = chatChannel;
+    const syncRealtimeAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+      if (accessToken) {
+        await supabase.realtime.setAuth(accessToken);
+      }
+    };
 
-    chatChannel
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "random_chat_signals", filter: `session_id=eq.${session.id}` },
-        () => {
-          void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
-          void refreshSessionFromServerRef.current?.();
-        }
-      )
-      .on("broadcast", { event: "typing" }, (payload: { payload?: { typing?: unknown } }) => {
-        const typing = Boolean(payload?.payload?.typing);
+    const startRealtime = async () => {
+      // Anonymous users still use authenticated JWTs. Explicitly sync the
+      // freshest token before joining so Realtime never reuses a stale token.
+      await syncRealtimeAuth().catch(() => undefined);
+      if (disposed) return;
 
-        if (!typing) {
-          clearPartnerTyping();
-          return;
-        }
-
-        setPartnerTyping(true);
-        armPartnerTypingTimeout();
-      })
-      .subscribe((status: string) => {
-        if (status === "SUBSCRIBED") {
-          typingChannelReadyRef.current = true;
-          recordDiagnostic(chatChannelSubscribed ? "realtime_reconnected" : "realtime_subscribed", {
-            sessionId: session.id,
-            userId: myProfile.id,
-            metadata: { channel: "chat" },
-          });
-          chatChannelSubscribed = true;
-          void refreshSessionFromServerRef.current?.();
-          void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
-          return;
-        }
-
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          typingChannelReadyRef.current = false;
-          recordDiagnostic("realtime_subscribe_error", {
-            sessionId: session.id,
-            userId: myProfile.id,
-            safeErrorCode: status,
-            metadata: { channel: "chat" },
-          });
-          return;
-        }
-
-        if (status === "CLOSED") {
-          typingChannelReadyRef.current = false;
-          recordDiagnostic("realtime_disconnected", {
-            sessionId: session.id,
-            userId: myProfile.id,
-            safeErrorCode: status,
-            metadata: { channel: "chat" },
-          });
-        }
-      });
-
-    return () => {
-      recordDiagnostic("realtime_disconnected", {
+      recordDiagnostic("realtime_subscribe_started", {
         sessionId: session.id,
         userId: myProfile.id,
         metadata: { channel: "chat" },
       });
+
+      chatChannel = supabase.channel(`random-chat-${session.id}`);
+      typingChannelRef.current = chatChannel;
+
+      chatChannel
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "random_chat_signals", filter: `session_id=eq.${session.id}` },
+          () => {
+            void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
+            void refreshSessionFromServerRef.current?.();
+          }
+        )
+        .on("broadcast", { event: "typing" }, (payload: { payload?: { typing?: unknown } }) => {
+          const typing = Boolean(payload?.payload?.typing);
+
+          if (!typing) {
+            clearPartnerTyping();
+            return;
+          }
+
+          setPartnerTyping(true);
+          armPartnerTypingTimeout();
+        })
+        .subscribe((status: string, channelError?: Error) => {
+          if (status === "SUBSCRIBED") {
+            typingChannelReadyRef.current = true;
+            recordDiagnostic(chatChannelSubscribed ? "realtime_reconnected" : "realtime_subscribed", {
+              sessionId: session.id,
+              userId: myProfile.id,
+              metadata: { channel: "chat" },
+            });
+            chatChannelSubscribed = true;
+            void refreshSessionFromServerRef.current?.();
+            void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
+            return;
+          }
+
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            typingChannelReadyRef.current = false;
+            const safeMessage = channelError?.message?.slice(0, 160) || null;
+            recordDiagnostic("realtime_subscribe_error", {
+              sessionId: session.id,
+              userId: myProfile.id,
+              safeErrorCode: status,
+              metadata: {
+                channel: "chat",
+                error: safeMessage,
+              },
+            });
+
+            // Refresh the websocket auth for the channel's automatic retry.
+            void syncRealtimeAuth();
+            return;
+          }
+
+          if (status === "CLOSED") {
+            typingChannelReadyRef.current = false;
+            recordDiagnostic("realtime_disconnected", {
+              sessionId: session.id,
+              userId: myProfile.id,
+              safeErrorCode: status,
+              metadata: { channel: "chat" },
+            });
+          }
+        });
+    };
+
+    void startRealtime();
+
+    return () => {
+      disposed = true;
+      if (chatChannel) {
+        recordDiagnostic("realtime_disconnected", {
+          sessionId: session.id,
+          userId: myProfile.id,
+          metadata: { channel: "chat" },
+        });
+        void supabase.removeChannel(chatChannel);
+      }
       stopTyping();
       clearPartnerTyping();
       clearReply();
       typingChannelReadyRef.current = false;
       typingChannelRef.current = null;
-      void supabase.removeChannel(chatChannel);
     };
   }, [myProfile?.id, session?.id]);
 
