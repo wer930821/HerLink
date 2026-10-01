@@ -153,8 +153,8 @@ export default function AdminDashboardPage() {
     if (data.laya_service_state === "loading") {
       warningReasons.push("Laya 模型仍在載入");
     }
-    if (data.realtime_errors_10m > 0) {
-      warningReasons.push(`近 10 分鐘有 ${data.realtime_errors_10m} 個 Realtime 重試裝置`);
+    if (data.realtime_errors_5m > 0) {
+      warningReasons.push(`近 5 分鐘有 ${data.realtime_errors_5m} 個 Realtime 重試裝置`);
     }
     if (
       data.today_chat_assist_requests >= 3 &&
@@ -287,9 +287,24 @@ export default function AdminDashboardPage() {
             tone={typeof data?.today_avg_wait_seconds === "number" && data.today_avg_wait_seconds > 120 ? "warning" : "default"}
           />
           <AdminStat
+            label="近 1 分鐘異常連線"
+            value={formatCount(data?.realtime_errors_1m)}
+            tone={(data?.realtime_errors_1m ?? 0) > 0 ? "warning" : "success"}
+          />
+          <AdminStat
+            label="近 5 分鐘異常連線"
+            value={formatCount(data?.realtime_errors_5m)}
+            tone={(data?.realtime_errors_5m ?? 0) > 0 ? "warning" : "success"}
+          />
+          <AdminStat
             label="近 10 分鐘異常連線"
             value={formatCount(data?.realtime_errors_10m)}
-            tone={(data?.realtime_errors_10m ?? 0) >= 10 ? "danger" : (data?.realtime_errors_10m ?? 0) > 0 ? "warning" : "success"}
+            tone={(data?.realtime_errors_10m ?? 0) > 0 ? "warning" : "success"}
+          />
+          <AdminStat
+            label="最近一次異常"
+            value={data?.realtime_last_error_at ? formatAdminTime(data.realtime_last_error_at) : "—"}
+            tone={(data?.realtime_errors_5m ?? 0) > 0 ? "warning" : "success"}
           />
           <AdminStat
             label="近 1 小時異常連線"
