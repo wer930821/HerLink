@@ -12,6 +12,7 @@ import {
 } from "../../../lib/navigation-diagnostics";
 import {
   blockRandomUser,
+  buildBrowserHandoffUrl,
   ensureAnonymousBootstrapProfile,
   leaveRandomSession,
   loadMyProfile,
@@ -1719,6 +1720,29 @@ export default function RandomSessionPage() {
           ? "等待對方同意"
           : "保留匿名聯絡";
 
+  const copyBrowserHandoffLink = async () => {
+    const { data } = await supabase.auth.getSession();
+    const authSession = data.session;
+    if (!authSession || !session?.id) {
+      setNotice("目前無法建立續聊連結，請稍後再試。");
+      return;
+    }
+
+    const handoffUrl = buildBrowserHandoffUrl(authSession, `/session/${session.id}`);
+    if (!handoffUrl) {
+      setNotice("目前無法建立續聊連結，請稍後再試。");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(handoffUrl);
+      setNotice("已複製續聊連結。貼到 Chrome、Safari 或其他瀏覽器開啟，就能保留匿名名稱與這段聊天。");
+    } catch {
+      setNotice("無法自動複製續聊連結，請確認瀏覽器允許剪貼簿權限。");
+    }
+  };
+
+
   const confirmBlock = async () => {
     if (!session || blockBusy) return;
     setBlockBusy(true);
@@ -1939,6 +1963,13 @@ export default function RandomSessionPage() {
                   disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}
                 >
                   {contactBusy ? "處理中…" : anonymousContactLabel}
+                </button>
+                <button
+                  className="button secondary"
+                  type="button"
+                  onClick={() => void copyBrowserHandoffLink()}
+                >
+                  跨瀏覽器續聊
                 </button>
                 <button className="button secondary chat-safety" type="button" onClick={() => setSafetyMenuOpen(true)}>
                   安全
