@@ -3,7 +3,7 @@ import { colors, radii, spacing, typography } from "../../theme";
 
 const tips = [
   ["金錢與投資要求", "匿名聊天中若有人要求匯款、轉帳、投資或代購，請直接提高警覺。"],
-  ["不要提供驗證碼", "不要提供 OTP、密碼、銀行資料、信用卡資訊或可用來登入帳號的驗證碼。"],
+  ["不要提供驗證碼", "不要提供一次性驗證碼、密碼、銀行資料、信用卡資訊或可用來登入帳號的驗證碼。"],
   ["外部連結", "開啟陌生連結前先確認網址；可疑網站不要輸入任何帳號或付款資料。"],
   ["封鎖與檢舉", "在匿名聊天室內可直接封鎖或檢舉對方。封鎖後該段匿名對話會結束。"],
 ];
@@ -11,7 +11,7 @@ const tips = [
 export default function SafetyScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.eyebrow}>HerLink Safety</Text>
+      <Text style={styles.eyebrow}>HerLink 安全中心</Text>
       <Text style={styles.title}>匿名聊天安全</Text>
       <Text style={styles.subtitle}>HerLink 現在只保留匿名隨機配對與匿名聊天室。</Text>
 
