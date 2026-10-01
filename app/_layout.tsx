@@ -117,7 +117,7 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerShown: false }}>
       {session ? <Stack.Screen name="(tabs)" /> : <Stack.Screen name="login" />}
       <Stack.Screen name="random-session/[sessionId]" />
-      <Stack.Screen name="modal" options={{ presentation: "modal", headerShown: true, title: "Modal" }} />
+      <Stack.Screen name="modal" options={{ presentation: "modal", headerShown: true, title: "視窗" }} />
       <Stack.Screen name="privacy" options={{ headerShown: true, title: "隱私權政策" }} />
       <Stack.Screen name="terms" options={{ headerShown: true, title: "服務條款" }} />
       <Stack.Screen name="community-guidelines" options={{ headerShown: true, title: "社群守則" }} />
