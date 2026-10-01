@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Button, EmptyState } from "../../components/ui";
 import { fetchAdminJson, useAdminSession } from "../../lib/admin-client";
+import { supabase } from "../../lib/supabase";
 
 type AdminDebug = {
   user_id: string;
@@ -33,13 +34,32 @@ export function AdminAccessGate({ children }: { children: ReactNode }) {
       };
     }
 
-    void fetchAdminJson<{ role: "admin" }>(accessToken, "/api/admin/access")
-      .then(() => {
+    void (async () => {
+      try {
+        await fetchAdminJson<{ role: "admin" }>(accessToken, "/api/admin/access");
         if (mounted) setAuthorized(true);
-      })
-      .catch(() => {
+        return;
+      } catch (err) {
+        const status = err instanceof Error && "status" in err ? (err as Error & { status?: number }).status : undefined;
+        if (status !== 403) {
+          if (mounted) setAuthorized(false);
+          return;
+        }
+      }
+
+      try {
+        const { data: claimed, error: claimError } = await supabase.rpc("claim_admin_bootstrap");
+        if (claimError || claimed !== true) {
+          if (mounted) setAuthorized(false);
+          return;
+        }
+
+        await fetchAdminJson<{ role: "admin" }>(accessToken, "/api/admin/access");
+        if (mounted) setAuthorized(true);
+      } catch {
         if (mounted) setAuthorized(false);
-      });
+      }
+    })();
 
     return () => {
       mounted = false;
