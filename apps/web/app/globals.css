@@ -3927,3 +3927,190 @@ select {
     bottom: 28px;
   }
 }
+
+
+/* Premium admin dashboard */
+.admin-layout {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255,111,97,0.08), transparent 30%),
+    radial-gradient(circle at 88% 12%, rgba(124,58,237,0.07), transparent 34%),
+    linear-gradient(180deg, #120f1d 0%, #0d0b16 58%, #0a0910 100%);
+}
+
+.admin-layout main {
+  position: relative;
+}
+
+.admin-layout main::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .16;
+  background-image:
+    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.014) 1px, transparent 1px);
+  background-size: 30px 30px;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,.5), transparent 76%);
+}
+
+.admin-layout .stack {
+  position: relative;
+  z-index: 1;
+  gap: 18px;
+}
+
+.admin-layout .surface-elevation-1 {
+  border: 1px solid color-mix(in srgb, var(--color-border) 76%, transparent);
+  border-radius: 22px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-1) 94%, rgba(255,255,255,.015)),
+      color-mix(in srgb, var(--color-surface-2) 90%, transparent)
+    );
+  box-shadow:
+    0 18px 44px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.025);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.admin-layout .surface-inset {
+  border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
+  border-radius: 17px;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--color-surface-3) 82%, transparent),
+      color-mix(in srgb, var(--color-surface-2) 70%, transparent)
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.025),
+    0 10px 24px rgba(0,0,0,.08);
+  transition: transform .18s ease, border-color .18s ease, background .18s ease;
+}
+
+@media (hover: hover) {
+  .admin-layout .surface-inset:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--color-accent) 26%, var(--color-border));
+    background:
+      linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--color-accent) 4%, var(--color-surface-3)),
+        color-mix(in srgb, var(--color-surface-2) 78%, transparent)
+      );
+  }
+}
+
+.admin-card-header {
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.admin-card-title {
+  font-size: clamp(1.2rem, 2vw, 1.48rem);
+  font-weight: 850;
+  letter-spacing: -.025em;
+}
+
+.admin-card-description {
+  max-width: 56rem;
+  margin-top: 6px;
+  color: color-mix(in srgb, var(--color-text-muted) 92%, white 8%);
+  line-height: 1.6;
+}
+
+.admin-stat-grid {
+  gap: 12px;
+}
+
+.admin-stat-label {
+  color: color-mix(in srgb, var(--color-text-muted) 94%, white 6%);
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+
+.admin-stat-value {
+  margin-top: 6px;
+  font-size: clamp(1.45rem, 2.8vw, 2rem);
+  font-weight: 850;
+  letter-spacing: -.035em;
+  text-shadow: 0 2px 14px rgba(0,0,0,.16);
+}
+
+.admin-table-wrap {
+  border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--color-surface-2) 72%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.02);
+}
+
+.admin-table thead {
+  background: color-mix(in srgb, var(--color-surface-3) 72%, transparent);
+}
+
+.admin-table th {
+  color: color-mix(in srgb, var(--color-text-muted) 92%, white 8%);
+  font-weight: 750;
+  letter-spacing: .015em;
+}
+
+.admin-table td,
+.admin-table th {
+  border-bottom-color: color-mix(in srgb, var(--color-border-weak) 78%, transparent);
+}
+
+.admin-table tbody tr {
+  transition: background .16s ease;
+}
+
+.admin-table tbody tr:hover {
+  background: color-mix(in srgb, var(--color-accent) 4%, transparent);
+}
+
+.admin-layout .badge {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.admin-layout .btn {
+  border-radius: 13px;
+}
+
+.admin-layout .notice {
+  border-radius: 16px;
+}
+
+.admin-layout .empty-state {
+  border-radius: 18px;
+  border-color: color-mix(in srgb, var(--color-border) 78%, transparent);
+  background: color-mix(in srgb, var(--color-surface-2) 70%, transparent);
+}
+
+@media (max-width: 640px) {
+  .admin-layout .stack {
+    gap: 12px;
+  }
+
+  .admin-layout .surface-elevation-1 {
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .admin-layout .surface-inset {
+    border-radius: 15px;
+  }
+
+  .admin-card-header {
+    margin-bottom: 12px;
+  }
+
+  .admin-stat-value {
+    font-size: clamp(1.35rem, 7vw, 1.78rem);
+  }
+
+  .admin-table-wrap {
+    border-radius: 15px;
+  }
+}
