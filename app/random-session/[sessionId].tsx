@@ -27,9 +27,7 @@ import {
   RandomChatImageError,
 } from "../../lib/random-chat-media";
 import {
-  advanceRandomIcebreaker,
   blockRandomUser,
-  getRandomIcebreaker,
   getRandomSession,
   leaveRandomSession,
   listRandomMessages,
@@ -46,12 +44,6 @@ import {
 } from "../../lib/random-chat";
 import { supabase } from "../../lib/supabase";
 import { colors, radii, spacing, typography } from "../../theme";
-
-type Icebreaker = {
-  prompt: string;
-  category: string;
-  turn: number;
-};
 
 type PendingImage = {
   uri: string;
@@ -167,7 +159,6 @@ export default function RandomSessionScreen() {
   const [session, setSession] = useState<RandomSession | null>(null);
   const [messages, setMessages] = useState<RandomMessage[]>([]);
   const [draft, setDraft] = useState("");
-  const [icebreaker, setIcebreaker] = useState<Icebreaker | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -267,10 +258,9 @@ export default function RandomSessionScreen() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [next, initialMessages, ice] = await Promise.all([
+      const [next, initialMessages] = await Promise.all([
         getRandomSession(sessionId),
         listRandomMessages(sessionId, 100),
-        getRandomIcebreaker(sessionId),
       ]);
       if (!next) {
         setLoadError("找不到這段聊天。");
@@ -279,7 +269,6 @@ export default function RandomSessionScreen() {
       setSession(next);
       setMessages(initialMessages);
       updateCursor(initialMessages);
-      setIcebreaker(ice);
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "無法載入這段聊天。");
     } finally {
@@ -290,14 +279,6 @@ export default function RandomSessionScreen() {
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
-
-  useEffect(() => {
-    if (session?.status === "active" && session.id) {
-      void getRandomIcebreaker(session.id)
-        .then(setIcebreaker)
-        .catch(() => undefined);
-    }
-  }, [session?.id, session?.status]);
 
   const clearTypingSenderTimer = useCallback(() => {
     if (typingSenderTimerRef.current) {
@@ -896,22 +877,6 @@ export default function RandomSessionScreen() {
         </View>
       ) : null}
 
-      {icebreaker && isActive ? (
-        <View style={styles.icebreaker}>
-          <Text style={styles.icebreakerPrompt}>{icebreaker.prompt}</Text>
-          <Pressable
-            onPress={() =>
-              void advanceRandomIcebreaker(session.id)
-                .then(setIcebreaker)
-                .catch(() => setNotice("目前無法換題，請稍後再試。"))
-            }
-            hitSlop={8}
-          >
-            <Text style={styles.icebreakerAction}>換一題</Text>
-          </Pressable>
-        </View>
-      ) : null}
-
       <FlatList
         ref={listRef}
         style={styles.list}
@@ -922,11 +887,7 @@ export default function RandomSessionScreen() {
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <Text style={styles.emptyTitle}>還沒有訊息。</Text>
-            <Text style={styles.emptyBody}>
-              {icebreaker?.prompt
-                ? `可以先從「${icebreaker.prompt}」開始。`
-                : "從一句自然的問候開始就很好。"}
-            </Text>
+            <Text style={styles.emptyBody}>從一句自然的問候開始就很好。</Text>
           </View>
         }
         renderItem={({ item }) => {
@@ -1250,30 +1211,6 @@ const styles = StyleSheet.create({
   noticeClose: {
     marginLeft: spacing.md,
     color: colors.info,
-    ...typography.caption,
-    fontWeight: "700",
-  },
-  icebreaker: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.sm,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  icebreakerPrompt: {
-    flex: 1,
-    color: colors.textMuted,
-    ...typography.caption,
-  },
-  icebreakerAction: {
-    color: colors.primary,
     ...typography.caption,
     fontWeight: "700",
   },
