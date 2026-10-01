@@ -47,6 +47,29 @@ export type RandomMatchResult = {
   matched_user_id: string | null;
 };
 
+export type AnonymousContactStatus = {
+  contact_id: string;
+  status: "pending" | "active";
+  my_approved: boolean;
+  partner_approved: boolean;
+};
+
+export type AnonymousContact = AnonymousContactStatus & {
+  source_session_id: string | null;
+  partner_user_id: string;
+  partner_anonymous_display_name: string;
+  partner_anonymous_avatar: string;
+  partner_verified: boolean;
+  created_at: string;
+  activated_at: string | null;
+};
+
+export type AnonymousContactSession = {
+  status: "created" | "existing";
+  session_id: string;
+};
+
+
 export type RandomReportCategory =
   | "spam"
   | "scam"
@@ -85,6 +108,44 @@ export async function findOrJoinRandomMatch() {
   const { data, error } = await rpc.rpc("find_or_join_random_match");
   if (error) throw error;
   return (firstRow(data) ?? null) as RandomMatchResult | null;
+}
+
+export async function getAnonymousContactStatus(sessionId: string) {
+  const { data, error } = await rpc.rpc("get_anonymous_contact_status", {
+    p_session_id: sessionId,
+  });
+  if (error) throw error;
+  return (firstRow(data) ?? null) as AnonymousContactStatus | null;
+}
+
+export async function requestAnonymousContact(sessionId: string) {
+  const { data, error } = await rpc.rpc("request_anonymous_contact", {
+    p_session_id: sessionId,
+  });
+  if (error) throw error;
+  return (firstRow(data) ?? null) as AnonymousContactStatus | null;
+}
+
+export async function listMyAnonymousContacts() {
+  const { data, error } = await rpc.rpc("list_my_anonymous_contacts");
+  if (error) throw error;
+  return (data ?? []) as AnonymousContact[];
+}
+
+export async function startAnonymousContactSession(contactId: string) {
+  const { data, error } = await rpc.rpc("start_anonymous_contact_session", {
+    p_contact_id: contactId,
+  });
+  if (error) throw error;
+  return (firstRow(data) ?? null) as AnonymousContactSession | null;
+}
+
+export async function removeAnonymousContact(contactId: string) {
+  const { data, error } = await rpc.rpc("remove_anonymous_contact", {
+    p_contact_id: contactId,
+  });
+  if (error) throw error;
+  return Boolean(data);
 }
 
 export async function leaveRandomQueue() {
