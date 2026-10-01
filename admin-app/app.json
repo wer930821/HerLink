@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "HerLink 後台",
+    "slug": "herlink-admin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "herlinkadmin",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.wer93.herlinkadmin"
+    },
+    "android": {
+      "package": "com.wer93.herlinkadmin",
+      "versionCode": 1,
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [],
+    "extra": {
+      "adminUrl": "https://her-link-kivora3.vercel.app/admin"
+    }
+  }
+}
