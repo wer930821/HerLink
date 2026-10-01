@@ -17,7 +17,8 @@
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.REQUEST_INSTALL_PACKAGES"
-      ]
+      ],
+      "softwareKeyboardLayoutMode": "resize"
     },
     "plugins": [],
     "extra": {
