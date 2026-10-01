@@ -1911,14 +1911,9 @@ export default function RandomSessionPage() {
             <div className="chat-identity">
               <div className="chat-partner-row">
                 <div className="title chat-partner-name">{partnerName}</div>
-                <span className="status-badge">{isEnded ? "已結束" : "配對中"}</span>
-                {partnerVerified ? (
-                  <span className="status-badge success">已驗證</span>
-                ) : (
-                  <span className="status-badge">未驗證</span>
-                )}
+                {partnerVerified ? <span className="chat-verified">✓</span> : null}
               </div>
-              <div className="chat-my-name">你：{myAnonymousName}</div>
+              <div className="chat-my-name">你：{myAnonymousName} · {isEnded ? "聊天已結束" : "匿名即時聊天"}</div>
             </div>
           </div>
           <div className="chat-header-actions">
