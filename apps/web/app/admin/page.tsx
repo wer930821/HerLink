@@ -127,7 +127,7 @@ export default function AdminDashboardPage() {
         </AdminStatGrid>
       </AdminSection>
 
-      <AdminSection title="系統健康狀態" description="快速確認配對、即時連線、通知與聊天助手是否正常。">
+      <AdminSection title="系統健康狀態" description="快速確認配對、即時連線、通知與聊天助手是否正常；異常連線以受影響裝置去重計算。">
         <AdminStatGrid>
           <AdminStat
             label="今日配對成功率"
@@ -140,7 +140,7 @@ export default function AdminDashboardPage() {
             tone={typeof data?.today_avg_wait_seconds === "number" && data.today_avg_wait_seconds > 120 ? "warning" : "default"}
           />
           <AdminStat
-            label="近 1 小時即時錯誤"
+            label="近 1 小時異常連線"
             value={formatCount(data?.realtime_errors_1h)}
             tone={(data?.realtime_errors_1h ?? 0) > 0 ? "danger" : "success"}
           />
