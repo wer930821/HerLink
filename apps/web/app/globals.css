@@ -4932,3 +4932,74 @@ select {
 @media (prefers-reduced-motion: reduce) {
   .admin-session-loading-dot { animation: none; }
 }
+
+
+/* Dedicated admin login */
+.admin-login-page {
+  width: min(100%, 560px);
+  min-height: calc(100dvh - 48px);
+  margin: 0 auto;
+  align-content: center;
+  gap: 28px;
+  padding-block: 28px;
+}
+
+.admin-login-page .surface-elevation-2,
+.admin-login-page .surface-elevation-1 {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding-inline: 0;
+}
+
+.admin-login-page .hero {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.admin-login-page .hero-title {
+  font-size: clamp(2.2rem, 8vw, 3.5rem);
+  line-height: 1.04;
+}
+
+.admin-login-page .hero-copy {
+  max-width: 34rem;
+}
+
+.admin-login-page form.surface {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  gap: 18px;
+}
+
+.admin-login-page .field {
+  gap: 9px;
+}
+
+.admin-login-page .input {
+  min-height: 56px;
+  border-radius: 16px;
+}
+
+.admin-login-page .btn-lg {
+  min-height: 56px;
+  border-radius: 16px;
+}
+
+@media (max-width: 640px) {
+  .admin-login-page {
+    min-height: calc(100dvh - 32px);
+    gap: 24px;
+    padding-block: 20px;
+  }
+
+  .admin-login-page .hero-title {
+    font-size: clamp(2rem, 11vw, 3rem);
+  }
+}
