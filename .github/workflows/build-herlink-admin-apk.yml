@@ -1,5 +1,8 @@
 name: Build HerLink Admin APK
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   push:
@@ -33,6 +36,24 @@ jobs:
         working-directory: admin-app
         run: npm install
 
+      - name: Set build version
+        working-directory: admin-app
+        shell: bash
+        run: |
+          VERSION_CODE="${GITHUB_RUN_NUMBER}"
+          VERSION_NAME="1.0.${GITHUB_RUN_NUMBER}"
+          node - <<'NODE'
+          const fs = require("fs");
+          const app = JSON.parse(fs.readFileSync("app.json", "utf8"));
+          const code = Number(process.env.GITHUB_RUN_NUMBER);
+          app.expo.version = `1.0.${code}`;
+          app.expo.android = app.expo.android || {};
+          app.expo.android.versionCode = code;
+          fs.writeFileSync("app.json", JSON.stringify(app, null, 2) + "\n");
+          NODE
+          echo "VERSION_CODE=${VERSION_CODE}" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=${VERSION_NAME}" >> "$GITHUB_ENV"
+
       - name: Generate Android project
         working-directory: admin-app
         run: npx expo prebuild --platform android --non-interactive
@@ -47,6 +68,20 @@ jobs:
         run: |
           cp admin-app/android/app/build/outputs/apk/release/app-release.apk HerLink-Admin.apk
 
+      - name: Prepare update manifest
+        shell: bash
+        run: |
+          APK_SHA256="$(sha256sum HerLink-Admin.apk | awk '{print $1}')"
+          cat > admin-update-info.json <<EOF
+          {
+            "versionCode": ${VERSION_CODE},
+            "versionName": "${VERSION_NAME}",
+            "apkUrl": "https://github.com/wer930821/HerLink/releases/download/admin-latest/HerLink-Admin.apk",
+            "sha256": "${APK_SHA256}",
+            "commit": "${GITHUB_SHA}"
+          }
+          EOF
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -54,3 +89,14 @@ jobs:
           path: HerLink-Admin.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish stable admin release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete admin-latest --cleanup-tag -y || true
+          gh release create admin-latest \
+            HerLink-Admin.apk \
+            admin-update-info.json \
+            --title "HerLink Admin Latest" \
+            --notes "Automated admin Android build from ${GITHUB_SHA}"
