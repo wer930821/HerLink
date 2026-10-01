@@ -1,20 +1,20 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Badge, Button, EmptyState, Surface } from "../../components/ui";
+import { Badge, Button, EmptyState } from "../../components/ui";
 
 export function AdminSection({ title, description, action, children }: { title: string; description?: string; action?: ReactNode; children: ReactNode }) {
   return (
-    <Surface elevation={1}>
+    <section className="admin-section">
       <div className="admin-card-header">
         <div>
           <h2 className="admin-card-title">{title}</h2>
           {description ? <p className="admin-card-description">{description}</p> : null}
         </div>
-        {action ? <div>{action}</div> : null}
+        {action ? <div className="admin-section-action">{action}</div> : null}
       </div>
-      {children}
-    </Surface>
+      <div className="admin-section-body">{children}</div>
+    </section>
   );
 }
 
@@ -28,10 +28,10 @@ export function AdminStat({
   tone?: "default" | "success" | "warning" | "danger";
 }) {
   return (
-    <Surface elevation="inset" tone={tone}>
+    <div className={`admin-stat admin-stat-${tone}`}>
       <div className="admin-stat-label">{label}</div>
       <div className="admin-stat-value">{value}</div>
-    </Surface>
+    </div>
   );
 }
 
