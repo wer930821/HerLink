@@ -715,60 +715,47 @@ export default function HomePage() {
   };
 
   return (
-    <main className="stack home-fixed home-premium">
-      <PageHero title="HerLink" description="匿名聊天，不需要公開自己。">
-        {MAINTENANCE_MODE ? (
-          <Notice variant="warning" title="HerLink 維護中。">{MAINTENANCE_MESSAGE}</Notice>
-        ) : null}
-        <Surface elevation="inset">
-          <div className="row">
-            <Badge variant="accent">匿名身份</Badge>
-            <strong>{anonymousSummary?.name ?? "匿名使用者"}</strong>
-            <Button variant="secondary" size="sm" onClick={openRenameDialog} disabled={renameBusyAny}>
-              更換匿名暱稱
-            </Button>
-          </div>
-          {renameNotice ? <div className="muted small">{renameNotice}</div> : null}
-        </Surface>
-      </PageHero>
+    <main className="home-fixed home-premium home-app-like">
+      <section className="home-app-hero">
+        <div className="home-app-eyebrow">HerLink</div>
+        <h1 className="home-app-title">匿名聊天</h1>
+        <p className="home-app-copy">不公開個人檔案，不做交友滑卡，只保留匿名隨機配對與聊天室。</p>
 
-      <Surface elevation={1}>
-        <div className="row">
+        <div className="home-app-identity">
+          <div>
+            <div className="home-app-label">你的匿名名稱</div>
+            <div className="home-app-name">{anonymousSummary?.name ?? "匿名使用者"}</div>
+          </div>
+          <Button variant="secondary" size="sm" onClick={openRenameDialog} disabled={renameBusyAny}>
+            更換
+          </Button>
+        </div>
+
+        <div className="home-app-actions">
           <Button size="lg" onClick={startMatching} disabled={actionBusy || MAINTENANCE_MODE}>
-            {actionBusy ? "處理中…" : MAINTENANCE_MODE ? "維護中" : state.activeSession ? "繼續聊天" : "開始隨機配對"}
+            {actionBusy ? "處理中…" : MAINTENANCE_MODE ? "維護中" : state.activeSession ? "繼續聊天" : "開始匿名配對"}
           </Button>
           <Button variant="secondary" size="lg" href="/contacts">匿名聯絡人</Button>
         </div>
-        {state.activeSession ? (
-          <Notice variant="info" title="你有一個尚未結束的聊天室。">
-            <div className="row">
-              <Button size="md" onClick={continueActiveSession} disabled={actionBusy}>繼續聊天</Button>
-              <Button variant="danger" size="md" onClick={(event) => void leaveActiveSession(event)} disabled={actionBusy}>離開聊天室</Button>
-            </div>
-          </Notice>
-        ) : null}
-        {state.queue?.status === "waiting" ? (
-          <Notice variant="info" title="你正在等待配對中。">
-            <div className="row">
-              <Button variant="secondary" size="md" onClick={leaveQueue} disabled={actionBusy}>取消等待</Button>
-            </div>
-          </Notice>
-        ) : null}
-        {message ? <Notice variant="warning">{message}</Notice> : null}
-      </Surface>
 
-      <Surface elevation={1}>
-        <div className="title">安全提醒</div>
-        <p className="hero-copy">請勿匯款、投資或提供驗證碼。若遇到可疑內容，請直接封鎖、檢舉並離開。</p>
-        <div className="row">
-          {isAdmin ? <Button variant="secondary" href="/admin">後台管理</Button> : null}
-          <Button variant="secondary" onClick={logout} disabled={actionBusy}>登出</Button>
-          <div className="muted small">
-            目前會話：{state.activeSession ? "已配對" : "未配對"}
+        {state.queue?.status === "waiting" ? (
+          <div className="home-app-status">
+            <span>正在等待配對中</span>
+            <Button variant="secondary" size="sm" onClick={leaveQueue} disabled={actionBusy}>取消等待</Button>
           </div>
+        ) : null}
+
+        {message ? <Notice variant="warning">{message}</Notice> : null}
+        {renameNotice ? <div className="muted small">{renameNotice}</div> : null}
+      </section>
+
+      <footer className="home-app-footer">
+        <div className="home-app-footer-left">
+          {onlineCountConnected ? <span>目前 {onlineCount} 人在線</span> : null}
+          {isAdmin ? <Button variant="link" href="/admin">後台管理</Button> : null}
         </div>
-        {onlineCountConnected ? <div className="muted small">目前有 {onlineCount} 位使用者在線（不代表都在等待配對）</div> : null}
-      </Surface>
+        <Button variant="link" onClick={logout} disabled={actionBusy}>登出</Button>
+      </footer>
 
       <Modal open={renameOpen} title="匿名暱稱" onClose={closeRenameDialog} className="rename-modal">
         <form className="rename-form" onSubmit={(event) => void submitRename(event)}>
