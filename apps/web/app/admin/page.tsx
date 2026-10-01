@@ -21,7 +21,7 @@ function realtimeEventLabel(value: string) {
     message_received_realtime: "即時收到訊息",
     message_loaded_from_db: "從資料庫載入訊息",
   };
-  return labels[value] ?? value;
+  return labels[value] ?? "其他事件";
 }
 
 function formatCount(value: number | null | undefined) {
@@ -52,7 +52,7 @@ function errorSourceLabel(value: string) {
   if (value === "realtime") return "即時連線";
   if (value === "push") return "通知";
   if (value === "laya") return "聊天助手";
-  return value;
+  return "其他";
 }
 
 function errorCodeLabel(value: string) {
@@ -64,7 +64,7 @@ function errorCodeLabel(value: string) {
     failed: "通知發送失敗",
     UNKNOWN: "未知錯誤",
   };
-  return labels[value] ?? value.replaceAll("_", " ");
+  return labels[value] ?? "其他錯誤";
 }
 
 function shortVersion(value: string | null | undefined) {
@@ -262,7 +262,7 @@ export default function AdminDashboardPage() {
         <AdminStatGrid>
           <AdminStat label="部署版本" value={shortVersion(data?.deployment_version)} />
           <AdminStat label="部署分支" value={data?.deployment_branch === "main" ? "主要分支" : data?.deployment_branch ? "其他分支" : "—"} />
-          <AdminStat label="部署環境" value={data?.deployment_environment === "production" ? "正式環境" : data?.deployment_environment ?? "—"} />
+          <AdminStat label="部署環境" value={data?.deployment_environment === "production" ? "正式環境" : data?.deployment_environment === "preview" ? "預覽環境" : data?.deployment_environment ? "其他環境" : "—"} />
           <AdminStat
             label="最後成功部署時間"
             value={data?.last_successful_deployment_at ? formatAdminTime(data.last_successful_deployment_at) : "—"}
