@@ -8,11 +8,11 @@ import { Button, Notice } from "../../../components/ui";
 
 type SessionListPayload = AdminPaginationResult<AdminSessionListItem>;
 
-const statusOptions = ["all", "waiting", "matched", "ended"] as const;
+const statusOptions = ["all", "waiting", "active", "matched", "ended"] as const;
 
 function sessionStatusLabel(value: (typeof statusOptions)[number] | string) {
   if (value === "waiting") return "等待中";
-  if (value === "matched") return "聊天中";
+  if (value === "active" || value === "matched") return "聊天中";
   if (value === "ended") return "已結束";
   return value === "all" ? "全部" : "其他狀態";
 }
@@ -92,7 +92,7 @@ export default function AdminSessionsPage() {
               <article key={item.id} className="admin-session-row">
                 <div className="admin-session-main">
                   <div className="admin-session-id">{shortId(item.id)}</div>
-                  <AdminBadge tone={item.status === "ended" ? "warning" : item.status === "matched" ? "success" : "default"}>
+                  <AdminBadge tone={item.status === "ended" ? "warning" : (item.status === "active" || item.status === "matched") ? "success" : "default"}>
                     {sessionStatusLabel(item.status)}
                   </AdminBadge>
                 </div>
