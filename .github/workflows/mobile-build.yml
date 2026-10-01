@@ -1,21 +1,36 @@
-name: HerLink Android Build
+name: HerLink GitHub APK
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
     paths:
+      - "app/**"
+      - "components/**"
+      - "context/**"
+      - "lib/**"
+      - "theme/**"
+      - "assets/**"
       - "app.json"
       - "eas.json"
       - "package.json"
       - "package-lock.json"
-      - "android/**"
       - ".github/workflows/mobile-build.yml"
-  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: herlink-android-latest
+  cancel-in-progress: true
 
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,10 +41,52 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build Android preview
+      - name: Set build version
+        shell: bash
+        run: |
+          VERSION_CODE="${GITHUB_RUN_NUMBER}"
+          VERSION_NAME="1.0.${GITHUB_RUN_NUMBER}"
+          node - <<'NODE'
+          const fs = require("fs");
+          const app = JSON.parse(fs.readFileSync("app.json", "utf8"));
+          const code = Number(process.env.GITHUB_RUN_NUMBER);
+          app.expo.version = `1.0.${code}`;
+          app.expo.android = app.expo.android || {};
+          app.expo.android.versionCode = code;
+          fs.writeFileSync("app.json", JSON.stringify(app, null, 2) + "\n");
+          NODE
+          echo "VERSION_CODE=${VERSION_CODE}" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=${VERSION_NAME}" >> "$GITHUB_ENV"
+
+      - name: Build APK on GitHub runner
+        run: npx eas-cli@latest build --platform android --profile preview --local --non-interactive --output ./HerLink.apk
+
+      - name: Prepare update manifest
+        shell: bash
+        run: |
+          APK_SHA256="$(sha256sum HerLink.apk | awk '{print $1}')"
+          cat > update-info.json <<EOF
+          {
+            "versionCode": ${VERSION_CODE},
+            "versionName": "${VERSION_NAME}",
+            "apkUrl": "https://github.com/wer930821/HerLink/releases/download/latest/HerLink.apk",
+            "sha256": "${APK_SHA256}",
+            "commit": "${GITHUB_SHA}"
+          }
+          EOF
+
+      - name: Publish stable latest release
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: npx eas-cli@latest build --platform android --profile preview --non-interactive --no-wait
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --cleanup-tag -y || true
+          gh release create latest             HerLink.apk             update-info.json             --title "HerLink Latest"             --notes "Automated Android build from ${GITHUB_SHA}"             --latest
