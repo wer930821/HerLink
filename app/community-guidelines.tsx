@@ -5,8 +5,8 @@ export default function CommunityGuidelinesScreen() {
     <PolicyScreen
       eyebrow="社群規範"
       title="HerLink 社群規範"
-      subtitle="我們希望 HerLink 在 測試版 期間就把界線說清楚：真誠、尊重、安全。"
-      notice="若內容涉及騷擾、詐騙、冒用、資格不符或未成年人風險，HerLink 可能立即限制互動並進入 內容審核流程。"
+      subtitle="我們希望 HerLink 在測試版期間就把界線說清楚：真誠、尊重、安全。"
+      notice="若內容涉及騷擾、詐騙、冒用、資格不符或未成年人風險，HerLink 可能立即限制互動並進入內容審核流程。"
       sections={[
         {
           title: "真誠與身份",
