@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Badge, Button, PageHero } from "../../components/ui";
+import { Badge } from "../../components/ui";
 import { AdminAccessGate } from "./access-gate";
 
 const navItems = [
@@ -12,29 +12,29 @@ const navItems = [
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="shell">
-      <div className="container stack admin-layout">
+    <div className="admin-page">
+      <div className="admin-layout">
         <AdminAccessGate>
-          <PageHero
-            compact
-            kicker={
-              <span className="admin-kicker">
-                HerLink 管理後台 <Badge variant="neutral">營運</Badge>
-              </span>
-            }
-            title="後台總覽"
-            description="僅供固定管理員使用的營運管理面板。"
-            actions={
-              <nav className="admin-nav" aria-label="後台導覽">
-                {navItems.map((item) => (
-                  <Button key={item.href} variant="secondary" size="sm" href={item.href}>
-                    {item.label}
-                  </Button>
-                ))}
-              </nav>
-            }
-          />
-          <main className="stack">{children}</main>
+          <header className="admin-top">
+            <div className="admin-top-copy">
+              <div className="admin-top-kicker">
+                <span>HERLINK 管理後台</span>
+                <Badge variant="neutral">營運</Badge>
+              </div>
+              <h1>後台總覽</h1>
+              <p>營運狀態、聊天活動與安全事件集中管理。</p>
+            </div>
+
+            <nav className="admin-nav" aria-label="後台導覽">
+              {navItems.map((item) => (
+                <a key={item.href} className="admin-nav-link" href={item.href}>
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+          </header>
+
+          <main className="admin-content">{children}</main>
         </AdminAccessGate>
       </div>
     </div>
