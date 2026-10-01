@@ -2905,3 +2905,21 @@ select {
     gap: 9px;
   }
 }
+
+
+/* More separation for next and menu */
+@media (max-width: 768px) {
+  .chat-header-actions {
+    gap: 16px;
+  }
+
+  .chat-header-next {
+    margin-right: 4px;
+  }
+}
+
+@media (max-width: 390px) {
+  .chat-header-actions {
+    gap: 14px;
+  }
+}
