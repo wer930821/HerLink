@@ -84,7 +84,7 @@ function summarizeActiveSessionRpcError(error: { code?: unknown; message?: unkno
 export default function HomePage() {
   const router = useRouter();
   const pathname = usePathname();
-  const navigatingToSessionRef = useRef(false);
+  const navigatingToSessionRef = useRef(false);\n  const anonymousStartInFlightRef = useRef(false);
   const [bootstrapping, setBootstrapping] = useState(true);
   const [state, setState] = useState<BootstrapState>(emptyBootstrapState);
   const [actionBusy, setActionBusy] = useState(false);
@@ -539,19 +539,39 @@ export default function HomePage() {
       return;
     }
 
+    // React 的 disabled 狀態更新前仍可能收到極短時間內的重複點擊。
+    // 用 ref 做同步鎖，避免同一個瀏覽器一次建立多個匿名 Supabase 帳號。
+    if (anonymousStartInFlightRef.current) {
+      return;
+    }
+
+    anonymousStartInFlightRef.current = true;
     setActionBusy(true);
     setMessage(null);
+
     try {
-      const { data, error } = await signInAnonymously();
-      if (error) {
-        throw error;
+      // 先重新向 Supabase 讀一次實際 session。跨分頁、重新整理或
+      // bootstrap 狀態尚未同步時，只要瀏覽器已經有 session 就直接沿用。
+      const { data: existingSessionData, error: existingSessionError } = await getCurrentSession();
+      if (existingSessionError) {
+        throw existingSessionError;
       }
 
-      if (!data.session) {
+      let session = existingSessionData.session ?? null;
+
+      if (!session) {
+        const { data, error } = await signInAnonymously();
+        if (error) {
+          throw error;
+        }
+        session = data.session ?? null;
+      }
+
+      if (!session) {
         throw new Error("匿名登入未建立工作階段");
       }
 
-      const profileResult = await ensureAnonymousBootstrapProfile(data.session.user.id);
+      const profileResult = await ensureAnonymousBootstrapProfile(session.user.id);
       if (profileResult.error) {
         throw profileResult.error;
       }
@@ -561,21 +581,27 @@ export default function HomePage() {
         throw abuseCheck.error;
       }
 
+      const nextState = {
+        session,
+        profile: profileResult.data ?? null,
+        queue: null,
+        activeSession: null,
+      };
+
+      setState(nextState);
+
       if (abuseCheck.data && abuseCheck.data.decision !== "allow") {
-        setState({
-          session: data.session,
-          profile: profileResult.data ?? null,
-          queue: null,
-          activeSession: null,
-        });
         showAbuseBlockMessage(abuseCheck.data);
         return;
       }
 
-      router.replace("/");
+      // 完整 reload 能讓首頁 bootstrap 從已持久化的 Supabase session
+      // 重新建立一致狀態，避免匿名登入成功但畫面看起來沒有反應。
+      window.location.assign("/");
     } catch (error) {
       setMessage(getFriendlyAuthErrorMessage(error, "目前無法建立匿名身份，請稍後再試。"));
     } finally {
+      anonymousStartInFlightRef.current = false;
       setActionBusy(false);
     }
   };
