@@ -19,6 +19,15 @@ export default function AnonymousHomeScreen() {
       >
         <Text style={styles.buttonText}>開始匿名配對</Text>
       </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="匿名聯絡人"
+        style={styles.secondaryButton}
+        onPress={() => router.push("/contacts" as never)}
+      >
+        <Text style={styles.secondaryButtonText}>匿名聯絡人</Text>
+      </Pressable>
     </View>
   );
 }
@@ -54,6 +63,19 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: colors.primaryText,
+    ...typography.bodyStrong,
+  },
+  secondaryButton: {
+    marginTop: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.lg,
+    alignItems: "center",
+  },
+  secondaryButtonText: {
+    color: colors.text,
     ...typography.bodyStrong,
   },
 });
