@@ -2829,3 +2829,61 @@ select {
     max-width: 29vw;
   }
 }
+
+
+/* Increase mobile chat typography */
+@media (max-width: 768px) {
+  .chat-partner-name {
+    font-size: 1.34rem;
+  }
+
+  .chat-my-name {
+    font-size: 0.8rem;
+  }
+
+  .chat-header-next {
+    font-size: 0.84rem;
+  }
+
+  .chat-assistant-trigger {
+    font-size: 0.8rem;
+  }
+
+  .chat-message-content {
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .chat-meta {
+    font-size: 0.84rem;
+  }
+
+  .chat-input {
+    font-size: 1rem;
+  }
+
+  .chat-send {
+    font-size: 0.94rem;
+  }
+
+  .chat-assist-heading strong {
+    font-size: 1.02rem;
+  }
+
+  .chat-assist-subtitle,
+  .chat-assist-tip,
+  .chat-assist-suggestion {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .chat-partner-name {
+    font-size: 1.26rem;
+  }
+
+  .chat-message-content,
+  .chat-input {
+    font-size: 0.98rem;
+  }
+}
