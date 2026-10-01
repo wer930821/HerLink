@@ -11,7 +11,7 @@ function sessionStatusLabel(value: string) {
   if (value === "waiting") return "等待中";
   if (value === "matched") return "聊天中";
   if (value === "ended") return "已結束";
-  return value;
+  return "其他狀態";
 }
 
 function reportStatusLabel(value: string) {
@@ -19,7 +19,7 @@ function reportStatusLabel(value: string) {
   if (value === "reviewing") return "處理中";
   if (value === "resolved") return "已處理";
   if (value === "dismissed") return "已忽略";
-  return value;
+  return "其他狀態";
 }
 
 function riskLevelLabel(value: string) {
@@ -27,7 +27,7 @@ function riskLevelLabel(value: string) {
   if (value === "high") return "高";
   if (value === "medium") return "中";
   if (value === "low") return "低";
-  return value;
+  return "未分類";
 }
 
 function reportCategoryLabel(value: string) {
@@ -43,7 +43,7 @@ function reportCategoryLabel(value: string) {
     suspected_minor: "疑似未成年",
     other: "其他",
   };
-  return labels[value] ?? value;
+  return labels[value] ?? "其他";
 }
 
 function riskTypeLabel(value: string) {
@@ -63,7 +63,7 @@ function riskTypeLabel(value: string) {
     harassment: "騷擾",
     threat: "威脅",
   };
-  return labels[value] ?? value.replaceAll("_", " ");
+  return labels[value] ?? "其他風險";
 }
 
 function endedReasonLabel(value: string) {
@@ -75,7 +75,7 @@ function endedReasonLabel(value: string) {
     disconnected: "連線中斷",
     partner_left: "對方離開",
   };
-  return labels[value] ?? value.replaceAll("_", " ");
+  return labels[value] ?? "其他原因";
 }
 
 export default function AdminSessionDetailPage() {
