@@ -93,7 +93,7 @@ async function runSystemOneCompat(state, questions) {
   // The current Railway INT8 ONNX export has a fixed batch dimension of 1.
   // Run each question independently and merge the Jev-compatible response.
   for (const [questionId, question] of entries) {
-    const result = await runSystemOneCompat(state, { [questionId]: question });
+    const result = await model.systemOne(state, { [questionId]: question });
     if (result?.answers && questionId in result.answers) {
       answers[questionId] = result.answers[questionId];
     }
