@@ -141,8 +141,43 @@ function safeJsonObject(value: unknown) {
   return {};
 }
 
+async function loadLayaServiceHealth() {
+  const baseUrl = (process.env.LAYA_BASE_URL || "https://laya-production-e3f5.up.railway.app").replace(/\/$/, "");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2500);
+  const startedAt = Date.now();
+
+  try {
+    const response = await fetch(`${baseUrl}/health`, {
+      method: "GET",
+      cache: "no-store",
+      signal: controller.signal,
+      headers: process.env.LAYA_API_TOKEN
+        ? { Authorization: `Bearer ${process.env.LAYA_API_TOKEN}` }
+        : undefined,
+    });
+    const latencyMs = Date.now() - startedAt;
+
+    if (!response.ok) {
+      return { state: "error" as const, latencyMs };
+    }
+
+    const payload = (await response.json().catch(() => null)) as { state?: unknown; ok?: unknown } | null;
+    const state = payload?.state;
+
+    if (state === "ready") return { state: "ready" as const, latencyMs };
+    if (state === "loading") return { state: "loading" as const, latencyMs };
+    return { state: "error" as const, latencyMs };
+  } catch {
+    return { state: "unreachable" as const, latencyMs: null };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSummary> {
   const dayStart = getTaipeiDayStartIso();
+  const layaHealthPromise = loadLayaServiceHealth();
 
   const [{ data: anonymousStatsData, error: anonymousStatsError }, { data: healthData, error: healthError }] = await Promise.all([
     client.rpc("get_admin_random_chat_stats"),
@@ -192,6 +227,7 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
   ]);
 
   const asNumber = (value: unknown) => Number(value ?? 0);
+  const layaHealth = await layaHealthPromise;
 
   return {
     generated_at: new Date().toISOString(),
@@ -219,6 +255,8 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     today_push_success_rate: (healthStats as any).today_push_success_rate == null ? null : asNumber((healthStats as any).today_push_success_rate),
     today_laya_success_rate: (healthStats as any).today_laya_success_rate == null ? null : asNumber((healthStats as any).today_laya_success_rate),
     today_chat_assist_requests: asNumber((healthStats as any).today_chat_assist_requests),
+    laya_service_state: layaHealth.state,
+    laya_health_latency_ms: layaHealth.latencyMs,
   };
 }
 
