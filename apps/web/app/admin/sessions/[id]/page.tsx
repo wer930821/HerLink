@@ -261,15 +261,15 @@ export default function AdminSessionDetailPage() {
 
             {data.messages?.length ? (
               <AdminSection title="聊天訊息" description="完整內容只給後台，不會出現在一般頁面。">
-                <div className="stack">
+                <div className="admin-message-list">
                   {data.messages.map((message) => (
-                    <div key={message.id} className="notice">
-                      <div className="row" style={{ justifyContent: "space-between" }}>
+                    <article key={message.id} className="admin-message-item">
+                      <div className="admin-message-meta">
                         <strong>{shortId(message.sender_id)}</strong>
-                        <span className="muted">{formatAdminTime(message.created_at)}</span>
+                        <span>{formatAdminTime(message.created_at)}</span>
                       </div>
                       <div className="admin-message-body">{message.content}</div>
-                    </div>
+                    </article>
                   ))}
                 </div>
               </AdminSection>
