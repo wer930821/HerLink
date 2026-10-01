@@ -5003,3 +5003,28 @@ select {
     font-size: clamp(2rem, 11vw, 3rem);
   }
 }
+
+
+/* Admin invite code */
+.admin-invite-result {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+}
+
+.admin-invite-code {
+  display: block;
+  margin-top: 6px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: .92rem;
+  line-height: 1.7;
+  user-select: all;
+}
+
+@media (max-width: 640px) {
+  .admin-invite-code {
+    font-size: .84rem;
+  }
+}
