@@ -12,7 +12,7 @@ export default function LoginScreen() {
     try {
       await signInAnonymously();
     } catch (error) {
-      Alert.alert("暫時無法開始", error instanceof Error ? error.message : "匿名登入失敗，請稍後再試。");
+      Alert.alert("暫時無法開始", "匿名登入失敗，請稍後再試。");
     } finally {
       setLoading(false);
     }
