@@ -3161,3 +3161,49 @@ select {
     padding-block: 8px;
   }
 }
+
+
+/* Frameless premium homepage */
+.home-premium > .hero,
+.home-premium > .surface {
+  border: 0;
+  box-shadow: none;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-1) 94%, transparent),
+      color-mix(in srgb, var(--color-surface-2) 90%, transparent)
+    );
+}
+
+.home-premium .surface-inset,
+.home-premium .notice {
+  border: 0;
+  box-shadow: none;
+}
+
+.home-premium .surface-inset {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-accent) 6%, var(--color-surface-3)),
+      color-mix(in srgb, var(--color-surface-3) 98%, transparent)
+    );
+}
+
+.home-premium .notice {
+  background: color-mix(in srgb, var(--color-surface-3) 76%, transparent);
+}
+
+.home-premium .btn-secondary,
+.home-premium .button.secondary,
+.home-premium .ghost {
+  border-color: transparent;
+}
+
+@media (max-width: 520px) {
+  .home-premium > .hero,
+  .home-premium > .surface {
+    border-radius: 18px;
+  }
+}
