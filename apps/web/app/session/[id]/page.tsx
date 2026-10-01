@@ -1936,24 +1936,29 @@ export default function RandomSessionPage() {
             {nextBusy ? "切換中…" : "下一位"}
           </button>
           <button
-            className="button secondary"
+            className="button secondary chat-contact"
             type="button"
             onClick={() => void handleAnonymousContact()}
             disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}
           >
             {contactBusy ? "處理中…" : anonymousContactLabel}
           </button>
-          <button
-            className="button secondary chat-assist-button"
-            type="button"
-            onClick={() => setAssistantOpen((open) => !open)}
-            aria-expanded={assistantOpen}
-          >
-            聊天助手
-          </button>
-          <button className="button secondary chat-safety" onClick={() => setSafetyMenuOpen(true)}>
-            安全
-          </button>
+          <details className="chat-more">
+            <summary className="button secondary chat-more-summary">更多</summary>
+            <div className="chat-more-menu">
+              <button
+                className="button secondary chat-assist-button"
+                type="button"
+                onClick={() => setAssistantOpen((open) => !open)}
+                aria-expanded={assistantOpen}
+              >
+                聊天助手
+              </button>
+              <button className="button secondary chat-safety" type="button" onClick={() => setSafetyMenuOpen(true)}>
+                安全
+              </button>
+            </div>
+          </details>
         </div>
 
         {assistantOpen ? (
