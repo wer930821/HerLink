@@ -22,6 +22,9 @@ export type AdminSummary = {
   today_avg_wait_seconds: number | null;
   realtime_errors_1h: number;
   realtime_errors_10m: number;
+  realtime_errors_5m: number;
+  realtime_errors_1m: number;
+  realtime_last_error_at: string | null;
   today_push_success_rate: number | null;
   today_laya_success_rate: number | null;
   today_chat_assist_requests: number;
