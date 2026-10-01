@@ -1684,6 +1684,89 @@ select {
 }
 
 
+
+/* Admin mobile viewport: fit the dashboard to the device width without manual zooming. */
+.admin-layout {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.admin-layout > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.admin-layout main,
+.admin-layout .stack,
+.admin-layout .surface,
+.admin-layout .hero {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.admin-stat-grid > * {
+  min-width: 0;
+}
+
+.admin-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 640px) {
+  .admin-layout {
+    width: 100%;
+  }
+
+  .admin-layout .hero,
+  .admin-layout .surface {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .admin-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .admin-stat-label {
+    font-size: 0.78rem;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-stat-value {
+    font-size: clamp(1.35rem, 7vw, 1.8rem);
+  }
+
+  .admin-layout .surface-inset {
+    padding: 12px;
+  }
+
+  .admin-card-header {
+    align-items: stretch;
+  }
+
+  .admin-card-header > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-nav {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .admin-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Chat assistant */
 .chat-assist-card {
   display: grid;
