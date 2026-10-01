@@ -2444,3 +2444,105 @@ select {
     max-height: 44dvh;
   }
 }
+
+
+/* App-like web chat header */
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.chat-header-next {
+  min-height: 38px;
+  padding: 7px 10px;
+  border-radius: 12px;
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chat-header-more {
+  position: relative;
+}
+
+.chat-header-more .chat-more-summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 0;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.chat-header-more .chat-more-menu {
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 168px;
+}
+
+.chat-menu-leave {
+  color: var(--color-danger);
+}
+
+@media (max-width: 768px) {
+  .chat-header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    min-height: 64px;
+    padding: calc(8px + env(safe-area-inset-top)) 10px 8px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .chat-header-main {
+    min-width: 0;
+  }
+
+  .chat-partner-row {
+    gap: 6px;
+  }
+
+  .chat-partner-name {
+    max-width: 36vw;
+    font-size: 1.28rem;
+  }
+
+  .chat-my-name {
+    font-size: 0.72rem;
+  }
+
+  .chat-header-next {
+    min-height: 36px;
+    padding-inline: 8px;
+    font-size: 0.78rem;
+  }
+
+  .chat-header-more .chat-more-summary {
+    width: 36px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+}
+
+@media (max-width: 390px) {
+  .chat-header {
+    gap: 6px;
+    padding-inline: 7px;
+  }
+
+  .chat-partner-name {
+    max-width: 32vw;
+    font-size: 1.18rem;
+  }
+
+  .chat-header-next {
+    padding-inline: 7px;
+    font-size: 0.75rem;
+  }
+}
