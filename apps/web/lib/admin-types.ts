@@ -26,6 +26,18 @@ export type AdminSummary = {
   today_chat_assist_requests: number;
   laya_service_state: "ready" | "loading" | "error" | "unreachable";
   laya_health_latency_ms: number | null;
+  deployment_version: string | null;
+  deployment_id: string | null;
+  deployment_branch: string | null;
+  deployment_environment: string | null;
+  deployment_url: string | null;
+  last_successful_deployment_at: string | null;
+  recent_error_summary: Array<{
+    source: "realtime" | "push" | "laya" | string;
+    error_code: string;
+    error_count: number;
+    last_seen: string;
+  }>;
 };
 
 export type AdminSessionListItem = {
