@@ -67,6 +67,9 @@ jobs:
           echo "VERSION_CODE=${VERSION_CODE}" >> "$GITHUB_ENV"
           echo "VERSION_NAME=${VERSION_NAME}" >> "$GITHUB_ENV"
 
+      - name: Prepare local build dependencies
+        run: rm -f package-lock.json
+
       - name: Build APK on GitHub runner
         run: npx eas-cli@latest build --platform android --profile preview --local --non-interactive --output ./HerLink.apk
 
