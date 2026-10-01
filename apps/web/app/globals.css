@@ -3405,3 +3405,106 @@ select {
     flex: none;
   }
 }
+
+
+/* Match homepage to chat visual language */
+.site-home-viewport {
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--color-accent) 8%, transparent), transparent 28%),
+    radial-gradient(circle at 88% 12%, color-mix(in srgb, #8b5cf6 7%, transparent), transparent 30%),
+    var(--color-surface-1);
+}
+
+.site-header {
+  background: color-mix(in srgb, var(--color-surface-1) 90%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--color-border) 86%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.home-app-like {
+  background: transparent;
+}
+
+.home-app-eyebrow {
+  color: var(--color-accent-strong);
+}
+
+.home-app-title {
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.18);
+}
+
+.home-app-identity {
+  border: 1px solid color-mix(in srgb, var(--color-border) 92%, transparent);
+  background: color-mix(in srgb, var(--color-surface-2) 92%, transparent);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.13);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.home-app-actions .btn {
+  border-radius: 14px;
+}
+
+.home-app-actions .btn-primary {
+  border: 1px solid color-mix(in srgb, var(--color-accent) 28%, transparent);
+  box-shadow:
+    0 10px 24px color-mix(in srgb, var(--color-accent) 18%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.home-app-actions .btn-secondary {
+  border: 1px solid color-mix(in srgb, var(--color-border) 92%, transparent);
+  background: color-mix(in srgb, var(--color-surface-2) 92%, transparent);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.13);
+}
+
+.home-app-status {
+  border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
+  background: color-mix(in srgb, var(--color-surface-2) 90%, transparent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.11);
+}
+
+.home-app-footer {
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
+}
+
+.home-app-footer .btn-link {
+  color: var(--color-text-muted);
+}
+
+.home-app-footer .btn-link:hover {
+  color: var(--color-text);
+}
+
+.rename-modal {
+  border: 1px solid color-mix(in srgb, var(--color-border) 92%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-2) 96%, transparent),
+      color-mix(in srgb, var(--color-surface-1) 98%, transparent)
+    );
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.24);
+}
+
+.rename-form .input {
+  border-color: color-mix(in srgb, var(--color-border) 92%, transparent);
+  background: color-mix(in srgb, var(--color-surface-2) 92%, transparent);
+}
+
+@media (max-width: 520px) {
+  .home-app-like {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .home-app-identity {
+    border-radius: 16px;
+  }
+
+  .home-app-actions .btn {
+    border-radius: 14px;
+  }
+}
