@@ -30,6 +30,54 @@ function riskLevelLabel(value: string) {
   return value;
 }
 
+function reportCategoryLabel(value: string) {
+  const labels: Record<string, string> = {
+    spam: "垃圾訊息／廣告",
+    scam: "詐騙",
+    money_request: "索取金錢",
+    investment_scam: "投資詐騙",
+    harassment: "騷擾",
+    sexual_content: "露骨內容",
+    threat: "威脅",
+    impersonation: "冒名",
+    suspected_minor: "疑似未成年",
+    other: "其他",
+  };
+  return labels[value] ?? value;
+}
+
+function riskTypeLabel(value: string) {
+  const labels: Record<string, string> = {
+    scam: "詐騙",
+    money_request: "索取金錢",
+    investment: "投資",
+    investment_scam: "投資詐騙",
+    bank_account: "銀行帳戶",
+    credit_card: "信用卡",
+    verification_code: "驗證碼",
+    otp: "驗證碼",
+    crypto: "虛擬貨幣",
+    external_link: "外部連結",
+    impersonation: "冒名",
+    spam: "垃圾訊息／廣告",
+    harassment: "騷擾",
+    threat: "威脅",
+  };
+  return labels[value] ?? value.replaceAll("_", " ");
+}
+
+function endedReasonLabel(value: string) {
+  const labels: Record<string, string> = {
+    left: "使用者離開",
+    next: "切換下一位",
+    blocked: "封鎖",
+    timeout: "逾時結束",
+    disconnected: "連線中斷",
+    partner_left: "對方離開",
+  };
+  return labels[value] ?? value.replaceAll("_", " ");
+}
+
 export default function AdminSessionDetailPage() {
   const { session, loading, accessToken } = useAdminSession();
   const params = useParams<{ id: string }>();
@@ -99,7 +147,7 @@ export default function AdminSessionDetailPage() {
           <div className="stack">
             <AdminToolbar>
               <AdminBadge tone={data.status === "ended" ? "warning" : data.status === "matched" ? "success" : "default"}>{sessionStatusLabel(data.status)}</AdminBadge>
-              {data.ended_reason ? <AdminBadge tone="accent">結束原因：{data.ended_reason}</AdminBadge> : null}
+              {data.ended_reason ? <AdminBadge tone="accent">結束原因：{endedReasonLabel(data.ended_reason)}</AdminBadge> : null}
               {data.ended_by ? <AdminBadge>結束者：{shortId(data.ended_by)}</AdminBadge> : null}
             </AdminToolbar>
             <AdminSection title="基本資訊">
@@ -129,7 +177,7 @@ export default function AdminSessionDetailPage() {
                       {data.reports.map((item) => (
                         <tr key={item.id}>
                           <td>{formatAdminTime(item.created_at)}</td>
-                          <td>{item.category}</td>
+                          <td>{reportCategoryLabel(item.category)}</td>
                           <td>{shortId(item.reporter_id)}</td>
                           <td>{shortId(item.reported_user_id)}</td>
                           <td>{reportStatusLabel(item.status)}</td>
@@ -200,7 +248,7 @@ export default function AdminSessionDetailPage() {
                           </td>
                           <td>{shortId(item.user_id)}</td>
                           <td>{item.message_id ? shortId(item.message_id) : "—"}</td>
-                          <td>{item.risk_types.join(", ") || "—"}</td>
+                          <td>{item.risk_types.map(riskTypeLabel).join("、") || "—"}</td>
                         </tr>
                       ))}
                     </tbody>
