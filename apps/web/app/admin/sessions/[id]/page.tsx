@@ -11,7 +11,7 @@ function sessionStatusLabel(value: string) {
   if (value === "waiting") return "等待中";
   if (value === "active") return "聊天中";
   if (value === "ended") return "已結束";
-  return "其他狀態";
+  return "聊天中";
 }
 
 function reportStatusLabel(value: string) {
