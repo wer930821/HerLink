@@ -22,6 +22,36 @@ async function loadModel() {
       },
     });
     console.log("[laya] multilingual INT8 model ready");
+
+    try {
+      await model.systemOne(
+        { conversation: "對方：今天工作有點累。\n我：辛苦了。" },
+        {
+          next_move: {
+            type: "choice",
+            instructions: "下一步最適合如何回應？",
+            criteria: {
+              empathize: "先同理對方",
+              ask_open_question: "問一個容易回答的問題",
+              change_topic: "換一個輕鬆話題",
+            },
+          },
+          safety_risk: {
+            type: "noul",
+            instructions: "這段聊天是否有明顯詐騙或金錢風險？",
+          },
+        }
+      );
+      lastInferenceAt = new Date().toISOString();
+      lastInferenceOkAt = lastInferenceAt;
+      lastInferenceError = null;
+      console.log("[laya] startup inference self-test passed");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      lastInferenceAt = new Date().toISOString();
+      lastInferenceError = message.slice(0, 500);
+      console.error("[laya] startup inference self-test failed:", message);
+    }
   } catch (error) {
     modelError = error instanceof Error ? error.message : String(error);
     console.error("[laya] model load failed:", modelError);
