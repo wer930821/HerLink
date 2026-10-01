@@ -2923,3 +2923,20 @@ select {
     gap: 14px;
   }
 }
+
+
+/* Remove overflow focus ring */
+.chat-header-more .chat-more-summary,
+.chat-header-more .chat-more-summary:focus,
+.chat-header-more .chat-more-summary:focus-visible,
+.chat-header-more[open] .chat-more-summary {
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
+  background: transparent;
+}
+
+.chat-header-more .chat-more-summary:hover {
+  background: color-mix(in srgb, var(--color-surface-3) 42%, transparent);
+  border-radius: 10px;
+}
