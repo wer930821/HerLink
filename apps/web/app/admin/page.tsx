@@ -54,6 +54,7 @@ export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
 
   const sessionState = useMemo(() => {
     if (loading) return "loading";
@@ -62,9 +63,9 @@ export default function AdminDashboardPage() {
     return "ready";
   }, [accessToken, loading, session]);
 
-  const load = async () => {
+  const load = async (options: { silent?: boolean } = {}) => {
     if (!accessToken) return;
-    setRefreshing(true);
+    if (!options.silent) setRefreshing(true);
     setError(null);
     try {
       const summary = await fetchAdminJson<AdminSummary>(accessToken, "/api/admin/summary", {
@@ -80,7 +81,7 @@ export default function AdminDashboardPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "無法載入後台總覽。");
     } finally {
-      setRefreshing(false);
+      if (!options.silent) setRefreshing(false);
     }
   };
 
@@ -88,6 +89,51 @@ export default function AdminDashboardPage() {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
+
+  useEffect(() => {
+    if (!accessToken || !autoRefreshEnabled) return;
+
+    const refreshIfVisible = () => {
+      if (document.visibilityState === "visible") {
+        void load({ silent: true });
+      }
+    };
+
+    const interval = window.setInterval(refreshIfVisible, 30_000);
+    document.addEventListener("visibilitychange", refreshIfVisible);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken, autoRefreshEnabled]);
+
+  const overallHealth = useMemo(() => {
+    if (!data) {
+      return { label: "檢查中", tone: "default" as const };
+    }
+
+    const critical =
+      data.laya_service_state === "error" ||
+      data.laya_service_state === "unreachable" ||
+      data.realtime_errors_1h >= 10;
+
+    if (critical) {
+      return { label: "異常", tone: "danger" as const };
+    }
+
+    const warning =
+      data.laya_service_state === "loading" ||
+      data.realtime_errors_1h > 0 ||
+      (typeof data.today_match_success_rate === "number" && data.today_match_success_rate < 50) ||
+      (typeof data.today_push_success_rate === "number" && data.today_push_success_rate < 95) ||
+      (typeof data.laya_health_latency_ms === "number" && data.laya_health_latency_ms > 1500);
+
+    return warning
+      ? { label: "需注意", tone: "warning" as const }
+      : { label: "正常", tone: "success" as const };
+  }, [data]);
 
   if (sessionState === "loading") {
     return <AdminEmpty>正在載入後台驗證…</AdminEmpty>;
@@ -110,12 +156,31 @@ export default function AdminDashboardPage() {
         title="總覽"
         description="目前在線、等待池、活躍對話與今日安全事件的即時摘要。"
         action={
-          <Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>
-            {refreshing ? "重新整理中…" : "重新整理"}
-          </Button>
+          <div className="row">
+            <Button
+              variant={autoRefreshEnabled ? "secondary" : "ghost"}
+              size="sm"
+              type="button"
+              onClick={() => setAutoRefreshEnabled((enabled) => !enabled)}
+            >
+              {autoRefreshEnabled ? "自動更新：開" : "自動更新：關"}
+            </Button>
+            <Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>
+              {refreshing ? "重新整理中…" : "重新整理"}
+            </Button>
+          </div>
         }
       >
         {error ? <Notice variant="danger">{error}</Notice> : null}
+        <div className="row" style={{ justifyContent: "space-between", marginBottom: 12 }}>
+          <div className="row">
+            <span className="muted small">系統狀態</span>
+            <AdminBadge tone={overallHealth.tone}>{overallHealth.label}</AdminBadge>
+          </div>
+          <span className="muted small">
+            最後更新：{data?.generated_at ? formatAdminTime(data.generated_at) : "—"}
+          </span>
+        </div>
         <AdminStatGrid>
           <AdminStat label="目前在線" value={onlineCount === null ? "—" : `${onlineCount} 人`} tone={onlineCountConnected ? "success" : "default"} />
           <AdminStat label="等待中" value={formatCount(data?.waiting_count)} />
