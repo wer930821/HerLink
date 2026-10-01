@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { SplashScreen } from "expo-router";
 import { colors } from "../theme/colors";
 import * as Notifications from "expo-notifications";
+import * as Updates from "expo-updates";
 import { pushNavigationTarget, syncNativePushToken } from "../lib/native-push";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -26,6 +27,28 @@ function RootLayoutNav() {
       SplashScreen.hideAsync();
     }
   }, [loading]);
+
+  useEffect(() => {
+    if (__DEV__ || !Updates.isEnabled) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await Updates.checkForUpdateAsync();
+        if (!result.isAvailable || cancelled) return;
+        await Updates.fetchUpdateAsync();
+        if (!cancelled) {
+          await Updates.reloadAsync();
+        }
+      } catch (error) {
+        console.warn("OTA update check failed", error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const tokenSubscription = Notifications.addPushTokenListener((token) => {
