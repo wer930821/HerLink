@@ -3355,3 +3355,53 @@ select {
     font-size: 0.78rem;
   }
 }
+
+
+/* Fix mobile rename modal layout */
+.modal-backdrop {
+  z-index: 100;
+}
+
+@media (max-width: 640px) {
+  .modal-backdrop {
+    place-items: center;
+    align-content: center;
+    padding:
+      calc(18px + env(safe-area-inset-top))
+      14px
+      calc(18px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
+
+  .rename-modal {
+    width: min(100%, 420px);
+    max-height: calc(100dvh - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .rename-modal .modal-title {
+    font-size: 1.2rem;
+  }
+
+  .rename-form {
+    gap: 12px;
+  }
+
+  .rename-form .input {
+    min-height: 50px;
+    font-size: 1rem;
+  }
+
+  .rename-modal .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .rename-modal .modal-actions > .btn {
+    width: 100%;
+    min-height: 48px;
+    flex: none;
+  }
+}
