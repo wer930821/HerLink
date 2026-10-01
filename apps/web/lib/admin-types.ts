@@ -24,6 +24,8 @@ export type AdminSummary = {
   today_push_success_rate: number | null;
   today_laya_success_rate: number | null;
   today_chat_assist_requests: number;
+  laya_service_state: "ready" | "loading" | "error" | "unreachable";
+  laya_health_latency_ms: number | null;
 };
 
 export type AdminSessionListItem = {
