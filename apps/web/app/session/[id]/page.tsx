@@ -1255,14 +1255,10 @@ export default function RandomSessionPage() {
       typingChannelRef.current = chatChannel;
 
       chatChannel
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "random_chat_signals", filter: `session_id=eq.${session.id}` },
-          () => {
-            void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
-            void refreshSessionFromServerRef.current?.();
-          }
-        )
+        .on("broadcast", { event: "refresh" }, () => {
+          void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
+          void refreshSessionFromServerRef.current?.();
+        })
         .on("broadcast", { event: "typing" }, (payload: { payload?: { typing?: unknown } }) => {
           const typing = Boolean(payload?.payload?.typing);
 
@@ -1466,6 +1462,13 @@ export default function RandomSessionPage() {
           setNotice("這則訊息含有可疑內容，請提高警覺。");
         }
       }
+      if (typingChannelReadyRef.current && typingChannelRef.current) {
+        void typingChannelRef.current.send({
+          type: "broadcast",
+          event: "refresh",
+          payload: { reason: "message" },
+        });
+      }
       stopTyping();
       setDraft("");
       setAssistantResult(null);
@@ -1501,6 +1504,13 @@ export default function RandomSessionPage() {
       clearPartnerTyping();
       clearReply();
       await leaveRandomSession(session.id);
+      if (typingChannelReadyRef.current && typingChannelRef.current) {
+        await typingChannelRef.current.send({
+          type: "broadcast",
+          event: "refresh",
+          payload: { reason: "session-ended" },
+        }).catch(() => undefined);
+      }
       goHome("USER_LEFT_SESSION", { serverSessionId: session.id });
     } catch {
       setNotice("目前無法離開聊天室，請稍後再試。");
