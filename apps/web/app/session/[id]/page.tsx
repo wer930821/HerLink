@@ -1796,7 +1796,7 @@ export default function RandomSessionPage() {
 
     return (
       <article key={message.id} id={`chat-msg-${message.id}`} className={`chat-message ${message.is_mine ? "mine" : "theirs"}`}>
-        <div className={`chat-bubble ${message.risk_level !== "low" ? "risky" : ""}`}>
+        <div className={`chat-bubble ${message.message_type === "image" ? "image-message" : ""} ${message.risk_level !== "low" ? "risky" : ""}`}>
           {riskLabel ? <div className="chat-risk-badge">{riskLabel}</div> : null}
           {message.reply_to_message_id ? (
             <button
@@ -1891,7 +1891,7 @@ export default function RandomSessionPage() {
   }
 
   return (
-    <main className="stack">
+    <main className="stack chat-page">
       <section className="panel chat-shell">
         <header className="chat-header">
           <button
