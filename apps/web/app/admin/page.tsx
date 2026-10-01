@@ -28,6 +28,18 @@ function formatCount(value: number | null | undefined) {
   return typeof value === "number" ? value.toLocaleString("zh-TW") : "—";
 }
 
+function formatPercent(value: number | null | undefined) {
+  return typeof value === "number" ? `${value.toFixed(1)}%` : "—";
+}
+
+function formatWait(value: number | null | undefined) {
+  if (typeof value !== "number") return "—";
+  if (value < 60) return `${Math.round(value)} 秒`;
+  const minutes = Math.floor(value / 60);
+  const seconds = Math.round(value % 60);
+  return `${minutes} 分 ${seconds} 秒`;
+}
+
 export default function AdminDashboardPage() {
   const { session, loading, accessToken } = useAdminSession();
   const { onlineCount, onlineCountConnected } = useOnlinePresence(session?.user.id ?? null);
@@ -112,6 +124,40 @@ export default function AdminDashboardPage() {
           <AdminStat label="待發送通知" value={formatCount(data?.pending_push_event_count)} />
           <AdminStat label="今日通知成功" value={formatCount(data?.today_web_push_delivered_count)} tone="success" />
           <AdminStat label="今日通知失效" value={formatCount(data?.today_web_push_revoked_count)} tone="warning" />
+        </AdminStatGrid>
+      </AdminSection>
+
+      <AdminSection title="系統健康狀態" description="快速確認配對、即時連線、通知與聊天助手是否正常。">
+        <AdminStatGrid>
+          <AdminStat
+            label="今日配對成功率"
+            value={formatPercent(data?.today_match_success_rate)}
+            tone={typeof data?.today_match_success_rate === "number" && data.today_match_success_rate < 50 ? "warning" : "success"}
+          />
+          <AdminStat
+            label="今日平均等待時間"
+            value={formatWait(data?.today_avg_wait_seconds)}
+            tone={typeof data?.today_avg_wait_seconds === "number" && data.today_avg_wait_seconds > 120 ? "warning" : "default"}
+          />
+          <AdminStat
+            label="近 1 小時即時錯誤"
+            value={formatCount(data?.realtime_errors_1h)}
+            tone={(data?.realtime_errors_1h ?? 0) > 0 ? "danger" : "success"}
+          />
+          <AdminStat
+            label="今日通知成功率"
+            value={formatPercent(data?.today_push_success_rate)}
+            tone={typeof data?.today_push_success_rate === "number" && data.today_push_success_rate < 95 ? "warning" : "success"}
+          />
+          <AdminStat
+            label="今日 Laya 成功率"
+            value={formatPercent(data?.today_laya_success_rate)}
+            tone={typeof data?.today_laya_success_rate === "number" && data.today_laya_success_rate < 80 ? "warning" : "success"}
+          />
+          <AdminStat
+            label="今日聊天助手使用次數"
+            value={formatCount(data?.today_chat_assist_requests)}
+          />
         </AdminStatGrid>
       </AdminSection>
 
