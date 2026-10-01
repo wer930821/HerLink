@@ -138,14 +138,23 @@ function safeJsonObject(value: unknown) {
 export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSummary> {
   const dayStart = getUtcDayStartIso();
 
-  const { data: anonymousStatsData, error: anonymousStatsError } = await client.rpc("get_admin_random_chat_stats");
+  const [{ data: anonymousStatsData, error: anonymousStatsError }, { data: healthData, error: healthError }] = await Promise.all([
+    client.rpc("get_admin_random_chat_stats"),
+    client.rpc("get_admin_health_metrics"),
+  ]);
   if (anonymousStatsError) {
     throw anonymousStatsError;
+  }
+  if (healthError) {
+    throw healthError;
   }
 
   const anonymousStats = Array.isArray(anonymousStatsData)
     ? anonymousStatsData[0] ?? {}
     : anonymousStatsData ?? {};
+  const healthStats = Array.isArray(healthData)
+    ? healthData[0] ?? {}
+    : healthData ?? {};
 
   const safeCount = async (query: PromiseLike<{ count: number | null; error: { message?: string } | null }>) => {
     const result = await query;
@@ -198,6 +207,12 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     pending_push_event_count: pendingPushEventCount,
     today_web_push_delivered_count: todayWebPushDeliveredCount,
     today_web_push_revoked_count: todayWebPushRevokedCount,
+    today_match_success_rate: (healthStats as any).today_match_success_rate == null ? null : asNumber((healthStats as any).today_match_success_rate),
+    today_avg_wait_seconds: (healthStats as any).today_avg_wait_seconds == null ? null : asNumber((healthStats as any).today_avg_wait_seconds),
+    realtime_errors_1h: asNumber((healthStats as any).realtime_errors_1h),
+    today_push_success_rate: (healthStats as any).today_push_success_rate == null ? null : asNumber((healthStats as any).today_push_success_rate),
+    today_laya_success_rate: (healthStats as any).today_laya_success_rate == null ? null : asNumber((healthStats as any).today_laya_success_rate),
+    today_chat_assist_requests: asNumber((healthStats as any).today_chat_assist_requests),
   };
 }
 
