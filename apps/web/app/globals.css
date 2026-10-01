@@ -3578,3 +3578,245 @@ select {
     background-size: 24px 24px;
   }
 }
+
+
+/* Combined heart + light homepage motion */
+.home-app-hero {
+  position: relative;
+  padding-top: clamp(96px, 18vw, 140px);
+}
+
+.home-app-motion {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(44vw, 200px);
+  height: min(44vw, 200px);
+  pointer-events: none;
+  overflow: visible;
+}
+
+.home-app-glow {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(18px);
+  opacity: 0.75;
+}
+
+.home-app-glow-a {
+  width: 96px;
+  height: 96px;
+  top: 8px;
+  right: 18px;
+  background: radial-gradient(circle, rgba(255,111,97,0.24), rgba(255,111,97,0.01) 72%);
+  animation: homeGlowFloatA 5.6s ease-in-out infinite;
+}
+
+.home-app-glow-b {
+  width: 72px;
+  height: 72px;
+  top: 78px;
+  right: 96px;
+  background: radial-gradient(circle, rgba(139,92,246,0.22), rgba(139,92,246,0.01) 72%);
+  animation: homeGlowFloatB 6.4s ease-in-out infinite;
+}
+
+.home-app-sparkle {
+  position: absolute;
+  color: rgba(255,255,255,0.78);
+  text-shadow: 0 0 14px rgba(255,255,255,0.28);
+  animation: homeTwinkle 2.8s ease-in-out infinite;
+}
+
+.home-app-sparkle-a {
+  top: 12px;
+  left: 62px;
+  font-size: 18px;
+}
+
+.home-app-sparkle-b {
+  top: 44px;
+  right: 8px;
+  font-size: 14px;
+  animation-delay: .45s;
+}
+
+.home-app-sparkle-c {
+  bottom: 24px;
+  left: 26px;
+  font-size: 15px;
+  animation-delay: .9s;
+}
+
+.home-app-sparkle-d {
+  bottom: 52px;
+  right: 48px;
+  font-size: 12px;
+  animation-delay: 1.25s;
+}
+
+.home-app-heart {
+  position: absolute;
+  color: rgba(255,111,97,0.74);
+  text-shadow: 0 0 18px rgba(255,111,97,0.28);
+  animation: homeHeartFloat 4.8s ease-in-out infinite;
+}
+
+.home-app-heart-a {
+  top: 54px;
+  left: 6px;
+  font-size: 16px;
+  transform: rotate(-10deg);
+}
+
+.home-app-heart-b {
+  right: 22px;
+  bottom: 10px;
+  font-size: 12px;
+  opacity: .6;
+  animation-delay: .7s;
+}
+
+.home-app-light-card {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--color-surface-2) 86%, transparent);
+  box-shadow:
+    0 12px 30px rgba(0,0,0,0.14),
+    inset 0 1px 0 rgba(255,255,255,0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.home-app-light-card-a {
+  top: 18px;
+  left: 10px;
+  min-width: 74px;
+  justify-content: center;
+  animation: homeCardFloatA 5.8s ease-in-out infinite;
+}
+
+.home-app-light-card-b {
+  right: 2px;
+  bottom: 18px;
+  width: 96px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  animation: homeCardFloatB 6.6s ease-in-out infinite;
+}
+
+.home-app-light-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.82);
+  animation: homeTypingDot 1.35s ease-in-out infinite;
+}
+
+.home-app-light-dot:nth-child(2) {
+  animation-delay: .18s;
+}
+
+.home-app-light-dot:nth-child(3) {
+  animation-delay: .36s;
+}
+
+.home-app-light-line {
+  display: block;
+  width: 66px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.13);
+}
+
+.home-app-light-line.short {
+  width: 40px;
+  background: rgba(255,111,97,0.28);
+}
+
+@keyframes homeGlowFloatA {
+  0%, 100% { transform: translate3d(0,0,0) scale(1); }
+  50% { transform: translate3d(-4px,-8px,0) scale(1.04); }
+}
+
+@keyframes homeGlowFloatB {
+  0%, 100% { transform: translate3d(0,0,0) scale(1); }
+  50% { transform: translate3d(5px,7px,0) scale(.96); }
+}
+
+@keyframes homeTwinkle {
+  0%, 100% { opacity: .32; transform: scale(.88) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.12) rotate(8deg); }
+}
+
+@keyframes homeHeartFloat {
+  0%, 100% { transform: translateY(0) rotate(-8deg) scale(1); }
+  50% { transform: translateY(-7px) rotate(4deg) scale(1.08); }
+}
+
+@keyframes homeCardFloatA {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-6px) rotate(1deg); }
+}
+
+@keyframes homeCardFloatB {
+  0%, 100% { transform: translateY(0) rotate(2deg); }
+  50% { transform: translateY(6px) rotate(-1deg); }
+}
+
+@keyframes homeTypingDot {
+  0%, 80%, 100% { transform: translateY(0); opacity: .38; }
+  40% { transform: translateY(-4px); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-app-glow,
+  .home-app-sparkle,
+  .home-app-heart,
+  .home-app-light-card,
+  .home-app-light-dot {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .home-app-hero {
+    padding-top: 92px;
+  }
+
+  .home-app-motion {
+    width: 154px;
+    height: 154px;
+    top: 2px;
+  }
+
+  .home-app-light-card-a {
+    left: 4px;
+    min-width: 68px;
+    padding: 8px 9px;
+  }
+
+  .home-app-light-card-b {
+    width: 88px;
+    padding: 8px 9px;
+  }
+
+  .home-app-light-line {
+    width: 58px;
+  }
+
+  .home-app-light-line.short {
+    width: 34px;
+  }
+
+  .home-app-heart-a {
+    top: 50px;
+    left: 0;
+  }
+}
