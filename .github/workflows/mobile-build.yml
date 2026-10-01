@@ -28,9 +28,6 @@ concurrency:
 jobs:
   build-android:
     runs-on: ubuntu-latest
-    env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -67,11 +64,17 @@ jobs:
           echo "VERSION_CODE=${VERSION_CODE}" >> "$GITHUB_ENV"
           echo "VERSION_NAME=${VERSION_NAME}" >> "$GITHUB_ENV"
 
-      - name: Prepare local build dependencies
-        run: rm -f package-lock.json
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --non-interactive
 
       - name: Build APK on GitHub runner
-        run: npx eas-cli@latest build --platform android --profile preview --local --non-interactive --output ./HerLink.apk
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Copy APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk ./HerLink.apk
 
       - name: Prepare update manifest
         shell: bash
