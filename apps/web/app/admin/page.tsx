@@ -142,8 +142,7 @@ export default function AdminDashboardPage() {
 
     const critical =
       data.laya_service_state === "error" ||
-      data.laya_service_state === "unreachable" ||
-      data.realtime_errors_10m >= 10;
+      data.laya_service_state === "unreachable";
 
     if (critical) {
       return { label: "異常", tone: "danger" as const };
