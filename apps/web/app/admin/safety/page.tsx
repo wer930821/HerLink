@@ -28,6 +28,42 @@ function riskLevelLabel(value: string) {
   return value;
 }
 
+function riskTypeLabel(value: string) {
+  const labels: Record<string, string> = {
+    scam: "詐騙",
+    money_request: "索取金錢",
+    investment: "投資",
+    investment_scam: "投資詐騙",
+    bank_account: "銀行帳戶",
+    credit_card: "信用卡",
+    verification_code: "驗證碼",
+    otp: "驗證碼",
+    crypto: "虛擬貨幣",
+    external_link: "外部連結",
+    impersonation: "冒名",
+    spam: "垃圾訊息／廣告",
+    harassment: "騷擾",
+    threat: "威脅",
+  };
+  return labels[value] ?? value.replaceAll("_", " ");
+}
+
+function enforcementReasonLabel(value: string | null) {
+  if (!value) return "—";
+  const labels: Record<string, string> = {
+    report: "檢舉",
+    repeated_reports: "多次被檢舉",
+    fraud: "高風險內容",
+    fraud_risk: "高風險內容",
+    harassment: "騷擾",
+    spam: "垃圾訊息／廣告",
+    block: "封鎖事件",
+    suspected_minor: "疑似未成年",
+    manual: "管理員處置",
+  };
+  return labels[value] ?? value.replaceAll("_", " ");
+}
+
 type SafetyPayload = {
   moderation_enforcements: AdminModerationEnforcementRow[];
   fraud_risk_events: AdminFraudRiskEventRow[];
@@ -120,7 +156,7 @@ export default function AdminSafetyPage() {
                           <td>{formatAdminTime(item.created_at)}</td>
                           <td>{item.subject_user_id ? shortId(item.subject_user_id) : "—"}</td>
                           <td>{enforcementTypeLabel(item.enforcement_type)}</td>
-                          <td>{item.reason_code ?? "—"}</td>
+                          <td>{enforcementReasonLabel(item.reason_code)}</td>
                           <td>
                             <AdminBadge tone={item.status === "active" ? "danger" : item.status === "expired" ? "warning" : "default"}>
                               {enforcementStatusLabel(item.status)}
@@ -161,7 +197,7 @@ export default function AdminSafetyPage() {
                           </td>
                           <td>{shortId(item.user_id)}</td>
                           <td>{item.session_id ? shortId(item.session_id) : "—"}</td>
-                          <td>{item.risk_types.join(", ") || "—"}</td>
+                          <td>{item.risk_types.map(riskTypeLabel).join("、") || "—"}</td>
                         </tr>
                       ))}
                     </tbody>
