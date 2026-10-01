@@ -7,6 +7,29 @@ import type { AdminSessionDetail } from "../../../../lib/admin-types";
 import { AdminBadge, AdminEmpty, AdminSection, AdminTable, AdminTableWrap, AdminToolbar, formatAdminTime, shortId } from "../../_components";
 import { Button, Notice } from "../../../../components/ui";
 
+function sessionStatusLabel(value: string) {
+  if (value === "waiting") return "等待中";
+  if (value === "matched") return "聊天中";
+  if (value === "ended") return "已結束";
+  return value;
+}
+
+function reportStatusLabel(value: string) {
+  if (value === "open") return "待處理";
+  if (value === "reviewing") return "處理中";
+  if (value === "resolved") return "已處理";
+  if (value === "dismissed") return "已忽略";
+  return value;
+}
+
+function riskLevelLabel(value: string) {
+  if (value === "critical") return "嚴重";
+  if (value === "high") return "高";
+  if (value === "medium") return "中";
+  if (value === "low") return "低";
+  return value;
+}
+
 export default function AdminSessionDetailPage() {
   const { session, loading, accessToken } = useAdminSession();
   const params = useParams<{ id: string }>();
@@ -32,7 +55,7 @@ export default function AdminSessionDetailPage() {
       });
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "無法載入 session 詳情。");
+      setError(err instanceof Error ? err.message : "無法載入聊天場次詳情。");
     } finally {
       setRefreshing(false);
     }
@@ -52,13 +75,13 @@ export default function AdminSessionDetailPage() {
   }
 
   if (!sessionId) {
-    return <AdminEmpty>缺少 session id。</AdminEmpty>;
+    return <AdminEmpty>缺少聊天場次 ID。</AdminEmpty>;
   }
 
   return (
     <div className="stack">
       <AdminSection
-        title="Session 詳情"
+        title="聊天場次詳情"
         description={shortId(sessionId, 12)}
         action={
           <div className="row">
@@ -75,9 +98,9 @@ export default function AdminSessionDetailPage() {
         ) : (
           <div className="stack">
             <AdminToolbar>
-              <AdminBadge tone={data.status === "ended" ? "warning" : data.status === "matched" ? "success" : "default"}>{data.status}</AdminBadge>
-              {data.ended_reason ? <AdminBadge tone="accent">reason: {data.ended_reason}</AdminBadge> : null}
-              {data.ended_by ? <AdminBadge>ended by {shortId(data.ended_by)}</AdminBadge> : null}
+              <AdminBadge tone={data.status === "ended" ? "warning" : data.status === "matched" ? "success" : "default"}>{sessionStatusLabel(data.status)}</AdminBadge>
+              {data.ended_reason ? <AdminBadge tone="accent">結束原因：{data.ended_reason}</AdminBadge> : null}
+              {data.ended_by ? <AdminBadge>結束者：{shortId(data.ended_by)}</AdminBadge> : null}
             </AdminToolbar>
             <AdminSection title="基本資訊">
               <div className="admin-kv-grid">
@@ -88,16 +111,16 @@ export default function AdminSessionDetailPage() {
               </div>
             </AdminSection>
 
-            <AdminSection title="Reports">
+            <AdminSection title="檢舉紀錄">
               {data.reports.length ? (
                 <AdminTableWrap>
-                  <AdminTable label="Reports">
+                  <AdminTable label="檢舉紀錄">
                     <thead>
                       <tr>
                         <th scope="col">時間</th>
-                        <th scope="col">Category</th>
-                        <th scope="col">Reporter</th>
-                        <th scope="col">Reported</th>
+                        <th scope="col">分類</th>
+                        <th scope="col">檢舉者</th>
+                        <th scope="col">被檢舉者</th>
                         <th scope="col">狀態</th>
                         <th scope="col">標記</th>
                       </tr>
@@ -109,11 +132,11 @@ export default function AdminSessionDetailPage() {
                           <td>{item.category}</td>
                           <td>{shortId(item.reporter_id)}</td>
                           <td>{shortId(item.reported_user_id)}</td>
-                          <td>{item.status}</td>
+                          <td>{reportStatusLabel(item.status)}</td>
                           <td>
                             <div className="stack" style={{ gap: 6 }}>
-                              {item.has_block ? <AdminBadge tone="danger">block</AdminBadge> : null}
-                              {item.has_fraud_risk_event ? <AdminBadge tone="danger">fraud</AdminBadge> : null}
+                              {item.has_block ? <AdminBadge tone="danger">封鎖</AdminBadge> : null}
+                              {item.has_fraud_risk_event ? <AdminBadge tone="danger">風險</AdminBadge> : null}
                             </div>
                           </td>
                         </tr>
@@ -122,19 +145,19 @@ export default function AdminSessionDetailPage() {
                   </AdminTable>
                 </AdminTableWrap>
               ) : (
-                <AdminEmpty>沒有 reports。</AdminEmpty>
+                <AdminEmpty>目前沒有檢舉紀錄。</AdminEmpty>
               )}
             </AdminSection>
 
-            <AdminSection title="Blocks">
+            <AdminSection title="封鎖紀錄">
               {data.blocks.length ? (
                 <AdminTableWrap>
-                  <AdminTable label="Blocks">
+                  <AdminTable label="封鎖紀錄">
                     <thead>
                       <tr>
                         <th scope="col">時間</th>
-                        <th scope="col">Blocker</th>
-                        <th scope="col">Blocked</th>
+                        <th scope="col">封鎖者</th>
+                        <th scope="col">被封鎖者</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -149,21 +172,21 @@ export default function AdminSessionDetailPage() {
                   </AdminTable>
                 </AdminTableWrap>
               ) : (
-                <AdminEmpty>沒有 blocks。</AdminEmpty>
+                <AdminEmpty>目前沒有封鎖紀錄。</AdminEmpty>
               )}
             </AdminSection>
 
-            <AdminSection title="Fraud risk events">
+            <AdminSection title="風險警示紀錄">
               {data.fraud_risk_events.length ? (
                 <AdminTableWrap>
-                  <AdminTable label="Fraud risk events">
+                  <AdminTable label="風險警示紀錄">
                     <thead>
                       <tr>
                         <th scope="col">時間</th>
                         <th scope="col">等級</th>
-                        <th scope="col">User</th>
-                        <th scope="col">Message</th>
-                        <th scope="col">Types</th>
+                        <th scope="col">使用者</th>
+                        <th scope="col">訊息</th>
+                        <th scope="col">風險類型</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -172,7 +195,7 @@ export default function AdminSessionDetailPage() {
                           <td>{formatAdminTime(item.created_at)}</td>
                           <td>
                             <AdminBadge tone={item.risk_level === "critical" ? "danger" : item.risk_level === "high" ? "warning" : "default"}>
-                              {item.risk_level}
+                              {riskLevelLabel(item.risk_level)}
                             </AdminBadge>
                           </td>
                           <td>{shortId(item.user_id)}</td>
@@ -184,12 +207,12 @@ export default function AdminSessionDetailPage() {
                   </AdminTable>
                 </AdminTableWrap>
               ) : (
-                <AdminEmpty>沒有 fraud events。</AdminEmpty>
+                <AdminEmpty>目前沒有風險警示紀錄。</AdminEmpty>
               )}
             </AdminSection>
 
             {data.messages?.length ? (
-              <AdminSection title="Messages" description="完整內容只給後台，不會出現在一般頁面。">
+              <AdminSection title="聊天訊息" description="完整內容只給後台，不會出現在一般頁面。">
                 <div className="stack">
                   {data.messages.map((message) => (
                     <div key={message.id} className="notice">
