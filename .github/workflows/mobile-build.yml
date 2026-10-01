@@ -5,16 +5,11 @@ on:
     branches:
       - main
     paths:
-      - "app/**"
-      - "components/**"
-      - "context/**"
-      - "lib/**"
-      - "theme/**"
-      - "assets/**"
       - "app.json"
       - "eas.json"
       - "package.json"
       - "package-lock.json"
+      - "android/**"
       - ".github/workflows/mobile-build.yml"
   workflow_dispatch:
 
