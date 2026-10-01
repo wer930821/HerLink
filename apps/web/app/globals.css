@@ -4558,3 +4558,80 @@ select {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Fix admin mobile clipping */
+.admin-page,
+.admin-layout,
+.admin-content,
+.admin-content > .stack,
+.admin-section,
+.admin-section-body,
+.admin-stat-grid {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-layout {
+  width: 100%;
+}
+
+.admin-stat {
+  min-width: 0;
+  overflow: visible;
+}
+
+.admin-stat-label,
+.admin-stat-value,
+.admin-card-title,
+.admin-card-description {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .admin-layout {
+    width: 100%;
+    max-width: 100vw;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .admin-content {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .admin-stat-grid {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 14px;
+  }
+
+  .admin-stat {
+    width: 100%;
+  }
+
+  .admin-stat-label {
+    font-size: .78rem;
+    line-height: 1.4;
+  }
+
+  .admin-stat-value {
+    font-size: clamp(1.45rem, 8vw, 1.95rem);
+    line-height: 1.05;
+  }
+}
+
+@media (max-width: 390px) {
+  .admin-layout {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .admin-stat-grid {
+    column-gap: 12px;
+  }
+}
