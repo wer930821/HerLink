@@ -272,7 +272,12 @@ async function askLaya(messages: ChatAssistMessage[]) {
     .join("\n");
 
   const fallbackDecision = getFallback(messages);
-  const replyCandidates = buildReplyCandidates(messages, fallbackDecision.nextMove);
+  // Laya limits each question head to a fixed token budget.
+  // Keep only four concise reply candidates so the choice question cannot
+  // overflow head_max_len while still leaving enough options to rank a top 3.
+  const replyCandidates = buildReplyCandidates(messages, fallbackDecision.nextMove)
+    .slice(0, 4)
+    .map((reply) => reply.slice(0, 70));
   if (replyCandidates.length < 3) return null;
 
   const replyCriteria = Object.fromEntries(
