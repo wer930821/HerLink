@@ -1917,6 +1917,14 @@ export default function RandomSessionPage() {
               )}
             </div>
           </div>
+          <button
+            className="ghost chat-header-leave"
+            type="button"
+            onClick={leave}
+            disabled={leaveBusy}
+          >
+            {leaveBusy ? "離開中…" : "離開"}
+          </button>
         </header>
 
         <div className="chat-actions">
@@ -1941,9 +1949,6 @@ export default function RandomSessionPage() {
           </button>
           <button className="button secondary chat-safety" onClick={() => setSafetyMenuOpen(true)}>
             安全
-          </button>
-          <button className="button chat-leave" type="button" onClick={leave} disabled={leaveBusy}>
-            {leaveBusy ? "離開中…" : "離開聊天室"}
           </button>
         </div>
 
