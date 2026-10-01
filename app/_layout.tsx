@@ -1,11 +1,12 @@
 import { Stack, useRouter } from "expo-router";
 import { AuthProvider, useAuth } from "../context/auth";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { SplashScreen } from "expo-router";
+import { Alert, AppState, Platform } from "react-native";
 import { colors } from "../theme/colors";
 import * as Notifications from "expo-notifications";
-import * as Updates from "expo-updates";
 import { pushNavigationTarget, syncNativePushToken } from "../lib/native-push";
+import { downloadAndInstallHerLinkUpdate, getAvailableHerLinkUpdate } from "../lib/app-update";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -21,6 +22,9 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const { session, loading } = useAuth();
   const router = useRouter();
+  const updateCheckBusyRef = useRef(false);
+  const lastUpdateCheckRef = useRef(0);
+  const notifiedUpdateVersionRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!loading) {
@@ -29,26 +33,60 @@ function RootLayoutNav() {
   }, [loading]);
 
   useEffect(() => {
-    if (__DEV__ || !Updates.isEnabled) return;
+    if (__DEV__ || Platform.OS !== "android") return;
 
-    let cancelled = false;
-    void (async () => {
+    let disposed = false;
+
+    const checkUpdate = async () => {
+      const now = Date.now();
+      if (updateCheckBusyRef.current || now - lastUpdateCheckRef.current < 60_000) return;
+      updateCheckBusyRef.current = true;
+      lastUpdateCheckRef.current = now;
+
       try {
-        const result = await Updates.checkForUpdateAsync();
-        if (!result.isAvailable || cancelled) return;
-        await Updates.fetchUpdateAsync();
-        if (!cancelled) {
-          await Updates.reloadAsync();
-        }
-      } catch (error) {
-        console.warn("OTA update check failed", error);
+        const info = await getAvailableHerLinkUpdate();
+        if (!info || disposed || notifiedUpdateVersionRef.current === info.versionCode) return;
+
+        notifiedUpdateVersionRef.current = info.versionCode;
+        Alert.alert(
+          "HerLink 有新版本",
+          `版本 ${info.versionName} 已可更新。`,
+          [
+            { text: "稍後", style: "cancel" },
+            {
+              text: "立即更新",
+              onPress: () => {
+                void downloadAndInstallHerLinkUpdate(info).catch(() => {
+                  Alert.alert("更新失敗", "目前無法下載新版，請稍後再試。");
+                });
+              },
+            },
+          ]
+        );
+      } catch {
+        // GitHub 暫時不可用時不影響正常聊天。
+      } finally {
+        updateCheckBusyRef.current = false;
       }
-    })();
+    };
+
+    void checkUpdate();
+    const timer = setInterval(() => void checkUpdate(), 60_000);
+    const appStateSubscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        lastUpdateCheckRef.current = 0;
+        void checkUpdate();
+      }
+    });
 
     return () => {
-      cancelled = true;
+      disposed = true;
+      clearInterval(timer);
+      appStateSubscription.remove();
     };
   }, []);
+
+
 
   useEffect(() => {
     const tokenSubscription = Notifications.addPushTokenListener((token) => {
