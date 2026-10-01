@@ -143,7 +143,7 @@ export default function AdminDashboardPage() {
     const critical =
       data.laya_service_state === "error" ||
       data.laya_service_state === "unreachable" ||
-      data.realtime_errors_1h >= 10;
+      data.realtime_errors_10m >= 10;
 
     if (critical) {
       return { label: "異常", tone: "danger" as const };
@@ -151,7 +151,10 @@ export default function AdminDashboardPage() {
 
     const warning =
       data.laya_service_state === "loading" ||
-      data.realtime_errors_1h > 0 ||
+      data.realtime_errors_10m > 0 ||
+      (data.today_chat_assist_requests >= 3 &&
+        typeof data.today_laya_success_rate === "number" &&
+        data.today_laya_success_rate < 80) ||
       (typeof data.today_match_success_rate === "number" && data.today_match_success_rate < 50) ||
       (typeof data.today_push_success_rate === "number" && data.today_push_success_rate < 95) ||
       (typeof data.laya_health_latency_ms === "number" && data.laya_health_latency_ms > 1500);
@@ -255,9 +258,14 @@ export default function AdminDashboardPage() {
             tone={typeof data?.today_avg_wait_seconds === "number" && data.today_avg_wait_seconds > 120 ? "warning" : "default"}
           />
           <AdminStat
+            label="近 10 分鐘異常連線"
+            value={formatCount(data?.realtime_errors_10m)}
+            tone={(data?.realtime_errors_10m ?? 0) >= 10 ? "danger" : (data?.realtime_errors_10m ?? 0) > 0 ? "warning" : "success"}
+          />
+          <AdminStat
             label="近 1 小時異常連線"
             value={formatCount(data?.realtime_errors_1h)}
-            tone={(data?.realtime_errors_1h ?? 0) > 0 ? "danger" : "success"}
+            tone={(data?.realtime_errors_1h ?? 0) > 0 ? "warning" : "success"}
           />
           <AdminStat
             label="今日通知成功率"
