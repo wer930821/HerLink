@@ -717,6 +717,32 @@ export default function HomePage() {
   return (
     <main className="home-fixed home-premium home-app-like">
       <section className="home-app-hero">
+        <div className="home-app-motion" aria-hidden="true">
+          <div className="home-app-glow home-app-glow-a" />
+          <div className="home-app-glow home-app-glow-b" />
+
+          <div className="home-app-sparkles">
+            <span className="home-app-sparkle home-app-sparkle-a">✦</span>
+            <span className="home-app-sparkle home-app-sparkle-b">✧</span>
+            <span className="home-app-sparkle home-app-sparkle-c">✦</span>
+            <span className="home-app-sparkle home-app-sparkle-d">✧</span>
+          </div>
+
+          <div className="home-app-heart home-app-heart-a">♥</div>
+          <div className="home-app-heart home-app-heart-b">♥</div>
+
+          <div className="home-app-light-card home-app-light-card-a">
+            <span className="home-app-light-dot" />
+            <span className="home-app-light-dot" />
+            <span className="home-app-light-dot" />
+          </div>
+
+          <div className="home-app-light-card home-app-light-card-b">
+            <span className="home-app-light-line short" />
+            <span className="home-app-light-line" />
+          </div>
+        </div>
+
         <div className="home-app-eyebrow">HerLink</div>
         <h1 className="home-app-title">匿名聊天</h1>
         <p className="home-app-copy">不公開個人檔案，不做交友滑卡，只保留匿名隨機配對與聊天室。</p>
