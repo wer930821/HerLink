@@ -21,6 +21,7 @@ import {
 import { useOnlinePresence } from "../lib/realtime-presence";
 import { MAINTENANCE_MESSAGE, MAINTENANCE_MODE, MAINTENANCE_TITLE } from "../lib/site-config";
 import {
+  buildBrowserHandoffUrl,
   findOrJoinRandomMatch,
   getCurrentSession,
   ensureAnonymousBootstrapProfile,
@@ -714,6 +715,21 @@ export default function HomePage() {
     }
   };
 
+  const shareBrowserHandoff = async () => {
+    if (!state.session) return;
+    const nextPath = state.activeSession?.id ? `/session/${state.activeSession.id}` : "/";
+    const handoffUrl = buildBrowserHandoffUrl(state.session, nextPath);
+    if (!handoffUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(handoffUrl);
+      setMessage("已複製續聊連結。請貼到 Chrome、Safari 或其他瀏覽器開啟，會保留匿名名稱與目前聊天。");
+    } catch {
+      setMessage("無法自動複製續聊連結，請改用目前瀏覽器繼續聊天。");
+    }
+  };
+
+
   return (
     <main className="home-fixed home-premium home-app-like">
       <section className="home-app-hero">
@@ -779,6 +795,9 @@ export default function HomePage() {
         <div className="home-app-footer-left">
           {onlineCountConnected ? <span>目前 {onlineCount} 人在線</span> : null}
           {isAdmin ? <Button variant="link" href="/admin">後台管理</Button> : null}
+          <Button variant="link" type="button" onClick={() => void shareBrowserHandoff()}>
+            跨瀏覽器續聊
+          </Button>
         </div>
         <Button variant="link" onClick={logout} disabled={actionBusy}>登出</Button>
       </footer>
