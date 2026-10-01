@@ -10,6 +10,13 @@ type SessionListPayload = AdminPaginationResult<AdminSessionListItem>;
 
 const statusOptions = ["all", "waiting", "matched", "ended"] as const;
 
+function sessionStatusLabel(value: (typeof statusOptions)[number] | string) {
+  if (value === "waiting") return "等待中";
+  if (value === "matched") return "聊天中";
+  if (value === "ended") return "已結束";
+  return value === "all" ? "全部" : value;
+}
+
 export default function AdminSessionsPage() {
   const { session, loading, accessToken } = useAdminSession();
   const [status, setStatus] = useState<(typeof statusOptions)[number]>("all");
@@ -35,7 +42,7 @@ export default function AdminSessionsPage() {
       });
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "無法載入 sessions。");
+      setError(err instanceof Error ? err.message : "無法載入聊天場次。");
     } finally {
       setRefreshing(false);
     }
@@ -57,8 +64,8 @@ export default function AdminSessionsPage() {
   return (
     <div className="stack">
       <AdminSection
-        title="Sessions"
-        description="依狀態瀏覽會話，點入可查看完整對話與安全事件。"
+        title="聊天場次"
+        description="依狀態瀏覽聊天場次，點入可查看完整對話與安全事件。"
         action={
           <Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>
             {refreshing ? "重新整理中…" : "重新整理"}
@@ -75,16 +82,16 @@ export default function AdminSessionsPage() {
               type="button"
               onClick={() => setStatus(item)}
             >
-              {item === "all" ? "全部" : item}
+              {sessionStatusLabel(item)}
             </Button>
           ))}
         </AdminToolbar>
         {data?.items?.length ? (
           <AdminTableWrap>
-            <AdminTable label="Sessions 列表">
+            <AdminTable label="聊天場次列表">
               <thead>
                 <tr>
-                  <th scope="col">Session</th>
+                  <th scope="col">場次</th>
                   <th scope="col">狀態</th>
                   <th scope="col">訊息</th>
                   <th scope="col">最後訊息</th>
@@ -97,15 +104,15 @@ export default function AdminSessionsPage() {
                   <tr key={item.id}>
                     <td>{shortId(item.id)}</td>
                     <td>
-                      <AdminBadge tone={item.status === "ended" ? "warning" : item.status === "matched" ? "success" : "default"}>{item.status}</AdminBadge>
+                      <AdminBadge tone={item.status === "ended" ? "warning" : item.status === "matched" ? "success" : "default"}>{sessionStatusLabel(item.status)}</AdminBadge>
                     </td>
                     <td>{item.message_count}</td>
                     <td>{formatAdminTime(item.last_message_at)}</td>
                     <td>
                       <div className="stack" style={{ gap: 6 }}>
-                        {item.has_report ? <AdminBadge tone="warning">report</AdminBadge> : null}
-                        {item.has_block ? <AdminBadge tone="danger">block</AdminBadge> : null}
-                        {item.has_fraud_risk_event ? <AdminBadge tone="danger">fraud</AdminBadge> : null}
+                        {item.has_report ? <AdminBadge tone="warning">檢舉</AdminBadge> : null}
+                        {item.has_block ? <AdminBadge tone="danger">封鎖</AdminBadge> : null}
+                        {item.has_fraud_risk_event ? <AdminBadge tone="danger">風險</AdminBadge> : null}
                       </div>
                     </td>
                     <td>
@@ -117,7 +124,7 @@ export default function AdminSessionsPage() {
             </AdminTable>
           </AdminTableWrap>
         ) : (
-          <AdminEmpty>目前沒有符合條件的 sessions。</AdminEmpty>
+          <AdminEmpty>目前沒有符合條件的聊天場次。</AdminEmpty>
         )}
       </AdminSection>
     </div>
