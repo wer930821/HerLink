@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  AppState,
   Alert,
   FlatList,
   Image,
@@ -28,11 +29,13 @@ import {
 } from "../../lib/random-chat-media";
 import {
   blockRandomUser,
+  getAnonymousContactStatus,
   getRandomSession,
   leaveRandomSession,
   listRandomMessages,
   listRandomMessagesAfter,
   nextRandomMatch,
+  requestAnonymousContact,
   RandomMessage,
   RandomReportCategory,
   RandomSession,
@@ -170,6 +173,7 @@ export default function RandomSessionScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [contactState, setContactState] = useState<{ status: "pending" | "active"; my_approved: boolean; partner_approved: boolean } | null>(null);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const listRef = useRef<FlatList<RandomMessage> | null>(null);
@@ -181,6 +185,8 @@ export default function RandomSessionScreen() {
   const typingReceiverDeadlineRef = useRef<number | null>(null);
   const typingActiveRef = useRef(false);
   const replyFallbackRef = useRef(false);
+  const realtimeReadyRef = useRef(false);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isEnded = session?.status === "ended";
   const isActive = session?.status === "active";
@@ -356,52 +362,105 @@ export default function RandomSessionScreen() {
     }, TYPING_RECEIVE_TIMEOUT_MS);
   }, [clearTypingReceiverTimer]);
 
+  const broadcastRefresh = useCallback(async (reason: string) => {
+    const channel = channelRef.current;
+    if (!channel || !realtimeReadyRef.current) return;
+    try {
+      await channel.send({ type: "broadcast", event: "refresh", payload: { reason } });
+    } catch {
+      // Database writes remain authoritative; refresh broadcast is best-effort.
+    }
+  }, []);
+
   useEffect(() => {
-    if (!sessionId) {
-      return;
-    }
-    if (channelRef.current) {
-      void supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
+    if (!sessionId) return;
 
-    const channel = supabase
-      .channel(`random-chat-${sessionId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "random_chat_messages",
-          filter: `session_id=eq.${sessionId}`,
-        },
-        () => void syncMessagesAfterCursor()
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "random_chat_sessions",
-          filter: `id=eq.${sessionId}`,
-        },
-        () => void refreshSession().catch(() => undefined)
-      )
-      .on("broadcast", { event: "typing" }, ({ payload }) => {
-        const typing = Boolean(
-          (payload as { payload?: { typing?: unknown } } | undefined)?.payload?.typing
-        );
-        if (!typing) {
-          clearPartnerTyping();
-          return;
-        }
-        setPartnerTyping(true);
-        armPartnerTypingTimeout();
-      })
-      .subscribe();
+    let disposed = false;
+    let starting = false;
 
-    channelRef.current = channel;
+    const syncRealtimeAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.access_token) {
+        await supabase.realtime.setAuth(data.session.access_token);
+      }
+    };
+
+    const startRealtime = async () => {
+      if (disposed || starting) return;
+      starting = true;
+      await syncRealtimeAuth().catch(() => undefined);
+      if (disposed) return;
+
+      if (channelRef.current) {
+        await supabase.removeChannel(channelRef.current).catch(() => undefined);
+        channelRef.current = null;
+      }
+
+      const channel = supabase
+        .channel(`random-chat-${sessionId}`)
+        .on("broadcast", { event: "refresh" }, () => {
+          void syncMessagesAfterCursor();
+          void refreshSession().catch(() => undefined);
+        })
+        .on("broadcast", { event: "typing" }, ({ payload }) => {
+          const typing = Boolean(
+            (payload as { payload?: { typing?: unknown } } | undefined)?.payload?.typing
+          );
+          if (!typing) {
+            clearPartnerTyping();
+            return;
+          }
+          setPartnerTyping(true);
+          armPartnerTypingTimeout();
+        })
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            starting = false;
+            realtimeReadyRef.current = true;
+            if (reconnectTimerRef.current) {
+              clearTimeout(reconnectTimerRef.current);
+              reconnectTimerRef.current = null;
+            }
+            void syncMessagesAfterCursor();
+            void refreshSession().catch(() => undefined);
+            return;
+          }
+
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            starting = false;
+            realtimeReadyRef.current = false;
+            void syncMessagesAfterCursor();
+            void refreshSession().catch(() => undefined);
+            void syncRealtimeAuth();
+
+            if (!reconnectTimerRef.current) {
+              reconnectTimerRef.current = setTimeout(() => {
+                reconnectTimerRef.current = null;
+                if (!disposed && !realtimeReadyRef.current) {
+                  void startRealtime();
+                }
+              }, 8000);
+            }
+          }
+
+          if (status === "CLOSED") {
+            starting = false;
+            realtimeReadyRef.current = false;
+          }
+        });
+
+      channelRef.current = channel;
+    };
+
+    void startRealtime();
+
     return () => {
+      disposed = true;
+      realtimeReadyRef.current = false;
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
       if (channelRef.current) {
         void supabase.removeChannel(channelRef.current);
         channelRef.current = null;
@@ -418,6 +477,45 @@ export default function RandomSessionScreen() {
     sessionId,
     syncMessagesAfterCursor,
   ]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+
+    let disposed = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const syncNow = () => {
+      if (disposed) return;
+      void syncMessagesAfterCursor();
+      void refreshSession().catch(() => undefined);
+    };
+
+    const schedule = () => {
+      if (disposed) return;
+      timer = setTimeout(() => {
+        syncNow();
+        schedule();
+      }, realtimeReadyRef.current ? 15000 : 3000);
+    };
+
+    schedule();
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") syncNow();
+    });
+
+    return () => {
+      disposed = true;
+      if (timer) clearTimeout(timer);
+      subscription.remove();
+    };
+  }, [refreshSession, sessionId, syncMessagesAfterCursor]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    void getAnonymousContactStatus(sessionId)
+      .then((result) => setContactState(result))
+      .catch(() => undefined);
+  }, [sessionId]);
 
   const startReply = useCallback((message: RandomMessage) => {
     setReplyTarget(message);
@@ -463,6 +561,7 @@ export default function RandomSessionScreen() {
         try {
           const sent = await sendRandomText(sessionId, content, replyId);
           appendSentMessage(sent);
+          void broadcastRefresh("message");
           setDraft("");
           setReplyTarget(null);
           return true;
@@ -490,6 +589,7 @@ export default function RandomSessionScreen() {
     },
     [
       appendSentMessage,
+      broadcastRefresh,
       draft,
       isActive,
       mediaUploading,
@@ -572,6 +672,7 @@ export default function RandomSessionScreen() {
           replyId
         );
         appendSentMessage(sent);
+        void broadcastRefresh("message");
         setPendingImage(null);
         setReplyTarget(null);
         return true;
@@ -601,6 +702,7 @@ export default function RandomSessionScreen() {
     }
   }, [
     appendSentMessage,
+    broadcastRefresh,
     isActive,
     mediaUploading,
     pendingImage,
@@ -627,6 +729,7 @@ export default function RandomSessionScreen() {
               stopTyping();
               clearPartnerTyping();
               await leaveRandomSession(sessionId);
+              await broadcastRefresh("session-ended");
               goWaiting(false);
             } catch (error) {
               setNotice(friendlyError(error, "目前無法離開聊天室，請稍後再試。"));
@@ -637,7 +740,28 @@ export default function RandomSessionScreen() {
           })(),
       },
     ]);
-  }, [clearPartnerTyping, goWaiting, sessionId, stopTyping]);
+  }, [broadcastRefresh, clearPartnerTyping, goWaiting, sessionId, stopTyping]);
+
+  const toggleAnonymousContact = useCallback(async () => {
+    if (!sessionId || contactState?.status === "active" || (contactState?.my_approved && !contactState.partner_approved)) {
+      return;
+    }
+    setBusyAction("contact");
+    setNotice(null);
+    try {
+      const result = await requestAnonymousContact(sessionId);
+      setContactState(result);
+      setNotice(
+        result?.status === "active"
+          ? "你們已成為匿名聯絡人，之後可以再次聊天。"
+          : "已送出匿名聯絡邀請，等對方也同意後才會保留聯絡。"
+      );
+    } catch (error) {
+      setNotice(friendlyError(error, "目前無法保留匿名聯絡，請稍後再試。"));
+    } finally {
+      setBusyAction(null);
+    }
+  }, [contactState, sessionId]);
 
   const goNext = useCallback(() => {
     if (!sessionId) {
@@ -1028,6 +1152,21 @@ export default function RandomSessionScreen() {
       >
         <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
           <View style={styles.menuCard}>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => void toggleAnonymousContact()}
+              disabled={busyAction === "contact" || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}
+            >
+              <Text style={styles.menuItemText}>
+                {contactState?.status === "active"
+                  ? "已保留聯絡"
+                  : contactState?.partner_approved && !contactState.my_approved
+                    ? "接受匿名聯絡"
+                    : contactState?.my_approved
+                      ? "等待對方同意"
+                      : "保留匿名聯絡"}
+              </Text>
+            </Pressable>
             <Text style={styles.menuTitle}>聊天室選單</Text>
             <Pressable
               style={styles.menuItem}
