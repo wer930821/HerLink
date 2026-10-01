@@ -1955,10 +1955,30 @@ select {
 }
 
 
-/* Web chat: use the viewport more fully, especially on phones. */
+/* Web chat: fill the entire viewport edge to edge. */
 .chat-page {
-  width: min(100%, 960px);
-  margin-inline: auto;
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.chat-page > .chat-shell {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--color-surface-1);
 }
 
 .chat-bubble.image-message {
@@ -1980,16 +2000,16 @@ select {
 
 @media (max-width: 768px) {
   .chat-page {
-    width: calc(100vw - 8px);
+    width: 100vw;
     max-width: none;
-    margin-left: 50%;
-    margin-right: 0;
-    transform: translateX(-50%);
+    margin: 0;
+    transform: none;
   }
 
-  .panel.chat-shell {
-    padding: 8px;
-    border-radius: 18px;
+  .chat-page > .chat-shell {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
   }
 
   .chat-shell {
