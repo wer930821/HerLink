@@ -362,6 +362,15 @@ export default function RandomSessionScreen() {
     }, TYPING_RECEIVE_TIMEOUT_MS);
   }, [clearTypingReceiverTimer]);
 
+  const refreshContactStatus = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      setContactState(await getAnonymousContactStatus(sessionId));
+    } catch {
+      // Contact status is secondary to chat delivery.
+    }
+  }, [sessionId]);
+
   const broadcastRefresh = useCallback(async (reason: string) => {
     const channel = channelRef.current;
     if (!channel || !realtimeReadyRef.current) return;
@@ -401,6 +410,7 @@ export default function RandomSessionScreen() {
         .on("broadcast", { event: "refresh" }, () => {
           void syncMessagesAfterCursor();
           void refreshSession().catch(() => undefined);
+          void refreshContactStatus();
         })
         .on("broadcast", { event: "typing" }, ({ payload }) => {
           const typing = Boolean(
@@ -473,6 +483,7 @@ export default function RandomSessionScreen() {
     clearPartnerTyping,
     clearTypingReceiverTimer,
     clearTypingSenderTimer,
+    refreshContactStatus,
     refreshSession,
     sessionId,
     syncMessagesAfterCursor,
@@ -488,6 +499,7 @@ export default function RandomSessionScreen() {
       if (disposed) return;
       void syncMessagesAfterCursor();
       void refreshSession().catch(() => undefined);
+      void refreshContactStatus();
     };
 
     const schedule = () => {
@@ -508,14 +520,11 @@ export default function RandomSessionScreen() {
       if (timer) clearTimeout(timer);
       subscription.remove();
     };
-  }, [refreshSession, sessionId, syncMessagesAfterCursor]);
+  }, [refreshContactStatus, refreshSession, sessionId, syncMessagesAfterCursor]);
 
   useEffect(() => {
-    if (!sessionId) return;
-    void getAnonymousContactStatus(sessionId)
-      .then((result) => setContactState(result))
-      .catch(() => undefined);
-  }, [sessionId]);
+    void refreshContactStatus();
+  }, [refreshContactStatus]);
 
   const startReply = useCallback((message: RandomMessage) => {
     setReplyTarget(message);
@@ -751,6 +760,7 @@ export default function RandomSessionScreen() {
     try {
       const result = await requestAnonymousContact(sessionId);
       setContactState(result);
+      await broadcastRefresh("contact");
       setNotice(
         result?.status === "active"
           ? "你們已成為匿名聯絡人，之後可以再次聊天。"
@@ -761,7 +771,7 @@ export default function RandomSessionScreen() {
     } finally {
       setBusyAction(null);
     }
-  }, [contactState, sessionId]);
+  }, [broadcastRefresh, contactState, sessionId]);
 
   const goNext = useCallback(() => {
     if (!sessionId) {
@@ -1152,6 +1162,7 @@ export default function RandomSessionScreen() {
       >
         <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
           <View style={styles.menuCard}>
+            <Text style={styles.menuTitle}>聊天室選單</Text>
             <Pressable
               style={styles.menuItem}
               onPress={() => void toggleAnonymousContact()}
@@ -1167,7 +1178,6 @@ export default function RandomSessionScreen() {
                       : "保留匿名聯絡"}
               </Text>
             </Pressable>
-            <Text style={styles.menuTitle}>聊天室選單</Text>
             <Pressable
               style={styles.menuItem}
               onPress={() => {
