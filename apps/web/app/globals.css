@@ -4635,3 +4635,70 @@ select {
     column-gap: 12px;
   }
 }
+
+
+/* Frameless admin message transcript */
+.admin-message-list {
+  display: grid;
+}
+
+.admin-message-item {
+  display: grid;
+  gap: 10px;
+  padding: 16px 0 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 46%, transparent);
+}
+
+.admin-message-item:first-child {
+  padding-top: 4px;
+}
+
+.admin-message-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 4px;
+}
+
+.admin-message-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--color-text-muted);
+  font-size: .82rem;
+}
+
+.admin-message-meta strong {
+  color: var(--color-text);
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+
+.admin-message-meta span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.admin-message-body {
+  margin: 0;
+  color: color-mix(in srgb, var(--color-text) 90%, var(--color-text-muted) 10%);
+  font-size: 1rem;
+  line-height: 1.72;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .admin-message-item {
+    padding: 15px 0 17px;
+  }
+
+  .admin-message-meta {
+    gap: 10px;
+    font-size: .78rem;
+  }
+
+  .admin-message-body {
+    font-size: .98rem;
+    line-height: 1.68;
+  }
+}
