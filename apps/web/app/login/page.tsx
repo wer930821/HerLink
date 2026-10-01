@@ -99,7 +99,7 @@ export default function LoginPage() {
           isAdminLogin
             ? adminCreateMode
               ? "首次啟用僅限已設定的管理員 Email。完成 Email 驗證後會自動取得後台權限。"
-              : "使用管理員 Email / 密碼登入後台."
+              : "使用管理員 Email / 密碼登入後台。"
             : "登入後會先進入匿名設定，再開始隨機配對。"
         }
       />
