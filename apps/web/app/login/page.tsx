@@ -19,14 +19,21 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
   const [adminCreateMode, setAdminCreateMode] = useState(false);
+  const [bootstrapAvailable, setBootstrapAvailable] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const nextDestination = getLoginDestination();
     setDestination(nextDestination);
+    if (nextDestination === "/admin") {
+      void supabase.rpc("admin_bootstrap_available").then(({ data }) => {
+        setBootstrapAvailable(data === true);
+      }).catch(() => setBootstrapAvailable(false));
+    }
+
     void supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
       if (nextDestination === "/admin" && data.session?.user.is_anonymous) {
         void supabase.auth.signOut();
@@ -42,6 +49,7 @@ export default function LoginPage() {
     event.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(null);
     try {
       if (isAdminLogin && adminCreateMode) {
         if (password.length < 10) {
@@ -50,25 +58,24 @@ export default function LoginPage() {
         if (password !== confirmPassword) {
           throw new Error("兩次輸入的密碼不一致。");
         }
-        if (!inviteCode.trim()) {
-          throw new Error("請輸入管理員建立碼。");
-        }
 
-        const response = await fetch("/api/admin/bootstrap/create-account", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: email.trim(),
-            password,
-            inviteCode: inviteCode.trim(),
-          }),
-          cache: "no-store",
+        const redirectTo = `${window.location.origin}/auth/callback?next=/admin`;
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: { emailRedirectTo: redirectTo },
         });
 
-        const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
-        if (!response.ok || !payload?.ok) {
-          throw new Error(payload?.error || "目前無法建立管理員帳號。");
+        if (signUpError) {
+          throw signUpError;
         }
+
+        if (data.session) {
+          router.replace("/admin");
+        } else {
+          setSuccess("確認信已寄出，請到 Email 點擊確認連結。確認後會自動取得後台管理員權限。");
+        }
+        return;
       }
 
       const { error: authError } = await signIn(email.trim(), password);
@@ -91,8 +98,8 @@ export default function LoginPage() {
         description={
           isAdminLogin
             ? adminCreateMode
-              ? "輸入管理員建立碼，建立完成後會直接登入後台。"
-              : "使用管理員 Email / 密碼登入後台。"
+              ? "首次啟用僅限已設定的管理員 Email。完成 Email 驗證後會自動取得後台權限。"
+              : "使用管理員 Email / 密碼登入後台."
             : "登入後會先進入匿名設定，再開始隨機配對。"
         }
       />
@@ -129,21 +136,11 @@ export default function LoginPage() {
                 autoComplete="new-password"
               />
             </Field>
-            <Field label="管理員建立碼" htmlFor="admin-invite-code" hint="建立碼只能使用一次，過期後需重新產生">
-              <input
-                id="admin-invite-code"
-                className="input"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
-                autoComplete="off"
-                autoCapitalize="characters"
-                spellCheck={false}
-                placeholder="HL-XXXXXXXX-..."
-              />
-            </Field>
+
           </>
         ) : null}
         {error ? <Notice variant="danger">{error}</Notice> : null}
+        {success ? <Notice variant="success">{success}</Notice> : null}
         <Button type="submit" size="lg" disabled={loading}>
           {loading ? (adminCreateMode ? "建立中…" : "登入中…") : adminCreateMode ? "建立並登入" : "登入"}
         </Button>
@@ -152,7 +149,7 @@ export default function LoginPage() {
             還沒有帳號？前往註冊
           </Button>
         ) : null}
-        {isAdminLogin ? (
+        {isAdminLogin && (bootstrapAvailable || adminCreateMode) ? (
           <Button
             variant="link"
             type="button"
@@ -160,11 +157,11 @@ export default function LoginPage() {
               setAdminCreateMode((value) => !value);
               setError(null);
               setConfirmPassword("");
-              setInviteCode("");
+              setSuccess(null);
             }}
             disabled={loading}
           >
-            {adminCreateMode ? "已有管理員帳號？回到登入" : "沒有管理員帳號？使用建立碼"}
+            {adminCreateMode ? "已有管理員帳號？回到登入" : "第一次使用？啟用管理員帳號"}
           </Button>
         ) : null}
         {!adminCreateMode ? (
