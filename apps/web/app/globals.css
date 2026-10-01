@@ -2194,3 +2194,133 @@ select {
     font-size: 0.76rem;
   }
 }
+
+
+/* Refined mobile chat header */
+.chat-header-main {
+  min-width: 0;
+}
+
+.chat-identity {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.chat-partner-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.chat-partner-name {
+  min-width: 0;
+  max-width: 46vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.chat-my-name {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .chat-header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: calc(8px + env(safe-area-inset-top)) 10px 4px;
+  }
+
+  .chat-header .chat-back {
+    width: 42px;
+    min-height: 42px;
+    border-radius: 14px;
+  }
+
+  .chat-header-leave {
+    min-height: 38px;
+    padding: 7px 10px;
+  }
+
+  .chat-partner-name {
+    max-width: 44vw;
+    font-size: 1.4rem;
+  }
+
+  .chat-identity .status-badge {
+    min-height: 22px;
+    padding: 2px 8px;
+    font-size: 0.7rem;
+  }
+
+  .chat-actions {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    width: 100%;
+    padding: 4px 8px 6px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .chat-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chat-actions .button {
+    flex: 0 0 auto;
+    min-width: 88px;
+    min-height: 42px;
+    padding: 7px 12px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+
+  .chat-actions .button.chat-next {
+    min-width: 116px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .chat-header {
+    gap: 7px;
+    padding-inline: 7px;
+  }
+
+  .chat-header .chat-back {
+    width: 38px;
+    min-height: 38px;
+  }
+
+  .chat-partner-name {
+    max-width: 38vw;
+    font-size: 1.28rem;
+  }
+
+  .chat-my-name {
+    font-size: 0.74rem;
+  }
+
+  .chat-header-leave {
+    min-height: 36px;
+    padding-inline: 8px;
+    font-size: 0.78rem;
+  }
+
+  .chat-actions {
+    padding-inline: 7px;
+  }
+}
