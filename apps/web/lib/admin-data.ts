@@ -283,6 +283,7 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     today_match_success_rate: (healthStats as any).today_match_success_rate == null ? null : asNumber((healthStats as any).today_match_success_rate),
     today_avg_wait_seconds: (healthStats as any).today_avg_wait_seconds == null ? null : asNumber((healthStats as any).today_avg_wait_seconds),
     realtime_errors_1h: asNumber((healthStats as any).realtime_errors_1h),
+    realtime_errors_10m: asNumber((healthStats as any).realtime_errors_10m),
     today_push_success_rate: (healthStats as any).today_push_success_rate == null ? null : asNumber((healthStats as any).today_push_success_rate),
     today_laya_success_rate: (healthStats as any).today_laya_success_rate == null ? null : asNumber((healthStats as any).today_laya_success_rate),
     today_chat_assist_requests: asNumber((healthStats as any).today_chat_assist_requests),
