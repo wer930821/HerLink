@@ -2389,9 +2389,12 @@ select {
   }
 
   .chat-actions .button.chat-contact {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     min-width: 0;
-    max-width: 180px;
+    max-width: 140px;
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 0.76rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2417,7 +2420,10 @@ select {
   }
 
   .chat-actions .button.chat-contact {
-    max-width: 155px;
+    max-width: 124px;
+    min-height: 34px;
+    padding-inline: 8px;
+    font-size: 0.72rem;
   }
 
   .chat-more-summary {
