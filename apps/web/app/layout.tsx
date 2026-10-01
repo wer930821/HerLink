@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { SiteChrome } from "../components/layout/SiteChrome";
 
 export const metadata: Metadata = {
-  title: "HerLink Web V0.1",
+  title: "HerLink 網頁版",
   description: "純匿名隨機配對網站 + 即時聊天 + 防詐騙",
   manifest: "/manifest.webmanifest",
   icons: {
