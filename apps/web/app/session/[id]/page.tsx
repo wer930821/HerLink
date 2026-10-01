@@ -512,7 +512,7 @@ export default function RandomSessionPage({ params }: Props) {
   }
 
   return (
-    <main className="stack">
+    <main className="stack chat-page">
       <section className="panel chat-shell">
         <header className="chat-header">
           <button className="ghost" onClick={() => router.replace("/")}>返回首頁</button>
