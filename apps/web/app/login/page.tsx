@@ -66,7 +66,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
-            placeholder="name@example.com"
+            placeholder="請輸入電子郵件"
           />
         </Field>
         <Field label="密碼" htmlFor="login-password">
