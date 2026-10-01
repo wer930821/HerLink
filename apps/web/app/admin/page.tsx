@@ -11,6 +11,19 @@ type DashboardPayload = AdminSummary & {
   recent_realtime_diagnostics: AdminRealtimeDiagnosticRow[];
 };
 
+function realtimeEventLabel(value: string) {
+  const labels: Record<string, string> = {
+    realtime_subscribe_started: "開始建立即時連線",
+    realtime_subscribed: "即時連線成功",
+    realtime_subscribe_error: "即時連線失敗",
+    realtime_disconnected: "即時連線中斷",
+    realtime_reconnected: "即時連線恢復",
+    message_received_realtime: "即時收到訊息",
+    message_loaded_from_db: "從資料庫載入訊息",
+  };
+  return labels[value] ?? value;
+}
+
 function formatCount(value: number | null | undefined) {
   return typeof value === "number" ? value.toLocaleString("zh-TW") : "—";
 }
@@ -111,17 +124,17 @@ export default function AdminDashboardPage() {
         </AdminStatGrid>
       </AdminSection>
 
-      <AdminSection title="最近 Realtime 診斷" description="僅保留安全事件與連線診斷，不含訊息正文。">
+      <AdminSection title="最近即時診斷" description="僅保留安全事件與連線診斷，不含訊息正文。">
         {data?.recent_realtime_diagnostics?.length ? (
           <AdminTableWrap>
-            <AdminTable label="最近 Realtime 診斷">
+            <AdminTable label="最近即時診斷">
               <thead>
                 <tr>
                   <th scope="col">時間</th>
                   <th scope="col">事件</th>
-                  <th scope="col">Session</th>
-                  <th scope="col">Message</th>
-                  <th scope="col">Safe code</th>
+                  <th scope="col">場次</th>
+                  <th scope="col">訊息</th>
+                  <th scope="col">安全錯誤碼</th>
                 </tr>
               </thead>
               <tbody>
@@ -130,7 +143,7 @@ export default function AdminDashboardPage() {
                     <td>{formatAdminTime(item.created_at)}</td>
                     <td>
                       <AdminBadge tone={item.event_type === "realtime_subscribe_error" ? "danger" : item.event_type === "message_received_realtime" ? "accent" : "default"}>
-                        {item.event_type}
+                        {realtimeEventLabel(item.event_type)}
                       </AdminBadge>
                     </td>
                     <td>{shortId(item.session_id)}</td>
@@ -142,7 +155,7 @@ export default function AdminDashboardPage() {
             </AdminTable>
           </AdminTableWrap>
         ) : (
-          <AdminEmpty>目前沒有 realtime 診斷資料。</AdminEmpty>
+          <AdminEmpty>目前沒有即時診斷資料。</AdminEmpty>
         )}
       </AdminSection>
     </div>
