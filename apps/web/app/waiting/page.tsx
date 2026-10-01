@@ -15,10 +15,6 @@ import {
 import { Badge, Button, Notice, PageHero } from "../../components/ui";
 import { PushPermissionCard } from "../../components/push/PushPermissionCard";
 
-type RealtimePayload<T> = {
-  new: T;
-};
-
 export default function WaitingPage() {
   const router = useRouter();
   const [debug, setDebug] = useState(false);
@@ -103,34 +99,6 @@ export default function WaitingPage() {
       mounted = false;
     };
   }, [router]);
-
-  useEffect(() => {
-    if (MAINTENANCE_MODE || !userId) return;
-
-    const channel = supabase
-      .channel(`random-queue-${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "random_match_queue",
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload: RealtimePayload<RandomQueueRow>) => {
-          const nextQueue = payload.new as RandomQueueRow;
-          setQueue(nextQueue);
-          if (!debug && nextQueue.status === "matched" && nextQueue.matched_session_id) {
-            router.replace(`/session/${nextQueue.matched_session_id}`);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [debug, router, userId]);
 
   useEffect(() => {
     if (MAINTENANCE_MODE || !userId) return;
