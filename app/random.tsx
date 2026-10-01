@@ -67,7 +67,7 @@ export default function RandomMatchScreen() {
     if (!waiting) {
       return;
     }
-    const timer = setInterval(() => void join(), 2500);
+    const timer = setInterval(() => void join(), 5000);
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waiting]);
