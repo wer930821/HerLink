@@ -4,10 +4,10 @@ import { AdminAccessGate } from "./access-gate";
 
 const navItems = [
   { href: "/admin", label: "總覽" },
-  { href: "/admin/sessions", label: "Sessions" },
-  { href: "/admin/realtime", label: "Realtime" },
-  { href: "/admin/reports", label: "Reports" },
-  { href: "/admin/safety", label: "Safety" },
+  { href: "/admin/sessions", label: "聊天場次" },
+  { href: "/admin/realtime", label: "即時診斷" },
+  { href: "/admin/reports", label: "檢舉管理" },
+  { href: "/admin/safety", label: "安全管理" },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -19,13 +19,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             compact
             kicker={
               <span className="admin-kicker">
-                HerLink Admin Dashboard V0.1 <Badge variant="neutral">Operations</Badge>
+                HerLink 管理後台 <Badge variant="neutral">營運</Badge>
               </span>
             }
             title="後台總覽"
-            description="僅供固定管理員使用的精簡 ops 面板。"
+            description="僅供固定管理員使用的營運管理面板。"
             actions={
-              <nav className="admin-nav" aria-label="Admin navigation">
+              <nav className="admin-nav" aria-label="後台導覽">
                 {navItems.map((item) => (
                   <Button key={item.href} variant="secondary" size="sm" href={item.href}>
                     {item.label}
