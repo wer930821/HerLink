@@ -4114,3 +4114,82 @@ select {
     border-radius: 15px;
   }
 }
+
+
+/* Relax mobile admin spacing */
+@media (max-width: 640px) {
+  .admin-layout .stack {
+    gap: 18px;
+  }
+
+  .admin-layout .surface-elevation-1 {
+    padding: 18px;
+  }
+
+  .admin-card-header {
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .admin-card-description {
+    margin-top: 8px;
+    line-height: 1.72;
+  }
+
+  .admin-nav {
+    gap: 12px;
+    padding: 2px 2px 8px;
+  }
+
+  .admin-nav .btn {
+    min-height: 44px;
+    padding-inline: 16px;
+  }
+
+  .admin-stat-grid {
+    gap: 14px;
+  }
+
+  .admin-layout .surface-inset {
+    padding: 16px;
+    min-height: 132px;
+  }
+
+  .admin-stat-label {
+    margin-bottom: 10px;
+    line-height: 1.45;
+  }
+
+  .admin-stat-value {
+    margin-top: 0;
+  }
+
+  .admin-layout .row {
+    gap: 12px;
+  }
+
+  .admin-layout .row > .btn {
+    min-height: 44px;
+    padding-inline: 14px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 14px 16px;
+  }
+}
+
+@media (max-width: 390px) {
+  .admin-layout .surface-elevation-1 {
+    padding: 16px;
+  }
+
+  .admin-stat-grid {
+    gap: 12px;
+  }
+
+  .admin-layout .surface-inset {
+    min-height: 124px;
+    padding: 15px;
+  }
+}
