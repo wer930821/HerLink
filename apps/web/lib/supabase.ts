@@ -303,6 +303,49 @@ export async function getCurrentSession() {
   return supabase.auth.getSession();
 }
 
+export function buildBrowserHandoffUrl(session: Session, nextPath = "/") {
+  if (typeof window === "undefined") return "";
+  const next = nextPath.startsWith("/") ? nextPath : "/";
+  const fragment = new URLSearchParams({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+    next,
+  });
+  return `${window.location.origin}/auth/handoff#${fragment.toString()}`;
+}
+
+export async function consumeBrowserHandoffFromHash() {
+  if (typeof window === "undefined" || window.location.pathname !== "/auth/handoff") {
+    return { restored: false, nextPath: "/" };
+  }
+
+  const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const accessToken = fragment.get("access_token");
+  const refreshToken = fragment.get("refresh_token");
+  const rawNext = fragment.get("next") ?? "/";
+  const nextPath = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
+
+  // Remove tokens from the address bar immediately so they are not kept in browser history.
+  window.history.replaceState({}, document.title, "/auth/handoff");
+
+  if (!accessToken || !refreshToken) {
+    return { restored: false, nextPath };
+  }
+
+  const { data, error } = await supabase.auth.setSession({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  });
+
+  if (error || !data.session) {
+    return { restored: false, nextPath, error };
+  }
+
+  // Refresh once so the destination browser owns the newest persisted session tokens.
+  await supabase.auth.refreshSession().catch(() => undefined);
+  return { restored: true, nextPath, session: data.session };
+}
+
 export async function waitForCurrentSession(timeoutMs = 2500, intervalMs = 100) {
   if (!hasSupabaseConfig) {
     return { data: { session: null }, error: null } as {
