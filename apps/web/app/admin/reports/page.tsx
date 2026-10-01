@@ -15,7 +15,7 @@ function reportStatusLabel(value: (typeof statusOptions)[number] | string) {
   if (value === "reviewing") return "處理中";
   if (value === "resolved") return "已處理";
   if (value === "dismissed") return "已忽略";
-  return value === "all" ? "全部" : value;
+  return value === "all" ? "全部" : "其他狀態";
 }
 
 function reportCategoryLabel(value: string) {
@@ -31,7 +31,7 @@ function reportCategoryLabel(value: string) {
     suspected_minor: "疑似未成年",
     other: "其他",
   };
-  return labels[value] ?? value;
+  return labels[value] ?? "其他";
 }
 
 function sessionStatusLabel(value: string) {
@@ -39,7 +39,7 @@ function sessionStatusLabel(value: string) {
   if (value === "matched") return "聊天中";
   if (value === "active") return "聊天中";
   if (value === "ended") return "已結束";
-  return value;
+  return "其他狀態";
 }
 
 export default function AdminReportsPage() {
