@@ -1953,3 +1953,116 @@ select {
     gap: 8px;
   }
 }
+
+
+/* Web chat: use the viewport more fully, especially on phones. */
+.chat-page {
+  width: min(100%, 960px);
+  margin-inline: auto;
+}
+
+.chat-bubble.image-message {
+  width: min(94%, 640px);
+  max-width: min(94%, 640px);
+  padding: 8px;
+}
+
+.chat-bubble.image-message .chat-image-wrap {
+  width: 100%;
+}
+
+.chat-bubble.image-message .chat-image {
+  width: 100%;
+  max-width: 100%;
+  max-height: min(68dvh, 720px);
+  object-fit: contain;
+}
+
+@media (max-width: 768px) {
+  .chat-page {
+    width: calc(100vw - 8px);
+    max-width: none;
+    margin-left: 50%;
+    margin-right: 0;
+    transform: translateX(-50%);
+  }
+
+  .panel.chat-shell {
+    padding: 8px;
+    border-radius: 18px;
+  }
+
+  .chat-shell {
+    gap: 8px;
+  }
+
+  .chat-header {
+    padding-inline: 2px;
+  }
+
+  .chat-actions {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .chat-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chat-actions .button {
+    flex: 0 0 auto;
+    min-width: 92px;
+    min-height: 40px;
+    padding-inline: 12px;
+  }
+
+  .chat-messages {
+    padding: 4px 0;
+    gap: 10px;
+  }
+
+  .chat-bubble {
+    max-width: 94%;
+    padding: 12px 14px;
+  }
+
+  .chat-bubble.image-message {
+    width: 94%;
+    max-width: 94%;
+    padding: 6px;
+    border-radius: 20px;
+  }
+
+  .chat-bubble.image-message .chat-image {
+    width: 100%;
+    max-width: 100%;
+    max-height: 66dvh;
+    border-radius: 16px;
+  }
+
+  .chat-composer {
+    margin-top: 0;
+  }
+
+  .chat-composer-main {
+    gap: 6px;
+  }
+
+  .chat-media-button {
+    width: 44px;
+    min-height: 48px;
+  }
+
+  .chat-input {
+    min-height: 48px;
+  }
+
+  .chat-send {
+    min-height: 48px;
+    padding-inline: 16px;
+  }
+}
