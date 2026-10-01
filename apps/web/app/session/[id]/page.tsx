@@ -1913,7 +1913,7 @@ export default function RandomSessionPage() {
                 <div className="title chat-partner-name">{partnerName}</div>
                 {partnerVerified ? <span className="chat-verified">✓</span> : null}
               </div>
-              <div className="chat-my-name">你：{myAnonymousName} · {isEnded ? "聊天已結束" : "匿名即時聊天"}</div>
+              <div className="chat-my-name">你：{myAnonymousName}{isEnded ? " · 聊天已結束" : ""}</div>
             </div>
           </div>
           <div className="chat-header-actions">
