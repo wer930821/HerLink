@@ -517,8 +517,8 @@ export default function HomePage() {
     return (
       <main className="stack home-fixed">
         <PageHero
-          title="HerLink Web V0.1"
-          description="缺少 Supabase 設定，請先補上 NEXT_PUBLIC_SUPABASE_URL 和 NEXT_PUBLIC_SUPABASE_ANON_KEY。"
+          title="HerLink 網頁版"
+          description="缺少後端連線設定，請聯絡管理員。"
         />
         {debugPanel}
       </main>
