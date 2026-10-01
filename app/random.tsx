@@ -45,7 +45,7 @@ export default function RandomMatchScreen() {
     } catch (error) {
       if (mountedRef.current) {
         setWaiting(false);
-        Alert.alert("目前無法配對", error instanceof Error ? error.message : "請稍後再試。");
+        Alert.alert("目前無法配對", "請稍後再試。");
       }
     } finally {
       joinBusyRef.current = false;
@@ -81,7 +81,7 @@ export default function RandomMatchScreen() {
       }
     } catch (error) {
       if (mountedRef.current) {
-        Alert.alert("目前無法停止", error instanceof Error ? error.message : "請稍後再試。");
+        Alert.alert("目前無法停止", "請稍後再試。");
       }
     } finally {
       joinBusyRef.current = false;
