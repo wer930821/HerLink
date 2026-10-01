@@ -79,6 +79,9 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [inviteExpiresAt, setInviteExpiresAt] = useState<string | null>(null);
 
   const sessionState = useMemo(() => {
     if (loading) return "loading";
@@ -188,6 +191,30 @@ export default function AdminDashboardPage() {
     };
   }, [data]);
 
+  const createAdminInvite = async () => {
+    if (!accessToken || inviteBusy) return;
+    setInviteBusy(true);
+    setInviteCode(null);
+    setInviteExpiresAt(null);
+    try {
+      const result = await fetchAdminJson<{ inviteCode: string; expiresAt: string }>(
+        accessToken,
+        "/api/admin/invite-code",
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ expiresMinutes: 30, maxAttempts: 5 }),
+        }
+      );
+      setInviteCode(result.inviteCode);
+      setInviteExpiresAt(result.expiresAt);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "目前無法建立管理員建立碼。");
+    } finally {
+      setInviteBusy(false);
+    }
+  };
+
   if (sessionState === "loading") {
     return <AdminEmpty>正在載入後台驗證…</AdminEmpty>;
   }
@@ -256,6 +283,38 @@ export default function AdminDashboardPage() {
           <AdminStat label="今日通知成功" value={formatCount(data?.today_web_push_delivered_count)} tone="success" />
           <AdminStat label="今日通知失效" value={formatCount(data?.today_web_push_revoked_count)} tone="warning" />
         </AdminStatGrid>
+      </AdminSection>
+
+      <AdminSection
+        title="管理員建立碼"
+        description="建立一次性管理員帳號建立碼。預設 30 分鐘失效，輸錯 5 次後也會失效。"
+        action={
+          <Button variant="secondary" size="sm" type="button" onClick={() => void createAdminInvite()} disabled={inviteBusy}>
+            {inviteBusy ? "產生中…" : "產生建立碼"}
+          </Button>
+        }
+      >
+        {inviteCode ? (
+          <div className="admin-invite-result">
+            <div>
+              <div className="muted small">建立碼只顯示這一次</div>
+              <code className="admin-invite-code">{inviteCode}</code>
+            </div>
+            <div className="muted small">
+              到期時間：{inviteExpiresAt ? formatAdminTime(inviteExpiresAt) : "—"}
+            </div>
+            <Button
+              variant="link"
+              size="sm"
+              type="button"
+              onClick={() => void navigator.clipboard?.writeText(inviteCode)}
+            >
+              複製建立碼
+            </Button>
+          </div>
+        ) : (
+          <div className="muted small">需要新增管理員時再產生，建立碼不可重複使用。</div>
+        )}
       </AdminSection>
 
       <AdminSection title="部署資訊" description="確認目前正式環境正在執行哪一個版本，以及這個版本第一次通過健康檢查的時間。">
