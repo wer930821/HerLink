@@ -38,6 +38,26 @@ async function requireUser(request: Request) {
   return error ? null : data.user;
 }
 
+async function recordChatAssistHealth(request: Request, engine: "laya" | "fallback") {
+  const header = request.headers.get("authorization") ?? "";
+  if (!header.startsWith("Bearer ")) return;
+
+  const token = header.slice(7).trim();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+  if (!token || !url || !key) return;
+
+  try {
+    const client = createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    await client.rpc("record_chat_assist_health", { p_engine: engine });
+  } catch {
+    // Health telemetry must never block chat suggestions.
+  }
+}
+
 function sanitizeMessages(value: unknown): ChatAssistMessage[] {
   if (!Array.isArray(value)) return [];
 
@@ -365,6 +385,7 @@ export async function POST(request: Request) {
 
   const laya = await askLaya(messages);
   const decision = laya ?? getFallback(messages);
+  await recordChatAssistHealth(request, laya ? "laya" : "fallback");
 
   return json(200, {
     ok: true,
