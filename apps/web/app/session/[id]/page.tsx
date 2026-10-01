@@ -1202,6 +1202,9 @@ export default function RandomSessionPage() {
       return;
     }
 
+    let disposed = false;
+    let timer: number | null = null;
+
     const syncNow = () => {
       if (document.visibilityState !== "visible") {
         return;
@@ -1211,16 +1214,36 @@ export default function RandomSessionPage() {
       void refreshSessionFromServerRef.current?.();
     };
 
-    const interval = window.setInterval(syncNow, 15000);
-    window.addEventListener("focus", syncNow);
-    window.addEventListener("online", syncNow);
-    document.addEventListener("visibilitychange", syncNow);
+    const scheduleNext = () => {
+      if (disposed) return;
+      const delay = typingChannelReadyRef.current ? 15_000 : 3_000;
+      timer = window.setTimeout(() => {
+        syncNow();
+        scheduleNext();
+      }, delay);
+    };
+
+    const syncAndReschedule = () => {
+      syncNow();
+      if (timer !== null) {
+        window.clearTimeout(timer);
+      }
+      scheduleNext();
+    };
+
+    scheduleNext();
+    window.addEventListener("focus", syncAndReschedule);
+    window.addEventListener("online", syncAndReschedule);
+    document.addEventListener("visibilitychange", syncAndReschedule);
 
     return () => {
-      window.clearInterval(interval);
-      window.removeEventListener("focus", syncNow);
-      window.removeEventListener("online", syncNow);
-      document.removeEventListener("visibilitychange", syncNow);
+      disposed = true;
+      if (timer !== null) {
+        window.clearTimeout(timer);
+      }
+      window.removeEventListener("focus", syncAndReschedule);
+      window.removeEventListener("online", syncAndReschedule);
+      document.removeEventListener("visibilitychange", syncAndReschedule);
     };
   }, [myProfile?.id, session?.id]);
 
@@ -1230,6 +1253,8 @@ export default function RandomSessionPage() {
     let disposed = false;
     let chatChannelSubscribed = false;
     let chatChannel: ReturnType<typeof supabase.channel> | null = null;
+    let reconnectTimer: number | null = null;
+    let startingRealtime = false;
 
     const syncRealtimeAuth = async () => {
       const { data } = await supabase.auth.getSession();
@@ -1240,10 +1265,16 @@ export default function RandomSessionPage() {
     };
 
     const startRealtime = async () => {
+      if (disposed || startingRealtime) return;
+      startingRealtime = true;
+
       // Anonymous users still use authenticated JWTs. Explicitly sync the
       // freshest token before joining so Realtime never reuses a stale token.
       await syncRealtimeAuth().catch(() => undefined);
-      if (disposed) return;
+      if (disposed) {
+        startingRealtime = false;
+        return;
+      }
 
       recordDiagnostic("realtime_subscribe_started", {
         sessionId: session.id,
@@ -1272,7 +1303,12 @@ export default function RandomSessionPage() {
         })
         .subscribe((status: string, channelError?: Error) => {
           if (status === "SUBSCRIBED") {
+            startingRealtime = false;
             typingChannelReadyRef.current = true;
+            if (reconnectTimer !== null) {
+              window.clearTimeout(reconnectTimer);
+              reconnectTimer = null;
+            }
             recordDiagnostic(chatChannelSubscribed ? "realtime_reconnected" : "realtime_subscribed", {
               sessionId: session.id,
               userId: myProfile.id,
@@ -1297,8 +1333,34 @@ export default function RandomSessionPage() {
               },
             });
 
-            // Refresh the websocket auth for the channel's automatic retry.
+            // Immediately fall back to database sync so chat remains current.
+            void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
+            void refreshSessionFromServerRef.current?.();
+
+            // Refresh auth first. If Supabase has not recovered this channel
+            // within 8 seconds, rebuild it once instead of leaving a stale socket.
             void syncRealtimeAuth();
+            if (reconnectTimer === null) {
+              reconnectTimer = window.setTimeout(() => {
+                reconnectTimer = null;
+                if (disposed || typingChannelReadyRef.current) return;
+
+                const staleChannel = chatChannel;
+                chatChannel = null;
+                typingChannelRef.current = null;
+                startingRealtime = false;
+
+                const restart = async () => {
+                  if (staleChannel) {
+                    await supabase.removeChannel(staleChannel).catch(() => undefined);
+                  }
+                  if (!disposed) {
+                    void startRealtime();
+                  }
+                };
+                void restart();
+              }, 8_000);
+            }
             return;
           }
 
@@ -1318,6 +1380,10 @@ export default function RandomSessionPage() {
 
     return () => {
       disposed = true;
+      if (reconnectTimer !== null) {
+        window.clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
       if (chatChannel) {
         recordDiagnostic("realtime_disconnected", {
           sessionId: session.id,
