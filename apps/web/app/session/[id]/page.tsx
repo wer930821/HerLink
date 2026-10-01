@@ -303,6 +303,7 @@ export default function RandomSessionPage() {
     (message) => message.message_type === "text" && message.content.trim().length > 0
   ) ?? null;
   const partnerName = session?.partner_anonymous_display_name ?? "匿名使用者";
+  const myAnonymousName = myProfile?.anonymous_display_name ?? "匿名使用者";
   const partnerVerified = session?.partner_verified ?? false;
   const typingIndicatorText = partnerTyping ? `${partnerName} 正在輸入…` : "\u00a0";
 
@@ -1908,13 +1909,16 @@ export default function RandomSessionPage() {
           </button>
           <div className="chat-header-main">
             <div className="chat-identity">
-              <div className="title" style={{ fontSize: "1.15rem" }}>{partnerName}</div>
-              <span className="status-badge">{isEnded ? "已結束" : "配對中"}</span>
-              {partnerVerified ? (
-                <span className="status-badge success">已驗證</span>
-              ) : (
-                <span className="status-badge">未驗證</span>
-              )}
+              <div className="chat-partner-row">
+                <div className="title chat-partner-name">{partnerName}</div>
+                <span className="status-badge">{isEnded ? "已結束" : "配對中"}</span>
+                {partnerVerified ? (
+                  <span className="status-badge success">已驗證</span>
+                ) : (
+                  <span className="status-badge">未驗證</span>
+                )}
+              </div>
+              <div className="chat-my-name">你：{myAnonymousName}</div>
             </div>
           </div>
           <button
