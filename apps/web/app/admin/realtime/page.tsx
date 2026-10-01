@@ -19,6 +19,20 @@ const eventTypeOptions = [
   "message_loaded_from_db",
 ] as const;
 
+function realtimeEventLabel(value: (typeof eventTypeOptions)[number] | string) {
+  const labels: Record<string, string> = {
+    all: "全部事件",
+    realtime_subscribe_started: "開始建立即時連線",
+    realtime_subscribed: "即時連線成功",
+    realtime_subscribe_error: "即時連線失敗",
+    realtime_disconnected: "即時連線中斷",
+    realtime_reconnected: "即時連線恢復",
+    message_received_realtime: "即時收到訊息",
+    message_loaded_from_db: "從資料庫載入訊息",
+  };
+  return labels[value] ?? value;
+}
+
 export default function AdminRealtimePage() {
   const { session, loading, accessToken } = useAdminSession();
   const [sessionId, setSessionId] = useState("");
@@ -47,7 +61,7 @@ export default function AdminRealtimePage() {
       });
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "無法載入 realtime 診斷。");
+      setError(err instanceof Error ? err.message : "無法載入即時診斷。");
     } finally {
       setRefreshing(false);
     }
@@ -69,8 +83,8 @@ export default function AdminRealtimePage() {
   return (
     <div className="stack">
       <AdminSection
-        title="Realtime"
-        description="查看聊天室即時連線與訊息事件，不含訊息正文以外的敏感資料。"
+        title="即時診斷"
+        description="查看聊天室即時連線與訊息事件，不顯示不必要的敏感資料。"
         action={
           <Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>
             {refreshing ? "重新整理中…" : "重新整理"}
@@ -83,12 +97,12 @@ export default function AdminRealtimePage() {
             className="input"
             value={sessionId}
             onChange={(event) => setSessionId(event.target.value)}
-            placeholder="Session ID 篩選"
+            placeholder="聊天場次 ID 篩選"
           />
           <select className="input" value={eventType} onChange={(event) => setEventType(event.target.value as (typeof eventTypeOptions)[number])}>
             {eventTypeOptions.map((item) => (
               <option key={item} value={item}>
-                {item === "all" ? "全部事件" : item}
+                {realtimeEventLabel(item)}
               </option>
             ))}
           </select>
@@ -98,15 +112,15 @@ export default function AdminRealtimePage() {
         </AdminToolbar>
         {data?.items?.length ? (
           <AdminTableWrap>
-            <AdminTable label="Realtime 事件">
+            <AdminTable label="即時診斷事件">
               <thead>
                 <tr>
                   <th scope="col">時間</th>
                   <th scope="col">事件</th>
-                  <th scope="col">Session</th>
-                  <th scope="col">User</th>
-                  <th scope="col">Message</th>
-                  <th scope="col">Safe code</th>
+                  <th scope="col">場次</th>
+                  <th scope="col">使用者</th>
+                  <th scope="col">訊息</th>
+                  <th scope="col">安全錯誤碼</th>
                 </tr>
               </thead>
               <tbody>
@@ -128,7 +142,7 @@ export default function AdminRealtimePage() {
             </AdminTable>
           </AdminTableWrap>
         ) : (
-          <AdminEmpty>目前沒有 realtime 診斷資料。</AdminEmpty>
+          <AdminEmpty>目前沒有即時診斷資料。</AdminEmpty>
         )}
       </AdminSection>
     </div>
