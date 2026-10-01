@@ -10,6 +10,14 @@ type ReportPayload = AdminPaginationResult<AdminReportListItem>;
 
 const statusOptions = ["all", "open", "reviewing", "resolved", "dismissed"] as const;
 
+function reportStatusLabel(value: (typeof statusOptions)[number] | string) {
+  if (value === "open") return "待處理";
+  if (value === "reviewing") return "處理中";
+  if (value === "resolved") return "已處理";
+  if (value === "dismissed") return "已忽略";
+  return value === "all" ? "全部" : value;
+}
+
 export default function AdminReportsPage() {
   const { session, loading, accessToken } = useAdminSession();
   const [status, setStatus] = useState<(typeof statusOptions)[number]>("all");
@@ -35,7 +43,7 @@ export default function AdminReportsPage() {
       });
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "無法載入 reports。");
+      setError(err instanceof Error ? err.message : "無法載入檢舉資料。");
     } finally {
       setRefreshing(false);
     }
@@ -57,8 +65,8 @@ export default function AdminReportsPage() {
   return (
     <div className="stack">
       <AdminSection
-        title="Reports"
-        description="依狀態檢視檢舉資料與關聯 session。"
+        title="檢舉管理"
+        description="依狀態檢視檢舉資料與關聯聊天場次。"
         action={
           <Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>
             {refreshing ? "重新整理中…" : "重新整理"}
@@ -75,7 +83,7 @@ export default function AdminReportsPage() {
               type="button"
               onClick={() => setStatus(item)}
             >
-              {item === "all" ? "全部" : item}
+              {reportStatusLabel(item)}
             </Button>
           ))}
         </AdminToolbar>
@@ -85,10 +93,10 @@ export default function AdminReportsPage() {
               <thead>
                 <tr>
                   <th scope="col">時間</th>
-                  <th scope="col">Session</th>
+                  <th scope="col">場次</th>
                   <th scope="col">分類</th>
-                  <th scope="col">Reporter</th>
-                  <th scope="col">Reported</th>
+                  <th scope="col">檢舉者</th>
+                  <th scope="col">被檢舉者</th>
                   <th scope="col">狀態</th>
                   <th scope="col">標記</th>
                 </tr>
@@ -101,11 +109,11 @@ export default function AdminReportsPage() {
                     <td>{item.category}</td>
                     <td>{shortId(item.reporter_id)}</td>
                     <td>{shortId(item.reported_user_id)}</td>
-                    <td>{item.status}</td>
+                    <td>{reportStatusLabel(item.status)}</td>
                     <td>
                       <div className="stack" style={{ gap: 6 }}>
-                        {item.has_block ? <AdminBadge tone="danger">block</AdminBadge> : null}
-                        {item.has_fraud_risk_event ? <AdminBadge tone="danger">fraud</AdminBadge> : null}
+                        {item.has_block ? <AdminBadge tone="danger">封鎖</AdminBadge> : null}
+                        {item.has_fraud_risk_event ? <AdminBadge tone="danger">風險</AdminBadge> : null}
                         {item.session_status ? <AdminBadge tone="accent">{item.session_status}</AdminBadge> : null}
                       </div>
                     </td>
@@ -115,7 +123,7 @@ export default function AdminReportsPage() {
             </AdminTable>
           </AdminTableWrap>
         ) : (
-          <AdminEmpty>目前沒有 reports。</AdminEmpty>
+          <AdminEmpty>目前沒有檢舉資料。</AdminEmpty>
         )}
       </AdminSection>
     </div>
