@@ -179,15 +179,41 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
   const dayStart = getTaipeiDayStartIso();
   const layaHealthPromise = loadLayaServiceHealth();
 
-  const [{ data: anonymousStatsData, error: anonymousStatsError }, { data: healthData, error: healthError }] = await Promise.all([
+  const deploymentId = process.env.VERCEL_DEPLOYMENT_ID || null;
+  const deploymentVersion = process.env.VERCEL_GIT_COMMIT_SHA || null;
+  const deploymentBranch = process.env.VERCEL_GIT_COMMIT_REF || null;
+  const deploymentEnvironment = process.env.VERCEL_ENV || null;
+  const deploymentUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
+
+  const deploymentHealthPromise = deploymentId
+    ? client.rpc("record_admin_deployment_health", {
+        p_deployment_id: deploymentId,
+        p_commit_sha: deploymentVersion,
+        p_commit_ref: deploymentBranch,
+        p_deployment_url: deploymentUrl,
+        p_environment: deploymentEnvironment,
+      })
+    : Promise.resolve({ data: null, error: null });
+
+  const [
+    { data: anonymousStatsData, error: anonymousStatsError },
+    { data: healthData, error: healthError },
+    { data: recentErrorsData, error: recentErrorsError },
+    deploymentHealthResult,
+  ] = await Promise.all([
     client.rpc("get_admin_random_chat_stats"),
     client.rpc("get_admin_health_metrics"),
+    client.rpc("get_admin_recent_error_summary"),
+    deploymentHealthPromise,
   ]);
   if (anonymousStatsError) {
     throw anonymousStatsError;
   }
   if (healthError) {
     throw healthError;
+  }
+  if (recentErrorsError) {
+    throw recentErrorsError;
   }
 
   const anonymousStats = Array.isArray(anonymousStatsData)
@@ -196,6 +222,11 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
   const healthStats = Array.isArray(healthData)
     ? healthData[0] ?? {}
     : healthData ?? {};
+  const recentErrors = Array.isArray(recentErrorsData) ? recentErrorsData : [];
+  const lastSuccessfulDeploymentAt =
+    deploymentHealthResult && !deploymentHealthResult.error && typeof deploymentHealthResult.data === "string"
+      ? deploymentHealthResult.data
+      : null;
 
   const safeCount = async (query: PromiseLike<{ count: number | null; error: { message?: string } | null }>) => {
     const result = await query;
@@ -257,6 +288,18 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     today_chat_assist_requests: asNumber((healthStats as any).today_chat_assist_requests),
     laya_service_state: layaHealth.state,
     laya_health_latency_ms: layaHealth.latencyMs,
+    deployment_version: deploymentVersion,
+    deployment_id: deploymentId,
+    deployment_branch: deploymentBranch,
+    deployment_environment: deploymentEnvironment,
+    deployment_url: deploymentUrl,
+    last_successful_deployment_at: lastSuccessfulDeploymentAt,
+    recent_error_summary: recentErrors.map((item: any) => ({
+      source: String(item.source ?? "unknown"),
+      error_code: String(item.error_code ?? "UNKNOWN"),
+      error_count: asNumber(item.error_count),
+      last_seen: String(item.last_seen ?? ""),
+    })),
   };
 }
 
