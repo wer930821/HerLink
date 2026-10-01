@@ -25,7 +25,7 @@ export default function AdminSessionsPage() {
   const [status, setStatus] = useState<(typeof statusOptions)[number]>("all");
   const [data, setData] = useState<SessionListPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(true);
 
   const sessionState = useMemo(() => {
     if (loading) return "loading";
@@ -89,7 +89,12 @@ export default function AdminSessionsPage() {
             </Button>
           ))}
         </AdminToolbar>
-        {data?.items?.length ? (
+        {refreshing && !data ? (
+          <div className="admin-session-loading" aria-live="polite">
+            <span className="admin-session-loading-dot" />
+            <span>正在載入聊天場次…</span>
+          </div>
+        ) : data?.items?.length ? (
           <div className="admin-session-list" aria-label="聊天場次列表">
             {data.items.map((item) => (
               <article key={item.id} className="admin-session-row">
