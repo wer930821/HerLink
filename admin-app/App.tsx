@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  AppState,
   BackHandler,
+  Linking,
+  Platform,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -9,11 +13,25 @@ import {
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import Constants from "expo-constants";
 import { WebView } from "react-native-webview";
 import type { WebViewNavigation } from "react-native-webview";
 
 const ADMIN_URL = "https://her-link-kivora3.vercel.app/admin";
 const ALLOWED_HOST = "her-link-kivora3.vercel.app";
+const UPDATE_INFO_URL =
+  "https://github.com/wer930821/HerLink/releases/download/admin-latest/admin-update-info.json";
+
+type UpdateInfo = {
+  versionCode?: number;
+  versionName?: string;
+  apkUrl?: string;
+};
+
+function getCurrentVersionCode() {
+  const configuredCode = Constants.expoConfig?.android?.versionCode;
+  return typeof configuredCode === "number" ? configuredCode : 1;
+}
 
 export default function App() {
   const webRef = useRef<WebView>(null);
@@ -49,6 +67,57 @@ export default function App() {
     });
     return () => sub.remove();
   }, [canGoBack]);
+
+  useEffect(() => {
+    let checking = false;
+
+    const checkForUpdate = async () => {
+      if (Platform.OS !== "android" || checking) return;
+      checking = true;
+
+      try {
+        const response = await fetch(`${UPDATE_INFO_URL}?t=${Date.now()}`, {
+          headers: { "Cache-Control": "no-cache" },
+        });
+        if (!response.ok) return;
+
+        const info = (await response.json()) as UpdateInfo;
+        const latestCode = Number(info.versionCode ?? 0);
+        const currentCode = getCurrentVersionCode();
+
+        if (latestCode > currentCode && info.apkUrl) {
+          Alert.alert(
+            "發現新版後台",
+            `目前版本：${Constants.expoConfig?.version ?? "目前版本"}\n最新版本：${info.versionName ?? latestCode}\n\n要現在更新嗎？`,
+            [
+              { text: "稍後", style: "cancel" },
+              {
+                text: "更新",
+                onPress: () => {
+                  void Linking.openURL(info.apkUrl!);
+                },
+              },
+            ],
+            { cancelable: true }
+          );
+        }
+      } catch {
+        // 更新檢查失敗不影響後台使用。
+      } finally {
+        checking = false;
+      }
+    };
+
+    void checkForUpdate();
+
+    const appStateSub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        void checkForUpdate();
+      }
+    });
+
+    return () => appStateSub.remove();
+  }, []);
 
   return (
     <SafeAreaView style={styles.root}>
