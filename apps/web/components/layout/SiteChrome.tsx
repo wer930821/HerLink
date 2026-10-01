@@ -8,7 +8,9 @@ import { SiteHeader } from "./SiteHeader";
 export function SiteChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isChromeHidden =
-    pathname?.startsWith("/admin") === true || pathname?.startsWith("/session") === true;
+    pathname?.startsWith("/admin") === true ||
+    pathname?.startsWith("/session") === true ||
+    pathname === "/login";
   const isHome = pathname === "/";
 
   return (
