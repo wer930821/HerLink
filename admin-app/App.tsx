@@ -18,7 +18,6 @@ import { WebView } from "react-native-webview";
 import type { WebViewNavigation } from "react-native-webview";
 
 const ADMIN_URL = "https://her-link-kivora3.vercel.app/admin";
-const ALLOWED_HOST = "her-link-kivora3.vercel.app";
 const UPDATE_INFO_URL =
   "https://github.com/wer930821/HerLink/releases/download/admin-latest/admin-update-info.json";
 
@@ -38,6 +37,7 @@ export default function App() {
   const [canGoBack, setCanGoBack] = useState(false);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [webKey, setWebKey] = useState(0);
 
   const handleNavigation = (nav: WebViewNavigation) => {
     setCanGoBack(nav.canGoBack);
@@ -46,7 +46,7 @@ export default function App() {
   const reload = () => {
     setFailed(false);
     setLoading(true);
-    webRef.current?.reload();
+    setWebKey((value) => value + 1);
   };
 
   const goHome = () => {
@@ -141,15 +141,19 @@ export default function App() {
 
       <View style={styles.webWrap}>
         <WebView
+          key={webKey}
           ref={webRef}
           source={{ uri: ADMIN_URL }}
           style={styles.web}
+          originWhitelist={["https://*", "http://*"]}
           sharedCookiesEnabled
           thirdPartyCookiesEnabled
           javaScriptEnabled
           domStorageEnabled
+          cacheEnabled={false}
           pullToRefreshEnabled
           allowsBackForwardNavigationGestures
+          startInLoadingState={false}
           onNavigationStateChange={handleNavigation}
           onLoadStart={() => {
             setLoading(true);
@@ -161,16 +165,9 @@ export default function App() {
             setFailed(true);
           }}
           onHttpError={({ nativeEvent }) => {
-            if (nativeEvent.statusCode >= 500) {
+            if (nativeEvent.statusCode >= 400) {
+              setLoading(false);
               setFailed(true);
-            }
-          }}
-          onShouldStartLoadWithRequest={(request) => {
-            try {
-              const url = new URL(request.url);
-              return url.host === ALLOWED_HOST;
-            } catch {
-              return false;
             }
           }}
         />
