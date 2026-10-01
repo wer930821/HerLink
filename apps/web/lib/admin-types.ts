@@ -70,7 +70,7 @@ export type AdminSessionDetailMessage = {
 export type AdminSessionDetail = {
   id: string;
   created_at: string;
-  status: "waiting" | "matched" | "ended";
+  status: "waiting" | "active" | "ended";
   ended_at: string | null;
   ended_reason: string | null;
   ended_by: string | null;
