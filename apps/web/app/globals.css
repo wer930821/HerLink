@@ -3508,3 +3508,16 @@ select {
     border-radius: 14px;
   }
 }
+
+
+/* Remove homepage corner decorations */
+.home-premium::before,
+.home-premium::after,
+.home-premium > .hero::after {
+  content: none !important;
+  display: none !important;
+}
+
+.home-premium {
+  overflow: hidden;
+}
