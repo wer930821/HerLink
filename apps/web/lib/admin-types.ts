@@ -18,6 +18,12 @@ export type AdminSummary = {
   pending_push_event_count: number;
   today_web_push_delivered_count: number;
   today_web_push_revoked_count: number;
+  today_match_success_rate: number | null;
+  today_avg_wait_seconds: number | null;
+  realtime_errors_1h: number;
+  today_push_success_rate: number | null;
+  today_laya_success_rate: number | null;
+  today_chat_assist_requests: number;
 };
 
 export type AdminSessionListItem = {
