@@ -13,7 +13,11 @@
     "android": {
       "package": "com.wer93.herlinkadmin",
       "versionCode": 1,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.REQUEST_INSTALL_PACKAGES"
+      ]
     },
     "plugins": [],
     "extra": {
