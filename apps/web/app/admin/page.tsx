@@ -51,7 +51,7 @@ function layaStateLabel(value: AdminSummary["laya_service_state"] | undefined) {
 function errorSourceLabel(value: string) {
   if (value === "realtime") return "即時連線";
   if (value === "push") return "通知";
-  if (value === "laya") return "Laya";
+  if (value === "laya") return "聊天助手";
   return value;
 }
 
@@ -59,7 +59,7 @@ function errorCodeLabel(value: string) {
   const labels: Record<string, string> = {
     CHANNEL_ERROR: "連線頻道錯誤",
     TIMED_OUT: "連線逾時",
-    FALLBACK_USED: "Laya 失敗，已使用備援回覆",
+    FALLBACK_USED: "聊天助手失敗，已使用備援回覆",
     revoked: "通知訂閱失效",
     failed: "通知發送失敗",
     UNKNOWN: "未知錯誤",
@@ -144,24 +144,24 @@ export default function AdminDashboardPage() {
     const warningReasons: string[] = [];
 
     if (data.laya_service_state === "error") {
-      criticalReasons.push("Laya 服務回報異常");
+      criticalReasons.push("聊天助手服務回報異常");
     }
     if (data.laya_service_state === "unreachable") {
-      criticalReasons.push("無法連線到 Laya 服務");
+      criticalReasons.push("無法連線到聊天助手服務");
     }
 
     if (data.laya_service_state === "loading") {
-      warningReasons.push("Laya 模型仍在載入");
+      warningReasons.push("聊天助手模型仍在載入");
     }
     if (data.realtime_errors_5m > 0) {
-      warningReasons.push(`近 5 分鐘有 ${data.realtime_errors_5m} 個 Realtime 重試裝置`);
+      warningReasons.push(`近 5 分鐘有 ${data.realtime_errors_5m} 個 即時連線重試裝置`);
     }
     if (
       data.today_chat_assist_requests >= 3 &&
       typeof data.today_laya_success_rate === "number" &&
       data.today_laya_success_rate < 80
     ) {
-      warningReasons.push(`今日 Laya 成功率為 ${data.today_laya_success_rate.toFixed(1)}%`);
+      warningReasons.push(`今日聊天助手成功率為 ${data.today_laya_success_rate.toFixed(1)}%`);
     }
     if (typeof data.today_match_success_rate === "number" && data.today_match_success_rate < 50) {
       warningReasons.push(`今日配對成功率為 ${data.today_match_success_rate.toFixed(1)}%`);
@@ -170,7 +170,7 @@ export default function AdminDashboardPage() {
       warningReasons.push(`今日通知成功率為 ${data.today_push_success_rate.toFixed(1)}%`);
     }
     if (typeof data.laya_health_latency_ms === "number" && data.laya_health_latency_ms > 1500) {
-      warningReasons.push(`Laya 回應延遲偏高（${data.laya_health_latency_ms} ms）`);
+      warningReasons.push(`聊天助手回應延遲偏高（${data.laya_health_latency_ms} ms）`);
     }
 
     if (criticalReasons.length > 0) {
@@ -258,10 +258,10 @@ export default function AdminDashboardPage() {
         </AdminStatGrid>
       </AdminSection>
 
-      <AdminSection title="部署資訊" description="確認目前 production 正在執行哪一個版本，以及這個版本第一次通過健康檢查的時間。">
+      <AdminSection title="部署資訊" description="確認目前正式環境正在執行哪一個版本，以及這個版本第一次通過健康檢查的時間。">
         <AdminStatGrid>
           <AdminStat label="部署版本" value={shortVersion(data?.deployment_version)} />
-          <AdminStat label="部署分支" value={data?.deployment_branch ?? "—"} />
+          <AdminStat label="部署分支" value={data?.deployment_branch === "main" ? "主要分支" : data?.deployment_branch ? "其他分支" : "—"} />
           <AdminStat label="部署環境" value={data?.deployment_environment === "production" ? "正式環境" : data?.deployment_environment ?? "—"} />
           <AdminStat
             label="最後成功部署時間"
@@ -270,7 +270,7 @@ export default function AdminDashboardPage() {
           />
         </AdminStatGrid>
         <div className="muted small" style={{ marginTop: 10, overflowWrap: "anywhere" }}>
-          部署 ID：{data?.deployment_id ?? "—"}
+          部署編號：{data?.deployment_id ?? "—"}
         </div>
       </AdminSection>
 
@@ -317,17 +317,17 @@ export default function AdminDashboardPage() {
             tone={typeof data?.today_push_success_rate === "number" && data.today_push_success_rate < 95 ? "warning" : "success"}
           />
           <AdminStat
-            label="Laya 服務狀態"
+            label="聊天助手服務狀態"
             value={layaStateLabel(data?.laya_service_state)}
             tone={data?.laya_service_state === "ready" ? "success" : data?.laya_service_state === "loading" ? "warning" : "danger"}
           />
           <AdminStat
-            label="Laya 回應延遲"
-            value={typeof data?.laya_health_latency_ms === "number" ? `${data.laya_health_latency_ms} ms` : "—"}
+            label="聊天助手回應延遲"
+            value={typeof data?.laya_health_latency_ms === "number" ? `${data.laya_health_latency_ms} 毫秒` : "—"}
             tone={typeof data?.laya_health_latency_ms === "number" && data.laya_health_latency_ms > 1500 ? "warning" : "default"}
           />
           <AdminStat
-            label="今日 Laya 成功率"
+            label="今日聊天助手成功率"
             value={formatPercent(data?.today_laya_success_rate)}
             tone={typeof data?.today_laya_success_rate === "number" && data.today_laya_success_rate < 80 ? "warning" : "success"}
           />
@@ -347,7 +347,7 @@ export default function AdminDashboardPage() {
         </AdminStatGrid>
       </AdminSection>
 
-      <AdminSection title="最近錯誤摘要" description="彙整最近 24 小時的即時連線、通知與 Laya 備援事件。">
+      <AdminSection title="最近錯誤摘要" description="彙整最近 24 小時的即時連線、通知與聊天助手備援事件。">
         {data?.recent_error_summary?.length ? (
           <AdminTableWrap>
             <AdminTable label="最近錯誤摘要">
@@ -400,7 +400,7 @@ export default function AdminDashboardPage() {
                     </td>
                     <td>{shortId(item.session_id)}</td>
                     <td>{item.message_id ? shortId(item.message_id) : "—"}</td>
-                    <td>{item.safe_error_code ?? "—"}</td>
+                    <td>{errorCodeLabel(item.safe_error_code ?? "UNKNOWN")}</td>
                   </tr>
                 ))}
               </tbody>
