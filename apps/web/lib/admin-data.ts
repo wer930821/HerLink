@@ -12,8 +12,14 @@ import type {
   AdminSummary,
 } from "./admin-types";
 
-function getUtcDayStartIso(now = new Date()) {
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
+function getTaipeiDayStartIso(now = new Date()) {
+  // Taiwan does not observe DST. Shift to UTC+8 to get the Taipei calendar date,
+  // then convert Taipei 00:00 back to UTC for Supabase timestamptz comparisons.
+  const taipeiNow = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+  return new Date(
+    Date.UTC(taipeiNow.getUTCFullYear(), taipeiNow.getUTCMonth(), taipeiNow.getUTCDate()) -
+      8 * 60 * 60 * 1000
+  ).toISOString();
 }
 
 function clampPageSize(value: number | null | undefined, fallback = 20, max = 100) {
@@ -136,7 +142,7 @@ function safeJsonObject(value: unknown) {
 }
 
 export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSummary> {
-  const dayStart = getUtcDayStartIso();
+  const dayStart = getTaipeiDayStartIso();
 
   const [{ data: anonymousStatsData, error: anonymousStatsError }, { data: healthData, error: healthError }] = await Promise.all([
     client.rpc("get_admin_random_chat_stats"),
