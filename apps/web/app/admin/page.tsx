@@ -48,6 +48,30 @@ function layaStateLabel(value: AdminSummary["laya_service_state"] | undefined) {
   return "—";
 }
 
+function errorSourceLabel(value: string) {
+  if (value === "realtime") return "即時連線";
+  if (value === "push") return "通知";
+  if (value === "laya") return "Laya";
+  return value;
+}
+
+function errorCodeLabel(value: string) {
+  const labels: Record<string, string> = {
+    CHANNEL_ERROR: "連線頻道錯誤",
+    TIMED_OUT: "連線逾時",
+    FALLBACK_USED: "Laya 失敗，已使用備援回覆",
+    revoked: "通知訂閱失效",
+    failed: "通知發送失敗",
+    UNKNOWN: "未知錯誤",
+  };
+  return labels[value] ?? value.replaceAll("_", " ");
+}
+
+function shortVersion(value: string | null | undefined) {
+  if (!value) return "—";
+  return value.length > 10 ? value.slice(0, 10) : value;
+}
+
 export default function AdminDashboardPage() {
   const { session, loading, accessToken } = useAdminSession();
   const { onlineCount, onlineCountConnected } = useOnlinePresence(session?.user.id ?? null);
@@ -68,12 +92,14 @@ export default function AdminDashboardPage() {
     if (!options.silent) setRefreshing(true);
     setError(null);
     try {
-      const summary = await fetchAdminJson<AdminSummary>(accessToken, "/api/admin/summary", {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      const realtime = await fetchAdminJson<{ items: AdminRealtimeDiagnosticRow[] }>(accessToken, "/api/admin/realtime?page=1&pageSize=8", {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const [summary, realtime] = await Promise.all([
+        fetchAdminJson<AdminSummary>(accessToken, "/api/admin/summary", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }),
+        fetchAdminJson<{ items: AdminRealtimeDiagnosticRow[] }>(accessToken, "/api/admin/realtime?page=1&pageSize=8", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }),
+      ]);
       setData({
         ...summary,
         recent_realtime_diagnostics: realtime.items ?? [],
@@ -166,7 +192,7 @@ export default function AdminDashboardPage() {
               {autoRefreshEnabled ? "自動更新：開" : "自動更新：關"}
             </Button>
             <Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>
-              {refreshing ? "重新整理中…" : "重新整理"}
+              {refreshing ? "重新整理中…" : "一鍵重新整理"}
             </Button>
           </div>
         }
@@ -198,6 +224,22 @@ export default function AdminDashboardPage() {
           <AdminStat label="今日通知成功" value={formatCount(data?.today_web_push_delivered_count)} tone="success" />
           <AdminStat label="今日通知失效" value={formatCount(data?.today_web_push_revoked_count)} tone="warning" />
         </AdminStatGrid>
+      </AdminSection>
+
+      <AdminSection title="部署資訊" description="確認目前 production 正在執行哪一個版本，以及這個版本第一次通過健康檢查的時間。">
+        <AdminStatGrid>
+          <AdminStat label="部署版本" value={shortVersion(data?.deployment_version)} />
+          <AdminStat label="部署分支" value={data?.deployment_branch ?? "—"} />
+          <AdminStat label="部署環境" value={data?.deployment_environment === "production" ? "正式環境" : data?.deployment_environment ?? "—"} />
+          <AdminStat
+            label="最後成功部署時間"
+            value={data?.last_successful_deployment_at ? formatAdminTime(data.last_successful_deployment_at) : "—"}
+            tone={data?.last_successful_deployment_at ? "success" : "default"}
+          />
+        </AdminStatGrid>
+        <div className="muted small" style={{ marginTop: 10, overflowWrap: "anywhere" }}>
+          部署 ID：{data?.deployment_id ?? "—"}
+        </div>
       </AdminSection>
 
       <AdminSection title="系統健康狀態" description="快速確認配對、即時連線、通知與聊天助手是否正常；異常連線以受影響裝置去重計算。">
@@ -251,6 +293,35 @@ export default function AdminDashboardPage() {
           <AdminStat label="配對場次" value={formatCount(data?.seven_day_session_count)} />
           <AdminStat label="進入佇列" value={formatCount(data?.seven_day_queue_join_count)} />
         </AdminStatGrid>
+      </AdminSection>
+
+      <AdminSection title="最近錯誤摘要" description="彙整最近 24 小時的即時連線、通知與 Laya 備援事件。">
+        {data?.recent_error_summary?.length ? (
+          <AdminTableWrap>
+            <AdminTable label="最近錯誤摘要">
+              <thead>
+                <tr>
+                  <th scope="col">來源</th>
+                  <th scope="col">錯誤</th>
+                  <th scope="col">次數</th>
+                  <th scope="col">最近發生</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.recent_error_summary.map((item, index) => (
+                  <tr key={`${item.source}-${item.error_code}-${index}`}>
+                    <td><AdminBadge tone="warning">{errorSourceLabel(item.source)}</AdminBadge></td>
+                    <td>{errorCodeLabel(item.error_code)}</td>
+                    <td>{formatCount(item.error_count)}</td>
+                    <td>{formatAdminTime(item.last_seen)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </AdminTable>
+          </AdminTableWrap>
+        ) : (
+          <AdminEmpty>最近 24 小時沒有偵測到需要顯示的錯誤。</AdminEmpty>
+        )}
       </AdminSection>
 
       <AdminSection title="最近即時診斷" description="僅保留安全事件與連線診斷，不含訊息正文。">
