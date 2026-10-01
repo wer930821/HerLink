@@ -9,7 +9,7 @@ import { Button, Notice } from "../../../../components/ui";
 
 function sessionStatusLabel(value: string) {
   if (value === "waiting") return "等待中";
-  if (value === "active" || value === "matched") return "聊天中";
+  if (value === "active") return "聊天中";
   if (value === "ended") return "已結束";
   return "其他狀態";
 }
@@ -146,7 +146,7 @@ export default function AdminSessionDetailPage() {
         ) : (
           <div className="stack">
             <AdminToolbar>
-              <AdminBadge tone={data.status === "ended" ? "warning" : (data.status === "active" || data.status === "matched") ? "success" : "default"}>{sessionStatusLabel(data.status)}</AdminBadge>
+              <AdminBadge tone={data.status === "ended" ? "warning" : data.status === "active" ? "success" : "default"}>{sessionStatusLabel(data.status)}</AdminBadge>
               {data.ended_reason ? <AdminBadge tone="accent">結束原因：{endedReasonLabel(data.ended_reason)}</AdminBadge> : null}
               {data.ended_by ? <AdminBadge>結束者：{shortId(data.ended_by)}</AdminBadge> : null}
             </AdminToolbar>
