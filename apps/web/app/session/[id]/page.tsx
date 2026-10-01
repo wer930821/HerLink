@@ -1917,6 +1917,15 @@ export default function RandomSessionPage() {
             </div>
           </div>
           <div className="chat-header-actions">
+            <button
+              className="chat-assistant-trigger"
+              type="button"
+              onClick={() => setAssistantOpen((open) => !open)}
+              aria-expanded={assistantOpen}
+            >
+              <span className="chat-assistant-spark">✦</span>
+              <span>聊天助手</span>
+            </button>
             <button className="ghost chat-header-next" type="button" onClick={goNext} disabled={nextBusy}>
               {nextBusy ? "處理中…" : "下一位"}
             </button>
@@ -1930,14 +1939,6 @@ export default function RandomSessionPage() {
                   disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}
                 >
                   {contactBusy ? "處理中…" : anonymousContactLabel}
-                </button>
-                <button
-                  className="button secondary chat-assist-button"
-                  type="button"
-                  onClick={() => setAssistantOpen((open) => !open)}
-                  aria-expanded={assistantOpen}
-                >
-                  聊天助手
                 </button>
                 <button className="button secondary chat-safety" type="button" onClick={() => setSafetyMenuOpen(true)}>
                   安全
