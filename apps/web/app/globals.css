@@ -4816,3 +4816,89 @@ select {
     gap: 10px;
   }
 }
+
+
+/* Compact mobile admin navigation and sessions */
+@media (max-width: 640px) {
+  .admin-top {
+    gap: 18px;
+  }
+
+  .admin-nav {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+    overflow: visible;
+  }
+
+  .admin-nav-link {
+    padding: 6px 0 9px;
+    text-align: center;
+    font-size: .78rem;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .admin-card-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 12px;
+  }
+
+  .admin-section-action {
+    width: auto;
+  }
+
+  .admin-section-action .row {
+    width: auto;
+  }
+
+  .admin-section-action .btn {
+    min-height: 38px;
+    padding: 7px 12px;
+    font-size: .8rem;
+  }
+
+  .admin-toolbar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .admin-toolbar .btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    padding: 8px 6px;
+    font-size: .82rem;
+  }
+
+  .admin-session-row {
+    gap: 10px;
+    padding: 16px 0;
+  }
+
+  .admin-session-main {
+    gap: 10px;
+  }
+
+  .admin-session-meta {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 390px) {
+  .admin-nav-link {
+    font-size: .72rem;
+  }
+
+  .admin-toolbar {
+    gap: 6px;
+  }
+
+  .admin-toolbar .btn {
+    font-size: .78rem;
+  }
+}
