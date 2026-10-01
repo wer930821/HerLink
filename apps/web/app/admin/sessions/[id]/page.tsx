@@ -123,7 +123,7 @@ export default function AdminSessionDetailPage() {
   }
 
   if (!sessionId) {
-    return <AdminEmpty>缺少聊天場次 ID。</AdminEmpty>;
+    return <AdminEmpty>缺少聊天場次編號。</AdminEmpty>;
   }
 
   return (
