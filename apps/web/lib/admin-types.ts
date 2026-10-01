@@ -21,6 +21,7 @@ export type AdminSummary = {
   today_match_success_rate: number | null;
   today_avg_wait_seconds: number | null;
   realtime_errors_1h: number;
+  realtime_errors_10m: number;
   today_push_success_rate: number | null;
   today_laya_success_rate: number | null;
   today_chat_assist_requests: number;
