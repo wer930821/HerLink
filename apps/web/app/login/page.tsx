@@ -53,7 +53,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="stack">
+    <main className={isAdminLogin ? "stack admin-login-page" : "stack"}>
       <PageHero
         title={isAdminLogin ? "登入管理員帳號" : "登入 HerLink"}
         description={isAdminLogin ? "使用固定管理員 Email/Password 登入後台。" : "登入後會先進入匿名設定，再開始隨機配對。"}
