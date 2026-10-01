@@ -3,10 +3,10 @@ import { PolicyScreen } from "../components/PolicyScreen";
 export default function CommunityGuidelinesScreen() {
   return (
     <PolicyScreen
-      eyebrow="Community"
-      title="HerLink Community Guidelines"
-      subtitle="我們希望 HerLink 在 Beta 期間就把界線說清楚：真誠、尊重、安全。"
-      notice="若內容涉及騷擾、詐騙、冒用、資格不符或未成年人風險，HerLink 可能立即限制互動並進入 moderation 流程。"
+      eyebrow="社群規範"
+      title="HerLink 社群規範"
+      subtitle="我們希望 HerLink 在 測試版 期間就把界線說清楚：真誠、尊重、安全。"
+      notice="若內容涉及騷擾、詐騙、冒用、資格不符或未成年人風險，HerLink 可能立即限制互動並進入 內容審核流程。"
       sections={[
         {
           title: "真誠與身份",
@@ -18,7 +18,7 @@ export default function CommunityGuidelinesScreen() {
         },
         {
           title: "禁止詐騙與金錢索取",
-          body: "不允許要求匯款、投資、虛擬貨幣操作、OTP、密碼、銀行資訊，或引導到高風險外部平台進行詐騙。",
+          body: "不允許要求匯款、投資、虛擬貨幣操作、一次性驗證碼、密碼、銀行資訊，或引導到高風險外部平台進行詐騙。",
         },
         {
           title: "照片與驗證規則",
@@ -26,7 +26,7 @@ export default function CommunityGuidelinesScreen() {
         },
         {
           title: "檢舉與封鎖",
-          body: "若遇到不舒服或可疑行為，請直接使用封鎖與檢舉。惡意大量檢舉、騷擾式互動與 mass message / mass like 也會被限制。",
+          body: "若遇到不舒服或可疑行為，請直接使用封鎖與檢舉。惡意大量檢舉、騷擾式互動與 大量傳訊息或大量按喜歡 也會被限制。",
         },
       ]}
     />
