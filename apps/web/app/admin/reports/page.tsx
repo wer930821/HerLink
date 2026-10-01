@@ -18,6 +18,30 @@ function reportStatusLabel(value: (typeof statusOptions)[number] | string) {
   return value === "all" ? "全部" : value;
 }
 
+function reportCategoryLabel(value: string) {
+  const labels: Record<string, string> = {
+    spam: "垃圾訊息／廣告",
+    scam: "詐騙",
+    money_request: "索取金錢",
+    investment_scam: "投資詐騙",
+    harassment: "騷擾",
+    sexual_content: "露骨內容",
+    threat: "威脅",
+    impersonation: "冒名",
+    suspected_minor: "疑似未成年",
+    other: "其他",
+  };
+  return labels[value] ?? value;
+}
+
+function sessionStatusLabel(value: string) {
+  if (value === "waiting") return "等待中";
+  if (value === "matched") return "聊天中";
+  if (value === "active") return "聊天中";
+  if (value === "ended") return "已結束";
+  return value;
+}
+
 export default function AdminReportsPage() {
   const { session, loading, accessToken } = useAdminSession();
   const [status, setStatus] = useState<(typeof statusOptions)[number]>("all");
@@ -106,7 +130,7 @@ export default function AdminReportsPage() {
                   <tr key={item.id}>
                     <td>{formatAdminTime(item.created_at)}</td>
                     <td>{item.random_session_id ? shortId(item.random_session_id) : "—"}</td>
-                    <td>{item.category}</td>
+                    <td>{reportCategoryLabel(item.category)}</td>
                     <td>{shortId(item.reporter_id)}</td>
                     <td>{shortId(item.reported_user_id)}</td>
                     <td>{reportStatusLabel(item.status)}</td>
@@ -114,7 +138,7 @@ export default function AdminReportsPage() {
                       <div className="stack" style={{ gap: 6 }}>
                         {item.has_block ? <AdminBadge tone="danger">封鎖</AdminBadge> : null}
                         {item.has_fraud_risk_event ? <AdminBadge tone="danger">風險</AdminBadge> : null}
-                        {item.session_status ? <AdminBadge tone="accent">{item.session_status}</AdminBadge> : null}
+                        {item.session_status ? <AdminBadge tone="accent">{sessionStatusLabel(item.session_status)}</AdminBadge> : null}
                       </div>
                     </td>
                   </tr>
