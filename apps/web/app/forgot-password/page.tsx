@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="stack">
-      <PageHero title="忘記密碼" description="輸入你的 Email，如果帳號存在，HerLink 會寄出重設密碼信。" />
+      <PageHero title="忘記密碼" description="輸入你的電子郵件，如果帳號存在，HerLink 會寄出重設密碼信。" />
       <Surface as="form" elevation={1} onSubmit={onSubmit}>
         {sent ? (
           <Notice variant="success" title="已送出">
@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             autoComplete="email"
-            placeholder="name@example.com"
+            placeholder="請輸入電子郵件"
           />
         </Field>
         <Button type="submit" size="lg" disabled={loading || sent}>
