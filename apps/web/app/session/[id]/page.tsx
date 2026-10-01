@@ -1921,45 +1921,39 @@ export default function RandomSessionPage() {
               <div className="chat-my-name">你：{myAnonymousName}</div>
             </div>
           </div>
-          <button
-            className="ghost chat-header-leave"
-            type="button"
-            onClick={leave}
-            disabled={leaveBusy}
-          >
-            {leaveBusy ? "離開中…" : "離開"}
-          </button>
+          <div className="chat-header-actions">
+            <button className="ghost chat-header-next" type="button" onClick={goNext} disabled={nextBusy}>
+              {nextBusy ? "處理中…" : "下一位"}
+            </button>
+            <details className="chat-more chat-header-more">
+              <summary className="ghost chat-more-summary" aria-label="更多聊天室選項" title="更多">•••</summary>
+              <div className="chat-more-menu">
+                <button
+                  className="button secondary chat-contact"
+                  type="button"
+                  onClick={() => void handleAnonymousContact()}
+                  disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}
+                >
+                  {contactBusy ? "處理中…" : anonymousContactLabel}
+                </button>
+                <button
+                  className="button secondary chat-assist-button"
+                  type="button"
+                  onClick={() => setAssistantOpen((open) => !open)}
+                  aria-expanded={assistantOpen}
+                >
+                  聊天助手
+                </button>
+                <button className="button secondary chat-safety" type="button" onClick={() => setSafetyMenuOpen(true)}>
+                  安全
+                </button>
+                <button className="button secondary chat-menu-leave" type="button" onClick={leave} disabled={leaveBusy}>
+                  {leaveBusy ? "離開中…" : "離開聊天室"}
+                </button>
+              </div>
+            </details>
+          </div>
         </header>
-
-        <div className="chat-actions">
-          <button className="button chat-next" type="button" onClick={goNext} disabled={nextBusy}>
-            {nextBusy ? "切換中…" : "下一位"}
-          </button>
-          <button
-            className="button secondary chat-contact"
-            type="button"
-            onClick={() => void handleAnonymousContact()}
-            disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}
-          >
-            {contactBusy ? "處理中…" : anonymousContactLabel}
-          </button>
-          <details className="chat-more">
-            <summary className="button secondary chat-more-summary">更多</summary>
-            <div className="chat-more-menu">
-              <button
-                className="button secondary chat-assist-button"
-                type="button"
-                onClick={() => setAssistantOpen((open) => !open)}
-                aria-expanded={assistantOpen}
-              >
-                聊天助手
-              </button>
-              <button className="button secondary chat-safety" type="button" onClick={() => setSafetyMenuOpen(true)}>
-                安全
-              </button>
-            </div>
-          </details>
-        </div>
 
         {assistantOpen ? (
           <section className="chat-assist-card" aria-live="polite">
