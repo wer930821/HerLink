@@ -84,7 +84,8 @@ function summarizeActiveSessionRpcError(error: { code?: unknown; message?: unkno
 export default function HomePage() {
   const router = useRouter();
   const pathname = usePathname();
-  const navigatingToSessionRef = useRef(false);\n  const anonymousStartInFlightRef = useRef(false);
+  const navigatingToSessionRef = useRef(false);
+  const anonymousStartInFlightRef = useRef(false);
   const [bootstrapping, setBootstrapping] = useState(true);
   const [state, setState] = useState<BootstrapState>(emptyBootstrapState);
   const [actionBusy, setActionBusy] = useState(false);
