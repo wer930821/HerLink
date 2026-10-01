@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
@@ -39,7 +39,7 @@ export default function App() {
     );
   };
 
-  useState(() => {
+  useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
       if (canGoBack) {
         webRef.current?.goBack();
@@ -48,7 +48,7 @@ export default function App() {
       return false;
     });
     return () => sub.remove();
-  });
+  }, [canGoBack]);
 
   return (
     <SafeAreaView style={styles.root}>
