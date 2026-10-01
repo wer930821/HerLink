@@ -30,7 +30,18 @@ function realtimeEventLabel(value: (typeof eventTypeOptions)[number] | string) {
     message_received_realtime: "即時收到訊息",
     message_loaded_from_db: "從資料庫載入訊息",
   };
-  return labels[value] ?? value;
+  return labels[value] ?? "其他事件";
+}
+
+function safeErrorCodeLabel(value: string | null) {
+  if (!value) return "—";
+  const labels: Record<string, string> = {
+    CHANNEL_ERROR: "連線頻道錯誤",
+    TIMED_OUT: "連線逾時",
+    CLOSED: "連線已關閉",
+    UNKNOWN: "未知錯誤",
+  };
+  return labels[value] ?? "其他錯誤";
 }
 
 export default function AdminRealtimePage() {
@@ -97,7 +108,7 @@ export default function AdminRealtimePage() {
             className="input"
             value={sessionId}
             onChange={(event) => setSessionId(event.target.value)}
-            placeholder="聊天場次 ID 篩選"
+            placeholder="聊天場次編號篩選"
           />
           <select className="input" value={eventType} onChange={(event) => setEventType(event.target.value as (typeof eventTypeOptions)[number])}>
             {eventTypeOptions.map((item) => (
@@ -129,13 +140,13 @@ export default function AdminRealtimePage() {
                     <td>{formatAdminTime(item.created_at)}</td>
                     <td>
                       <AdminBadge tone={item.event_type === "realtime_subscribe_error" ? "danger" : item.event_type === "message_received_realtime" ? "accent" : "default"}>
-                        {item.event_type}
+                        {realtimeEventLabel(item.event_type)}
                       </AdminBadge>
                     </td>
                     <td>{shortId(item.session_id)}</td>
                     <td>{shortId(item.user_id)}</td>
                     <td>{item.message_id ? shortId(item.message_id) : "—"}</td>
-                    <td>{item.safe_error_code ?? "—"}</td>
+                    <td>{safeErrorCodeLabel(item.safe_error_code)}</td>
                   </tr>
                 ))}
               </tbody>
