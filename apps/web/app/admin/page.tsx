@@ -40,6 +40,14 @@ function formatWait(value: number | null | undefined) {
   return `${minutes} 分 ${seconds} 秒`;
 }
 
+function layaStateLabel(value: AdminSummary["laya_service_state"] | undefined) {
+  if (value === "ready") return "正常";
+  if (value === "loading") return "載入中";
+  if (value === "error") return "異常";
+  if (value === "unreachable") return "無法連線";
+  return "—";
+}
+
 export default function AdminDashboardPage() {
   const { session, loading, accessToken } = useAdminSession();
   const { onlineCount, onlineCountConnected } = useOnlinePresence(session?.user.id ?? null);
@@ -148,6 +156,16 @@ export default function AdminDashboardPage() {
             label="今日通知成功率"
             value={formatPercent(data?.today_push_success_rate)}
             tone={typeof data?.today_push_success_rate === "number" && data.today_push_success_rate < 95 ? "warning" : "success"}
+          />
+          <AdminStat
+            label="Laya 服務狀態"
+            value={layaStateLabel(data?.laya_service_state)}
+            tone={data?.laya_service_state === "ready" ? "success" : data?.laya_service_state === "loading" ? "warning" : "danger"}
+          />
+          <AdminStat
+            label="Laya 回應延遲"
+            value={typeof data?.laya_health_latency_ms === "number" ? `${data.laya_health_latency_ms} ms` : "—"}
+            tone={typeof data?.laya_health_latency_ms === "number" && data.laya_health_latency_ms > 1500 ? "warning" : "default"}
           />
           <AdminStat
             label="今日 Laya 成功率"
