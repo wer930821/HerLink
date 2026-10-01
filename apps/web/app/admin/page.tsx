@@ -137,30 +137,55 @@ export default function AdminDashboardPage() {
 
   const overallHealth = useMemo(() => {
     if (!data) {
-      return { label: "檢查中", tone: "default" as const };
+      return { label: "檢查中", tone: "default" as const, reasons: ["正在取得最新健康資料"] };
     }
 
-    const critical =
-      data.laya_service_state === "error" ||
-      data.laya_service_state === "unreachable";
+    const criticalReasons: string[] = [];
+    const warningReasons: string[] = [];
 
-    if (critical) {
-      return { label: "異常", tone: "danger" as const };
+    if (data.laya_service_state === "error") {
+      criticalReasons.push("Laya 服務回報異常");
+    }
+    if (data.laya_service_state === "unreachable") {
+      criticalReasons.push("無法連線到 Laya 服務");
     }
 
-    const warning =
-      data.laya_service_state === "loading" ||
-      data.realtime_errors_10m > 0 ||
-      (data.today_chat_assist_requests >= 3 &&
-        typeof data.today_laya_success_rate === "number" &&
-        data.today_laya_success_rate < 80) ||
-      (typeof data.today_match_success_rate === "number" && data.today_match_success_rate < 50) ||
-      (typeof data.today_push_success_rate === "number" && data.today_push_success_rate < 95) ||
-      (typeof data.laya_health_latency_ms === "number" && data.laya_health_latency_ms > 1500);
+    if (data.laya_service_state === "loading") {
+      warningReasons.push("Laya 模型仍在載入");
+    }
+    if (data.realtime_errors_10m > 0) {
+      warningReasons.push(`近 10 分鐘有 ${data.realtime_errors_10m} 個 Realtime 重試裝置`);
+    }
+    if (
+      data.today_chat_assist_requests >= 3 &&
+      typeof data.today_laya_success_rate === "number" &&
+      data.today_laya_success_rate < 80
+    ) {
+      warningReasons.push(`今日 Laya 成功率為 ${data.today_laya_success_rate.toFixed(1)}%`);
+    }
+    if (typeof data.today_match_success_rate === "number" && data.today_match_success_rate < 50) {
+      warningReasons.push(`今日配對成功率為 ${data.today_match_success_rate.toFixed(1)}%`);
+    }
+    if (typeof data.today_push_success_rate === "number" && data.today_push_success_rate < 95) {
+      warningReasons.push(`今日通知成功率為 ${data.today_push_success_rate.toFixed(1)}%`);
+    }
+    if (typeof data.laya_health_latency_ms === "number" && data.laya_health_latency_ms > 1500) {
+      warningReasons.push(`Laya 回應延遲偏高（${data.laya_health_latency_ms} ms）`);
+    }
 
-    return warning
-      ? { label: "需注意", tone: "warning" as const }
-      : { label: "正常", tone: "success" as const };
+    if (criticalReasons.length > 0) {
+      return { label: "異常", tone: "danger" as const, reasons: criticalReasons };
+    }
+
+    if (warningReasons.length > 0) {
+      return { label: "需注意", tone: "warning" as const, reasons: warningReasons };
+    }
+
+    return {
+      label: "正常",
+      tone: "success" as const,
+      reasons: ["所有核心服務目前正常"],
+    };
   }, [data]);
 
   if (sessionState === "loading") {
@@ -200,14 +225,19 @@ export default function AdminDashboardPage() {
         }
       >
         {error ? <Notice variant="danger">{error}</Notice> : null}
-        <div className="row" style={{ justifyContent: "space-between", marginBottom: 12 }}>
-          <div className="row">
-            <span className="muted small">系統狀態</span>
-            <AdminBadge tone={overallHealth.tone}>{overallHealth.label}</AdminBadge>
+        <div style={{ marginBottom: 12 }}>
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <div className="row">
+              <span className="muted small">系統狀態</span>
+              <AdminBadge tone={overallHealth.tone}>{overallHealth.label}</AdminBadge>
+            </div>
+            <span className="muted small">
+              最後更新：{data?.generated_at ? formatAdminTime(data.generated_at) : "—"}
+            </span>
           </div>
-          <span className="muted small">
-            最後更新：{data?.generated_at ? formatAdminTime(data.generated_at) : "—"}
-          </span>
+          <div className="muted small" style={{ marginTop: 8, lineHeight: 1.6 }}>
+            原因：{overallHealth.reasons.join("；")}
+          </div>
         </div>
         <AdminStatGrid>
           <AdminStat label="目前在線" value={onlineCount === null ? "—" : `${onlineCount} 人`} tone={onlineCountConnected ? "success" : "default"} />
