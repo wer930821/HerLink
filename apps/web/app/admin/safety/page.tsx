@@ -10,14 +10,14 @@ function enforcementTypeLabel(value: string) {
   if (value === "temporary_suspension") return "暫時停權";
   if (value === "permanent_ban") return "永久停權";
   if (value === "warning") return "警告";
-  return value;
+  return "其他處置";
 }
 
 function enforcementStatusLabel(value: string) {
   if (value === "active") return "生效中";
   if (value === "expired") return "已到期";
   if (value === "revoked") return "已撤銷";
-  return value;
+  return "其他狀態";
 }
 
 function riskLevelLabel(value: string) {
@@ -25,7 +25,7 @@ function riskLevelLabel(value: string) {
   if (value === "high") return "高";
   if (value === "medium") return "中";
   if (value === "low") return "低";
-  return value;
+  return "其他等級";
 }
 
 function riskTypeLabel(value: string) {
@@ -45,7 +45,7 @@ function riskTypeLabel(value: string) {
     harassment: "騷擾",
     threat: "威脅",
   };
-  return labels[value] ?? value.replaceAll("_", " ");
+  return labels[value] ?? "其他風險";
 }
 
 function enforcementReasonLabel(value: string | null) {
@@ -61,7 +61,7 @@ function enforcementReasonLabel(value: string | null) {
     suspected_minor: "疑似未成年",
     manual: "管理員處置",
   };
-  return labels[value] ?? value.replaceAll("_", " ");
+  return labels[value] ?? "其他原因";
 }
 
 type SafetyPayload = {
