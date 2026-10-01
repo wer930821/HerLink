@@ -24,7 +24,7 @@ async function loadModel() {
     console.log("[laya] multilingual INT8 model ready");
 
     try {
-      await model.systemOne(
+      await runSystemOneCompat(
         { conversation: "對方：今天工作有點累。\n我：辛苦了。" },
         {
           next_move: {
@@ -79,6 +79,39 @@ async function readJson(req) {
   return JSON.parse(body || "{}");
 }
 
+async function runSystemOneCompat(state, questions) {
+  const entries = Object.entries(questions ?? {});
+  if (entries.length === 0) {
+    throw new Error("systemOne: at least one question is required");
+  }
+
+  const answers = {};
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let modelName = "laya";
+
+  // The current Railway INT8 ONNX export has a fixed batch dimension of 1.
+  // Run each question independently and merge the Jev-compatible response.
+  for (const [questionId, question] of entries) {
+    const result = await runSystemOneCompat(state, { [questionId]: question });
+    if (result?.answers && questionId in result.answers) {
+      answers[questionId] = result.answers[questionId];
+    }
+    modelName = result?.model ?? modelName;
+    inputTokens += Number(result?.usage?.input_tokens ?? 0);
+    outputTokens += Number(result?.usage?.output_tokens ?? 0);
+  }
+
+  return {
+    model: modelName,
+    answers,
+    usage: {
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+    },
+  };
+}
+
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/health" || req.url === "/docs")) {
     const degraded = Boolean(model && lastInferenceError && (!lastInferenceOkAt || lastInferenceAt > lastInferenceOkAt));
@@ -103,7 +136,7 @@ const server = http.createServer(async (req, res) => {
 
     try {
       const startedAt = Date.now();
-      const result = await model.systemOne(
+      const result = await runSystemOneCompat(
         { conversation: "對方：今天工作有點累。\n我：辛苦了。" },
         {
           next_move: {
@@ -151,7 +184,7 @@ const server = http.createServer(async (req, res) => {
 
     try {
       const payload = await readJson(req);
-      const result = await model.systemOne(payload?.state ?? {}, payload?.questions ?? {});
+      const result = await runSystemOneCompat(payload?.state ?? {}, payload?.questions ?? {});
       lastInferenceAt = new Date().toISOString();
       lastInferenceOkAt = lastInferenceAt;
       lastInferenceError = null;
