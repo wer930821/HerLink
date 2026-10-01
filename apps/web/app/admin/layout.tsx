@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import type { ReactNode } from "react";
 import { Badge } from "../../components/ui";
 import { AdminAccessGate } from "./access-gate";
