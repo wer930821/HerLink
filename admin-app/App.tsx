@@ -185,7 +185,7 @@ function AdminApp() {
         <WebView
           key={webKey}
           ref={webRef}
-          source={{ uri: `${ADMIN_URL}?app_refresh=${webKey}` }}
+          source={{ uri: ADMIN_URL }}
           applicationNameForUserAgent="HerLinkAdminApp"
           style={styles.web}
           originWhitelist={["https://*", "http://*"]}
@@ -193,7 +193,7 @@ function AdminApp() {
           thirdPartyCookiesEnabled
           javaScriptEnabled
           domStorageEnabled
-          cacheEnabled={false}
+          cacheEnabled
           cacheMode="LOAD_DEFAULT"
           injectedJavaScriptBeforeContentLoaded={`try { window.localStorage.setItem("herlink_admin_app", "1"); } catch {} true;`}
           setSupportMultipleWindows={false}
