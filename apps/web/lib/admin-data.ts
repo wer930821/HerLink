@@ -255,7 +255,10 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     (row) => row.event_type === "realtime_subscribe_error" || row.event_type === "realtime_disconnected"
   );
   const nowMs = Date.now();
-  const affectedRealtime10m = affectedRealtimeConnections.filter(
+  const affectedRealtime1h = affectedRealtimeConnections.filter(
+    (row) => nowMs - new Date(row.created_at).getTime() <= 60 * 60 * 1000
+  );
+  const affectedRealtime10m = affectedRealtime1h.filter(
     (row) => nowMs - new Date(row.created_at).getTime() <= 10 * 60 * 1000
   );
   const affectedRealtime5m = affectedRealtime10m.filter(
@@ -349,7 +352,7 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     })),
     today_match_success_rate: (healthStats as any).today_match_success_rate == null ? null : asNumber((healthStats as any).today_match_success_rate),
     today_avg_wait_seconds: (healthStats as any).today_avg_wait_seconds == null ? null : asNumber((healthStats as any).today_avg_wait_seconds),
-    realtime_errors_1h: asNumber((healthStats as any).realtime_errors_1h),
+    realtime_errors_1h: affectedRealtime1h.length,
     realtime_errors_10m: affectedRealtime10m.length,
     realtime_errors_5m: affectedRealtime5m,
     realtime_errors_1m: affectedRealtime1m,
@@ -365,12 +368,16 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     deployment_environment: deploymentEnvironment,
     deployment_url: deploymentUrl,
     last_successful_deployment_at: lastSuccessfulDeploymentAt,
-    recent_error_summary: recentErrors.map((item: any) => ({
-      source: String(item.source ?? "unknown"),
-      error_code: String(item.error_code ?? "UNKNOWN"),
-      error_count: asNumber(item.error_count),
-      last_seen: String(item.last_seen ?? ""),
-    })),
+    // Realtime has dedicated live-health counters above. Do not mix the
+    // historical CHANNEL_ERROR/TIMED_OUT totals into the current error summary.
+    recent_error_summary: recentErrors
+      .filter((item: any) => String(item.source ?? "unknown") !== "realtime")
+      .map((item: any) => ({
+        source: String(item.source ?? "unknown"),
+        error_code: String(item.error_code ?? "UNKNOWN"),
+        error_count: asNumber(item.error_count),
+        last_seen: String(item.last_seen ?? ""),
+      })),
   };
 }
 
