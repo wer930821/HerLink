@@ -9,6 +9,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  ToastAndroid,
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -35,6 +36,7 @@ function getCurrentVersionCode() {
 export default function App() {
   const insets = useSafeAreaInsets();
   const webRef = useRef<WebView>(null);
+  const lastBackPressRef = useRef(0);
   const [canGoBack, setCanGoBack] = useState(false);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -64,8 +66,20 @@ export default function App() {
         webRef.current?.goBack();
         return true;
       }
-      return false;
+
+      const now = Date.now();
+      if (now - lastBackPressRef.current < 2000) {
+        BackHandler.exitApp();
+        return true;
+      }
+
+      lastBackPressRef.current = now;
+      if (Platform.OS === "android") {
+        ToastAndroid.show("再按一次返回鍵才會離開後台", ToastAndroid.SHORT);
+      }
+      return true;
     });
+
     return () => sub.remove();
   }, [canGoBack]);
 
@@ -152,6 +166,7 @@ export default function App() {
           javaScriptEnabled
           domStorageEnabled
           cacheEnabled={false}
+          setSupportMultipleWindows={false}
           pullToRefreshEnabled
           allowsBackForwardNavigationGestures
           startInLoadingState={false}
