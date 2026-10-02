@@ -107,7 +107,23 @@ export default function HomePage() {
   const [randomBusy, setRandomBusy] = useState(false);
   const [renameNotice, setRenameNotice] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [waitingCount, setWaitingCount] = useState(0);
   const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
+
+  useEffect(() => {
+    let mounted = true;
+    const refreshWaitingCount = async () => {
+      try {
+        const response = await fetch("/api/public/match-status", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = await response.json() as { waiting?: number };
+        if (mounted) setWaitingCount(Number(payload.waiting ?? 0));
+      } catch {}
+    };
+    void refreshWaitingCount();
+    const timer = window.setInterval(() => void refreshWaitingCount(), 15000);
+    return () => { mounted = false; window.clearInterval(timer); };
+  }, []);
 
   const recordHomeRouteDiagnostic = (eventType: "continue_clicked" | "continue_routed", metadata: Record<string, unknown> = {}) => {
     const targetSessionId =
@@ -620,7 +636,8 @@ export default function HomePage() {
               <Button size="lg" onClick={startAnonymous} disabled={actionBusy}>
                 {actionBusy ? "建立匿名身份中…" : "開始匿名聊天"}
               </Button>
-              {onlineCountConnected ? <Badge variant="success">目前有 {onlineCount} 人在線</Badge> : null}
+              {onlineCountConnected ? <Badge variant="success">在線 {onlineCount} 人</Badge> : null}
+              <Badge variant="neutral">排隊 {waitingCount} 人</Badge>
             </>
           }
         >
