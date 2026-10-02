@@ -230,7 +230,7 @@ export default function RandomSessionPage({ params }: Props) {
       // localStorage 不可用時仍允許本次播放。
     }
     playThousandEgg();
-  };
+  }, [playThousandEgg]);
 
   const isEnded = session?.status === "ended";
   const partnerName = session?.partner_anonymous_display_name ?? "匿名使用者";
