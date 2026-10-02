@@ -971,10 +971,20 @@ export default function RandomSessionPage() {
       window.cancelAnimationFrame(scrollRafRef.current);
     }
 
-    scrollRafRef.current = window.requestAnimationFrame(() => {
-      scrollRafRef.current = null;
+    // One frame is not enough on mobile when images, the keyboard, or the
+    // visual viewport changes height after messages render. Re-pin to the
+    // real bottom for a few frames so the newest message is always visible.
+    let remainingFrames = 4;
+    const pinToBottom = () => {
       scrollMessagesToBottom(behavior);
-    });
+      remainingFrames -= 1;
+      if (remainingFrames > 0) {
+        scrollRafRef.current = window.requestAnimationFrame(pinToBottom);
+      } else {
+        scrollRafRef.current = null;
+      }
+    };
+    scrollRafRef.current = window.requestAnimationFrame(pinToBottom);
   };
 
   const armPartnerTypingTimeout = () => {
@@ -1479,6 +1489,21 @@ export default function RandomSessionPage() {
       clearSenderTypingTimer();
     };
   }, [draft, isEnded, myProfile?.id, session?.id]);
+
+  useEffect(() => {
+    const container = messageListRef.current;
+    if (!container || typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(() => {
+      if (stickToBottomRef.current || pendingScrollToBottomRef.current) {
+        scheduleScrollMessagesToBottom("auto");
+      }
+    });
+    observer.observe(container);
+    for (const child of Array.from(container.children)) observer.observe(child);
+
+    return () => observer.disconnect();
+  }, [messages.length, session?.id]);
 
   useEffect(() => {
     if (!session) {
