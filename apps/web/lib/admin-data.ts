@@ -230,10 +230,9 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     : healthData ?? {};
   const recentErrors = Array.isArray(recentErrorsData) ? recentErrorsData : [];
 
-  // Derive current Realtime health from the diagnostics RPC itself.
-  // Only the newest event for each browser/session decides whether that
-  // connection is currently affected. A later subscribed/reconnected event
-  // clears every earlier error for that connection.
+  // Derive current Realtime health at the session/user level. Browsers can
+  // create a new client_instance_id after reload/reconnect, so an older failed
+  // client must not keep a session unhealthy after a newer client succeeds.
   const realtimeHealthResult = await client.rpc("list_admin_realtime_diagnostics", {
     p_session_id: null,
     p_event_type: null,
@@ -248,12 +247,11 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
 
   const latestRealtimeState = new Map<string, any>();
   for (const row of recentRealtimeHealthRows) {
-    const key = `${row.session_id ?? ""}:${row.user_id ?? ""}:${row.client_instance_id ?? ""}`;
+    const key = `${row.session_id ?? ""}:${row.user_id ?? ""}`;
     if (!latestRealtimeState.has(key)) latestRealtimeState.set(key, row);
   }
-  // Only a subscribe error can represent a currently failed connection.\n  // Production redeploy marker: live Realtime health v2.
-  // "realtime_disconnected" was historically emitted during normal cleanup and
-  // must never be used as a live-health failure signal.
+  // Only the latest session/user event being a subscribe error counts as
+  // currently affected. Legacy disconnect/closed events never count.
   const affectedRealtimeConnections = [...latestRealtimeState.values()].filter(
     (row) => row.event_type === "realtime_subscribe_error"
   );
