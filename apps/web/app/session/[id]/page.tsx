@@ -1643,9 +1643,7 @@ export default function RandomSessionPage() {
 
   const leave = async (event: MouseEvent<HTMLButtonElement>) => {
     if (!event.nativeEvent.isTrusted || !session || leaveBusy) return;
-    if (!window.confirm("確定要離開這個聊天室嗎？\
-\
-離開後會回到首頁，不會自動重新配對。")) return;
+    if (!window.confirm(["確定要離開這個聊天室嗎？", "", "離開後會回到首頁，不會自動重新配對。"].join(String.fromCharCode(10)))) return;
     setLeaveBusy(true);
     try {
       stopTyping();
