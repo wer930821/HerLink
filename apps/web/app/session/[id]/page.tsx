@@ -1091,7 +1091,7 @@ export default function RandomSessionPage() {
         const adminCheck = await isCurrentUserAdmin(authSession.user.id).catch(() => ({ data: false }));
         if (mounted && bootstrapRunId === sessionBootstrapRunRef.current) {
           setAssistantAllowed(Boolean(adminCheck.data));
-          setEasterEggAllowed(Boolean(adminCheck.data));
+          setEasterEggAllowed(true);
         }
         if (!nextProfile) {
           sessionBootstrapStateRef.current = "loading";
@@ -2145,7 +2145,7 @@ export default function RandomSessionPage() {
             </div>
           </div>
           <div className="chat-header-actions">
-            {easterEggAllowed ? (
+            {assistantAllowed ? (
               <div className="chat-milestone-test-group" aria-label="彩蛋測試區">
                 {([
                   ["100", "hundred"],
