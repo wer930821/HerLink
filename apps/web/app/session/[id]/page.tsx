@@ -250,6 +250,8 @@ export default function RandomSessionPage() {
   const historyLoadingRef = useRef(false);
   const historyExhaustedRef = useRef(false);
   const pendingReplyPreviewRef = useRef<Set<string>>(new Set());
+  const easterEggSeenRef = useRef<Set<string>>(new Set());
+  const easterEggLastAtRef = useRef(0);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
   const realtimeClientInstanceIdRef = useRef(
@@ -1547,6 +1549,10 @@ export default function RandomSessionPage() {
 
   const triggerEasterEgg = (kind: "goodnight" | "penguin" | "sync" | "aurora" | "meteor" | "secret") => {
     if (!easterEggAllowed) return;
+    const now = Date.now();
+    if (easterEggSeenRef.current.has(kind) || now - easterEggLastAtRef.current < 90_000) return;
+    easterEggSeenRef.current.add(kind);
+    easterEggLastAtRef.current = now;
     setEasterEgg(kind);
     window.setTimeout(() => setEasterEgg((current) => (current === kind ? null : current)), 3200);
   };
