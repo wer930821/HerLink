@@ -341,8 +341,10 @@ export async function consumeBrowserHandoffFromHash() {
     return { restored: false, nextPath, error };
   }
 
-  // Refresh once so the destination browser owns the newest persisted session tokens.
-  await supabase.auth.refreshSession().catch(() => undefined);
+  // Do not refresh here. Refresh-token rotation in the destination browser can
+  // invalidate the session that is still persisted in the original browser.
+  // setSession already persists the transferred session locally; normal
+  // auto-refresh can take over later without breaking the handoff immediately.
   return { restored: true, nextPath, session: data.session };
 }
 
