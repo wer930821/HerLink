@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const nativePushTokenRef = useRef<string | null>(null);
+  const nativePushTokenRef = useRef<string | null>(null);\n  const restorePromiseRef = useRef<Promise<void> | null>(null);\n  const hydratedUserIdRef = useRef<string | null>(null);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const hydrateSignedInUser = async (currentUser: User) => {
+  const hydrateSignedInUser = async (currentUser: User) => {\n    if (hydratedUserIdRef.current === currentUser.id) return;\n    hydratedUserIdRef.current = currentUser.id;
     const results = await Promise.allSettled([
       fetchProfile(currentUser.id),
       registerCurrentDevice(),
@@ -85,15 +85,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const restoreAuth = async () => {
-    const { data: { session: currentSession } } = await supabase.auth.getSession();
-    setSession(currentSession);
-    setUser(currentSession?.user ?? null);
-    if (currentSession?.user) {
-      await hydrateSignedInUser(currentSession.user);
-    } else {
-      setProfile(null);
+    if (restorePromiseRef.current) return restorePromiseRef.current;
+    const task = (async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        if (currentSession?.user) {
+          await hydrateSignedInUser(currentSession.user);
+        } else {
+          hydratedUserIdRef.current = null;
+          setProfile(null);
+        }
+      } catch (error) {
+        console.warn("Auth restore failed; keeping the app recoverable:", error);
+      } finally {
+        setLoading(false);
+      }
+    })();
+    restorePromiseRef.current = task;
+    try {
+      await task;
+    } finally {
+      restorePromiseRef.current = null;
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -123,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     setLoading(true);
     await disableNativePushToken(nativePushTokenRef.current).catch((error) => console.warn("Native push token cleanup failed", error));
-    nativePushTokenRef.current = null;
+    nativePushTokenRef.current = null;\n    hydratedUserIdRef.current = null;
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
