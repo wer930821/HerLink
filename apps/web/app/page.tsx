@@ -695,12 +695,16 @@ export default function HomePage() {
       }
 
       const result = Array.isArray(data) ? data[0] : data;
-      if (result?.status === "matched" && result.session_id) {
-        router.replace(`/session/${result.session_id}`);
-        return;
-      }
       if (result?.status === "limit_reached") {
         setMessage("目前已保留 3 個聊天室，請先結束其中一個再配對新的人。");
+        return;
+      }
+
+      // Always show the matching screen first. The waiting page owns the
+      // transition into a newly matched session, so an immediate backend match
+      // cannot look like the home button reopened an old chat.
+      if (result?.status === "matched" && result.session_id) {
+        router.replace(`/waiting?matched=${encodeURIComponent(result.session_id)}`);
         return;
       }
 
