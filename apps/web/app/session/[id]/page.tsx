@@ -274,7 +274,8 @@ export default function RandomSessionPage() {
   const [contactState, setContactState] = useState<AnonymousContactStatusRow | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantAllowed, setAssistantAllowed] = useState(false);
-  const [easterEgg, setEasterEgg] = useState<"goodnight" | "penguin" | "sync" | null>(null);\n  const [easterEggAllowed, setEasterEggAllowed] = useState(false);
+  const [easterEgg, setEasterEgg] = useState<"goodnight" | "penguin" | "sync" | null>(null);
+  const [easterEggAllowed, setEasterEggAllowed] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(true);
   const [assistantBusy, setAssistantBusy] = useState(false);
   const [assistantResult, setAssistantResult] = useState<ChatAssistResult | null>(null);
@@ -1064,7 +1065,8 @@ export default function RandomSessionPage() {
         setMyProfile(nextProfile);
         const adminCheck = await isCurrentUserAdmin(authSession.user.id).catch(() => ({ data: false }));
         if (mounted && bootstrapRunId === sessionBootstrapRunRef.current) {
-          setAssistantAllowed(Boolean(adminCheck.data));\n          setEasterEggAllowed(Boolean(adminCheck.data));
+          setAssistantAllowed(Boolean(adminCheck.data));
+          setEasterEggAllowed(Boolean(adminCheck.data));
         }
         if (!nextProfile) {
           sessionBootstrapStateRef.current = "loading";
