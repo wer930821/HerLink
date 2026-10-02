@@ -95,6 +95,37 @@ export async function fetchAnonymousChatStats() {
   } satisfies AnonymousChatStats;
 }
 
+export interface SessionRecoveryRequest {
+  id: string;
+  sessionId: string;
+  recoveryCode: string;
+  status: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export async function fetchSessionRecoveryRequests() {
+  const { data, error } = await supabase.rpc("get_admin_session_recovery_requests");
+  if (error) throw error;
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    sessionId: row.session_id,
+    recoveryCode: row.recovery_code,
+    status: row.status,
+    createdAt: row.created_at,
+    expiresAt: row.expires_at,
+  })) as SessionRecoveryRequest[];
+}
+
+export async function approveSessionRecovery(recoveryCode: string, side: "a" | "b") {
+  const { data, error } = await supabase.rpc("approve_random_session_recovery", {
+    p_recovery_code: recoveryCode,
+    p_side: side,
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function fetchModerationCases() {
   const { data, error } = await supabase
     .from("moderation_cases")
