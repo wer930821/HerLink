@@ -1553,9 +1553,9 @@ export default function RandomSessionPage() {
 
   const maybeTriggerEasterEgg = (content: string) => {
     if (!easterEggAllowed) return;
-    if (content.includes("極光")) return triggerEasterEgg("aurora");
-    if (content.includes("流星雨")) return triggerEasterEgg("meteor");
-    if (content.includes("秘密基地")) return triggerEasterEgg("secret");
+    if (/想你|想妳|想念/.test(content)) return triggerEasterEgg("aurora");
+    if (/加油|祝你|祝妳|希望你|希望妳/.test(content)) return triggerEasterEgg("meteor");
+    if (/喜歡你|喜歡妳|我喜歡你|我喜歡妳/.test(content)) return triggerEasterEgg("secret");
     if (content.includes("晚安")) return triggerEasterEgg("goodnight");
     if (content.includes("企鵝")) return triggerEasterEgg("penguin");
     if (/哈{2,}/.test(content)) {
