@@ -209,7 +209,7 @@ export default function App() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#0c0a12",
+    backgroundColor: "#0d0b16",
   },
   appBar: {
     minHeight: 58,
@@ -276,11 +276,11 @@ const styles = StyleSheet.create({
   webWrap: {
     flex: 1,
     position: "relative",
-    backgroundColor: "#0c0a12",
+    backgroundColor: "#0d0b16",
   },
   web: {
     flex: 1,
-    backgroundColor: "#0c0a12",
+    backgroundColor: "#0d0b16",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 12,
     padding: 28,
-    backgroundColor: "#0c0a12",
+    backgroundColor: "#0d0b16",
   },
   loadingText: {
     color: "#b7aecb",
