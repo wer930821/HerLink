@@ -5326,3 +5326,28 @@ select {
     min-height: 240px;
   }
 }
+
+
+/* Admin: use one continuous background */
+.admin-page {
+  background: #0c0a12 !important;
+}
+
+.admin-layout,
+.admin-top,
+.admin-content,
+.admin-section,
+.admin-section-body {
+  background: transparent !important;
+}
+
+@media (max-width: 640px) {
+  .admin-page,
+  .admin-layout,
+  .admin-top,
+  .admin-content,
+  .admin-section,
+  .admin-section-body {
+    background: #0c0a12 !important;
+  }
+}
