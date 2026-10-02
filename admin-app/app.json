@@ -18,11 +18,16 @@
         "android.permission.INTERNET",
         "android.permission.REQUEST_INSTALL_PACKAGES"
       ],
-      "softwareKeyboardLayoutMode": "resize"
+      "softwareKeyboardLayoutMode": "resize",
+      "adaptiveIcon": {
+        "foregroundImage": "../apps/web/public/icons/icon-192.png",
+        "backgroundColor": "#0d0b16"
+      }
     },
     "plugins": [],
     "extra": {
       "adminUrl": "https://her-link-kivora3.vercel.app/admin"
-    }
+    },
+    "icon": "../apps/web/public/icons/icon-192.png"
   }
 }
