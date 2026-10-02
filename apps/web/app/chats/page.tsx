@@ -1,0 +1,54 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button, Notice } from "../../components/ui";
+import { getCurrentSession, loadMyActiveRandomSessions, type RandomSessionRow } from "../../lib/supabase";
+
+export default function ChatsPage() {
+  const router = useRouter();
+  const [sessions, setSessions] = useState<RandomSessionRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const auth = await getCurrentSession();
+      if (!auth.data.session) {
+        router.replace("/");
+        return;
+      }
+      const result = await loadMyActiveRandomSessions();
+      if (mounted) {
+        setSessions(result.data ?? []);
+        setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [router]);
+
+  return (
+    <main className="stack home-premium" style={{ maxWidth: 720, margin: "0 auto", padding: "24px 16px" }}>
+      <div>
+        <p className="muted small">最多同時保留 3 個聊天室</p>
+        <h1>我的聊天</h1>
+      </div>
+      {loading ? <p className="muted">載入中…</p> : null}
+      {!loading && sessions.length === 0 ? <Notice>目前沒有進行中的聊天室。</Notice> : null}
+      <div className="stack">
+        {sessions.map((session) => (
+          <button
+            key={session.id}
+            type="button"
+            onClick={() => router.push(`/session/${session.id}`)}
+            style={{ width: "100%", textAlign: "left", padding: 16, borderRadius: 18, border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.04)", color: "inherit" }}
+          >
+            <strong>{session.partner_anonymous_display_name || "匿名使用者"}</strong>
+            <div className="muted small" style={{ marginTop: 6 }}>聊天中 · 點擊繼續聊天</div>
+          </button>
+        ))}
+      </div>
+      <Button href="/" variant="secondary">回首頁</Button>
+    </main>
+  );
+}
