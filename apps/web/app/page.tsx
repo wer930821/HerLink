@@ -652,6 +652,18 @@ export default function HomePage() {
       return;
     }
 
+    const femaleOnlyKey = "herlink_female_only_ack_v1";
+    if (typeof window !== "undefined" && window.localStorage.getItem(femaleOnlyKey) !== "1") {
+      const accepted = window.confirm(
+        "HerLink 匿名聊天室僅限女性使用。\n\n請確認你符合使用資格；若冒充或違反規則，可能會被檢舉、封鎖或停用配對功能。"
+      );
+      if (!accepted) {
+        setMessage("未確認使用資格，已取消配對。");
+        return;
+      }
+      window.localStorage.setItem(femaleOnlyKey, "1");
+    }
+
     setActionBusy(true);
     setMessage(null);
     try {
