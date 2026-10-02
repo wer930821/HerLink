@@ -164,7 +164,7 @@ export default function RandomSessionScreen() {
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);\n  const [privateEggsAllowed, setPrivateEggsAllowed] = useState(false);\n  const [easterEgg, setEasterEgg] = useState<"goodnight" | "penguin" | "sync" | null>(null);
   const [sending, setSending] = useState(false);
   const [mediaUploading, setMediaUploading] = useState(false);
   const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
@@ -174,6 +174,20 @@ export default function RandomSessionScreen() {
   const [reportOpen, setReportOpen] = useState(false);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [contactState, setContactState] = useState<{ status: "pending" | "active"; my_approved: boolean; partner_approved: boolean } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void supabase.rpc("can_use_chat_assistant").then(({ data, error }) => {
+      if (active) setPrivateEggsAllowed(!error && data === true);
+    });
+    return () => { active = false; };
+  }, [user?.id]);
+
+  const triggerPrivateEgg = useCallback((kind: "goodnight" | "penguin" | "sync") => {
+    if (!privateEggsAllowed) return;
+    setEasterEgg(kind);
+    setTimeout(() => setEasterEgg((current) => current === kind ? null : current), 3200);
+  }, [privateEggsAllowed]);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const listRef = useRef<FlatList<RandomMessage> | null>(null);
@@ -585,7 +599,7 @@ export default function RandomSessionScreen() {
       const attempt = async (replyId: string | null): Promise<boolean> => {
         try {
           const sent = await sendRandomText(sessionId, content, replyId);
-          appendSentMessage(sent);
+          appendSentMessage(sent);\n          if (privateEggsAllowed) {\n            if (content.includes("晚安")) triggerPrivateEgg("goodnight");\n            else if (content.includes("企鵝")) triggerPrivateEgg("penguin");\n            else if (/哈{2,}/.test(content)) {\n              const partnerLaugh = [...messages].reverse().find((item) => !item.is_mine && item.message_type !== "image");\n              if (partnerLaugh && /哈{2,}/.test(partnerLaugh.content || "")) triggerPrivateEgg("sync");\n            }\n          }
           void broadcastRefresh("message");
           setDraft("");
           setReplyTarget(null);
@@ -973,6 +987,14 @@ export default function RandomSessionScreen() {
       style={styles.root}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      {privateEggsAllowed && easterEgg ? (
+        <View pointerEvents="none" style={styles.easterEggOverlay}>
+          <Text style={easterEgg === "sync" ? styles.easterEggSync : styles.easterEggIcon}>
+            {easterEgg === "goodnight" ? "☾  ✦  ✧  ✦" : easterEgg === "penguin" ? "🐧" : "默契 +1"}
+          </Text>
+        </View>
+      ) : null}
+
       <View style={styles.header}>
         <Pressable onPress={handleBack} hitSlop={8} style={styles.headerBack}>
           <Text style={styles.headerActionText}>返回</Text>
