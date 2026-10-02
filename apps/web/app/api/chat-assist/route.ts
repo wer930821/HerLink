@@ -35,7 +35,7 @@ async function requireUser(request: Request) {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
   const { data, error } = await client.auth.getUser(token);
-  return error ? null : data.user;
+  if (error || !data.user) return null;\n\n  const permission = await client.rpc("can_use_chat_assistant");\n  if (permission.error || permission.data !== true) return null;\n\n  return data.user;
 }
 
 async function recordChatAssistHealth(request: Request, engine: "laya" | "fallback") {
