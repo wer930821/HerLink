@@ -15,7 +15,7 @@ import {
   buildBrowserHandoffUrl,
   ensureAnonymousBootstrapProfile,
   leaveRandomSession,
-  loadMyProfile,
+  loadMyProfile,\n  isCurrentUserAdmin,
   loadMyRandomSession,
   loadAnonymousContactStatus,
   loadRandomMessages,
@@ -271,7 +271,7 @@ export default function RandomSessionPage() {
   const [reportBusy, setReportBusy] = useState(false);
   const [contactBusy, setContactBusy] = useState(false);
   const [contactState, setContactState] = useState<AnonymousContactStatusRow | null>(null);
-  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);\n  const [assistantAllowed, setAssistantAllowed] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(true);
   const [assistantBusy, setAssistantBusy] = useState(false);
   const [assistantResult, setAssistantResult] = useState<ChatAssistResult | null>(null);
@@ -1058,7 +1058,7 @@ export default function RandomSessionPage() {
         }
 
         const nextProfile = profileResult.data ?? null;
-        setMyProfile(nextProfile);
+        setMyProfile(nextProfile);\n        const adminCheck = await isCurrentUserAdmin(authSession.user.id).catch(() => ({ data: false }));\n        if (mounted && bootstrapRunId === sessionBootstrapRunRef.current) {\n          setAssistantAllowed(Boolean(adminCheck.data));\n        }
         if (!nextProfile) {
           sessionBootstrapStateRef.current = "loading";
           setSessionState("loading");
@@ -2081,7 +2081,7 @@ export default function RandomSessionPage() {
 
         {contactRequestCard}
 
-        {assistantOpen ? (
+        {assistantAllowed && assistantOpen ? (
           <section className="chat-assist-card" aria-live="polite">
             <div className="chat-assist-heading">
               <div>
