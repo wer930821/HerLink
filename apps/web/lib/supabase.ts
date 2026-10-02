@@ -828,3 +828,13 @@ export function getSupabaseDiagnostics() {
 }
 
 export type { Session };
+
+
+export async function getRandomChatMessageCount(sessionId: string) {
+  return supabase.rpc("get_random_chat_message_count", {
+    p_session_id: sessionId,
+  }) as unknown as Promise<{
+    data: number | null;
+    error: { message?: string } | null;
+  }>;
+}
