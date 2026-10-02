@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Notice } from "../../components/ui";
-import { getCurrentSession, loadMyActiveRandomSessions, type RandomSessionRow } from "../../lib/supabase";
+import { getCurrentSession, loadMyActiveRandomSessions, loadRandomMessages, type RandomChatMessageRow, type RandomSessionRow } from "../../lib/supabase";
 
 export default function ChatsPage() {
   const router = useRouter();
   const [sessions, setSessions] = useState<RandomSessionRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [latestMessages, setLatestMessages] = useState<Record<string, RandomChatMessageRow | null>>({});
 
   useEffect(() => {
     let mounted = true;
@@ -20,8 +21,16 @@ export default function ChatsPage() {
       }
       const result = await loadMyActiveRandomSessions();
       if (mounted) {
-        setSessions(result.data ?? []);
-        setLoading(false);
+        const activeSessions = result.data ?? [];
+        setSessions(activeSessions);
+        const latestEntries = await Promise.all(activeSessions.map(async (chatSession) => {
+          const messages = await loadRandomMessages(chatSession.id, 1);
+          return [chatSession.id, messages.data?.[0] ?? null] as const;
+        }));
+        if (mounted) {
+          setLatestMessages(Object.fromEntries(latestEntries));
+          setLoading(false);
+        }
       }
     })();
     return () => { mounted = false; };
@@ -44,7 +53,16 @@ export default function ChatsPage() {
             style={{ width: "100%", textAlign: "left", padding: 16, borderRadius: 18, border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.04)", color: "inherit" }}
           >
             <strong>{session.partner_anonymous_display_name || "匿名使用者"}</strong>
-            <div className="muted small" style={{ marginTop: 6 }}>聊天中 · 點擊繼續聊天</div>
+            {latestMessages[session.id] ? (
+              <div className="muted small" style={{ marginTop: 6 }}>
+                <strong style={{ color: latestMessages[session.id]?.is_mine ? "inherit" : "var(--color-accent-strong)" }}>
+                  {latestMessages[session.id]?.is_mine ? "你：" : (session.partner_anonymous_display_name || "對方") + "："}
+                </strong>
+                {latestMessages[session.id]?.message_type === "image" ? "傳送了一張圖片" : latestMessages[session.id]?.content || "聊天中"}
+              </div>
+            ) : (
+              <div className="muted small" style={{ marginTop: 6 }}>尚無訊息 · 點擊開始聊天</div>
+            )}
           </button>
         ))}
       </div>
