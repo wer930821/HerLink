@@ -435,7 +435,7 @@ export default function AdminDashboardPage() {
                   {data.recent_easter_egg_events.map((item) => (
                     <tr key={item.id}>
                       <td>{formatAdminTime(item.created_at)}</td>
-                      <td><AdminBadge tone={item.trigger_type === "milestone" ? "accent" : "default"}>{easterEggLabel(item.egg_kind)}</AdminBadge></td>
+                      <td><AdminBadge tone={item.trigger_type === "milestone" ? "success" : "default"}>{easterEggLabel(item.egg_kind)}</AdminBadge></td>
                       <td>{item.trigger_type === "milestone" ? "訊息里程碑" : "文字彩蛋"}</td>
                       <td>{shortId(item.session_id)}</td>
                     </tr>
