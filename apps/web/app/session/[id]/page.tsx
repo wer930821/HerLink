@@ -1618,11 +1618,7 @@ export default function RandomSessionPage() {
       }
       stopTyping();
       setDraft("");
-      if (easterEggAllowed && (content.includes("晚安") || content.includes("企鵝") || /哈{2,}/.test(content))) {
-        chatInputRef.current?.blur();
-      } else {
-        window.requestAnimationFrame(() => chatInputRef.current?.focus());
-      }
+      // Do not programmatically refocus the composer after send on mobile Web.\n      // Keeping focus here reopens the virtual keyboard while an easter egg is showing.\n      chatInputRef.current?.blur();
       setAssistantResult(null);
       setAssistantResultForMessageId(null);
       setAssistantError(null);
