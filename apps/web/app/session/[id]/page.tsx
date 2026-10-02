@@ -1403,18 +1403,23 @@ export default function RandomSessionPage() {
             startingRealtime = false;
             const now = Date.now();
             const safeMessage = channelError?.message?.slice(0, 160) || null;
-            // A single failing channel can emit the same status repeatedly.
-            // Count/log it once per cooldown window instead of inflating admin diagnostics.
-            if (now - lastErrorAt >= 30_000) {
+            // One browser can emit the same Realtime error repeatedly while the
+            // Supabase socket is recovering. Persist at most one error per chat
+            // session per browser every 10 minutes so the admin counter reflects
+            // affected sessions instead of callback retries.
+            const diagnosticKey = `herlink:realtime-error:${session.id}`;
+            const previousPersistedAt = Number(window.sessionStorage.getItem(diagnosticKey) || "0");
+            if (now - previousPersistedAt >= 600_000 && now - lastErrorAt >= 30_000) {
               lastErrorAt = now;
+              window.sessionStorage.setItem(diagnosticKey, String(now));
               recordDiagnostic("realtime_subscribe_error", {
-              sessionId: session.id,
-              userId: myProfile.id,
-              safeErrorCode: status,
-              metadata: {
-                channel: "chat",
-                error: safeMessage,
-              },
+                sessionId: session.id,
+                userId: myProfile.id,
+                safeErrorCode: status,
+                metadata: {
+                  channel: "chat",
+                  error: safeMessage,
+                },
               });
             }
 
