@@ -26,6 +26,10 @@ type Props = {
 };
 
 const EXTERNAL_URL_PATTERN = /((?:https?:\/\/|www\.)[^\s<>"'`]+)/gi;
+const THOUSAND_MILESTONE = 1000;
+const THOUSAND_EGG_STORAGE_PREFIX = "herlink:thousand-egg:";
+const EASTER_TEST_USER_ID = process.env.NEXT_PUBLIC_EASTER_EGG_TEST_USER_ID?.trim() ?? "";
+
 const REPORT_CATEGORY_LABELS: Record<RandomReportCategory, string> = {
   spam: "垃圾訊息 / 廣告",
   scam: "詐騙",
@@ -158,6 +162,75 @@ export default function RandomSessionPage({ params }: Props) {
   const [reportCategory, setReportCategory] = useState<RandomReportCategory>("harassment");
   const [reportDescription, setReportDescription] = useState("");
   const [reportBlock, setReportBlock] = useState(true);
+  const [thousandEggOpen, setThousandEggOpen] = useState(false);
+  const [thousandEggNonce, setThousandEggNonce] = useState(0);
+  const thousandEggTimerRef = useRef<number | null>(null);
+  const lastKnownMessageCountRef = useRef<number | null>(null);
+
+  const isEasterEggTester = Boolean(EASTER_TEST_USER_ID && myProfile?.id === EASTER_TEST_USER_ID);
+
+  const playThousandEgg = () => {
+    if (thousandEggTimerRef.current) window.clearTimeout(thousandEggTimerRef.current);
+    setThousandEggNonce((value) => value + 1);
+    setThousandEggOpen(true);
+
+    try {
+      if ("vibrate" in navigator) navigator.vibrate([70, 55, 130, 65, 220]);
+      const AudioContextCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (AudioContextCtor) {
+        const context = new AudioContextCtor();
+        const now = context.currentTime;
+        const notes = [
+          { at: 0.02, hz: 196, duration: 0.16, gain: 0.08 },
+          { at: 0.18, hz: 392, duration: 0.18, gain: 0.07 },
+          { at: 0.42, hz: 784, duration: 0.42, gain: 0.06 },
+          { at: 0.72, hz: 1174.66, duration: 0.7, gain: 0.045 },
+        ];
+        notes.forEach(({ at, hz, duration, gain }) => {
+          const oscillator = context.createOscillator();
+          const volume = context.createGain();
+          oscillator.type = "sine";
+          oscillator.frequency.setValueAtTime(hz, now + at);
+          volume.gain.setValueAtTime(0.0001, now + at);
+          volume.gain.exponentialRampToValueAtTime(gain, now + at + 0.025);
+          volume.gain.exponentialRampToValueAtTime(0.0001, now + at + duration);
+          oscillator.connect(volume);
+          volume.connect(context.destination);
+          oscillator.start(now + at);
+          oscillator.stop(now + at + duration + 0.03);
+        });
+        window.setTimeout(() => void context.close(), 1800);
+      }
+    } catch {
+      // 視裝置支援狀況靜默略過音效或震動。
+    }
+
+    thousandEggTimerRef.current = window.setTimeout(() => {
+      setThousandEggOpen(false);
+      thousandEggTimerRef.current = null;
+    }, 6800);
+  };
+
+  const checkThousandMilestone = async (sessionId: string, allowTrigger: boolean) => {
+    const { count, error } = await supabase
+      .from("random_chat_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("session_id", sessionId);
+    if (error || typeof count !== "number") return;
+
+    const previous = lastKnownMessageCountRef.current;
+    lastKnownMessageCountRef.current = count;
+    if (!allowTrigger || count < THOUSAND_MILESTONE || (previous !== null && previous >= THOUSAND_MILESTONE)) return;
+
+    const storageKey = `${THOUSAND_EGG_STORAGE_PREFIX}${sessionId}`;
+    try {
+      if (window.localStorage.getItem(storageKey) === "1") return;
+      window.localStorage.setItem(storageKey, "1");
+    } catch {
+      // localStorage 不可用時仍允許本次播放。
+    }
+    playThousandEgg();
+  };
 
   const isEnded = session?.status === "ended";
   const partnerName = session?.partner_anonymous_display_name ?? "匿名使用者";
@@ -233,6 +306,7 @@ export default function RandomSessionPage({ params }: Props) {
           const nextMessages = Array.isArray(messagesResult.data) ? messagesResult.data : [];
           seenMessageIdsRef.current = new Set(nextMessages.map((item) => item.id));
           setMessages(nextMessages);
+          void checkThousandMilestone(nextSession.id, false);
         }
 
         if (nextSession.status === "ended") {
@@ -293,6 +367,7 @@ export default function RandomSessionPage({ params }: Props) {
               risk_types: nextMessage.risk_types ?? [],
             })
           );
+          void checkThousandMilestone(session.id, true);
         }
       )
       .subscribe();
@@ -356,6 +431,7 @@ export default function RandomSessionPage({ params }: Props) {
         }
       }
       setDraft("");
+      void checkThousandMilestone(session.id, true);
     } catch (error) {
       setNotice(getFriendlyRandomChatError(error, "訊息傳送失敗，請稍後再試。"));
     } finally {
@@ -460,6 +536,12 @@ export default function RandomSessionPage({ params }: Props) {
     }
   };
 
+  useEffect(() => {
+    return () => {
+      if (thousandEggTimerRef.current) window.clearTimeout(thousandEggTimerRef.current);
+    };
+  }, []);
+
   const openExternalLink = (url: string) => {
     setPendingExternalUrl(url);
   };
@@ -544,6 +626,11 @@ export default function RandomSessionPage({ params }: Props) {
           <button className="button secondary" onClick={leave} disabled={leaveBusy}>
             {leaveBusy ? "離開中…" : "離開聊天室"}
           </button>
+          {isEasterEggTester ? (
+            <button className="button secondary thousand-test-button" type="button" onClick={playThousandEgg}>
+              測試 1000 則彩蛋
+            </button>
+          ) : null}
         </div>
 
         {notice ? <div className="notice">{notice}</div> : null}
@@ -589,6 +676,36 @@ export default function RandomSessionPage({ params }: Props) {
           </div>
         </form>
       </section>
+
+      {thousandEggOpen ? (
+        <div key={thousandEggNonce} className="thousand-egg" aria-live="polite" aria-label="1000 則訊息達成">
+          <div className="thousand-egg-dim" />
+          <div className="thousand-egg-flash" />
+          <div className="thousand-egg-rays" />
+          <div className="thousand-egg-ring ring-one" />
+          <div className="thousand-egg-ring ring-two" />
+          <div className="thousand-egg-fireworks" aria-hidden="true">
+            {Array.from({ length: 6 }, (_, index) => <i key={index} style={{ "--i": index } as React.CSSProperties} />)}
+          </div>
+          <div className="thousand-egg-particles" aria-hidden="true">
+            {Array.from({ length: 54 }, (_, index) => (
+              <i key={index} style={{ "--i": index, "--x": `${(index * 47) % 100}%`, "--delay": `${(index % 12) * 0.045}s` } as React.CSSProperties} />
+            ))}
+          </div>
+          <div className="thousand-egg-stage">
+            <div className="thousand-egg-kicker">HERLINK CHAT MILESTONE</div>
+            <div className="thousand-egg-number" data-text="1000">1000</div>
+            <div className="thousand-egg-copy copy-one">1000 則訊息達成</div>
+            <div className="thousand-egg-copy copy-two">你們到底聊了多少啦</div>
+            <div className="thousand-egg-copy copy-three">這個聊天室已經有點離譜了</div>
+            <div className="thousand-egg-card">
+              <span className="thousand-egg-crown">✦</span>
+              <strong>LEGENDARY CHAT</strong>
+              <small>傳說級聊天室成就解鎖</small>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {safetyMenuOpen ? (
         <div className="modal-backdrop" role="presentation" onClick={closeSafetyMenus}>
