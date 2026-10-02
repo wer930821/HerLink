@@ -1564,6 +1564,7 @@ export default function RandomSessionPage() {
     if (/加油|祝你|祝妳|希望|順利|辛苦了/.test(normalized)) return triggerEasterEgg("meteor");
     if (/喜歡你|喜歡妳|喜歡|心動|愛你|愛妳/.test(normalized)) return triggerEasterEgg("secret");
     if (normalized.includes("早安")) return triggerEasterEgg("morning");
+    if (normalized.toLowerCase() === "hi") return triggerEasterEgg("hello");
     if (normalized.includes("安安")) return triggerEasterEgg("hello");
     if (content.includes("晚安")) return triggerEasterEgg("goodnight");
     if (content.includes("企鵝")) return triggerEasterEgg("penguin");
