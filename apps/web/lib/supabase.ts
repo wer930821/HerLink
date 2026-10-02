@@ -401,6 +401,19 @@ export function getWebAuthCallbackUrl() {
   return `${window.location.origin}/auth/callback?next=/reset-password`;
 }
 
+export async function isCurrentUserAdmin(userId: string) {
+  const result = await supabase
+    .from("admin_users")
+    .select("user_id")
+    .eq("user_id", userId)
+    .eq("active", true)
+    .maybeSingle();
+  return { data: Boolean(result.data), error: result.error } as {
+    data: boolean;
+    error: { message?: string } | null;
+  };
+}
+
 export async function loadMyProfile(userId: string) {
   return (supabase
     .from("profiles")
