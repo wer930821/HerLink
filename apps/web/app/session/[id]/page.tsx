@@ -836,32 +836,36 @@ export default function RandomSessionPage() {
       return null;
     }
 
-    if (result.error) {
-      lastSessionFetchErrorRef.current = true;
-      recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
-        reason: "TEMPORARY_FETCH_ERROR",
-        sessionState: session?.status === "active" ? "active" : "missing",
-        serverSessionId: targetSessionId,
-      });
-      return null;
-    }
-
     let nextSession = result.data ?? null;
-    if (!nextSession) {
+
+    // A rotated anonymous identity is no longer allowed to read the old session,
+    // so get_my_random_session_view can return an RLS/authorization error instead
+    // of an empty row. Try the installation-bound recovery in both cases.
+    if (result.error || !nextSession) {
       const recovery = await restoreRandomSessionFromInstallation(targetSessionId);
       if (recovery.data) {
         nextSession = recovery.data;
+        lastSessionFetchErrorRef.current = false;
         recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
           reason: "SESSION_RECOVERED_FROM_INSTALLATION",
           sessionState: nextSession.status === "active" ? "active" : "ended",
           serverSessionId: nextSession.id,
         });
       } else {
-        recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
-          reason: "SESSION_CONFIRMED_MISSING",
-          sessionState: "missing",
-          serverSessionId: targetSessionId,
-        });
+        if (result.error) {
+          lastSessionFetchErrorRef.current = true;
+          recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
+            reason: "TEMPORARY_FETCH_ERROR",
+            sessionState: session?.status === "active" ? "active" : "missing",
+            serverSessionId: targetSessionId,
+          });
+        } else {
+          recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
+            reason: "SESSION_CONFIRMED_MISSING",
+            sessionState: "missing",
+            serverSessionId: targetSessionId,
+          });
+        }
         return null;
       }
     }
