@@ -5526,3 +5526,11 @@ body:has(.admin-page),
 @keyframes milestone-number { 0% { opacity:0; transform:translate(-50%,-50%) scale(.25) } 22%,76% { opacity:1; transform:translate(-50%,-50%) scale(1) } 100% { opacity:0; transform:translate(-50%,-60%) scale(1.08) } }
 @keyframes milestone-copy { 0%,20% { opacity:0; transform:translate(-50%,14px) } 35%,80% { opacity:1; transform:translate(-50%,0) } 100% { opacity:0; transform:translate(-50%,-8px) } }
 @keyframes milestone-firework { 0% { opacity:0; transform:scale(.2) rotate(0) } 28% { opacity:1; transform:scale(2.4) rotate(35deg) } 100% { opacity:0; transform:scale(3.5) rotate(70deg) } }
+
+
+.egg-1000-particles { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+.egg-1000-particles i { --angle:calc(var(--particle-index) * 16.36deg); position:absolute; left:50%; top:42%; width:7px; height:7px; border-radius:50%; background:#ffd978; box-shadow:0 0 9px #ffc84f,0 0 18px rgba(255,196,72,.7); opacity:0; transform:translate(-50%,-50%) rotate(var(--angle)) translateX(35px) scale(.3); animation:milestone-particle 2.8s cubic-bezier(.16,.8,.3,1) calc(var(--particle-index) * 18ms) both; }
+.egg-1000-particles i:nth-child(3n) { width:4px; height:4px; }
+.egg-1000-particles i:nth-child(4n) { width:10px; height:3px; border-radius:8px; }
+@keyframes milestone-particle { 0% { opacity:0; transform:translate(-50%,-50%) rotate(var(--angle)) translateX(25px) scale(.2) } 18% { opacity:1 } 72% { opacity:.9 } 100% { opacity:0; transform:translate(-50%,-50%) rotate(var(--angle)) translateX(min(42vw,260px)) scale(.8) } }
+@media (prefers-reduced-motion: reduce) { .egg-1000-particles i { animation:none; opacity:.65; transform:translate(-50%,-50%) rotate(var(--angle)) translateX(110px); } }
