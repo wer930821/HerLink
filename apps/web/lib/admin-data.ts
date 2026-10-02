@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   AdminBlockRow,
+  AdminEasterEggSummary,
   AdminFraudRiskEventRow,
   AdminModerationEnforcementRow,
   AdminPaginationResult,
@@ -369,6 +370,71 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
       error_code: String(item.error_code ?? "UNKNOWN"),
       error_count: asNumber(item.error_count),
       last_seen: String(item.last_seen ?? ""),
+    })),
+  };
+}
+
+export async function loadAdminEasterEggAnalytics(
+  client: SupabaseClient
+): Promise<AdminEasterEggSummary> {
+  const dayStart = getTaipeiDayStartIso();
+  const { data, error } = await client
+    .from("chat_easter_egg_events")
+    .select("id,session_id,user_id,egg_kind,trigger_type,created_at")
+    .order("created_at", { ascending: false })
+    .limit(2000);
+  if (error) throw error;
+
+  const rows = Array.isArray(data) ? data : [];
+  const ranking = new Map<string, {
+    egg_kind: string;
+    trigger_type: "text" | "milestone";
+    trigger_count: number;
+    users: Set<string>;
+    last_triggered_at: string;
+  }>();
+  const users = new Set<string>();
+  let todayCount = 0;
+
+  for (const row of rows as any[]) {
+    const createdAt = String(row.created_at);
+    const userId = String(row.user_id);
+    const eggKind = String(row.egg_kind);
+    const triggerType = row.trigger_type === "milestone" ? "milestone" : "text";
+    users.add(userId);
+    if (createdAt >= dayStart) todayCount += 1;
+    const current = ranking.get(eggKind) ?? {
+      egg_kind: eggKind,
+      trigger_type: triggerType,
+      trigger_count: 0,
+      users: new Set<string>(),
+      last_triggered_at: createdAt,
+    };
+    current.trigger_count += 1;
+    current.users.add(userId);
+    if (createdAt > current.last_triggered_at) current.last_triggered_at = createdAt;
+    ranking.set(eggKind, current);
+  }
+
+  return {
+    total_count: rows.length,
+    today_count: todayCount,
+    unique_user_count: users.size,
+    ranking: [...ranking.values()]
+      .map((item) => ({
+        egg_kind: item.egg_kind,
+        trigger_type: item.trigger_type,
+        trigger_count: item.trigger_count,
+        unique_user_count: item.users.size,
+        last_triggered_at: item.last_triggered_at,
+      }))
+      .sort((a, b) => b.trigger_count - a.trigger_count || b.last_triggered_at.localeCompare(a.last_triggered_at)),
+    recent_events: rows.slice(0, 100).map((row: any) => ({
+      id: String(row.id),
+      session_id: String(row.session_id),
+      egg_kind: String(row.egg_kind),
+      trigger_type: row.trigger_type === "milestone" ? "milestone" : "text",
+      created_at: String(row.created_at),
     })),
   };
 }
