@@ -228,6 +228,39 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     ? healthData[0] ?? {}
     : healthData ?? {};
   const recentErrors = Array.isArray(recentErrorsData) ? recentErrorsData : [];
+
+  // Derive current Realtime health from the latest event per browser/session.
+  // A later SUBSCRIBED/RECONNECTED event clears an earlier error, so historical
+  // retry callbacks are not presented as currently broken connections.
+  const realtimeSince = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const { data: recentRealtimeHealthRows } = await client
+    .from("realtime_diagnostics")
+    .select("session_id,user_id,client_instance_id,event_type,created_at")
+    .gte("created_at", realtimeSince)
+    .in("event_type", [
+      "realtime_subscribe_error",
+      "realtime_disconnected",
+      "realtime_subscribed",
+      "realtime_reconnected",
+    ])
+    .order("created_at", { ascending: false })
+    .limit(2000);
+
+  const latestRealtimeState = new Map<string, any>();
+  for (const row of recentRealtimeHealthRows ?? []) {
+    const key = `${row.session_id ?? ""}:${row.user_id ?? ""}:${row.client_instance_id ?? ""}`;
+    if (!latestRealtimeState.has(key)) latestRealtimeState.set(key, row);
+  }
+  const affectedRealtimeConnections = [...latestRealtimeState.values()].filter(
+    (row) => row.event_type === "realtime_subscribe_error" || row.event_type === "realtime_disconnected"
+  );
+  const affectedRealtime5m = affectedRealtimeConnections.filter(
+    (row) => Date.now() - new Date(row.created_at).getTime() <= 5 * 60 * 1000
+  ).length;
+  const affectedRealtime1m = affectedRealtimeConnections.filter(
+    (row) => Date.now() - new Date(row.created_at).getTime() <= 60 * 1000
+  ).length;
+
   const liveMatchStats = Array.isArray(liveMatchData)
     ? liveMatchData[0] ?? {}
     : liveMatchData ?? {};
@@ -313,9 +346,9 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     today_match_success_rate: (healthStats as any).today_match_success_rate == null ? null : asNumber((healthStats as any).today_match_success_rate),
     today_avg_wait_seconds: (healthStats as any).today_avg_wait_seconds == null ? null : asNumber((healthStats as any).today_avg_wait_seconds),
     realtime_errors_1h: asNumber((healthStats as any).realtime_errors_1h),
-    realtime_errors_10m: asNumber((healthStats as any).realtime_errors_10m),
-    realtime_errors_5m: asNumber((healthStats as any).realtime_errors_5m),
-    realtime_errors_1m: asNumber((healthStats as any).realtime_errors_1m),
+    realtime_errors_10m: affectedRealtimeConnections.length,
+    realtime_errors_5m: affectedRealtime5m,
+    realtime_errors_1m: affectedRealtime1m,
     realtime_last_error_at: (healthStats as any).realtime_last_error_at ? String((healthStats as any).realtime_last_error_at) : null,
     today_push_success_rate: (healthStats as any).today_push_success_rate == null ? null : asNumber((healthStats as any).today_push_success_rate),
     today_laya_success_rate: (healthStats as any).today_laya_success_rate == null ? null : asNumber((healthStats as any).today_laya_success_rate),
