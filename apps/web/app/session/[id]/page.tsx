@@ -1618,7 +1618,11 @@ export default function RandomSessionPage() {
       }
       stopTyping();
       setDraft("");
-      window.requestAnimationFrame(() => chatInputRef.current?.focus());
+      if (easterEggAllowed && (content.includes("晚安") || content.includes("企鵝") || /哈{2,}/.test(content))) {
+        chatInputRef.current?.blur();
+      } else {
+        window.requestAnimationFrame(() => chatInputRef.current?.focus());
+      }
       setAssistantResult(null);
       setAssistantResultForMessageId(null);
       setAssistantError(null);
