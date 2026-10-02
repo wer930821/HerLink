@@ -1323,6 +1323,8 @@ export default function RandomSessionPage() {
     let chatChannel: ReturnType<typeof supabase.channel> | null = null;
     let reconnectTimer: number | null = null;
     let startingRealtime = false;
+    let reconnectAttempt = 0;
+    let lastErrorAt = 0;
 
     const syncRealtimeAuth = async () => {
       const { data } = await supabase.auth.getSession();
@@ -1385,6 +1387,8 @@ export default function RandomSessionPage() {
         .subscribe((status: string, channelError?: Error) => {
           if (status === "SUBSCRIBED") {
             startingRealtime = false;
+            reconnectAttempt = 0;
+            lastErrorAt = 0;
             typingChannelReadyRef.current = true;
             if (reconnectTimer !== null) {
               window.clearTimeout(reconnectTimer);
@@ -1403,8 +1407,14 @@ export default function RandomSessionPage() {
 
           if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
             typingChannelReadyRef.current = false;
+            startingRealtime = false;
+            const now = Date.now();
             const safeMessage = channelError?.message?.slice(0, 160) || null;
-            recordDiagnostic("realtime_subscribe_error", {
+            // A single failing channel can emit the same status repeatedly.
+            // Count/log it once per cooldown window instead of inflating admin diagnostics.
+            if (now - lastErrorAt >= 30_000) {
+              lastErrorAt = now;
+              recordDiagnostic("realtime_subscribe_error", {
               sessionId: session.id,
               userId: myProfile.id,
               safeErrorCode: status,
@@ -1412,7 +1422,8 @@ export default function RandomSessionPage() {
                 channel: "chat",
                 error: safeMessage,
               },
-            });
+              });
+            }
 
             // Immediately fall back to database sync so chat remains current.
             void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
@@ -1422,6 +1433,8 @@ export default function RandomSessionPage() {
             // aggressively can create a reconnect loop on unstable mobile networks.
             void syncRealtimeAuth();
             if (reconnectTimer === null) {
+              const reconnectDelay = Math.min(60_000, 15_000 * Math.pow(2, reconnectAttempt));
+              reconnectAttempt += 1;
               reconnectTimer = window.setTimeout(() => {
                 reconnectTimer = null;
                 if (disposed || typingChannelReadyRef.current) return;
@@ -1440,7 +1453,7 @@ export default function RandomSessionPage() {
                   }
                 };
                 void restart();
-              }, 20_000);
+              }, reconnectDelay);
             }
             return;
           }
@@ -1456,7 +1469,9 @@ export default function RandomSessionPage() {
             });
             void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
             void refreshSessionFromServerRef.current?.();
-            if (reconnectTimer === null && !disposed) {
+            if (reconnectTimer === null && !disposed && document.visibilityState === "visible" && navigator.onLine) {
+              const reconnectDelay = Math.min(60_000, 15_000 * Math.pow(2, reconnectAttempt));
+              reconnectAttempt += 1;
               reconnectTimer = window.setTimeout(() => {
                 reconnectTimer = null;
                 if (disposed || typingChannelReadyRef.current) return;
@@ -1468,7 +1483,7 @@ export default function RandomSessionPage() {
                   if (!disposed) void startRealtime();
                 };
                 void restart();
-              }, 12_000);
+              }, reconnectDelay);
             }
           }
         });
