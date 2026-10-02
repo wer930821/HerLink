@@ -5369,3 +5369,43 @@ body:has(.admin-page),
 .admin-page .admin-layout {
   min-height: 100dvh;
 }
+
+
+/* Keep the full chat chrome visible when the Android soft keyboard opens.
+   Interactive-widget resizing already changes 100dvh; avoid stacking an
+   additional viewport offset that can push the header/messages off-screen. */
+@media (max-width: 768px) {
+  .chat-page {
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+  }
+
+  .chat-page > .chat-shell {
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    gap: 6px;
+    padding:
+      env(safe-area-inset-top)
+      8px
+      max(6px, env(safe-area-inset-bottom));
+    box-sizing: border-box;
+  }
+
+  .chat-header {
+    flex: 0 0 auto;
+    position: sticky;
+    top: 0;
+  }
+
+  .chat-messages {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .chat-composer {
+    flex: 0 0 auto;
+    padding-bottom: 0;
+  }
+}
