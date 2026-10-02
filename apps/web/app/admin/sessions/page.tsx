@@ -124,8 +124,8 @@ export default function AdminSessionsPage() {
           ))}
         </AdminToolbar>
         <AdminToolbar>
-          <Button variant={sort === "newest" ? "primary" : "secondary"} size="sm" type="button" onClick={() => setSort("newest")}>新的聊天室</Button>
-          <Button variant={sort === "last_reply" ? "primary" : "secondary"} size="sm" type="button" onClick={() => setSort("last_reply")}>最後回覆時間</Button>
+          <Button variant={sort === "newest" ? "primary" : "secondary"} size="sm" type="button" onClick={() => setSort("newest")}>最新開始</Button>
+          <Button variant={sort === "last_reply" ? "primary" : "secondary"} size="sm" type="button" onClick={() => setSort("last_reply")}>最近回覆</Button>
         </AdminToolbar>
         {refreshing && !data ? (
           <div className="admin-session-loading" aria-live="polite">
