@@ -615,6 +615,26 @@ export async function registerAnonymousAbuseIdentity() {
   };
 }
 
+export async function restoreRandomSessionFromInstallation(sessionId: string) {
+  const installationId = getAnonymousInstallationId();
+  if (!installationId) {
+    return { data: null, error: createSupabaseClientError("目前無法取得匿名裝置識別。") } as {
+      data: RandomSessionRow | null;
+      error: SupabaseClientError | null;
+    };
+  }
+
+  const result = await supabase.rpc("restore_random_session_from_installation", {
+    p_session_id: sessionId,
+    p_installation_id: installationId,
+  });
+
+  return {
+    data: Array.isArray(result.data) ? result.data[0] ?? null : result.data ?? null,
+    error: result.error,
+  } as { data: RandomSessionRow | null; error: SupabaseClientError | null };
+}
+
 export async function findOrJoinRandomMatch() {
   return supabase.rpc("find_or_join_random_match");
 }
