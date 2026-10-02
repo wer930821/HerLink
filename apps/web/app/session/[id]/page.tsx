@@ -337,72 +337,154 @@ export default function RandomSessionPage({ params }: Props) {
   }, [checkThousandMilestone, params.id, router]);
 
   useEffect(() => {
-    if (!session || !myProfile?.id) return;
+    if (!session?.id || !myProfile?.id) return;
 
-    const messagesChannel = supabase
-      .channel(`random-chat-messages-${session.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "random_chat_messages",
-          filter: `session_id=eq.${session.id}`,
-        },
-        (payload) => {
-          const nextMessage = payload.new as RandomChatMessageRealtimeRow;
-          if (seenMessageIdsRef.current.has(nextMessage.id)) {
-            return;
-          }
+    let disposed = false;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let reconnectAttempt = 0;
+    let messagesChannel: ReturnType<typeof supabase.channel> | null = null;
+    let sessionChannel: ReturnType<typeof supabase.channel> | null = null;
 
-          seenMessageIdsRef.current.add(nextMessage.id);
-          setMessages((current) =>
-            upsertMessage(current, {
-              id: nextMessage.id,
-              session_id: nextMessage.session_id,
-              content: nextMessage.content,
-              created_at: nextMessage.created_at,
-              is_mine: nextMessage.sender_id === myProfile.id,
-              risk_level: nextMessage.risk_level ?? "low",
-              risk_types: nextMessage.risk_types ?? [],
-            })
-          );
-          void checkThousandMilestone(session.id, true);
+    const syncMissedState = async () => {
+      const [messagesResult, sessionResult] = await Promise.all([
+        loadRandomMessages(session.id, 200),
+        loadMyRandomSession(session.id),
+      ]);
+      if (disposed) return;
+
+      if (!messagesResult.error && Array.isArray(messagesResult.data)) {
+        for (const item of messagesResult.data) {
+          seenMessageIdsRef.current.add(item.id);
         }
-      )
-      .subscribe();
+        setMessages((current) =>
+          messagesResult.data.reduce((next, item) => upsertMessage(next, item), current)
+        );
+      }
+      if (!sessionResult.error && sessionResult.data) {
+        setSession(sessionResult.data);
+      }
+    };
 
-    const sessionChannel = supabase
-      .channel(`random-chat-session-${session.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "random_chat_sessions",
-          filter: `id=eq.${session.id}`,
-        },
-        (payload) => {
-          const nextSession = payload.new as RandomSessionRow;
-          setSession(nextSession);
-          if (nextSession.status === "ended") {
-            setNotice(
-              nextSession.ended_reason === "next"
-                ? "對方剛剛切換到下一位。"
-                : nextSession.ended_reason === "blocked"
-                  ? "這段對話已被封鎖。"
-                  : "對方已離開聊天。"
+    const cleanupChannels = () => {
+      if (messagesChannel) {
+        void supabase.removeChannel(messagesChannel);
+        messagesChannel = null;
+      }
+      if (sessionChannel) {
+        void supabase.removeChannel(sessionChannel);
+        sessionChannel = null;
+      }
+    };
+
+    const scheduleReconnect = () => {
+      if (disposed || reconnectTimer) return;
+      const delays = [1000, 2000, 5000, 10000, 15000];
+      const delay = delays[Math.min(reconnectAttempt, delays.length - 1)];
+      reconnectAttempt += 1;
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        if (disposed) return;
+        cleanupChannels();
+        subscribe();
+      }, delay);
+    };
+
+    const handleStatus = (status: string) => {
+      if (disposed) return;
+      if (status === "SUBSCRIBED") {
+        reconnectAttempt = 0;
+        void syncMissedState();
+        return;
+      }
+      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+        scheduleReconnect();
+      }
+    };
+
+    const subscribe = () => {
+      if (disposed) return;
+
+      messagesChannel = supabase
+        .channel(`random-chat-messages-${session.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "random_chat_messages",
+            filter: `session_id=eq.${session.id}`,
+          },
+          (payload) => {
+            const nextMessage = payload.new as RandomChatMessageRealtimeRow;
+            if (seenMessageIdsRef.current.has(nextMessage.id)) return;
+            seenMessageIdsRef.current.add(nextMessage.id);
+            setMessages((current) =>
+              upsertMessage(current, {
+                id: nextMessage.id,
+                session_id: nextMessage.session_id,
+                content: nextMessage.content,
+                created_at: nextMessage.created_at,
+                is_mine: nextMessage.sender_id === myProfile.id,
+                risk_level: nextMessage.risk_level ?? "low",
+                risk_types: nextMessage.risk_types ?? [],
+              })
             );
+            void checkThousandMilestone(session.id, true);
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe(handleStatus);
+
+      sessionChannel = supabase
+        .channel(`random-chat-session-${session.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "random_chat_sessions",
+            filter: `id=eq.${session.id}`,
+          },
+          (payload) => {
+            const nextSession = payload.new as RandomSessionRow;
+            setSession(nextSession);
+            if (nextSession.status === "ended") {
+              setNotice(
+                nextSession.ended_reason === "next"
+                  ? "對方剛剛切換到下一位。"
+                  : nextSession.ended_reason === "blocked"
+                    ? "這段對話已被封鎖。"
+                    : "對方已離開聊天。"
+              );
+            }
+          }
+        )
+        .subscribe(handleStatus);
+    };
+
+    subscribe();
+
+    const handleOnline = () => {
+      if (disposed) return;
+      reconnectAttempt = 0;
+      cleanupChannels();
+      subscribe();
+    };
+    const handleVisibility = () => {
+      if (!disposed && document.visibilityState === "visible") {
+        void syncMissedState();
+      }
+    };
+    window.addEventListener("online", handleOnline);
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
-      void supabase.removeChannel(messagesChannel);
-      void supabase.removeChannel(sessionChannel);
+      disposed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      window.removeEventListener("online", handleOnline);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      cleanupChannels();
     };
-  }, [checkThousandMilestone, myProfile?.id, session]);
+  }, [checkThousandMilestone, myProfile?.id, session?.id]);
 
   useEffect(() => {
     messageListRef.current?.scrollTo({ top: messageListRef.current.scrollHeight, behavior: "smooth" });
