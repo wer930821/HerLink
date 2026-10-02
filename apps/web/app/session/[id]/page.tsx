@@ -1597,6 +1597,7 @@ export default function RandomSessionPage() {
 
   const goNext = async () => {
     if (!session || nextBusy) return;
+    if (!window.confirm("確定要切換到下一位嗎？\n\n目前這個聊天室會立即結束，送出後無法復原。")) return;
     setNextBusy(true);
     setNotice(null);
     try {
