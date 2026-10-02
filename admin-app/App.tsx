@@ -12,7 +12,7 @@ import {
   ToastAndroid,
   View,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
 import { WebView } from "react-native-webview";
@@ -33,7 +33,7 @@ function getCurrentVersionCode() {
   return typeof configuredCode === "number" ? configuredCode : 1;
 }
 
-export default function App() {
+function AdminApp() {
   const insets = useSafeAreaInsets();
   const webRef = useRef<WebView>(null);
   const lastBackPressRef = useRef(0);
@@ -206,6 +206,14 @@ export default function App() {
         ) : null}
       </View>
     </SafeAreaView>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AdminApp />
+    </SafeAreaProvider>
   );
 }
 
