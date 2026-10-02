@@ -5486,3 +5486,16 @@ body:has(.admin-page),
 @keyframes morning-rise { from { opacity:0; transform:translate(-50%,28%) scale(.7) } 25%,78% { opacity:1; transform:translate(-50%,0) scale(1) } to { opacity:0; transform:translate(-50%,-4%) scale(1.04) } }
 @keyframes morning-sun { 0% { opacity:0; transform:translate(-50%,45px) scale(.7) } 28%,78% { opacity:1; transform:translate(-50%,0) scale(1) } 100% { opacity:0; transform:translate(-50%,-15px) scale(1.08) } }
 @keyframes morning-cloud { from { opacity:0; transform:translateX(-25px) } 25%,75% { opacity:.2 } to { opacity:0; transform:translateX(45px) } }
+
+
+/* Casual hello easter egg */
+.chat-easter-egg-hello { background:radial-gradient(circle at center,rgba(255,111,97,.16),transparent 58%); animation:egg-fade 3.2s ease both; }
+.egg-hello-ripple { position:absolute; left:50%; top:47%; width:90px; height:90px; border:2px solid rgba(255,255,255,.28); border-radius:50%; transform:translate(-50%,-50%); animation:hello-ripple 2.3s ease-out both; }
+.egg-hello-ripple.r2 { animation-delay:.35s; }
+.egg-hello-wave { position:absolute; left:50%; top:42%; font-size:64px; transform:translate(-50%,-50%); filter:drop-shadow(0 8px 18px rgba(0,0,0,.3)); animation:hello-wave 3.2s ease both; }
+.egg-hello-bubble { position:absolute; padding:7px 11px; border-radius:999px; background:rgba(25,20,39,.86); font-weight:800; box-shadow:0 8px 22px rgba(0,0,0,.24); animation:hello-bubble 3.2s ease both; }
+.egg-hello-bubble.b1 { left:22%; top:30%; }.egg-hello-bubble.b2 { right:22%; top:35%; animation-delay:.12s; }.egg-hello-bubble.b3 { left:30%; top:55%; animation-delay:.24s; }
+.egg-hello-text { position:absolute; left:50%; top:59%; transform:translateX(-50%); white-space:nowrap; font-size:17px; font-weight:800; animation:egg-caption 3.2s ease both; }
+@keyframes hello-ripple { from { opacity:.65; transform:translate(-50%,-50%) scale(.25) } to { opacity:0; transform:translate(-50%,-50%) scale(4.4) } }
+@keyframes hello-wave { 0%,100% { opacity:0; transform:translate(-50%,-50%) scale(.65) rotate(-15deg) } 22% { opacity:1; transform:translate(-50%,-50%) scale(1) rotate(18deg) } 38% { transform:translate(-50%,-50%) rotate(-12deg) } 55%,78% { opacity:1; transform:translate(-50%,-50%) rotate(12deg) } }
+@keyframes hello-bubble { 0%,100% { opacity:0; transform:translateY(12px) scale(.7) } 25%,72% { opacity:1; transform:translateY(0) scale(1) } }
