@@ -5561,7 +5561,9 @@ body:has(.admin-page),
 .egg-1000-legendary small { display:block; margin-top:5px; font-size:14px; font-weight:900; letter-spacing:.08em; color:#fff7db; }
 @keyframes milestone-legendary { 0%,55% { opacity:0; transform:translate(-50%,28px) scale(.68) } 66% { opacity:1; transform:translate(-50%,-5px) scale(1.08) } 72%,91% { opacity:1; transform:translate(-50%,0) scale(1) } 100% { opacity:0; transform:translate(-50%,-8px) scale(.98) } }
 
-.chat-milestone-test-group { display:flex; align-items:center; justify-content:flex-end; gap:5px; max-width:min(58vw,430px); overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+.chat-milestone-test-group { position:fixed; z-index:45; top:calc(env(safe-area-inset-top, 0px) + 58px); left:50%; transform:translateX(-50%); display:flex; align-items:center; justify-content:flex-start; gap:5px; width:min(calc(100vw - 24px),430px); max-width:calc(100vw - 24px); padding:6px; overflow-x:auto; box-sizing:border-box; border:1px solid rgba(255,255,255,.08); border-radius:16px; background:rgba(20,17,35,.88); box-shadow:0 10px 30px rgba(0,0,0,.24); backdrop-filter:blur(12px); scrollbar-width:none; -webkit-overflow-scrolling:touch; }
 .chat-milestone-test-group::-webkit-scrollbar { display:none; }
 .chat-milestone-test-trigger { min-height:34px; padding:0 10px; border:1px solid rgba(255,210,108,.4); border-radius:999px; background:rgba(255,205,91,.09); color:inherit; font:inherit; font-size:12px; font-weight:800; white-space:nowrap; cursor:pointer; touch-action:manipulation; }
 .chat-milestone-test-trigger:active { transform:scale(.97); }
+
+@media (max-width: 640px) { .chat-milestone-test-trigger { flex:0 0 auto; min-height:30px; padding:0 9px; font-size:11px; } }
