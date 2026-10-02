@@ -26,6 +26,7 @@ import {
   removeChatMedia,
   reportRandomUser,
   requestAnonymousContact,
+  requestRandomSessionRecovery,
   registerAnonymousAbuseIdentity,
   restoreRandomSessionFromInstallation,
   sendImageMessage,
@@ -289,6 +290,8 @@ export default function RandomSessionPage() {
   const [assistantError, setAssistantError] = useState<string | null>(null);
   const [nextConfirmOpen, setNextConfirmOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [safetyMenuOpen, setSafetyMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportFollowupOpen, setReportFollowupOpen] = useState(false);
@@ -2107,7 +2110,34 @@ export default function RandomSessionPage() {
       <main className="hero">
         <h1 className="hero-title">聊天室暫時無法載入</h1>
         <p className="hero-copy">聊天室不一定已結束，HerLink 目前無法確認你的匿名身份或會話狀態。</p>
-        <button className="button" type="button" onClick={() => window.location.reload()}>重新載入</button>
+        {recoveryCode ? (
+          <div className="notice">
+            恢復碼：<strong>{recoveryCode}</strong><br />
+            請把這組恢復碼傳給管理員，核對後即可把原聊天室接回目前這個匿名身份。
+          </div>
+        ) : null}
+        <div className="button-row">
+          <button className="button" type="button" onClick={() => window.location.reload()}>重新載入</button>
+          <button
+            className="button secondary"
+            type="button"
+            disabled={recoveryBusy || !routeSessionId}
+            onClick={async () => {
+              if (!routeSessionId) return;
+              setRecoveryBusy(true);
+              const result = await requestRandomSessionRecovery(routeSessionId);
+              if (result.data?.recovery_code) {
+                setRecoveryCode(result.data.recovery_code);
+                setNotice("已建立一次性恢復碼，30 分鐘內有效。");
+              } else {
+                setNotice("目前無法建立恢復碼，請稍後再試。");
+              }
+              setRecoveryBusy(false);
+            }}
+          >
+            {recoveryBusy ? "建立恢復碼中…" : "無法進入？取得恢復碼"}
+          </button>
+        </div>
         {debugPanel}
       </main>
     );
