@@ -5536,5 +5536,10 @@ body:has(.admin-page),
 @media (prefers-reduced-motion: reduce) { .egg-1000-particles i { animation:none; opacity:.65; transform:translate(-50%,-50%) rotate(var(--angle)) translateX(110px); } }
 
 
+.egg-1000-legendary { position:absolute; left:50%; top:72%; transform:translate(-50%,18px) scale(.72); width:min(82vw,360px); padding:14px 20px; border:1px solid rgba(255,222,132,.72); border-radius:18px; background:linear-gradient(135deg,rgba(35,22,5,.94),rgba(92,55,8,.92),rgba(25,15,4,.96)); box-shadow:0 0 0 1px rgba(255,245,202,.12) inset,0 0 32px rgba(255,190,55,.42),0 18px 48px rgba(0,0,0,.42); text-align:center; opacity:0; animation:milestone-legendary 5.4s cubic-bezier(.2,.8,.2,1) both; }
+.egg-1000-legendary b { display:block; font-size:20px; letter-spacing:.13em; color:#ffe7a1; text-shadow:0 0 14px rgba(255,199,72,.72); }
+.egg-1000-legendary small { display:block; margin-top:5px; font-size:14px; font-weight:900; letter-spacing:.08em; color:#fff7db; }
+@keyframes milestone-legendary { 0%,55% { opacity:0; transform:translate(-50%,28px) scale(.68) } 66% { opacity:1; transform:translate(-50%,-5px) scale(1.08) } 72%,91% { opacity:1; transform:translate(-50%,0) scale(1) } 100% { opacity:0; transform:translate(-50%,-8px) scale(.98) } }
+
 .chat-milestone-test-trigger { min-height:34px; padding:0 10px; border:1px solid rgba(255,210,108,.4); border-radius:999px; background:rgba(255,205,91,.09); color:inherit; font:inherit; font-size:12px; font-weight:800; white-space:nowrap; cursor:pointer; touch-action:manipulation; }
 .chat-milestone-test-trigger:active { transform:scale(.97); }
