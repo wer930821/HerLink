@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ANONYMOUS_DISPLAY_NAME_MAX_LENGTH,
@@ -106,23 +106,43 @@ export default function HomePage() {
   const [renameBusy, setRenameBusy] = useState(false);
   const [randomBusy, setRandomBusy] = useState(false);
   const [renameNotice, setRenameNotice] = useState<string | null>(null);
-  const [waitingCount, setWaitingCount] = useState(0);
+  const [waitingCount, setWaitingCount] = useState<number | null>(null);
+  const waitingCountRequestRef = useRef(0);
   const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
 
-  useEffect(() => {
-    let mounted = true;
-    const refreshWaitingCount = async () => {
-      try {
-        const response = await fetch("/api/public/match-status", { cache: "no-store" });
-        if (!response.ok) return;
-        const payload = await response.json() as { waiting?: number };
-        if (mounted) setWaitingCount(Number(payload.waiting ?? 0));
-      } catch {}
-    };
-    void refreshWaitingCount();
-    const timer = window.setInterval(() => void refreshWaitingCount(), 15000);
-    return () => { mounted = false; window.clearInterval(timer); };
+  const refreshWaitingCount = useCallback(async () => {
+    const requestId = ++waitingCountRequestRef.current;
+    try {
+      const response = await fetch(`/api/public/match-status?t=${Date.now()}`, {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
+      if (!response.ok) return;
+      const payload = await response.json() as { waiting?: number };
+      if (requestId === waitingCountRequestRef.current) {
+        setWaitingCount(Number(payload.waiting ?? 0));
+      }
+    } catch {}
   }, []);
+
+  useEffect(() => {
+    void refreshWaitingCount();
+
+    // Immediate refresh when the page becomes active again. Keep polling only as a fallback.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshWaitingCount();
+    };
+    const onFocus = () => void refreshWaitingCount();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    const timer = window.setInterval(() => void refreshWaitingCount(), 15000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+      window.clearInterval(timer);
+    };
+  }, [refreshWaitingCount]);
 
   const recordHomeRouteDiagnostic = (eventType: "continue_clicked" | "continue_routed", metadata: Record<string, unknown> = {}) => {
     const targetSessionId =
@@ -170,6 +190,7 @@ export default function HomePage() {
     setActionBusy(true);
     try {
       await leaveRandomSession(state.activeSession.id);
+      void refreshWaitingCount();
       setState((prev) => ({ ...prev, activeSession: null }));
       setMessage("已離開聊天室。");
     } finally {
@@ -609,7 +630,7 @@ export default function HomePage() {
                 {actionBusy ? "建立匿名身份中…" : "開始匿名聊天"}
               </Button>
               {onlineCountConnected ? <Badge variant="success">在線 {onlineCount} 人</Badge> : null}
-              <Badge variant="neutral">排隊 {waitingCount} 人</Badge>
+              <Badge variant="neutral">排隊 {waitingCount === null ? "更新中…" : `${waitingCount} 人`}</Badge>
             </>
           }
         >
@@ -665,7 +686,10 @@ export default function HomePage() {
         return;
       }
 
+      // Do not keep showing a stale "0" while matchmaking mutates the queue.
+      setWaitingCount(null);
       const { data, error } = await findOrJoinRandomMatch();
+      void refreshWaitingCount();
       if (error) {
         throw error;
       }
@@ -692,6 +716,7 @@ export default function HomePage() {
     setActionBusy(true);
     try {
       await leaveRandomQueue();
+      void refreshWaitingCount();
       setState((prev) => ({ ...prev, queue: null }));
       setMessage("已離開等待池。");
     } finally {
@@ -797,7 +822,7 @@ export default function HomePage() {
 
       <footer className="home-app-footer">
         <div className="home-app-footer-left">
-          {onlineCountConnected ? <span>在線 {onlineCount} 人　排隊 {waitingCount} 人</span> : <span>排隊 {waitingCount} 人</span>}
+          {onlineCountConnected ? <span>在線 {onlineCount} 人　排隊 {waitingCount === null ? "更新中…" : `${waitingCount} 人`}</span> : <span>排隊 {waitingCount === null ? "更新中…" : `${waitingCount} 人`}</span>}
           <Button variant="link" type="button" onClick={() => void shareBrowserHandoff()}>
             跨瀏覽器續聊
           </Button>
