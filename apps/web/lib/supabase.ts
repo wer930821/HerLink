@@ -103,6 +103,26 @@ export type AdminRecoveryRequest = {
   expires_at: string;
 };
 
+export type AdminEasterEggEvent = {
+  id: string;
+  session_id: string;
+  user_id: string;
+  egg_kind: string;
+  trigger_type: string;
+  created_at: string;
+};
+
+export async function loadAdminEasterEggEvents(limit = 500) {
+  return supabase
+    .from("chat_easter_egg_events")
+    .select("id,session_id,user_id,egg_kind,trigger_type,created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit) as unknown as Promise<{
+      data: AdminEasterEggEvent[] | null;
+      error: { message?: string } | null;
+    }>;
+}
+
 export async function loadAdminRecoveryRequests() {
   return supabase.rpc("get_admin_session_recovery_requests") as unknown as Promise<{
     data: AdminRecoveryRequest[] | null;
