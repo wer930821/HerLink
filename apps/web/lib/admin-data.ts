@@ -366,6 +366,7 @@ export async function loadAdminSessions(
       status: row.status,
       participant_count: 2,
       message_count: Number(row.message_count ?? 0),
+      first_message_at: row.first_message_at ?? null,
       last_message_at: row.last_message_at ?? null,
       ended_at: row.ended_at ?? null,
       ended_reason: row.ended_reason ?? null,
