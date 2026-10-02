@@ -2112,15 +2112,27 @@ export default function RandomSessionPage() {
           </div>
           <div className="chat-header-actions">
             {easterEggAllowed ? (
-              <button
-                className="chat-milestone-test-trigger"
-                type="button"
-                onPointerDown={(event) => event.preventDefault()}
-                onClick={() => triggerEasterEgg("thousand")}
-                title="只播放測試效果，不會新增訊息"
-              >
-                測試 1000 則彩蛋
-              </button>
+              <div className="chat-milestone-test-group" aria-label="彩蛋測試區">
+                {([
+                  ["100", "hundred"],
+                  ["200", "twoHundred"],
+                  ["300", "threeHundred"],
+                  ["400", "fourHundred"],
+                  ["500", "fiveHundred"],
+                  ["1000", "thousand"],
+                ] as const).map(([label, kind]) => (
+                  <button
+                    key={kind}
+                    className="chat-milestone-test-trigger"
+                    type="button"
+                    onPointerDown={(event) => event.preventDefault()}
+                    onClick={() => triggerEasterEgg(kind)}
+                    title={`只播放 ${label} 則彩蛋，不會新增或修改訊息`}
+                  >
+                    測試 {label}
+                  </button>
+                ))}
+              </div>
             ) : null}
             {assistantAllowed ? (
               <button
