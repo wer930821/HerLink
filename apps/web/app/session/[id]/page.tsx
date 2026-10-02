@@ -1575,13 +1575,26 @@ export default function RandomSessionPage() {
     scheduleScrollMessagesToBottom(shouldSmooth ? "smooth" : "auto");
   }, [messages.length, session?.id]);
 
-  const triggerEasterEgg = (kind: "goodnight" | "morning" | "hello" | "hi" | "penguin" | "sync" | "aurora" | "meteor" | "secret" | "hundred" | "twoHundred" | "threeHundred" | "fourHundred" | "tired" | "offwork" | "food" | "curious" | "surprised" | "cute" | "sleepless" | "tomorrow" | "fiveHundred" | "thousand") => {
+  const triggerEasterEgg = (kind: "goodnight" | "morning" | "hello" | "hi" | "penguin" | "sync" | "aurora" | "meteor" | "secret" | "hundred" | "twoHundred" | "threeHundred" | "fourHundred" | "tired" | "offwork" | "food" | "curious" | "surprised" | "cute" | "sleepless" | "tomorrow" | "fiveHundred" | "thousand", recordEvent = false) => {
     if (!easterEggAllowed) return;
     const now = Date.now();
     const lastAt = easterEggLastAtRef.current.get(kind) ?? 0;
     if (now - lastAt < 90_000) return;
     easterEggLastAtRef.current.set(kind, now);
     setEasterEgg(kind);
+    if (recordEvent && session?.id && myProfile?.id) {
+      const triggerType = ["hundred", "twoHundred", "threeHundred", "fourHundred", "fiveHundred", "thousand"].includes(kind)
+        ? "milestone"
+        : "text";
+      void supabase.from("chat_easter_egg_events").insert({
+        session_id: session.id,
+        user_id: myProfile.id,
+        egg_kind: kind,
+        trigger_type: triggerType,
+      }).then(({ error }) => {
+        if (error && process.env.NODE_ENV !== "production") console.warn("[herlink] easter egg event log failed", error.message);
+      });
+    }
     if (kind === "thousand") {
       try {
         navigator.vibrate?.([35, 45, 55]);
@@ -1614,26 +1627,26 @@ export default function RandomSessionPage() {
   const maybeTriggerEasterEgg = (content: string) => {
     if (!easterEggAllowed) return;
     const normalized = content.replace(/\\s+/g, "");
-    if (/睡不著/.test(normalized)) return triggerEasterEgg("sleepless");
-    if (/想你|想妳|想念|好想|想你了|想妳了/.test(normalized)) return triggerEasterEgg("aurora");
-    if (/好累|累死|累爆|累慘/.test(normalized)) return triggerEasterEgg("tired");
-    if (/下班了|下班啦|終於下班/.test(normalized)) return triggerEasterEgg("offwork");
-    if (/加油|祝你|祝妳|希望|順利|辛苦了/.test(normalized)) return triggerEasterEgg("meteor");
-    if (/好可愛|可愛死|太可愛/.test(normalized)) return triggerEasterEgg("cute");
-    if (/喜歡你|喜歡妳|喜歡|心動|愛你|愛妳/.test(normalized)) return triggerEasterEgg("secret");
-    if (/早安|早啊|早呀|早上好/.test(normalized)) return triggerEasterEgg("morning");
-    if (/^(hi|hey|hello)$/i.test(normalized)) return triggerEasterEgg("hi");
-    if (/安安|嗨嗨|哈囉|哈啰/.test(normalized)) return triggerEasterEgg("hello");
-    if (/明天見/.test(normalized)) return triggerEasterEgg("tomorrow");
-    if (/晚安|先睡了|我要睡了/.test(normalized)) return triggerEasterEgg("goodnight");
-    if (/企鵝/.test(normalized)) return triggerEasterEgg("penguin");
-    if (/吃飯了嗎|吃飽了嗎|吃飯沒|吃了嗎/.test(normalized)) return triggerEasterEgg("food");
-    if (/在幹嘛|在幹麻|幹嘛呢|在做什麼/.test(normalized)) return triggerEasterEgg("curious");
-    if (/真的假的|真的嗎|不會吧|蛤真的/.test(normalized)) return triggerEasterEgg("surprised");
-    if (/笑死/.test(normalized)) return triggerEasterEgg("sync");
+    if (/睡不著/.test(normalized)) return triggerEasterEgg("sleepless", true);
+    if (/想你|想妳|想念|好想|想你了|想妳了/.test(normalized)) return triggerEasterEgg("aurora", true);
+    if (/好累|累死|累爆|累慘/.test(normalized)) return triggerEasterEgg("tired", true);
+    if (/下班了|下班啦|終於下班/.test(normalized)) return triggerEasterEgg("offwork", true);
+    if (/加油|祝你|祝妳|希望|順利|辛苦了/.test(normalized)) return triggerEasterEgg("meteor", true);
+    if (/好可愛|可愛死|太可愛/.test(normalized)) return triggerEasterEgg("cute", true);
+    if (/喜歡你|喜歡妳|喜歡|心動|愛你|愛妳/.test(normalized)) return triggerEasterEgg("secret", true);
+    if (/早安|早啊|早呀|早上好/.test(normalized)) return triggerEasterEgg("morning", true);
+    if (/^(hi|hey|hello)$/i.test(normalized)) return triggerEasterEgg("hi", true);
+    if (/安安|嗨嗨|哈囉|哈啰/.test(normalized)) return triggerEasterEgg("hello", true);
+    if (/明天見/.test(normalized)) return triggerEasterEgg("tomorrow", true);
+    if (/晚安|先睡了|我要睡了/.test(normalized)) return triggerEasterEgg("goodnight", true);
+    if (/企鵝/.test(normalized)) return triggerEasterEgg("penguin", true);
+    if (/吃飯了嗎|吃飽了嗎|吃飯沒|吃了嗎/.test(normalized)) return triggerEasterEgg("food", true);
+    if (/在幹嘛|在幹麻|幹嘛呢|在做什麼/.test(normalized)) return triggerEasterEgg("curious", true);
+    if (/真的假的|真的嗎|不會吧|蛤真的/.test(normalized)) return triggerEasterEgg("surprised", true);
+    if (/笑死/.test(normalized)) return triggerEasterEgg("sync", true);
     if (/哈{2,}/.test(content)) {
       const partnerAlsoLaughing = [...messages].reverse().find((message) => !message.is_mine && message.message_type !== "image");
-      if (partnerAlsoLaughing && /哈{2,}/.test(partnerAlsoLaughing.content || "")) triggerEasterEgg("sync");
+      if (partnerAlsoLaughing && /哈{2,}/.test(partnerAlsoLaughing.content || "")) triggerEasterEgg("sync", true);
     }
   };
 
@@ -1668,12 +1681,12 @@ export default function RandomSessionPage() {
       if (easterEggAllowed) {
         const countResult = await getRandomChatMessageCount(refreshedSession.id).catch(() => ({ data: null, error: null }));
         const messageCount = Number(countResult.data);
-        if (messageCount === 100) triggerEasterEgg("hundred");
-        else if (messageCount === 200) triggerEasterEgg("twoHundred");
-        else if (messageCount === 300) triggerEasterEgg("threeHundred");
-        else if (messageCount === 400) triggerEasterEgg("fourHundred");
-        else if (messageCount === 500) triggerEasterEgg("fiveHundred");
-        else if (messageCount === 1000) triggerEasterEgg("thousand");
+        if (messageCount === 100) triggerEasterEgg("hundred", true);
+        else if (messageCount === 200) triggerEasterEgg("twoHundred", true);
+        else if (messageCount === 300) triggerEasterEgg("threeHundred", true);
+        else if (messageCount === 400) triggerEasterEgg("fourHundred", true);
+        else if (messageCount === 500) triggerEasterEgg("fiveHundred", true);
+        else if (messageCount === 1000) triggerEasterEgg("thousand", true);
       }
 
       if (nextMessage) {
