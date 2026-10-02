@@ -5473,3 +5473,16 @@ body:has(.admin-page),
 @keyframes rare-aurora { 0%,100% { opacity:0; transform:translateX(-12%) skewX(-8deg) scaleY(.7) } 22%,75% { opacity:.62; transform:translateX(8%) skewX(7deg) scaleY(1.1) } }
 @keyframes rare-meteor { 0% { opacity:0; transform:translate(0,0) rotate(-18deg) } 12% { opacity:1 } 100% { opacity:0; transform:translate(48vw,78vh) rotate(-18deg) scale(1.5) } }
 @keyframes rare-door { 0%,100% { opacity:0; transform:translate(-50%,-50%) scale(.15) rotate(-30deg) } 24% { opacity:1; transform:translate(-50%,-50%) scale(1) rotate(0) } 70% { opacity:.9; transform:translate(-50%,-50%) scale(1.08) rotate(6deg) } }
+
+
+/* Morning greeting easter egg */
+.chat-easter-egg-morning { background:linear-gradient(180deg,rgba(255,177,116,.22),rgba(255,218,169,.08) 45%,transparent); animation:egg-fade 3.2s ease both; }
+.egg-sunrise { position:absolute; left:50%; bottom:-18vw; width:72vw; height:72vw; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle,rgba(255,224,139,.38),rgba(255,180,100,.12) 46%,transparent 70%); animation:morning-rise 3.2s ease both; }
+.egg-sun { position:absolute; left:50%; bottom:25%; transform:translateX(-50%); font-size:64px; filter:drop-shadow(0 0 18px rgba(255,210,100,.65)); animation:morning-sun 3.2s ease both; }
+.egg-morning-cloud { position:absolute; font-size:68px; opacity:.2; animation:morning-cloud 3.2s ease-in-out both; }
+.cloud-a { left:-8%; top:28%; }.cloud-b { right:-10%; top:40%; animation-direction:reverse; }
+.egg-morning-birds { position:absolute; top:22%; left:50%; transform:translateX(-50%); font-size:22px; letter-spacing:10px; opacity:.65; animation:egg-caption 3.2s ease both; }
+.egg-morning-text { position:absolute; left:50%; bottom:14%; transform:translateX(-50%); white-space:nowrap; font-size:17px; font-weight:800; text-shadow:0 2px 14px rgba(0,0,0,.55); animation:egg-caption 3.2s ease both; }
+@keyframes morning-rise { from { opacity:0; transform:translate(-50%,28%) scale(.7) } 25%,78% { opacity:1; transform:translate(-50%,0) scale(1) } to { opacity:0; transform:translate(-50%,-4%) scale(1.04) } }
+@keyframes morning-sun { 0% { opacity:0; transform:translate(-50%,45px) scale(.7) } 28%,78% { opacity:1; transform:translate(-50%,0) scale(1) } 100% { opacity:0; transform:translate(-50%,-15px) scale(1.08) } }
+@keyframes morning-cloud { from { opacity:0; transform:translateX(-25px) } 25%,75% { opacity:.2 } to { opacity:0; transform:translateX(45px) } }
