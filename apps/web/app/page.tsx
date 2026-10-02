@@ -90,6 +90,7 @@ export default function HomePage() {
   const [bootstrapping, setBootstrapping] = useState(true);
   const [state, setState] = useState<BootstrapState>(emptyBootstrapState);
   const [actionBusy, setActionBusy] = useState(false);
+  const [femaleOnlyOpen, setFemaleOnlyOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [debugEnabled, setDebugEnabled] = useState(false);
   const [lastDiagnostic, setLastDiagnostic] = useState<NavigationDiagnosticEvent | null>(null);
@@ -654,14 +655,8 @@ export default function HomePage() {
 
     const femaleOnlyKey = "herlink_female_only_ack_v1";
     if (typeof window !== "undefined" && window.localStorage.getItem(femaleOnlyKey) !== "1") {
-      const accepted = window.confirm(
-        "HerLink 匿名聊天室僅限女性使用。\n\n請確認你符合使用資格；若冒充或違反規則，可能會被檢舉、封鎖或停用配對功能。"
-      );
-      if (!accepted) {
-        setMessage("未確認使用資格，已取消配對。");
-        return;
-      }
-      window.localStorage.setItem(femaleOnlyKey, "1");
+      setFemaleOnlyOpen(true);
+      return;
     }
 
     setActionBusy(true);
@@ -742,6 +737,14 @@ export default function HomePage() {
   };
 
 
+  const confirmFemaleOnly = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("herlink_female_only_ack_v1", "1");
+    }
+    setFemaleOnlyOpen(false);
+    void startMatching();
+  };
+
   return (
     <main className="home-fixed home-premium home-app-like">
       <section className="home-app-hero">
@@ -813,6 +816,22 @@ export default function HomePage() {
         </div>
         <Button variant="link" onClick={logout} disabled={actionBusy}>登出</Button>
       </footer>
+
+      <Modal
+        open={femaleOnlyOpen}
+        title="女性限定聊天室"
+        className="female-only-modal"
+        onClose={() => setFemaleOnlyOpen(false)}
+        actions={
+          <>
+            <Button variant="ghost" type="button" onClick={() => setFemaleOnlyOpen(false)}>取消</Button>
+            <Button type="button" onClick={confirmFemaleOnly}>我符合資格</Button>
+          </>
+        }
+      >
+        <p className="hero-copy">HerLink 匿名聊天室僅限女性使用。</p>
+        <p className="muted small">請確認你符合使用資格。若冒充或違反規則，可能會被檢舉、封鎖或停用配對功能。</p>
+      </Modal>
 
       <Modal open={renameOpen} title="匿名暱稱" onClose={closeRenameDialog} className="rename-modal">
         <form className="rename-form" onSubmit={(event) => void submitRename(event)}>
