@@ -1440,17 +1440,11 @@ export default function RandomSessionPage() {
           if (status === "CLOSED") {
             typingChannelReadyRef.current = false;
             startingRealtime = false;
-            recordDiagnostic("realtime_disconnected", {
-              sessionId: session.id,
-              userId: myProfile.id,
-              safeErrorCode: status,
-              metadata: { channel: "chat" },
-            });
+            // removeChannel() during normal navigation/unmount also emits CLOSED.
+            // Never persist that intentional lifecycle event as a connection error.
+            if (disposed) return;
             void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
             void refreshSessionFromServerRef.current?.();
-            // CLOSED is also emitted when a channel is intentionally removed.
-            // Let the Supabase client own socket recovery; database polling above
-            // keeps the chat usable while Realtime is unavailable.
           }
         });
     };
@@ -1460,11 +1454,7 @@ export default function RandomSessionPage() {
     return () => {
       disposed = true;
       if (chatChannel) {
-        recordDiagnostic("realtime_disconnected", {
-          sessionId: session.id,
-          userId: myProfile.id,
-          metadata: { channel: "chat" },
-        });
+        // Normal cleanup is not a Realtime failure and must not inflate diagnostics.
         void supabase.removeChannel(chatChannel);
       }
       stopTyping();
