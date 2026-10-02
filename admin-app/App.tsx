@@ -15,6 +15,8 @@ import {
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
+import * as FileSystem from "expo-file-system/legacy";
+import * as IntentLauncher from "expo-intent-launcher";
 import { WebView } from "react-native-webview";
 import type { WebViewNavigation } from "react-native-webview";
 
@@ -41,6 +43,44 @@ function AdminApp() {
   const [failed, setFailed] = useState(false);
   const [webKey, setWebKey] = useState(0);
   const [webReady, setWebReady] = useState(false);
+  const [updateProgress, setUpdateProgress] = useState<number | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null);
+  const updatePromptedRef = useRef<number | null>(null);
+
+  const installUpdateInsideApp = async (info: UpdateInfo) => {
+    if (!info.apkUrl || Platform.OS !== "android") return;
+    try {
+      setUpdateProgress(0);
+      setUpdateStatus("正在下載更新…");
+      const target = `${FileSystem.cacheDirectory}HerLink-Admin-update.apk`;
+      await FileSystem.deleteAsync(target, { idempotent: true });
+      const download = FileSystem.createDownloadResumable(
+        info.apkUrl,
+        target,
+        {},
+        ({ totalBytesWritten, totalBytesExpectedToWrite }) => {
+          if (totalBytesExpectedToWrite > 0) {
+            setUpdateProgress(totalBytesWritten / totalBytesExpectedToWrite);
+          }
+        }
+      );
+      const result = await download.downloadAsync();
+      if (!result?.uri) throw new Error("下載失敗");
+
+      setUpdateProgress(1);
+      setUpdateStatus("正在開啟更新安裝…");
+      const contentUri = await FileSystem.getContentUriAsync(result.uri);
+      await IntentLauncher.startActivityAsync("android.intent.action.VIEW", {
+        data: contentUri,
+        flags: 1,
+        type: "application/vnd.android.package-archive",
+      });
+    } catch {
+      setUpdateProgress(null);
+      setUpdateStatus(null);
+      Alert.alert("更新失敗", "無法在 App 內完成更新，請稍後再試。");
+    }
+  };
 
   const handleNavigation = (nav: WebViewNavigation) => {
     setCanGoBack(nav.canGoBack);
@@ -102,7 +142,8 @@ function AdminApp() {
         const latestCode = Number(info.versionCode ?? 0);
         const currentCode = getCurrentVersionCode();
 
-        if (latestCode > currentCode && info.apkUrl) {
+        if (latestCode > currentCode && info.apkUrl && updatePromptedRef.current !== latestCode) {
+          updatePromptedRef.current = latestCode;
           Alert.alert(
             "發現新版後台",
             `目前版本：${Constants.expoConfig?.version ?? "目前版本"}\n最新版本：${info.versionName ?? latestCode}\n\n要現在更新嗎？`,
@@ -111,7 +152,7 @@ function AdminApp() {
               {
                 text: "更新",
                 onPress: () => {
-                  void Linking.openURL(info.apkUrl!);
+                  void installUpdateInsideApp(info);
                 },
               },
             ],
@@ -140,7 +181,7 @@ function AdminApp() {
     <SafeAreaView style={styles.root}>
       <StatusBar style="light" backgroundColor="#0d0b16" />
 
-      <View style={[styles.webWrap, !webReady && styles.webWrapLoading]}>
+      <View style={styles.webWrap}>
         <WebView
           key={webKey}
           ref={webRef}
@@ -180,7 +221,19 @@ function AdminApp() {
           }}
         />
 
-        {loading && !webReady ? (
+        {updateProgress !== null ? (
+          <View style={styles.updateOverlay}>
+            <ActivityIndicator size="large" color="#ff6f61" />
+            <Text style={styles.errorTitle}>後台更新中</Text>
+            <Text style={styles.loadingText}>{updateStatus ?? "正在準備更新…"}</Text>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${Math.round(updateProgress * 100)}%` }]} />
+            </View>
+            <Text style={styles.loadingText}>{Math.round(updateProgress * 100)}%</Text>
+          </View>
+        ) : null}
+
+        {loading && !webReady && updateProgress === null ? (
           <View style={styles.overlay}>
             <ActivityIndicator size="large" color="#ff6f61" />
             <Text style={styles.loadingText}>正在載入後台…</Text>
@@ -284,6 +337,27 @@ const styles = StyleSheet.create({
   web: {
     flex: 1,
     backgroundColor: "#0d0b16",
+  },
+  updateOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    padding: 28,
+    backgroundColor: "#0d0b16",
+  },
+  progressTrack: {
+    width: "82%",
+    height: 8,
+    overflow: "hidden",
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: "#ff6f61",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
