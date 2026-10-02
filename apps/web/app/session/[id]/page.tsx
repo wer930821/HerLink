@@ -26,6 +26,7 @@ import {
   removeChatMedia,
   reportRandomUser,
   requestAnonymousContact,
+  restoreRandomSessionFromInstallation,
   sendImageMessage,
   sendRandomMessage,
   supabase,
@@ -845,14 +846,24 @@ export default function RandomSessionPage() {
       return null;
     }
 
-    const nextSession = result.data ?? null;
+    let nextSession = result.data ?? null;
     if (!nextSession) {
-      recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
-        reason: "SESSION_CONFIRMED_MISSING",
-        sessionState: "missing",
-        serverSessionId: targetSessionId,
-      });
-      return null;
+      const recovery = await restoreRandomSessionFromInstallation(targetSessionId);
+      if (recovery.data) {
+        nextSession = recovery.data;
+        recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
+          reason: "SESSION_RECOVERED_FROM_INSTALLATION",
+          sessionState: nextSession.status === "active" ? "active" : "ended",
+          serverSessionId: nextSession.id,
+        });
+      } else {
+        recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
+          reason: "SESSION_CONFIRMED_MISSING",
+          sessionState: "missing",
+          serverSessionId: targetSessionId,
+        });
+        return null;
+      }
     }
 
     if (nextSession.id !== targetSessionId) {
