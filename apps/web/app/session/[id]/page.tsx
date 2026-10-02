@@ -685,11 +685,11 @@ export default function RandomSessionPage({ params }: Props) {
           <div className="thousand-egg-ring ring-one" />
           <div className="thousand-egg-ring ring-two" />
           <div className="thousand-egg-fireworks" aria-hidden="true">
-            {Array.from({ length: 6 }, (_, index) => <i key={index} style={{ "--i": index } as CSSProperties} />)}
+            {Array.from({ length: 6 }, (_, index) => <i key={index} style={{ "--i": index } as CSSProperties & Record<"--i", number>} />)}
           </div>
           <div className="thousand-egg-particles" aria-hidden="true">
             {Array.from({ length: 54 }, (_, index) => (
-              <i key={index} style={{ "--i": index, "--x": `${(index * 47) % 100}%`, "--delay": `${(index % 12) * 0.045}s` } as CSSProperties} />
+              <i key={index} style={{ "--i": index, "--x": `${(index * 47) % 100}%`, "--delay": `${(index % 12) * 0.045}s` } as CSSProperties & Record<"--i" | "--x" | "--delay", string | number>} />
             ))}
           </div>
           <div className="thousand-egg-stage">
