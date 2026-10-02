@@ -5102,3 +5102,112 @@ select {
 .chat-menu-explain + .chat-menu-explain {
   padding-top: 2px;
 }
+
+
+/* Admin design system normalization */
+.admin-page {
+  --admin-line: color-mix(in srgb, var(--color-border) 48%, transparent);
+  --admin-line-strong: color-mix(in srgb, var(--color-border) 66%, transparent);
+  --admin-control-bg: rgba(255,255,255,.04);
+  --admin-control-bg-hover: rgba(255,255,255,.065);
+}
+
+.admin-layout :is(.surface, .surface-elevation-1, .surface-elevation-2, .surface-inset) {
+  box-shadow: none;
+}
+
+.admin-layout .admin-section,
+.admin-layout .admin-message-item,
+.admin-layout .admin-session-row,
+.admin-layout .admin-stat,
+.admin-layout .admin-table th,
+.admin-layout .admin-table td {
+  border-color: var(--admin-line);
+}
+
+.admin-layout :is(.btn, .button, .ghost) {
+  min-height: 42px;
+  border-radius: 12px;
+  font-weight: 750;
+  transition: var(--transition-fast);
+}
+
+.admin-layout :is(.btn-secondary, .button.secondary, .ghost) {
+  background: var(--admin-control-bg);
+  border-color: var(--admin-line-strong);
+  color: var(--color-text);
+}
+
+.admin-layout :is(.btn-secondary, .button.secondary, .ghost):hover {
+  background: var(--admin-control-bg-hover);
+}
+
+.admin-layout :is(.input, .textarea, select) {
+  border-radius: 12px;
+  border-color: var(--admin-line-strong);
+  background: rgba(255,255,255,.035);
+}
+
+.admin-layout .badge {
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.admin-layout .admin-toolbar {
+  gap: 8px;
+}
+
+.admin-layout .admin-kv-grid > div {
+  border: 0;
+  border-bottom: 1px solid var(--admin-line);
+  border-radius: 0;
+  background: transparent;
+  padding: 12px 0;
+}
+
+.admin-layout .notice {
+  border-radius: 12px;
+  background: rgba(255,255,255,.035);
+  border-color: var(--admin-line);
+}
+
+@media (max-width: 640px) {
+  .admin-layout {
+    padding-top: calc(18px + env(safe-area-inset-top));
+  }
+
+  .admin-top-copy h1 {
+    margin-top: 10px;
+    font-size: clamp(1.9rem, 9vw, 2.55rem);
+  }
+
+  .admin-top-copy p {
+    margin-top: 10px;
+    font-size: .92rem;
+  }
+
+  .admin-nav {
+    border-top: 1px solid var(--admin-line);
+    padding-top: 10px;
+  }
+
+  .admin-nav-link {
+    min-height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: transparent;
+  }
+
+  .admin-nav-link:hover {
+    background: var(--admin-control-bg);
+  }
+
+  .admin-content {
+    padding-top: 22px;
+  }
+
+  .admin-table {
+    min-width: 640px;
+  }
+}
