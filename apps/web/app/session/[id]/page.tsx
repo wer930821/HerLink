@@ -250,6 +250,7 @@ export default function RandomSessionPage() {
   const historyExhaustedRef = useRef(false);
   const pendingReplyPreviewRef = useRef<Set<string>>(new Set());
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
   const realtimeClientInstanceIdRef = useRef(
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
@@ -1548,6 +1549,7 @@ export default function RandomSessionPage() {
       }
       stopTyping();
       setDraft("");
+      window.requestAnimationFrame(() => chatInputRef.current?.focus());
       setAssistantResult(null);
       setAssistantResultForMessageId(null);
       setAssistantError(null);
@@ -2196,12 +2198,13 @@ export default function RandomSessionPage() {
               </svg>
             </button>
             <textarea
+              ref={chatInputRef}
               className="textarea chat-input"
               aria-label="輸入訊息"
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
+                if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
                   event.preventDefault();
                   void sendMessage();
                 }
