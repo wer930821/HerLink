@@ -1185,9 +1185,21 @@ export default function RandomSessionPage() {
           const nextMessages = Array.isArray(messagesResult.data)
             ? messagesResult.data.map(withReplyPreviewState)
             : [];
+          const previousSeenIds = seenMessageIdsRef.current;
+          const newlyReceivedPartnerMessages = nextMessages.filter(
+            (item) => !item.is_mine && !previousSeenIds.has(item.id) && item.message_type !== "image"
+          );
           seenMessageIdsRef.current = new Set(nextMessages.map((item) => item.id));
           setMessages(nextMessages);
           updateMessageCursors(nextMessages);
+          // Text eggs must trigger for the receiver too. Previously they were
+          // checked only in sendMessage(), so only the sender could see them.
+          // Skip the initial history load to avoid replaying old eggs on entry.
+          if (previousSeenIds.size > 0) {
+            for (const item of newlyReceivedPartnerMessages) {
+              if (item.content) maybeTriggerEasterEgg(item.content);
+            }
+          }
           recordDiagnostic("message_loaded_from_db", {
             sessionId: nextSession.id,
             userId: authSession.user.id,
