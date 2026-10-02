@@ -106,7 +106,6 @@ export default function HomePage() {
   const [renameBusy, setRenameBusy] = useState(false);
   const [randomBusy, setRandomBusy] = useState(false);
   const [renameNotice, setRenameNotice] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [waitingCount, setWaitingCount] = useState(0);
   const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
 
@@ -308,34 +307,7 @@ export default function HomePage() {
     setLastDiagnostic(readLastNavigationDiagnostic());
   }, [pathname]);
 
-  useEffect(() => {
-    let mounted = true;
-    const accessToken = state.session?.access_token;
 
-    if (!accessToken) {
-      setIsAdmin(false);
-      return () => {
-        mounted = false;
-      };
-    }
-
-    void fetch("/api/admin/access", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      cache: "no-store",
-    })
-      .then((response) => {
-        if (mounted) setIsAdmin(response.ok);
-      })
-      .catch(() => {
-        if (mounted) setIsAdmin(false);
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, [state.session?.access_token]);
 
   const anonymousSummary = useMemo(() => {
     if (!state.profile) return null;
@@ -826,7 +798,6 @@ export default function HomePage() {
       <footer className="home-app-footer">
         <div className="home-app-footer-left">
           {onlineCountConnected ? <span>在線 {onlineCount} 人　排隊 {waitingCount} 人</span> : <span>排隊 {waitingCount} 人</span>}
-          {isAdmin ? <Button variant="link" href="/admin">後台管理</Button> : null}
           <Button variant="link" type="button" onClick={() => void shareBrowserHandoff()}>
             跨瀏覽器續聊
           </Button>
