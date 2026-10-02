@@ -2181,7 +2181,7 @@ export default function RandomSessionPage() {
 
         {easterEggAllowed && easterEgg ? (
           <div className={`chat-easter-egg chat-easter-egg-${easterEgg}`} aria-hidden="true">
-            {easterEgg === "goodnight" ? <><span className="egg-moon">☾</span><span className="egg-stars">✦ · ✧ · ✦</span></> : easterEgg === "penguin" ? <span className="egg-penguin">🐧</span> : <span className="egg-sync">默契 +1</span>}
+            {easterEgg === "goodnight" ? <><span className="egg-night-glow" /><span className="egg-cloud egg-cloud-one">☁</span><span className="egg-cloud egg-cloud-two">☁</span><span className="egg-moon">☾</span><span className="egg-stars egg-stars-one">✦　·　✧　·　✦</span><span className="egg-stars egg-stars-two">·　✦　·　✧</span><span className="egg-shooting-star">✦</span><span className="egg-goodnight-text">晚安，今晚做個好夢</span></> : easterEgg === "penguin" ? <><span className="egg-snow egg-snow-one">✦　·　❄　·　✦</span><span className="egg-snow egg-snow-two">·　❄　·　✦　·</span><span className="egg-penguin">🐧</span><span className="egg-penguin-text">企鵝路過你的聊天室</span></> : <><span className="egg-sync-burst">✦</span><span className="egg-sync">默契 +1<small>你們笑在同一個頻率上</small></span></>}
           </div>
         ) : null}
 
