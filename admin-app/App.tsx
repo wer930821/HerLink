@@ -185,7 +185,7 @@ function AdminApp() {
         <WebView
           key={webKey}
           ref={webRef}
-          source={{ uri: ADMIN_URL }}
+          source={{ uri: `${ADMIN_URL}?app_refresh=${webKey}` }}
           applicationNameForUserAgent="HerLinkAdminApp"
           style={styles.web}
           originWhitelist={["https://*", "http://*"]}
@@ -194,6 +194,9 @@ function AdminApp() {
           javaScriptEnabled
           domStorageEnabled
           cacheEnabled={false}
+          incognito
+          cacheMode="LOAD_NO_CACHE"
+          injectedJavaScriptBeforeContentLoaded={`try { window.localStorage.setItem("herlink_admin_app", "1"); } catch {} true;`}
           setSupportMultipleWindows={false}
           pullToRefreshEnabled
           allowsBackForwardNavigationGestures
@@ -208,6 +211,17 @@ function AdminApp() {
           onLoadEnd={() => {
             setLoading(false);
             setWebReady(true);
+            webRef.current?.injectJavaScript(`
+              try {
+                if ("serviceWorker" in navigator) {
+                  navigator.serviceWorker.getRegistrations().then((items) => items.forEach((item) => item.unregister()));
+                }
+                if ("caches" in window) {
+                  caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)));
+                }
+              } catch {}
+              true;
+            `);
           }}
           onError={() => {
             setLoading(false);
