@@ -20,6 +20,7 @@ function sessionStatusLabel(value: (typeof statusOptions)[number] | string) {
 export default function AdminSessionsPage() {
   const { session, loading, accessToken } = useAdminSession();
   const [status, setStatus] = useState<(typeof statusOptions)[number]>("all");
+  const [sort, setSort] = useState<"newest" | "last_reply">("newest");
   const [data, setData] = useState<SessionListPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(true);
@@ -39,7 +40,7 @@ export default function AdminSessionsPage() {
     setRefreshing(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ page: "1", pageSize: "20", status });
+      const params = new URLSearchParams({ page: "1", pageSize: "20", status, sort });
       const result = await fetchAdminJson<SessionListPayload>(accessToken, `/api/admin/sessions?${params.toString()}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
@@ -57,7 +58,7 @@ export default function AdminSessionsPage() {
     const nextPage = page + 1;
     setLoadingMore(true);
     try {
-      const params = new URLSearchParams({ page: String(nextPage), pageSize: "20", status });
+      const params = new URLSearchParams({ page: String(nextPage), pageSize: "20", status, sort });
       const result = await fetchAdminJson<SessionListPayload>(accessToken, `/api/admin/sessions?${params.toString()}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
@@ -73,7 +74,7 @@ export default function AdminSessionsPage() {
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken, status]);
+  }, [accessToken, status, sort]);
 
   useEffect(() => {
     const target = loadMoreRef.current;
@@ -87,7 +88,7 @@ export default function AdminSessionsPage() {
     observer.observe(target);
     return () => observer.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken, data?.items.length, data?.total, loadingMore, page, refreshing, status]);
+  }, [accessToken, data?.items.length, data?.total, loadingMore, page, refreshing, status, sort]);
 
   if (sessionState === "loading") {
     return <AdminEmpty>正在載入後台驗證…</AdminEmpty>;
@@ -121,6 +122,10 @@ export default function AdminSessionsPage() {
               {sessionStatusLabel(item)}
             </Button>
           ))}
+        </AdminToolbar>
+        <AdminToolbar>
+          <Button variant={sort === "newest" ? "primary" : "secondary"} size="sm" type="button" onClick={() => setSort("newest")}>新的聊天室</Button>
+          <Button variant={sort === "last_reply" ? "primary" : "secondary"} size="sm" type="button" onClick={() => setSort("last_reply")}>最後回覆時間</Button>
         </AdminToolbar>
         {refreshing && !data ? (
           <div className="admin-session-loading" aria-live="polite">
