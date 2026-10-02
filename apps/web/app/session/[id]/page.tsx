@@ -1591,8 +1591,8 @@ export default function RandomSessionPage() {
         user_id: myProfile.id,
         egg_kind: kind,
         trigger_type: triggerType,
-      }).then(({ error }) => {
-        if (error && process.env.NODE_ENV !== "production") console.warn("[herlink] easter egg event log failed", error.message);
+      }).then((result: { error: { message?: string } | null }) => {
+        if (result.error && process.env.NODE_ENV !== "production") console.warn("[herlink] easter egg event log failed", result.error.message);
       });
     }
     if (kind === "thousand") {
