@@ -1656,7 +1656,7 @@ export default function RandomSessionPage() {
 
     let sourceMessages = messages;
     if (session?.id) {
-      const latest = await loadRandomMessages(session.id, 12);
+      const latest = await loadRandomMessages(session.id, 50);
       if (!latest.error && latest.data?.length) {
         sourceMessages = [...latest.data].sort(
           (a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)
@@ -1666,7 +1666,7 @@ export default function RandomSessionPage() {
 
     const textMessages = sourceMessages
       .filter((message) => message.message_type === "text" && message.content.trim().length > 0)
-      .slice(-12)
+      .slice(-50)
       .map((message) => ({
         role: message.is_mine ? "me" : "partner",
         text: message.content.trim().slice(0, 500),
