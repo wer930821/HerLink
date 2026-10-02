@@ -158,7 +158,9 @@ function AdminApp() {
           startInLoadingState={false}
           onNavigationStateChange={handleNavigation}
           onLoadStart={() => {
-            setLoading(true);
+            // 只在 App 第一次開啟或手動重新整理時顯示全頁載入。
+            // 後台內頁導覽不再重新蓋上「正在載入後台」。
+            if (!webReady) setLoading(true);
             setFailed(false);
           }}
           onLoadEnd={() => {
@@ -177,7 +179,7 @@ function AdminApp() {
           }}
         />
 
-        {loading ? (
+        {loading && !webReady ? (
           <View style={styles.overlay}>
             <ActivityIndicator size="large" color="#ff6f61" />
             <Text style={styles.loadingText}>正在載入後台…</Text>
