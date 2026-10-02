@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   blockRandomUser,
@@ -169,7 +169,7 @@ export default function RandomSessionPage({ params }: Props) {
 
   const isEasterEggTester = Boolean(EASTER_TEST_USER_ID && myProfile?.id === EASTER_TEST_USER_ID);
 
-  const playThousandEgg = () => {
+  const playThousandEgg = useCallback(() => {
     if (thousandEggTimerRef.current) window.clearTimeout(thousandEggTimerRef.current);
     setThousandEggNonce((value) => value + 1);
     setThousandEggOpen(true);
@@ -209,9 +209,9 @@ export default function RandomSessionPage({ params }: Props) {
       setThousandEggOpen(false);
       thousandEggTimerRef.current = null;
     }, 6800);
-  };
+  }, []);
 
-  const checkThousandMilestone = async (sessionId: string, allowTrigger: boolean) => {
+  const checkThousandMilestone = useCallback(async (sessionId: string, allowTrigger: boolean) => {
     const { count, error } = await supabase
       .from("random_chat_messages")
       .select("id", { count: "exact", head: true })
@@ -334,7 +334,7 @@ export default function RandomSessionPage({ params }: Props) {
     return () => {
       mounted = false;
     };
-  }, [params.id, router]);
+  }, [checkThousandMilestone, params.id, router]);
 
   useEffect(() => {
     if (!session || !myProfile?.id) return;
@@ -402,7 +402,7 @@ export default function RandomSessionPage({ params }: Props) {
       void supabase.removeChannel(messagesChannel);
       void supabase.removeChannel(sessionChannel);
     };
-  }, [myProfile?.id, session]);
+  }, [checkThousandMilestone, myProfile?.id, session]);
 
   useEffect(() => {
     messageListRef.current?.scrollTo({ top: messageListRef.current.scrollHeight, behavior: "smooth" });
