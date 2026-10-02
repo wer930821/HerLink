@@ -313,36 +313,24 @@ export async function loadAdminSessions(
 ): Promise<AdminPaginationResult<AdminSessionListItem>> {
   const page = clampPage(input.page);
   const pageSize = clampPageSize(input.pageSize, 20, 50);
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
+  const offset = (page - 1) * pageSize;
 
-  let query = client
-    .from("random_chat_sessions")
-    .select("id,user_a,user_b,status,created_at,ended_at,ended_by,ended_reason", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(from, to);
+  const { data, error } = await client.rpc("list_admin_random_sessions", {
+    p_status: input.status && input.status !== "all" ? input.status : null,
+    p_offset: offset,
+    p_limit: pageSize,
+  });
+  if (error) throw error;
 
-  if (input.status && input.status !== "all") {
-    query = query.eq("status", input.status);
-  }
-
-  const { data: sessions, count, error } = await query;
-  if (error) {
-    throw error;
-  }
-
-  const sessionRows = Array.isArray(sessions) ? sessions : [];
-  const sessionIds = sessionRows.map((item) => item.id);
+  const sessionRows = Array.isArray(data) ? data : [];
   const participantIds = new Set<string>();
-  for (const row of sessionRows) {
+  const sessionIds = sessionRows.map((row: any) => row.id);
+  for (const row of sessionRows as any[]) {
     participantIds.add(row.user_a);
     participantIds.add(row.user_b);
   }
 
-  const [messageRows, reportRows, fraudRows, blockRows] = await Promise.all([
-    sessionIds.length
-      ? ensureOk(client.from("random_chat_messages").select("session_id,created_at").in("session_id", sessionIds))
-      : Promise.resolve([] as { session_id: string; created_at: string }[]),
+  const [reportRows, fraudRows, blockRows] = await Promise.all([
     sessionIds.length
       ? ensureOk(client.from("reports").select("random_session_id").in("random_session_id", sessionIds))
       : Promise.resolve([] as { random_session_id: string | null }[]),
@@ -354,19 +342,18 @@ export async function loadAdminSessions(
       : Promise.resolve([] as { blocker_id: string; blocked_user_id: string; created_at: string }[]),
   ]);
 
-  const messageCounts = mapSessionMessages(messageRows ?? []);
   const reportedSessions = mapReportSessionFlags(reportRows ?? []);
   const fraudSessions = mapFraudSessionFlags(fraudRows ?? []);
   const blockPairs = mapBlockPairs(blockRows ?? []);
 
   return {
-    items: sessionRows.map((row) => ({
+    items: sessionRows.map((row: any) => ({
       id: row.id,
       created_at: row.created_at,
       status: row.status,
       participant_count: 2,
-      message_count: messageCounts.get(row.id)?.count ?? 0,
-      last_message_at: messageCounts.get(row.id)?.lastMessageAt ?? null,
+      message_count: Number(row.message_count ?? 0),
+      last_message_at: row.last_message_at ?? null,
       ended_at: row.ended_at ?? null,
       ended_reason: row.ended_reason ?? null,
       user_a: row.user_a,
@@ -377,7 +364,7 @@ export async function loadAdminSessions(
     })),
     page,
     pageSize,
-    total: count ?? 0,
+    total: Number(sessionRows[0]?.total_count ?? 0),
   };
 }
 
