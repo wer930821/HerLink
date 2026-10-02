@@ -5512,3 +5512,17 @@ body:has(.admin-page),
 @keyframes hi-card { 0%,100% { opacity:0; transform:translate(-50%,-50%) scale(.7) } 18%,78% { opacity:1; transform:translate(-50%,-50%) scale(1) } }
 @keyframes hi-pulse { from { opacity:.7; transform:translate(-50%,-50%) scale(.25) } to { opacity:0; transform:translate(-50%,-50%) scale(2.8) } }
 @keyframes hi-orbit { from { opacity:0; transform:rotate(0deg) translateX(120px) rotate(0deg) } 18% { opacity:1 } to { opacity:0; transform:rotate(360deg) translateX(120px) rotate(-360deg) } }
+
+
+/* 1000-message milestone */
+.chat-easter-egg-thousand { background:radial-gradient(circle at center,rgba(255,191,86,.22),rgba(20,10,35,.76) 55%,rgba(5,5,15,.9)); animation:egg-fade 5.4s ease both; }
+.egg-1000-ring { position:absolute; left:50%; top:42%; width:190px; height:190px; border:2px solid rgba(255,225,153,.55); border-radius:50%; transform:translate(-50%,-50%); box-shadow:0 0 45px rgba(255,192,93,.3),inset 0 0 35px rgba(255,192,93,.2); animation:milestone-ring 5.4s ease both; }
+.egg-1000-number { position:absolute; left:50%; top:41%; transform:translate(-50%,-50%); font-size:72px; font-weight:900; letter-spacing:-.04em; text-shadow:0 0 24px rgba(255,215,135,.8); animation:milestone-number 5.4s ease both; }
+.egg-1000-title { position:absolute; left:50%; top:55%; transform:translateX(-50%); font-size:20px; font-weight:900; white-space:nowrap; animation:milestone-copy 5.4s ease both; }
+.egg-1000-copy { position:absolute; left:50%; top:61%; transform:translateX(-50%); width:min(82vw,420px); text-align:center; font-size:14px; line-height:1.6; opacity:.82; animation:milestone-copy 5.4s ease .2s both; }
+.egg-1000-firework { position:absolute; font-size:32px; text-shadow:0 0 18px rgba(255,225,150,.9); animation:milestone-firework 2.2s ease-out both; }
+.egg-1000-firework.f1 { left:18%; top:25%; }.egg-1000-firework.f2 { right:18%; top:20%; animation-delay:.25s }.egg-1000-firework.f3 { left:50%; top:12%; animation-delay:.48s }
+@keyframes milestone-ring { 0% { opacity:0; transform:translate(-50%,-50%) scale(.15) } 18% { opacity:1; transform:translate(-50%,-50%) scale(1.05) } 72% { opacity:.9; transform:translate(-50%,-50%) scale(1) } 100% { opacity:0; transform:translate(-50%,-50%) scale(1.35) } }
+@keyframes milestone-number { 0% { opacity:0; transform:translate(-50%,-50%) scale(.25) } 22%,76% { opacity:1; transform:translate(-50%,-50%) scale(1) } 100% { opacity:0; transform:translate(-50%,-60%) scale(1.08) } }
+@keyframes milestone-copy { 0%,20% { opacity:0; transform:translate(-50%,14px) } 35%,80% { opacity:1; transform:translate(-50%,0) } 100% { opacity:0; transform:translate(-50%,-8px) } }
+@keyframes milestone-firework { 0% { opacity:0; transform:scale(.2) rotate(0) } 28% { opacity:1; transform:scale(2.4) rotate(35deg) } 100% { opacity:0; transform:scale(3.5) rotate(70deg) } }
