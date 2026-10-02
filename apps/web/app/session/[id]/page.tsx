@@ -276,6 +276,7 @@ export default function RandomSessionPage() {
   const [assistantResult, setAssistantResult] = useState<ChatAssistResult | null>(null);
   const [assistantResultForMessageId, setAssistantResultForMessageId] = useState<string | null>(null);
   const [assistantError, setAssistantError] = useState<string | null>(null);
+  const [nextConfirmOpen, setNextConfirmOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [safetyMenuOpen, setSafetyMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -1597,7 +1598,7 @@ export default function RandomSessionPage() {
 
   const goNext = async () => {
     if (!session || nextBusy) return;
-    if (!window.confirm("確定要切換到下一位嗎？\n\n目前這個聊天室會立即結束，送出後無法復原。")) return;
+    setNextConfirmOpen(false);
     setNextBusy(true);
     setNotice(null);
     try {
@@ -1962,7 +1963,7 @@ export default function RandomSessionPage() {
             <button
               className="ghost chat-header-next"
               type="button"
-              onClick={goNext}
+              onClick={() => setNextConfirmOpen(true)}
               disabled={nextBusy}
               title="結束目前聊天，立即重新配對下一位"
               aria-label="下一位：結束目前聊天並立即重新配對"
@@ -2320,6 +2321,22 @@ export default function RandomSessionPage() {
         <div className="notice" style={{ wordBreak: "break-all" }}>
           {pendingExternalUrl}
         </div>
+      </Modal>
+
+      <Modal
+        open={nextConfirmOpen}
+        title="切換到下一位？"
+        onClose={() => setNextConfirmOpen(false)}
+        actions={
+          <>
+            <Button variant="ghost" type="button" onClick={() => setNextConfirmOpen(false)}>取消</Button>
+            <Button type="button" onClick={() => void goNext()} disabled={nextBusy}>
+              {nextBusy ? "處理中…" : "確定下一位"}
+            </Button>
+          </>
+        }
+      >
+        <p>目前這個聊天室會立即結束，送出後無法復原。</p>
       </Modal>
 
       <Modal
