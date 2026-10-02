@@ -252,6 +252,7 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     pendingPushEventCount,
     todayWebPushDeliveredCount,
     todayWebPushRevokedCount,
+    todayEasterEggCount,
   ] = await Promise.all([
     safeCount(client.from("random_match_queue").select("user_id", { count: "exact", head: true }).eq("status", "waiting")),
     safeCount(client.from("random_chat_sessions").select("id", { count: "exact", head: true }).eq("status", "active")),
@@ -263,7 +264,15 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     safeCount(client.from("push_notification_events").select("id", { count: "exact", head: true }).eq("status", "pending")),
     safeCount(client.from("web_push_deliveries").select("id", { count: "exact", head: true }).eq("status", "sent").gte("created_at", dayStart)),
     safeCount(client.from("web_push_deliveries").select("id", { count: "exact", head: true }).eq("status", "revoked").gte("created_at", dayStart)),
+    safeCount(client.from("chat_easter_egg_events").select("id", { count: "exact", head: true }).gte("created_at", dayStart)),
   ]);
+
+  const { data: recentEasterEggRows, error: recentEasterEggError } = await client
+    .from("chat_easter_egg_events")
+    .select("id,session_id,egg_kind,trigger_type,created_at")
+    .order("created_at", { ascending: false })
+    .limit(20);
+  if (recentEasterEggError) throw recentEasterEggError;
 
   const asNumber = (value: unknown) => Number(value ?? 0);
   const layaHealth = await layaHealthPromise;
@@ -293,6 +302,14 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     pending_push_event_count: pendingPushEventCount,
     today_web_push_delivered_count: todayWebPushDeliveredCount,
     today_web_push_revoked_count: todayWebPushRevokedCount,
+    today_easter_egg_count: todayEasterEggCount,
+    recent_easter_egg_events: (recentEasterEggRows ?? []).map((item: any) => ({
+      id: String(item.id),
+      session_id: String(item.session_id),
+      egg_kind: String(item.egg_kind),
+      trigger_type: item.trigger_type === "milestone" ? "milestone" : "text",
+      created_at: String(item.created_at),
+    })),
     today_match_success_rate: (healthStats as any).today_match_success_rate == null ? null : asNumber((healthStats as any).today_match_success_rate),
     today_avg_wait_seconds: (healthStats as any).today_avg_wait_seconds == null ? null : asNumber((healthStats as any).today_avg_wait_seconds),
     realtime_errors_1h: asNumber((healthStats as any).realtime_errors_1h),
