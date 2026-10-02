@@ -2017,15 +2017,17 @@ export default function RandomSessionPage() {
             </div>
           </div>
           <div className="chat-header-actions">
-            <button
-              className="chat-assistant-trigger"
-              type="button"
-              onClick={() => setAssistantOpen((open) => !open)}
-              aria-expanded={assistantOpen}
-            >
-              <span className="chat-assistant-spark">✦</span>
-              <span>聊天助手</span>
-            </button>
+            {assistantAllowed ? (
+              <button
+                className="chat-assistant-trigger"
+                type="button"
+                onClick={() => setAssistantOpen((open) => !open)}
+                aria-expanded={assistantOpen}
+              >
+                <span className="chat-assistant-spark">✦</span>
+                <span>聊天助手</span>
+              </button>
+            ) : null}
             <button
               className="ghost chat-header-next"
               type="button"
