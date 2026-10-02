@@ -9,6 +9,7 @@ const navItems = [
   { href: "/admin", label: "總覽" },
   { href: "/admin/sessions", label: "聊天場次" },
   { href: "/admin/recovery", label: "聊天室恢復" },
+  { href: "/admin/easter-eggs", label: "彩蛋紀錄" },
   { href: "/admin/realtime", label: "即時診斷" },
   { href: "/admin/reports", label: "檢舉管理" },
   { href: "/admin/safety", label: "安全管理" },
