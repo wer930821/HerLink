@@ -12,7 +12,7 @@ import {
   ToastAndroid,
   View,
 } from "react-native";
-import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
 import { WebView } from "react-native-webview";
@@ -34,7 +34,6 @@ function getCurrentVersionCode() {
 }
 
 function AdminApp() {
-  const insets = useSafeAreaInsets();
   const webRef = useRef<WebView>(null);
   const lastBackPressRef = useRef(0);
   const [canGoBack, setCanGoBack] = useState(false);
@@ -138,17 +137,19 @@ function AdminApp() {
     <SafeAreaView style={styles.root}>
       <StatusBar style="light" backgroundColor="#0d0b16" />
 
-      <View style={[styles.topbar, { paddingTop: Math.max(insets.top, 10) }]}>
-        <View>
-          <Text style={styles.brand}>HerLink 後台</Text>
-          <Text style={styles.subtitle}>管理中心</Text>
+      <View style={styles.appBar}>
+        <View style={styles.brandRow}>
+          <View style={styles.brandMark} />
+          <View style={styles.brandCopy}>
+            <Text style={styles.brand}>HerLink 後台</Text>
+            <Text style={styles.subtitle}>管理中心</Text>
+          </View>
         </View>
-
         <View style={styles.actions}>
-          <Pressable style={styles.actionButton} onPress={goHome}>
+          <Pressable style={({ pressed }) => [styles.actionButton, pressed && styles.actionPressed]} onPress={goHome}>
             <Text style={styles.actionText}>總覽</Text>
           </Pressable>
-          <Pressable style={styles.actionButton} onPress={reload}>
+          <Pressable style={({ pressed }) => [styles.actionButton, pressed && styles.actionPressed]} onPress={reload}>
             <Text style={styles.actionText}>重新整理</Text>
           </Pressable>
         </View>
@@ -220,90 +221,116 @@ export default function App() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#0d0b16",
+    backgroundColor: "#0c0a12",
   },
-  topbar: {
-    minHeight: 64,
-    paddingHorizontal: 16,
-    paddingBottom: 10,
+  appBar: {
+    minHeight: 58,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(255,255,255,0.08)",
-    backgroundColor: "#14111f",
+    backgroundColor: "#120f1d",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
   },
+  brandRow: {
+    minWidth: 0,
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  brandMark: {
+    width: 4,
+    height: 30,
+    borderRadius: 999,
+    backgroundColor: "#ff6f61",
+  },
+  brandCopy: {
+    minWidth: 0,
+  },
   brand: {
-    color: "#f7f3ff",
-    fontSize: 18,
+    color: "#f6f1ff",
+    fontSize: 16,
     fontWeight: "800",
+    letterSpacing: -0.3,
   },
   subtitle: {
-    marginTop: 2,
-    color: "#9e96ad",
-    fontSize: 12,
+    marginTop: 1,
+    color: "#b7aecb",
+    fontSize: 11,
+    fontWeight: "500",
   },
   actions: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
   },
   actionButton: {
     minHeight: 36,
-    paddingHorizontal: 12,
+    paddingHorizontal: 11,
     borderRadius: 12,
-    backgroundColor: "#201c2e",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(255,255,255,0.04)",
     alignItems: "center",
     justifyContent: "center",
   },
+  actionPressed: {
+    opacity: 0.68,
+  },
   actionText: {
-    color: "#f7f3ff",
-    fontSize: 13,
+    color: "#f6f1ff",
+    fontSize: 12,
     fontWeight: "700",
   },
   webWrap: {
     flex: 1,
     position: "relative",
-    backgroundColor: "#0d0b16",
+    backgroundColor: "#0c0a12",
   },
   web: {
     flex: 1,
-    backgroundColor: "#0d0b16",
+    backgroundColor: "#0c0a12",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
     gap: 12,
-    padding: 24,
-    backgroundColor: "#0d0b16",
+    padding: 28,
+    backgroundColor: "#0c0a12",
   },
   loadingText: {
-    color: "#a9a1b6",
+    color: "#b7aecb",
     fontSize: 14,
+    fontWeight: "500",
   },
   errorTitle: {
-    color: "#f7f3ff",
-    fontSize: 18,
+    color: "#f6f1ff",
+    fontSize: 19,
     fontWeight: "800",
+    letterSpacing: -0.3,
   },
   errorBody: {
-    color: "#a9a1b6",
+    color: "#b7aecb",
     fontSize: 14,
+    lineHeight: 21,
     textAlign: "center",
   },
   retryButton: {
     marginTop: 8,
-    minHeight: 44,
-    paddingHorizontal: 20,
+    minHeight: 46,
+    paddingHorizontal: 22,
     borderRadius: 14,
     backgroundColor: "#ff6f61",
     alignItems: "center",
     justifyContent: "center",
   },
   retryText: {
-    color: "#1b1010",
+    color: "#1a0d0c",
     fontWeight: "800",
-    fontSize: 15,
+    fontSize: 14,
   },
 });
