@@ -251,8 +251,11 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     const key = `${row.session_id ?? ""}:${row.user_id ?? ""}:${row.client_instance_id ?? ""}`;
     if (!latestRealtimeState.has(key)) latestRealtimeState.set(key, row);
   }
+  // Only a subscribe error can represent a currently failed connection.
+  // "realtime_disconnected" was historically emitted during normal cleanup and
+  // must never be used as a live-health failure signal.
   const affectedRealtimeConnections = [...latestRealtimeState.values()].filter(
-    (row) => row.event_type === "realtime_subscribe_error" || row.event_type === "realtime_disconnected"
+    (row) => row.event_type === "realtime_subscribe_error"
   );
   const nowMs = Date.now();
   const affectedRealtime1h = affectedRealtimeConnections.filter(
