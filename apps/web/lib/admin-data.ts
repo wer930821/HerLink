@@ -322,7 +322,7 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
 
 export async function loadAdminSessions(
   client: SupabaseClient,
-  input: { page?: number; pageSize?: number; status?: string | null }
+  input: { page?: number; pageSize?: number; status?: string | null; sort?: string | null }
 ): Promise<AdminPaginationResult<AdminSessionListItem>> {
   const page = clampPage(input.page);
   const pageSize = clampPageSize(input.pageSize, 20, 50);
@@ -332,6 +332,7 @@ export async function loadAdminSessions(
     p_status: input.status && input.status !== "all" ? input.status : null,
     p_offset: offset,
     p_limit: pageSize,
+    p_sort: input.sort === "last_reply" ? "last_reply" : "newest",
   });
   if (error) throw error;
 
