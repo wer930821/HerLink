@@ -40,6 +40,7 @@ function AdminApp() {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [webKey, setWebKey] = useState(0);
+  const [webReady, setWebReady] = useState(false);
 
   const handleNavigation = (nav: WebViewNavigation) => {
     setCanGoBack(nav.canGoBack);
@@ -48,12 +49,14 @@ function AdminApp() {
   const reload = () => {
     setFailed(false);
     setLoading(true);
+    setWebReady(false);
     setWebKey((value) => value + 1);
   };
 
   const goHome = () => {
     setFailed(false);
     setLoading(true);
+    setWebReady(false);
     webRef.current?.injectJavaScript(
       `window.location.href = "${ADMIN_URL}"; true;`
     );
@@ -137,25 +140,7 @@ function AdminApp() {
     <SafeAreaView style={styles.root}>
       <StatusBar style="light" backgroundColor="#0d0b16" />
 
-      <View style={styles.appBar}>
-        <View style={styles.brandRow}>
-          <View style={styles.brandMark} />
-          <View style={styles.brandCopy}>
-            <Text style={styles.brand}>HerLink 後台</Text>
-            <Text style={styles.subtitle}>管理中心</Text>
-          </View>
-        </View>
-        <View style={styles.actions}>
-          <Pressable style={({ pressed }) => [styles.actionButton, pressed && styles.actionPressed]} onPress={goHome}>
-            <Text style={styles.actionText}>總覽</Text>
-          </Pressable>
-          <Pressable style={({ pressed }) => [styles.actionButton, pressed && styles.actionPressed]} onPress={reload}>
-            <Text style={styles.actionText}>重新整理</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.webWrap}>
+      <View style={[styles.webWrap, !webReady && styles.webWrapLoading]}>
         <WebView
           key={webKey}
           ref={webRef}
@@ -176,7 +161,10 @@ function AdminApp() {
             setLoading(true);
             setFailed(false);
           }}
-          onLoadEnd={() => setLoading(false)}
+          onLoadEnd={() => {
+            setLoading(false);
+            setWebReady(true);
+          }}
           onError={() => {
             setLoading(false);
             setFailed(true);
