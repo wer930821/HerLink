@@ -251,7 +251,7 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     const key = `${row.session_id ?? ""}:${row.user_id ?? ""}:${row.client_instance_id ?? ""}`;
     if (!latestRealtimeState.has(key)) latestRealtimeState.set(key, row);
   }
-  // Only a subscribe error can represent a currently failed connection.
+  // Only a subscribe error can represent a currently failed connection.\n  // Production redeploy marker: live Realtime health v2.
   // "realtime_disconnected" was historically emitted during normal cleanup and
   // must never be used as a live-health failure signal.
   const affectedRealtimeConnections = [...latestRealtimeState.values()].filter(
