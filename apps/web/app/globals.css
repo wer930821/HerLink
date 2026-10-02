@@ -5081,3 +5081,24 @@ select {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Explain next vs leave in chat menu */
+.chat-menu-explain {
+  display: grid;
+  gap: 2px;
+  padding: 8px 4px;
+  color: var(--color-text-muted);
+  font-size: .78rem;
+  line-height: 1.45;
+}
+
+.chat-menu-explain strong {
+  color: var(--color-text);
+  font-size: .8rem;
+  font-weight: 800;
+}
+
+.chat-menu-explain + .chat-menu-explain {
+  padding-top: 2px;
+}
