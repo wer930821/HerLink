@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   blockRandomUser,
@@ -685,11 +685,11 @@ export default function RandomSessionPage({ params }: Props) {
           <div className="thousand-egg-ring ring-one" />
           <div className="thousand-egg-ring ring-two" />
           <div className="thousand-egg-fireworks" aria-hidden="true">
-            {Array.from({ length: 6 }, (_, index) => <i key={index} style={{ "--i": index } as React.CSSProperties} />)}
+            {Array.from({ length: 6 }, (_, index) => <i key={index} style={{ "--i": index } as CSSProperties} />)}
           </div>
           <div className="thousand-egg-particles" aria-hidden="true">
             {Array.from({ length: 54 }, (_, index) => (
-              <i key={index} style={{ "--i": index, "--x": `${(index * 47) % 100}%`, "--delay": `${(index % 12) * 0.045}s` } as React.CSSProperties} />
+              <i key={index} style={{ "--i": index, "--x": `${(index * 47) % 100}%`, "--delay": `${(index % 12) * 0.045}s` } as CSSProperties} />
             ))}
           </div>
           <div className="thousand-egg-stage">
