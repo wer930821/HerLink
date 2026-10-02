@@ -64,6 +64,7 @@ type ChatAssistResult = {
 
 const EXTERNAL_URL_PATTERN = /((?:https?:\/\/|www\.)[^\s<>"'`]+)/gi;
 const REPORT_CATEGORY_LABELS: Record<RandomReportCategory, string> = {
+  suspected_male_impersonation: "疑似男性冒充",
   spam: "垃圾訊息 / 廣告",
   scam: "詐騙",
   money_request: "索取金錢",
@@ -281,7 +282,7 @@ export default function RandomSessionPage() {
   const [reportFollowupOpen, setReportFollowupOpen] = useState(false);
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [pendingExternalUrl, setPendingExternalUrl] = useState<string | null>(null);
-  const [reportCategory, setReportCategory] = useState<RandomReportCategory>("harassment");
+  const [reportCategory, setReportCategory] = useState<RandomReportCategory>("suspected_male_impersonation");
   const [reportDescription, setReportDescription] = useState("");
   const [partnerTyping, setPartnerTyping] = useState(false);
   const [pendingMedia, setPendingMedia] = useState<{
