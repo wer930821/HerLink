@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 import type { ReactNode } from "react";
+import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import { Badge } from "../../components/ui";
 import { AdminAccessGate } from "./access-gate";
 
@@ -13,7 +15,16 @@ const navItems = [
   { href: "/admin/safety", label: "安全管理" },
 ];
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const requestHeaders = await headers();
+  const userAgent = requestHeaders.get("user-agent") ?? "";
+
+  // 後台頁面只提供 HerLink Admin Android App 的 WebView。
+  // 一般瀏覽器直接開 /admin 時不公開後台介面。
+  if (!userAgent.includes("HerLinkAdminApp")) {
+    notFound();
+  }
+
   return (
     <div className="admin-page">
       <div className="admin-layout">
