@@ -273,7 +273,8 @@ export default function RandomSessionPage() {
   const [contactBusy, setContactBusy] = useState(false);
   const [contactState, setContactState] = useState<AnonymousContactStatusRow | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
-  const [assistantAllowed, setAssistantAllowed] = useState(false);\n  const [easterEgg, setEasterEgg] = useState<"goodnight" | "penguin" | "sync" | null>(null);
+  const [assistantAllowed, setAssistantAllowed] = useState(false);
+  const [easterEgg, setEasterEgg] = useState<"goodnight" | "penguin" | "sync" | null>(null);
   const [assistantEnabled, setAssistantEnabled] = useState(true);
   const [assistantBusy, setAssistantBusy] = useState(false);
   const [assistantResult, setAssistantResult] = useState<ChatAssistResult | null>(null);
@@ -1585,7 +1586,9 @@ export default function RandomSessionPage() {
       }
 
       const nextMessage = Array.isArray(data) ? data[0] : data;
-      maybeTriggerEasterEgg(content);\n\n      if (nextMessage) {
+      maybeTriggerEasterEgg(content);
+
+      if (nextMessage) {
         const enriched = replyTarget && nextMessage.reply_to_message_id
           ? {
               ...nextMessage,
@@ -1640,7 +1643,9 @@ export default function RandomSessionPage() {
 
   const leave = async (event: MouseEvent<HTMLButtonElement>) => {
     if (!event.nativeEvent.isTrusted || !session || leaveBusy) return;
-    if (!window.confirm("確定要離開這個聊天室嗎？\\n\\n離開後會回到首頁，不會自動重新配對。")) return;
+    if (!window.confirm("確定要離開這個聊天室嗎？\
+\
+離開後會回到首頁，不會自動重新配對。")) return;
     setLeaveBusy(true);
     try {
       stopTyping();
