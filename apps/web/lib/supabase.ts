@@ -672,6 +672,7 @@ export async function blockRandomUser(sessionId: string) {
 }
 
 export const RANDOM_REPORT_CATEGORIES = [
+  "suspected_male_impersonation",
   "spam",
   "scam",
   "money_request",
