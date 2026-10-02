@@ -2077,9 +2077,9 @@ export default function RandomSessionPage() {
   if (!session) {
     return (
       <main className="hero">
-        <h1 className="hero-title">會話已結束</h1>
-        <p className="hero-copy">你可以回到首頁重新開始隨機配對。</p>
-        <button className="button" type="button" onClick={() => goHome("USER_TAPPED_ENDED_HOME")}>回到首頁</button>
+        <h1 className="hero-title">聊天室暫時無法載入</h1>
+        <p className="hero-copy">聊天室不一定已結束，HerLink 目前無法確認你的匿名身份或會話狀態。</p>
+        <button className="button" type="button" onClick={() => window.location.reload()}>重新載入</button>
         {debugPanel}
       </main>
     );
