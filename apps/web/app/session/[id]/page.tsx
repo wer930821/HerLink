@@ -1047,8 +1047,15 @@ export default function RandomSessionPage() {
         const nextProfile = profileResult.data ?? null;
         setMyProfile(nextProfile);
         if (!nextProfile) {
-          sessionBootstrapStateRef.current = "unauthorized";
-          goHome("PROFILE_UNAVAILABLE", { authState: "ready", bootstrapRunId });
+          sessionBootstrapStateRef.current = "loading";
+          setSessionState("loading");
+          setNotice("個人資料暫時無法確認，請稍候或重新整理，不會自動離開聊天室。");
+          recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
+            reason: "PROFILE_TEMPORARILY_UNAVAILABLE",
+            authState: "ready",
+            sessionState: "loading",
+            bootstrapRunId,
+          });
           return;
         }
 
