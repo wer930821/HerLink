@@ -194,8 +194,7 @@ function AdminApp() {
           javaScriptEnabled
           domStorageEnabled
           cacheEnabled={false}
-          incognito
-          cacheMode="LOAD_NO_CACHE"
+          cacheMode="LOAD_DEFAULT"
           injectedJavaScriptBeforeContentLoaded={`try { window.localStorage.setItem("herlink_admin_app", "1"); } catch {} true;`}
           setSupportMultipleWindows={false}
           pullToRefreshEnabled
@@ -211,17 +210,6 @@ function AdminApp() {
           onLoadEnd={() => {
             setLoading(false);
             setWebReady(true);
-            webRef.current?.injectJavaScript(`
-              try {
-                if ("serviceWorker" in navigator) {
-                  navigator.serviceWorker.getRegistrations().then((items) => items.forEach((item) => item.unregister()));
-                }
-                if ("caches" in window) {
-                  caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)));
-                }
-              } catch {}
-              true;
-            `);
           }}
           onError={() => {
             setLoading(false);
