@@ -1388,12 +1388,29 @@ export default function RandomSessionPage() {
 
           if (status === "CLOSED") {
             typingChannelReadyRef.current = false;
+            startingRealtime = false;
             recordDiagnostic("realtime_disconnected", {
               sessionId: session.id,
               userId: myProfile.id,
               safeErrorCode: status,
               metadata: { channel: "chat" },
             });
+            void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
+            void refreshSessionFromServerRef.current?.();
+            if (reconnectTimer === null && !disposed) {
+              reconnectTimer = window.setTimeout(() => {
+                reconnectTimer = null;
+                if (disposed || typingChannelReadyRef.current) return;
+                const staleChannel = chatChannel;
+                chatChannel = null;
+                typingChannelRef.current = null;
+                const restart = async () => {
+                  if (staleChannel) await supabase.removeChannel(staleChannel).catch(() => undefined);
+                  if (!disposed) void startRealtime();
+                };
+                void restart();
+              }, 3_000);
+            }
           }
         });
     };
