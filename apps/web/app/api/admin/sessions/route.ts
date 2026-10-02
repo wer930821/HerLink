@@ -13,9 +13,10 @@ export async function GET(request: Request) {
   const page = parsePageParam(searchParams, "page", 1, 200);
   const pageSize = parsePageParam(searchParams, "pageSize", 20, 100);
   const status = searchParams.get("status");
+  const sort = searchParams.get("sort");
 
   try {
-    const result = await loadAdminSessions(admin.context.client, { page, pageSize, status });
+    const result = await loadAdminSessions(admin.context.client, { page, pageSize, status, sort });
     return adminJson(result);
   } catch (error) {
     return adminJson(
