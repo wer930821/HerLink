@@ -522,11 +522,35 @@ export async function loadAdminRealtimeDiagnostics(
     p_limit: pageSize,
   });
 
-  if (error) {
-    throw error;
-  }
+  let rows: any[] = [];
+  let total = 0;
 
-  const rows = Array.isArray(data) ? data : [];
+  if (!error) {
+    rows = Array.isArray(data) ? data : [];
+    total = Number(rows[0]?.total_count ?? 0);
+  } else {
+    // Keep the admin diagnostics usable even when the RPC is missing or
+    // temporarily unavailable. The admin-scoped client/RLS still controls access.
+    let fallback = client
+      .from("realtime_diagnostics")
+      .select(
+        "id,session_id,user_id,event_type,message_id,client_instance_id,safe_error_code,metadata,created_at",
+        { count: "exact" }
+      )
+      .order("created_at", { ascending: false });
+
+    if (input.sessionId) fallback = fallback.eq("session_id", input.sessionId);
+    if (input.eventType && input.eventType !== "all") fallback = fallback.eq("event_type", input.eventType);
+
+    const { data: fallbackData, count, error: fallbackError } = await fallback.range(
+      offset,
+      offset + pageSize - 1
+    );
+
+    if (fallbackError) throw fallbackError;
+    rows = Array.isArray(fallbackData) ? fallbackData : [];
+    total = count ?? 0;
+  }
 
   return {
     items: rows.map((item: any) => ({
@@ -542,7 +566,7 @@ export async function loadAdminRealtimeDiagnostics(
     })),
     page,
     pageSize,
-    total: Number(rows[0]?.total_count ?? 0),
+    total,
   };
 }
 
