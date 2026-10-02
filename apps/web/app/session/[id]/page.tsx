@@ -273,7 +273,7 @@ export default function RandomSessionPage() {
   const [contactBusy, setContactBusy] = useState(false);
   const [contactState, setContactState] = useState<AnonymousContactStatusRow | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
-  const [assistantAllowed, setAssistantAllowed] = useState(false);
+  const [assistantAllowed, setAssistantAllowed] = useState(false);\n  const [easterEgg, setEasterEgg] = useState<"goodnight" | "penguin" | "sync" | null>(null);
   const [assistantEnabled, setAssistantEnabled] = useState(true);
   const [assistantBusy, setAssistantBusy] = useState(false);
   const [assistantResult, setAssistantResult] = useState<ChatAssistResult | null>(null);
@@ -1542,6 +1542,22 @@ export default function RandomSessionPage() {
     scheduleScrollMessagesToBottom(shouldSmooth ? "smooth" : "auto");
   }, [messages.length, session?.id]);
 
+  const triggerEasterEgg = (kind: "goodnight" | "penguin" | "sync") => {
+    if (!assistantAllowed) return;
+    setEasterEgg(kind);
+    window.setTimeout(() => setEasterEgg((current) => (current === kind ? null : current)), 3200);
+  };
+
+  const maybeTriggerEasterEgg = (content: string) => {
+    if (!assistantAllowed) return;
+    if (content.includes("晚安")) return triggerEasterEgg("goodnight");
+    if (content.includes("企鵝")) return triggerEasterEgg("penguin");
+    if (/哈{2,}/.test(content)) {
+      const partnerAlsoLaughing = [...messages].reverse().find((message) => !message.is_mine && message.message_type !== "image");
+      if (partnerAlsoLaughing && /哈{2,}/.test(partnerAlsoLaughing.content || "")) triggerEasterEgg("sync");
+    }
+  };
+
   const sendMessage = async () => {
     const content = draft.trim();
     if (!content || !session || sendBusy) {
@@ -1569,7 +1585,7 @@ export default function RandomSessionPage() {
       }
 
       const nextMessage = Array.isArray(data) ? data[0] : data;
-      if (nextMessage) {
+      maybeTriggerEasterEgg(content);\n\n      if (nextMessage) {
         const enriched = replyTarget && nextMessage.reply_to_message_id
           ? {
               ...nextMessage,
@@ -2157,6 +2173,12 @@ export default function RandomSessionPage() {
           highRiskAt={messages.reduce((latest, message) =>
             (message.risk_level === "high" || message.risk_level === "critical") && message.created_at > latest
               ? message.created_at : latest, "")} /> : null}
+
+        {assistantAllowed && easterEgg ? (
+          <div className={`chat-easter-egg chat-easter-egg-${easterEgg}`} aria-hidden="true">
+            {easterEgg === "goodnight" ? <><span className="egg-moon">☾</span><span className="egg-stars">✦ · ✧ · ✦</span></> : easterEgg === "penguin" ? <span className="egg-penguin">🐧</span> : <span className="egg-sync">默契 +1</span>}
+          </div>
+        ) : null}
 
         <div
           className="chat-messages"
