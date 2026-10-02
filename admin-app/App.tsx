@@ -7,11 +7,11 @@ import {
   Linking,
   Platform,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
 import { WebView } from "react-native-webview";
@@ -33,6 +33,7 @@ function getCurrentVersionCode() {
 }
 
 export default function App() {
+  const insets = useSafeAreaInsets();
   const webRef = useRef<WebView>(null);
   const [canGoBack, setCanGoBack] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -123,7 +124,7 @@ export default function App() {
     <SafeAreaView style={styles.root}>
       <StatusBar style="light" backgroundColor="#0d0b16" />
 
-      <View style={styles.topbar}>
+      <View style={[styles.topbar, { paddingTop: Math.max(insets.top, 10) }]}>
         <View>
           <Text style={styles.brand}>HerLink 後台</Text>
           <Text style={styles.subtitle}>管理中心</Text>
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
   topbar: {
     minHeight: 64,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(255,255,255,0.08)",
     backgroundColor: "#14111f",
