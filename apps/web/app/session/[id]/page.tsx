@@ -26,6 +26,7 @@ import {
   removeChatMedia,
   reportRandomUser,
   requestAnonymousContact,
+  registerAnonymousAbuseIdentity,
   restoreRandomSessionFromInstallation,
   sendImageMessage,
   sendRandomMessage,
@@ -1104,6 +1105,11 @@ export default function RandomSessionPage() {
           });
           return;
         }
+
+        // Synchronize this browser installation with the current anonymous
+        // auth user before attempting to restore a room owned by the previous
+        // anonymous identity. Recovery intentionally requires this binding.
+        await registerAnonymousAbuseIdentity().catch(() => undefined);
 
         const nextSession = await (async () => {
           for (let attempt = 0; attempt < 3; attempt += 1) {
