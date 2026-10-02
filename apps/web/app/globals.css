@@ -5534,3 +5534,7 @@ body:has(.admin-page),
 .egg-1000-particles i:nth-child(4n) { width:10px; height:3px; border-radius:8px; }
 @keyframes milestone-particle { 0% { opacity:0; transform:translate(-50%,-50%) rotate(var(--angle)) translateX(25px) scale(.2) } 18% { opacity:1 } 72% { opacity:.9 } 100% { opacity:0; transform:translate(-50%,-50%) rotate(var(--angle)) translateX(min(42vw,260px)) scale(.8) } }
 @media (prefers-reduced-motion: reduce) { .egg-1000-particles i { animation:none; opacity:.65; transform:translate(-50%,-50%) rotate(var(--angle)) translateX(110px); } }
+
+
+.chat-milestone-test-trigger { min-height:34px; padding:0 10px; border:1px solid rgba(255,210,108,.4); border-radius:999px; background:rgba(255,205,91,.09); color:inherit; font:inherit; font-size:12px; font-weight:800; white-space:nowrap; cursor:pointer; touch-action:manipulation; }
+.chat-milestone-test-trigger:active { transform:scale(.97); }
