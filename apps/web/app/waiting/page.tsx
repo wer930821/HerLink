@@ -150,10 +150,14 @@ export default function WaitingPage() {
   useEffect(() => {
     if (MAINTENANCE_MODE) return;
 
-    if (!debug && !loading && session) {
+    // Never treat an older retained active chat as the result of a new-match
+    // request. Queue/matched_session_id is the source of truth for matchmaking.
+    if (requestedMatchRef.current) return;
+
+    if (!debug && !loading && session && queue?.status !== "waiting") {
       router.replace(`/session/${session.id}`);
     }
-  }, [debug, loading, router, session]);
+  }, [debug, loading, queue?.status, router, session]);
 
   useEffect(() => {
     if (MAINTENANCE_MODE || loading || session) {
