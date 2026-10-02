@@ -30,6 +30,7 @@ import {
   restoreRandomSessionFromInstallation,
   sendImageMessage,
   sendRandomMessage,
+  signInAnonymously,
   supabase,
   uploadChatMedia,
   waitForCurrentSession,
@@ -1046,11 +1047,11 @@ export default function RandomSessionPage() {
         }
 
         const { data } = await waitForCurrentSession(8000, 150);
-        const authSession = data.session;
+        let authSession = data.session;
 
         if (!authSession) {
-          sessionBootstrapStateRef.current = "missing";
-          setAuthState("missing");
+          sessionBootstrapStateRef.current = "loading";
+          setAuthState("loading");
           setSessionState("loading");
           setNotice("正在重新建立匿名身份並嘗試恢復原本聊天室，請稍候。");
           recordSessionRouteDiagnostic("AUTH_MISSING", {
@@ -1059,11 +1060,17 @@ export default function RandomSessionPage() {
             bootstrapRunId,
           });
 
-          // Do not redirect a saved room link back home just because the old
-          // anonymous auth session expired. The home route can create a new
-          // identity, which destroys the chance to recover the room in-place.
-          // Keep the route stable so recovery can continue after auth is restored.
-          return;
+          const anonymousSignIn = await signInAnonymously();
+          authSession = anonymousSignIn.data.session;
+          if (!authSession) {
+            sessionBootstrapStateRef.current = "missing";
+            setAuthState("missing");
+            setNotice("匿名身份暫時無法重新建立，請稍後再重新載入。");
+            return;
+          }
+
+          await ensureAnonymousBootstrapProfile(authSession.user.id).catch(() => undefined);
+          await registerAnonymousAbuseIdentity().catch(() => undefined);
         }
 
         sessionBootstrapStateRef.current = "ready";
