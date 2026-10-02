@@ -56,8 +56,37 @@ function RootLayoutNav() {
             {
               text: "立即更新",
               onPress: () => {
-                void downloadAndInstallHerLinkUpdate(info).catch(() => {
-                  Alert.alert("更新失敗", "目前無法下載新版，請稍後再試。");
+                let lastShown = -1;
+                void downloadAndInstallHerLinkUpdate(info, (progress) => {
+                  const percent = Math.round(progress * 100);
+                  if (percent === 100 || percent - lastShown >= 10) {
+                    lastShown = percent;
+                    console.log(`[HerLink Update] 下載進度 ${percent}%`);
+                  }
+                }).catch((error: any) => {
+                  if (error?.code === "APK_INSTALL_PERMISSION_REQUIRED" || error?.message === "APK_INSTALL_PERMISSION_REQUIRED") {
+                    Alert.alert(
+                      "需要安裝權限",
+                      "請允許 HerLink 安裝未知應用程式。開啟權限後回到 HerLink，系統會再次檢查更新；已下載完成的 APK 不會重複下載。",
+                      [{ text: "知道了" }]
+                    );
+                    return;
+                  }
+                  Alert.alert(
+                    "更新失敗",
+                    "新版下載或驗證失敗。可以直接重新嘗試，不需要到 GitHub 手動下載。",
+                    [
+                      { text: "稍後", style: "cancel" },
+                      {
+                        text: "重新嘗試",
+                        onPress: () => {
+                          notifiedUpdateVersionRef.current = null;
+                          lastUpdateCheckRef.current = 0;
+                          void checkUpdate();
+                        },
+                      },
+                    ]
+                  );
                 });
               },
             },
