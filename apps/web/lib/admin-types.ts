@@ -41,6 +41,14 @@ export type AdminSummary = {
   deployment_environment: string | null;
   deployment_url: string | null;
   last_successful_deployment_at: string | null;
+  today_easter_egg_count: number;
+  recent_easter_egg_events: Array<{
+    id: string;
+    session_id: string;
+    egg_kind: string;
+    trigger_type: "text" | "milestone";
+    created_at: string;
+  }>;
   recent_error_summary: Array<{
     source: "realtime" | "push" | "laya" | string;
     error_code: string;
