@@ -1553,7 +1553,10 @@ export default function RandomSessionPage() {
 
   const maybeTriggerEasterEgg = (content: string) => {
     if (!easterEggAllowed) return;
-    if (content.includes("極光")) return triggerEasterEgg("aurora");\n    if (content.includes("流星雨")) return triggerEasterEgg("meteor");\n    if (content.includes("秘密基地")) return triggerEasterEgg("secret");\n    if (content.includes("晚安")) return triggerEasterEgg("goodnight");
+    if (content.includes("極光")) return triggerEasterEgg("aurora");
+    if (content.includes("流星雨")) return triggerEasterEgg("meteor");
+    if (content.includes("秘密基地")) return triggerEasterEgg("secret");
+    if (content.includes("晚安")) return triggerEasterEgg("goodnight");
     if (content.includes("企鵝")) return triggerEasterEgg("penguin");
     if (/哈{2,}/.test(content)) {
       const partnerAlsoLaughing = [...messages].reverse().find((message) => !message.is_mine && message.message_type !== "image");
@@ -1618,7 +1621,9 @@ export default function RandomSessionPage() {
       }
       stopTyping();
       setDraft("");
-      // Do not programmatically refocus the composer after send on mobile Web.\n      // Keeping focus here reopens the virtual keyboard while an easter egg is showing.\n      chatInputRef.current?.blur();
+      // Do not programmatically refocus the composer after send on mobile Web.
+      // Keeping focus here reopens the virtual keyboard while an easter egg is showing.
+      chatInputRef.current?.blur();
       setAssistantResult(null);
       setAssistantResultForMessageId(null);
       setAssistantError(null);
