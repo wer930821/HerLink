@@ -272,7 +272,7 @@ async function askLaya(messages: ChatAssistMessage[]) {
   ).replace(/\/$/, "");
   if (!baseUrl) return null;
 
-  const conversation = messages\n    .map((item) => `${item.role === "me" ? "我" : "對方"}：${item.text}`)\n    .join(String.fromCharCode(10));
+  const conversation = messages.map((item) => `${item.role === "me" ? "我" : "對方"}：${item.text}`).join(String.fromCharCode(10));
 
   const fallbackDecision = getFallback(messages);
   // Laya limits each question head to a fixed token budget.
