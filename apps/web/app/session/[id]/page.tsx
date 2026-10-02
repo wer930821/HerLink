@@ -1430,10 +1430,10 @@ export default function RandomSessionPage() {
             void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
             void refreshSessionFromServerRef.current?.();
 
-            // Supabase Realtime already reconnects its socket/channel internally.
-            // Do not remove and recreate the channel here: removing it can emit
-            // CLOSED and create a second app-level reconnect loop.
-            void syncRealtimeAuth();
+            // Supabase Realtime owns socket/channel recovery. Do not call
+            // setAuth(), removeChannel(), or subscribe() again from this error
+            // callback: doing so can race the built-in reconnect after a brief
+            // mobile/browser transport interruption.
             return;
           }
 
@@ -1454,8 +1454,9 @@ export default function RandomSessionPage() {
     return () => {
       disposed = true;
       if (chatChannel) {
-        // Normal cleanup is not a Realtime failure and must not inflate diagnostics.
-        void supabase.removeChannel(chatChannel);
+        // Unsubscribe this component's channel only. Supabase owns the shared
+        // socket lifecycle and can finish cleanup before a later mount rejoins.
+        void chatChannel.unsubscribe();
       }
       stopTyping();
       clearPartnerTyping();
