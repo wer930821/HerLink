@@ -1321,9 +1321,7 @@ export default function RandomSessionPage() {
     let disposed = false;
     let chatChannelSubscribed = false;
     let chatChannel: ReturnType<typeof supabase.channel> | null = null;
-    let reconnectTimer: number | null = null;
     let startingRealtime = false;
-    let reconnectAttempt = 0;
     let lastErrorAt = 0;
 
     const syncRealtimeAuth = async () => {
@@ -1387,13 +1385,8 @@ export default function RandomSessionPage() {
         .subscribe((status: string, channelError?: Error) => {
           if (status === "SUBSCRIBED") {
             startingRealtime = false;
-            reconnectAttempt = 0;
             lastErrorAt = 0;
             typingChannelReadyRef.current = true;
-            if (reconnectTimer !== null) {
-              window.clearTimeout(reconnectTimer);
-              reconnectTimer = null;
-            }
             recordDiagnostic(chatChannelSubscribed ? "realtime_reconnected" : "realtime_subscribed", {
               sessionId: session.id,
               userId: myProfile.id,
@@ -1429,32 +1422,10 @@ export default function RandomSessionPage() {
             void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
             void refreshSessionFromServerRef.current?.();
 
-            // Give Supabase time to recover the existing channel. Rebuilding too
-            // aggressively can create a reconnect loop on unstable mobile networks.
+            // Supabase Realtime already reconnects its socket/channel internally.
+            // Do not remove and recreate the channel here: removing it can emit
+            // CLOSED and create a second app-level reconnect loop.
             void syncRealtimeAuth();
-            if (reconnectTimer === null) {
-              const reconnectDelay = Math.min(60_000, 15_000 * Math.pow(2, reconnectAttempt));
-              reconnectAttempt += 1;
-              reconnectTimer = window.setTimeout(() => {
-                reconnectTimer = null;
-                if (disposed || typingChannelReadyRef.current) return;
-
-                const staleChannel = chatChannel;
-                chatChannel = null;
-                typingChannelRef.current = null;
-                startingRealtime = false;
-
-                const restart = async () => {
-                  if (staleChannel) {
-                    await supabase.removeChannel(staleChannel).catch(() => undefined);
-                  }
-                  if (!disposed) {
-                    void startRealtime();
-                  }
-                };
-                void restart();
-              }, reconnectDelay);
-            }
             return;
           }
 
@@ -1469,22 +1440,9 @@ export default function RandomSessionPage() {
             });
             void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
             void refreshSessionFromServerRef.current?.();
-            if (reconnectTimer === null && !disposed && document.visibilityState === "visible" && navigator.onLine) {
-              const reconnectDelay = Math.min(60_000, 15_000 * Math.pow(2, reconnectAttempt));
-              reconnectAttempt += 1;
-              reconnectTimer = window.setTimeout(() => {
-                reconnectTimer = null;
-                if (disposed || typingChannelReadyRef.current) return;
-                const staleChannel = chatChannel;
-                chatChannel = null;
-                typingChannelRef.current = null;
-                const restart = async () => {
-                  if (staleChannel) await supabase.removeChannel(staleChannel).catch(() => undefined);
-                  if (!disposed) void startRealtime();
-                };
-                void restart();
-              }, reconnectDelay);
-            }
+            // CLOSED is also emitted when a channel is intentionally removed.
+            // Let the Supabase client own socket recovery; database polling above
+            // keeps the chat usable while Realtime is unavailable.
           }
         });
     };
@@ -1493,10 +1451,6 @@ export default function RandomSessionPage() {
 
     return () => {
       disposed = true;
-      if (reconnectTimer !== null) {
-        window.clearTimeout(reconnectTimer);
-        reconnectTimer = null;
-      }
       if (chatChannel) {
         recordDiagnostic("realtime_disconnected", {
           sessionId: session.id,
