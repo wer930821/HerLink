@@ -1,15 +1,53 @@
+import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { colors, radii, spacing, typography } from "../../theme";
+import { listMyActiveRandomSessions, type RandomSession } from "../../lib/random-chat";
 
 export default function AnonymousHomeScreen() {
   const router = useRouter();
+  const [activeSessions, setActiveSessions] = useState<RandomSession[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      void listMyActiveRandomSessions()
+        .then((rows) => {
+          if (alive) setActiveSessions(rows);
+        })
+        .catch(() => {
+          if (alive) setActiveSessions([]);
+        });
+      return () => {
+        alive = false;
+      };
+    }, [])
+  );
+
+  const resumeSession = activeSessions[0] ?? null;
 
   return (
     <View style={styles.root}>
       <Text style={styles.eyebrow}>HerLink</Text>
       <Text style={styles.title}>匿名聊天</Text>
       <Text style={styles.copy}>不公開個人檔案，不做交友滑卡，只保留匿名隨機配對與聊天室。</Text>
+
+      {resumeSession ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="繼續聊天"
+          style={styles.resumeButton}
+          onPress={() =>
+            router.push({
+              pathname: "/random-session/[sessionId]",
+              params: { sessionId: resumeSession.id },
+            } as never)
+          }
+        >
+          <Text style={styles.buttonText}>繼續和 {resumeSession.partner_anonymous_display_name} 聊天</Text>
+        </Pressable>
+      ) : null}
 
       <Pressable
         accessibilityRole="button"
@@ -54,8 +92,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
-  button: {
+  resumeButton: {
     marginTop: spacing.xxl,
+    borderRadius: radii.lg,
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.lg,
+    alignItems: "center",
+  },
+  button: {
+    marginTop: spacing.md,
     borderRadius: radii.lg,
     backgroundColor: colors.primary,
     paddingVertical: spacing.lg,
