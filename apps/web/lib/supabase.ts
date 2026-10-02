@@ -635,6 +635,12 @@ export async function restoreRandomSessionFromInstallation(sessionId: string) {
   } as { data: RandomSessionRow | null; error: SupabaseClientError | null };
 }
 
+export async function requestRandomSessionRecovery(sessionId: string) {
+  const result = await supabase.rpc("request_random_session_recovery", { p_session_id: sessionId });
+  const row = Array.isArray(result.data) ? result.data[0] ?? null : result.data ?? null;
+  return { data: row as { recovery_code: string; expires_at: string } | null, error: result.error };
+}
+
 export async function findOrJoinRandomMatch() {
   return supabase.rpc("find_or_join_random_match");
 }
