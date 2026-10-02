@@ -1565,7 +1565,7 @@ export default function RandomSessionPage() {
 
   const leave = async (event: MouseEvent<HTMLButtonElement>) => {
     if (!event.nativeEvent.isTrusted || !session || leaveBusy) return;
-    if (!window.confirm("確定要離開這個聊天室嗎？")) return;
+    if (!window.confirm("確定要離開這個聊天室嗎？\n\n離開後會回到首頁，不會自動重新配對。")) return;
     setLeaveBusy(true);
     try {
       stopTyping();
@@ -1950,7 +1950,14 @@ export default function RandomSessionPage() {
               <span className="chat-assistant-spark">✦</span>
               <span>聊天助手</span>
             </button>
-            <button className="ghost chat-header-next" type="button" onClick={goNext} disabled={nextBusy}>
+            <button
+              className="ghost chat-header-next"
+              type="button"
+              onClick={goNext}
+              disabled={nextBusy}
+              title="結束目前聊天，立即重新配對下一位"
+              aria-label="下一位：結束目前聊天並立即重新配對"
+            >
               {nextBusy ? "處理中…" : "下一位"}
             </button>
             <details className="chat-more chat-header-more">
@@ -1974,7 +1981,21 @@ export default function RandomSessionPage() {
                 <button className="button secondary chat-safety" type="button" onClick={() => setSafetyMenuOpen(true)}>
                   安全
                 </button>
-                <button className="button secondary chat-menu-leave" type="button" onClick={leave} disabled={leaveBusy}>
+                <div className="chat-menu-explain">
+                  <strong>下一位</strong>
+                  <span>結束目前聊天並立即重新配對。</span>
+                </div>
+                <div className="chat-menu-explain">
+                  <strong>離開聊天室</strong>
+                  <span>結束聊天並回到首頁，不會自動配對。</span>
+                </div>
+                <button
+                  className="button secondary chat-menu-leave"
+                  type="button"
+                  onClick={leave}
+                  disabled={leaveBusy}
+                  title="結束聊天並回到首頁，不會自動重新配對"
+                >
                   {leaveBusy ? "離開中…" : "離開聊天室"}
                 </button>
               </div>
