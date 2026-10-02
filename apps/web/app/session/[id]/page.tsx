@@ -1602,14 +1602,15 @@ export default function RandomSessionPage() {
   const maybeTriggerEasterEgg = (content: string) => {
     if (!easterEggAllowed) return;
     const normalized = content.replace(/\\s+/g, "");
-    if (/想你|想妳|想念|好想|想你了|想妳了/.test(normalized)) return triggerEasterEgg("aurora");
-    if (/加油|祝你|祝妳|希望|順利|辛苦了/.test(normalized)) return triggerEasterEgg("meteor");
-    if (/喜歡你|喜歡妳|喜歡|心動|愛你|愛妳/.test(normalized)) return triggerEasterEgg("secret");
-    if (normalized.includes("早安")) return triggerEasterEgg("morning");
-    if (normalized.toLowerCase() === "hi") return triggerEasterEgg("hi");
-    if (normalized.includes("安安")) return triggerEasterEgg("hello");
-    if (content.includes("晚安")) return triggerEasterEgg("goodnight");
-    if (content.includes("企鵝")) return triggerEasterEgg("penguin");
+    if (/想你|想妳|想念|好想|想你了|想妳了|睡不著/.test(normalized)) return triggerEasterEgg("aurora");
+    if (/加油|祝你|祝妳|希望|順利|辛苦了|好累|累死|下班了|下班啦/.test(normalized)) return triggerEasterEgg("meteor");
+    if (/喜歡你|喜歡妳|喜歡|心動|愛你|愛妳|好可愛|可愛死/.test(normalized)) return triggerEasterEgg("secret");
+    if (/早安|早啊|早呀|早上好/.test(normalized)) return triggerEasterEgg("morning");
+    if (/^(hi|hey|hello)$/i.test(normalized)) return triggerEasterEgg("hi");
+    if (/安安|嗨嗨|哈囉|哈啰/.test(normalized)) return triggerEasterEgg("hello");
+    if (/晚安|先睡了|我要睡了|明天見/.test(normalized)) return triggerEasterEgg("goodnight");
+    if (/企鵝/.test(normalized)) return triggerEasterEgg("penguin");
+    if (/在幹嘛|在幹麻|幹嘛呢|吃飯了嗎|吃飽了嗎|真的假的|真的嗎|笑死/.test(normalized)) return triggerEasterEgg("sync");
     if (/哈{2,}/.test(content)) {
       const partnerAlsoLaughing = [...messages].reverse().find((message) => !message.is_mine && message.message_type !== "image");
       if (partnerAlsoLaughing && /哈{2,}/.test(partnerAlsoLaughing.content || "")) triggerEasterEgg("sync");
