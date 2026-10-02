@@ -648,11 +648,6 @@ export default function HomePage() {
       return;
     }
 
-    if (state.activeSession?.id) {
-      continueActiveSession();
-      return;
-    }
-
     const femaleOnlyKey = "herlink_female_only_ack_v1";
     if (typeof window !== "undefined" && window.localStorage.getItem(femaleOnlyKey) !== "1") {
       setFemaleOnlyOpen(true);
@@ -689,6 +684,10 @@ export default function HomePage() {
       const result = Array.isArray(data) ? data[0] : data;
       if (result?.status === "matched" && result.session_id) {
         router.replace(`/session/${result.session_id}`);
+        return;
+      }
+      if (result?.status === "limit_reached") {
+        setMessage("目前已保留 3 個聊天室，請先結束其中一個再配對新的人。");
         return;
       }
 
@@ -790,8 +789,9 @@ export default function HomePage() {
 
         <div className="home-app-actions">
           <Button size="lg" onClick={startMatching} disabled={actionBusy || MAINTENANCE_MODE}>
-            {actionBusy ? "處理中…" : MAINTENANCE_MODE ? "維護中" : state.activeSession ? "繼續聊天" : "開始匿名配對"}
+            {actionBusy ? "處理中…" : MAINTENANCE_MODE ? "維護中" : state.activeSession ? "配對新的人" : "開始匿名配對"}
           </Button>
+          {state.activeSession ? <Button variant="secondary" size="lg" href="/chats">我的聊天</Button> : null}
           <Button variant="secondary" size="lg" href="/contacts">匿名聯絡人</Button>
         </div>
 
