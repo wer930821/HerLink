@@ -35,7 +35,12 @@ async function requireUser(request: Request) {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
   const { data, error } = await client.auth.getUser(token);
-  if (error || !data.user) return null;\n\n  const permission = await client.rpc("can_use_chat_assistant");\n  if (permission.error || permission.data !== true) return null;\n\n  return data.user;
+  if (error || !data.user) return null;
+
+  const permission = await client.rpc("can_use_chat_assistant");
+  if (permission.error || permission.data !== true) return null;
+
+  return data.user;
 }
 
 async function recordChatAssistHealth(request: Request, engine: "laya" | "fallback") {
@@ -269,7 +274,8 @@ async function askLaya(messages: ChatAssistMessage[]) {
 
   const conversation = messages
     .map((item) => `${item.role === "me" ? "我" : "對方"}：${item.text}`)
-    .join("\n");
+    .join("
+");
 
   const fallbackDecision = getFallback(messages);
   // Laya limits each question head to a fixed token budget.
