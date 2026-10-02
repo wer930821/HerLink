@@ -1544,13 +1544,13 @@ export default function RandomSessionPage() {
   }, [messages.length, session?.id]);
 
   const triggerEasterEgg = (kind: "goodnight" | "penguin" | "sync") => {
-    if (!assistantAllowed) return;
+    if (!easterEggAllowed) return;
     setEasterEgg(kind);
     window.setTimeout(() => setEasterEgg((current) => (current === kind ? null : current)), 3200);
   };
 
   const maybeTriggerEasterEgg = (content: string) => {
-    if (!assistantAllowed) return;
+    if (!easterEggAllowed) return;
     if (content.includes("晚安")) return triggerEasterEgg("goodnight");
     if (content.includes("企鵝")) return triggerEasterEgg("penguin");
     if (/哈{2,}/.test(content)) {
@@ -2177,7 +2177,7 @@ export default function RandomSessionPage() {
             (message.risk_level === "high" || message.risk_level === "critical") && message.created_at > latest
               ? message.created_at : latest, "")} /> : null}
 
-        {assistantAllowed && easterEgg ? (
+        {easterEggAllowed && easterEgg ? (
           <div className={`chat-easter-egg chat-easter-egg-${easterEgg}`} aria-hidden="true">
             {easterEgg === "goodnight" ? <><span className="egg-moon">☾</span><span className="egg-stars">✦ · ✧ · ✦</span></> : easterEgg === "penguin" ? <span className="egg-penguin">🐧</span> : <span className="egg-sync">默契 +1</span>}
           </div>
