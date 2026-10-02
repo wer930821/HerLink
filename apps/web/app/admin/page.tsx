@@ -413,25 +413,6 @@ export default function AdminDashboardPage() {
             value={formatPercent(data?.today_push_success_rate)}
             tone={typeof data?.today_push_success_rate === "number" && data.today_push_success_rate < 95 ? "warning" : "success"}
           />
-          <AdminStat
-            label="聊天助手服務狀態"
-            value={layaStateLabel(data?.laya_service_state)}
-            tone={data?.laya_service_state === "ready" ? "success" : data?.laya_service_state === "loading" ? "warning" : "danger"}
-          />
-          <AdminStat
-            label="聊天助手回應延遲"
-            value={typeof data?.laya_health_latency_ms === "number" ? `${data.laya_health_latency_ms} 毫秒` : "—"}
-            tone={typeof data?.laya_health_latency_ms === "number" && data.laya_health_latency_ms > 1500 ? "warning" : "default"}
-          />
-          <AdminStat
-            label="今日聊天助手成功率"
-            value={formatPercent(data?.today_laya_success_rate)}
-            tone={typeof data?.today_laya_success_rate === "number" && data.today_laya_success_rate < 80 ? "warning" : "success"}
-          />
-          <AdminStat
-            label="今日聊天助手使用次數"
-            value={formatCount(data?.today_chat_assist_requests)}
-          />
         </AdminStatGrid>
       </AdminSection>
 
