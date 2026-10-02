@@ -143,7 +143,7 @@ const realSupabaseClient = hasSupabaseConfig
       auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true,
+        // Auth callbacks are handled explicitly by /auth/callback and /auth/handoff.\n        // Letting supabase-js also parse the URL can race with setSession/refresh and\n        // reuse the same refresh token across tabs.\n        detectSessionInUrl: false,\n        flowType: "pkce",
       },
     })
   : null;
