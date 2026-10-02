@@ -620,3 +620,209 @@ input {
     padding-right: 10px;
   }
 }
+
+
+/* 1000-message legendary easter egg */
+.thousand-test-button {
+  border-color: rgba(255, 210, 92, 0.35);
+  background: linear-gradient(135deg, rgba(255, 199, 61, 0.14), rgba(255, 111, 97, 0.12));
+}
+
+.thousand-egg {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  overflow: hidden;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+
+.thousand-egg-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 3, 12, 0.78);
+  animation: thousandDim 6.8s ease both;
+}
+
+.thousand-egg-flash {
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle, rgba(255,255,225,.98) 0 2%, rgba(255,211,89,.75) 3%, rgba(255,174,44,.18) 16%, transparent 42%);
+  animation: thousandFlash 1.15s ease-out both;
+  mix-blend-mode: screen;
+}
+
+.thousand-egg-rays {
+  position: absolute;
+  width: 150vmax;
+  height: 150vmax;
+  opacity: .55;
+  background: repeating-conic-gradient(from 0deg, rgba(255,215,100,.22) 0 3deg, transparent 3deg 10deg);
+  mask-image: radial-gradient(circle, #000 0 8%, transparent 48%);
+  animation: thousandSpin 7s linear both, thousandRayPulse 1.4s ease-out both;
+}
+
+.thousand-egg-ring {
+  position: absolute;
+  width: 22vmin;
+  aspect-ratio: 1;
+  border: 3px solid rgba(255,224,129,.8);
+  border-radius: 50%;
+  box-shadow: 0 0 40px rgba(255,199,54,.7), inset 0 0 30px rgba(255,199,54,.35);
+}
+
+.thousand-egg-ring.ring-one { animation: thousandRing 1.35s .15s cubic-bezier(.1,.7,.2,1) both; }
+.thousand-egg-ring.ring-two { animation: thousandRing 1.7s .36s cubic-bezier(.1,.7,.2,1) both; }
+
+.thousand-egg-stage {
+  position: relative;
+  z-index: 5;
+  width: min(92vw, 760px);
+  min-height: 430px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+  filter: drop-shadow(0 12px 35px rgba(0,0,0,.45));
+}
+
+.thousand-egg-kicker {
+  position: absolute;
+  top: 14%;
+  font-size: clamp(.7rem, 2vw, .9rem);
+  font-weight: 900;
+  letter-spacing: .28em;
+  color: #ffe7a0;
+  opacity: 0;
+  animation: thousandTextIn .55s 1s ease-out forwards, thousandTextOut .35s 3.9s ease-in forwards;
+}
+
+.thousand-egg-number {
+  position: relative;
+  font-size: clamp(7rem, 34vw, 17rem);
+  line-height: .8;
+  font-weight: 1000;
+  letter-spacing: -.085em;
+  color: transparent;
+  background: linear-gradient(180deg, #fffbd5 0%, #ffd45f 27%, #f7a91d 57%, #fff0a5 76%, #c67a00 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-stroke: 1px rgba(255,245,190,.9);
+  text-shadow: 0 0 12px rgba(255,239,159,.9), 0 0 42px rgba(255,184,35,.8), 0 16px 40px rgba(0,0,0,.55);
+  transform: scale(.05) rotate(-8deg);
+  opacity: 0;
+  animation: thousandNumber 1.15s .22s cubic-bezier(.16,1.35,.35,1) forwards, thousandNumberExit .55s 4.05s ease-in forwards;
+}
+
+.thousand-egg-number::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(255,255,255,.7);
+  filter: blur(5px);
+  animation: thousandGlint .75s 1.25s ease-out both;
+}
+
+.thousand-egg-copy {
+  position: absolute;
+  top: 74%;
+  width: 100%;
+  padding: 0 16px;
+  font-weight: 900;
+  color: #fff8dc;
+  text-shadow: 0 2px 18px rgba(255,180,20,.7);
+  opacity: 0;
+  transform: translateY(16px) scale(.96);
+}
+
+.copy-one { font-size: clamp(1.35rem, 5vw, 2.2rem); animation: thousandCopy 1.05s 1.2s ease both; }
+.copy-two { font-size: clamp(1.2rem, 4.5vw, 2rem); animation: thousandCopy 1.05s 2.2s ease both; }
+.copy-three { font-size: clamp(1.1rem, 4vw, 1.8rem); animation: thousandCopy 1.15s 3.2s ease both; }
+
+.thousand-egg-card {
+  position: absolute;
+  top: 49%;
+  width: min(88vw, 410px);
+  display: grid;
+  gap: 6px;
+  place-items: center;
+  padding: 22px 24px;
+  border: 1px solid rgba(255,229,144,.75);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(58,35,3,.94), rgba(22,13,3,.96));
+  box-shadow: 0 0 0 1px rgba(255,184,36,.18) inset, 0 0 70px rgba(255,178,22,.35), 0 26px 70px rgba(0,0,0,.55);
+  opacity: 0;
+  transform: translateY(40px) scale(.72) rotateX(22deg);
+  animation: thousandCard 1.9s 4.55s cubic-bezier(.16,1,.3,1) both;
+}
+
+.thousand-egg-card strong {
+  font-size: clamp(1.55rem, 6vw, 2.35rem);
+  letter-spacing: .06em;
+  background: linear-gradient(90deg, #fff2ae, #ffb829, #fff6c7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.thousand-egg-card small { color: #f7d98a; font-weight: 800; letter-spacing: .06em; }
+.thousand-egg-crown { font-size: 2rem; color: #ffe891; animation: thousandCrown .9s 5.05s ease-in-out both; }
+
+.thousand-egg-particles,
+.thousand-egg-fireworks {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.thousand-egg-particles i {
+  --size: calc(4px + (var(--i) % 5) * 2px);
+  position: absolute;
+  left: var(--x);
+  top: 105%;
+  width: var(--size);
+  height: calc(var(--size) * 1.7);
+  border-radius: 2px;
+  background: linear-gradient(#fff6ba, #ffb515);
+  box-shadow: 0 0 12px rgba(255,205,70,.75);
+  transform: rotate(calc(var(--i) * 29deg));
+  animation: thousandParticle calc(2.5s + (var(--i) % 7) * .22s) var(--delay) cubic-bezier(.1,.5,.2,1) both;
+}
+
+.thousand-egg-fireworks i {
+  position: absolute;
+  left: calc(10% + (var(--i) * 16%));
+  top: calc(14% + ((var(--i) % 3) * 20%));
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow:
+    0 -54px 0 #ffe784, 38px -38px 0 #ffbd2f, 54px 0 0 #fff1a8,
+    38px 38px 0 #ff9e24, 0 54px 0 #ffd95c, -38px 38px 0 #fff0a1,
+    -54px 0 0 #ffb829, -38px -38px 0 #ffe99b;
+  opacity: 0;
+  animation: thousandFirework 1.15s calc(.55s + var(--i) * .24s) ease-out both;
+}
+
+@keyframes thousandDim { 0% { opacity: 0 } 5%,88% { opacity: 1 } 100% { opacity: 0 } }
+@keyframes thousandFlash { 0% { opacity: 0; transform: scale(.15) } 18% { opacity: 1 } 100% { opacity: 0; transform: scale(1.25) } }
+@keyframes thousandSpin { to { transform: rotate(75deg) } }
+@keyframes thousandRayPulse { 0% { opacity: 0; transform: scale(.3) } 35% { opacity: .65 } 100% { opacity: .18; transform: scale(1.1) } }
+@keyframes thousandRing { 0% { opacity: 0; transform: scale(.15) } 18% { opacity: 1 } 100% { opacity: 0; transform: scale(5.5); border-width: 1px } }
+@keyframes thousandNumber { 0% { opacity: 0; transform: scale(.05) rotate(-8deg) } 58% { opacity: 1; transform: scale(1.13) rotate(1deg) } 78% { transform: scale(.94) rotate(-.5deg) } 100% { opacity: 1; transform: scale(1) } }
+@keyframes thousandNumberExit { to { opacity: 0; transform: scale(1.65); filter: blur(8px) } }
+@keyframes thousandGlint { 0% { opacity: 0; transform: scale(.9) } 50% { opacity: 1 } 100% { opacity: 0; transform: scale(1.15) } }
+@keyframes thousandTextIn { to { opacity: 1; transform: translateY(0) } }
+@keyframes thousandTextOut { to { opacity: 0; transform: translateY(-10px) } }
+@keyframes thousandCopy { 0%,100% { opacity: 0; transform: translateY(16px) scale(.96) } 18%,72% { opacity: 1; transform: translateY(0) scale(1) } }
+@keyframes thousandCard { 0% { opacity: 0; transform: translateY(40px) scale(.72) rotateX(22deg) } 28%,82% { opacity: 1; transform: translateY(0) scale(1) rotateX(0) } 100% { opacity: 0; transform: translateY(-12px) scale(1.04) } }
+@keyframes thousandCrown { 0% { transform: scale(.2) rotate(-40deg) } 65% { transform: scale(1.35) rotate(8deg) } 100% { transform: scale(1) rotate(0) } }
+@keyframes thousandParticle { 0% { opacity: 0; transform: translateY(0) rotate(0) scale(.4) } 12% { opacity: 1 } 70% { opacity: 1 } 100% { opacity: 0; transform: translateY(-125vh) translateX(calc((var(--i) % 9 - 4) * 16px)) rotate(720deg) scale(1) } }
+@keyframes thousandFirework { 0% { opacity: 0; transform: scale(.05) } 25% { opacity: 1 } 100% { opacity: 0; transform: scale(1.7) } }
+
+@media (prefers-reduced-motion: reduce) {
+  .thousand-egg * { animation-duration: .01ms !important; animation-delay: 0ms !important; }
+}
