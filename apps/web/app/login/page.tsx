@@ -29,7 +29,7 @@ export default function LoginPage() {
     const nextDestination = getLoginDestination();
     setDestination(nextDestination);
     if (nextDestination === "/admin") {
-      void supabase.rpc("admin_bootstrap_available").then(({ data }) => {
+      void supabase.rpc("admin_bootstrap_available").then(({ data }: { data: boolean | null }) => {
         setBootstrapAvailable(data === true);
       }).catch(() => setBootstrapAvailable(false));
     }
