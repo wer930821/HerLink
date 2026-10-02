@@ -1009,7 +1009,7 @@ export default function RandomSessionPage() {
           return;
         }
 
-        const { data } = await waitForCurrentSession(2500, 100);
+        const { data } = await waitForCurrentSession(8000, 150);
         const authSession = data.session;
 
         if (!authSession) {
