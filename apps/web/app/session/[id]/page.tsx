@@ -274,7 +274,7 @@ export default function RandomSessionPage() {
   const [contactState, setContactState] = useState<AnonymousContactStatusRow | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantAllowed, setAssistantAllowed] = useState(false);
-  const [easterEgg, setEasterEgg] = useState<"goodnight" | "penguin" | "sync" | null>(null);
+  const [easterEgg, setEasterEgg] = useState<"goodnight" | "penguin" | "sync" | "aurora" | "meteor" | "secret" | null>(null);
   const [easterEggAllowed, setEasterEggAllowed] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(true);
   const [assistantBusy, setAssistantBusy] = useState(false);
@@ -1545,7 +1545,7 @@ export default function RandomSessionPage() {
     scheduleScrollMessagesToBottom(shouldSmooth ? "smooth" : "auto");
   }, [messages.length, session?.id]);
 
-  const triggerEasterEgg = (kind: "goodnight" | "penguin" | "sync") => {
+  const triggerEasterEgg = (kind: "goodnight" | "penguin" | "sync" | "aurora" | "meteor" | "secret") => {
     if (!easterEggAllowed) return;
     setEasterEgg(kind);
     window.setTimeout(() => setEasterEgg((current) => (current === kind ? null : current)), 3200);
@@ -1553,7 +1553,7 @@ export default function RandomSessionPage() {
 
   const maybeTriggerEasterEgg = (content: string) => {
     if (!easterEggAllowed) return;
-    if (content.includes("晚安")) return triggerEasterEgg("goodnight");
+    if (content.includes("極光")) return triggerEasterEgg("aurora");\n    if (content.includes("流星雨")) return triggerEasterEgg("meteor");\n    if (content.includes("秘密基地")) return triggerEasterEgg("secret");\n    if (content.includes("晚安")) return triggerEasterEgg("goodnight");
     if (content.includes("企鵝")) return triggerEasterEgg("penguin");
     if (/哈{2,}/.test(content)) {
       const partnerAlsoLaughing = [...messages].reverse().find((message) => !message.is_mine && message.message_type !== "image");
@@ -2181,7 +2181,7 @@ export default function RandomSessionPage() {
 
         {easterEggAllowed && easterEgg ? (
           <div className={`chat-easter-egg chat-easter-egg-${easterEgg}`} aria-hidden="true">
-            {easterEgg === "goodnight" ? <><span className="egg-night-glow" /><span className="egg-cloud egg-cloud-one">☁</span><span className="egg-cloud egg-cloud-two">☁</span><span className="egg-moon">☾</span><span className="egg-stars egg-stars-one">✦　·　✧　·　✦</span><span className="egg-stars egg-stars-two">·　✦　·　✧</span><span className="egg-shooting-star">✦</span><span className="egg-goodnight-text">晚安，今晚做個好夢</span></> : easterEgg === "penguin" ? <><span className="egg-snow egg-snow-one">✦　·　❄　·　✦</span><span className="egg-snow egg-snow-two">·　❄　·　✦　·</span><span className="egg-penguin">🐧</span><span className="egg-penguin-text">企鵝路過你的聊天室</span></> : <><span className="egg-sync-burst">✦</span><span className="egg-sync">默契 +1<small>你們笑在同一個頻率上</small></span></>}
+            {easterEgg === "goodnight" ? <><span className="egg-night-glow" /><span className="egg-cloud egg-cloud-one">☁</span><span className="egg-cloud egg-cloud-two">☁</span><span className="egg-moon">☾</span><span className="egg-stars egg-stars-one">✦　·　✧　·　✦</span><span className="egg-stars egg-stars-two">·　✦　·　✧</span><span className="egg-shooting-star">✦</span><span className="egg-goodnight-text">晚安，今晚做個好夢</span></> : easterEgg === "penguin" ? <><span className="egg-snow egg-snow-one">✦　·　❄　·　✦</span><span className="egg-snow egg-snow-two">·　❄　·　✦　·</span><span className="egg-penguin">🐧</span><span className="egg-penguin-text">企鵝路過你的聊天室</span></> : easterEgg === "sync" ? <><span className="egg-sync-burst">✦</span><span className="egg-sync">默契 +1<small>你們笑在同一個頻率上</small></span></> : easterEgg === "aurora" ? <><span className="egg-aurora egg-aurora-a" /><span className="egg-aurora egg-aurora-b" /><span className="egg-rare-stars">✦　✧　·　✦　·　✧</span><span className="egg-rare-caption">今晚的聊天室，出現了極光</span></> : easterEgg === "meteor" ? <><span className="egg-meteor m1">✦</span><span className="egg-meteor m2">✦</span><span className="egg-meteor m3">✦</span><span className="egg-meteor m4">✦</span><span className="egg-wish">許個願吧<small>這場流星雨只出現幾秒</small></span></> : <><span className="egg-secret-door">✦</span><span className="egg-secret-room"><b>秘密基地已開啟</b><small>只有今晚知道入口在哪裡</small></span><span className="egg-secret-sparkles">· ✦ · ✧ · ✦ ·</span></>}
           </div>
         ) : null}
 
