@@ -456,6 +456,14 @@ export default function RandomSessionScreen() {
           if (status === "CLOSED") {
             starting = false;
             realtimeReadyRef.current = false;
+            void syncMessagesAfterCursor();
+            void refreshSession().catch(() => undefined);
+            if (!reconnectTimerRef.current && !disposed) {
+              reconnectTimerRef.current = setTimeout(() => {
+                reconnectTimerRef.current = null;
+                if (!disposed && !realtimeReadyRef.current) void startRealtime();
+              }, 3000);
+            }
           }
         });
 
@@ -512,7 +520,15 @@ export default function RandomSessionScreen() {
 
     schedule();
     const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") syncNow();
+      if (state === "active") {
+        syncNow();
+        if (!realtimeReadyRef.current && !reconnectTimerRef.current) {
+          reconnectTimerRef.current = setTimeout(() => {
+            reconnectTimerRef.current = null;
+            if (!disposed && !realtimeReadyRef.current) void syncNow();
+          }, 500);
+        }
+      }
     });
 
     return () => {
