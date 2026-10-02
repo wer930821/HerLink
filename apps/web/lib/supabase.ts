@@ -482,6 +482,17 @@ export async function ensureAnonymousBootstrapProfile(userId: string) {
   return loadMyProfile(userId);
 }
 
+export async function loadMyActiveRandomSessions() {
+  const result = await supabase.rpc("list_my_active_random_sessions");
+  return {
+    data: Array.isArray(result.data) ? result.data : [],
+    error: result.error,
+  } as {
+    data: RandomSessionRow[];
+    error: { message?: string } | null;
+  };
+}
+
 export async function loadMyActiveRandomSession() {
   const result = await supabase.rpc("get_my_random_session_view");
   return {
