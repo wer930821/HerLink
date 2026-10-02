@@ -13,6 +13,7 @@ import {
 import { useRouter } from "expo-router";
 import { useAuth } from "../context/auth";
 import {
+  approveSessionRecovery,
   createAdminSignedUrl,
   fetchAdminDashboardCounts,
   fetchAnonymousChatStats,
@@ -21,6 +22,7 @@ import {
   fetchPendingPhotos,
   fetchPendingReports,
   fetchPendingVerifications,
+  fetchSessionRecoveryRequests,
   fetchProfilesByIds,
   moderateAccount,
   reviewCase,
@@ -51,6 +53,7 @@ export default function AdminScreen() {
   const [adminUser, setAdminUser] = useState<Awaited<ReturnType<typeof fetchMyAdminUser>>>(null);
   const [dashboard, setDashboard] = useState<Awaited<ReturnType<typeof fetchAdminDashboardCounts>> | null>(null);
   const [anonymousStats, setAnonymousStats] = useState<Awaited<ReturnType<typeof fetchAnonymousChatStats>> | null>(null);
+  const [recoveryRequests, setRecoveryRequests] = useState<Awaited<ReturnType<typeof fetchSessionRecoveryRequests>>>([]);
   const [cases, setCases] = useState<ModerationCase[]>([]);
   const [verifications, setVerifications] = useState<Verification[]>([]);
   const [photos, setPhotos] = useState<ProfilePhoto[]>([]);
@@ -72,10 +75,11 @@ export default function AdminScreen() {
       setError(null);
 
       try {
-        const [adminRow, dashboardCounts, anonymousChatStats, caseList, verificationList, photoList, reportList] = await Promise.all([
+        const [adminRow, dashboardCounts, anonymousChatStats, recoveryList, caseList, verificationList, photoList, reportList] = await Promise.all([
           fetchMyAdminUser(),
           fetchAdminDashboardCounts(),
           fetchAnonymousChatStats(),
+          fetchSessionRecoveryRequests(),
           fetchModerationCases(),
           fetchPendingVerifications(),
           fetchPendingPhotos(),
@@ -85,6 +89,7 @@ export default function AdminScreen() {
         setAdminUser(adminRow);
         setDashboard(dashboardCounts);
         setAnonymousStats(anonymousChatStats);
+        setRecoveryRequests(recoveryList);
         setCases(caseList);
         setVerifications(verificationList);
         setPhotos(photoList);
@@ -254,6 +259,43 @@ export default function AdminScreen() {
           </View>
         </View>
       ) : null}
+
+      <SectionTitle title="聊天室恢復申請" subtitle="核對恢復碼與原匿名身份後，再選擇原本所在的一方。" />
+      {recoveryRequests.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyTitle}>目前沒有待處理的聊天室恢復申請。</Text>
+        </View>
+      ) : (
+        recoveryRequests.map((item) => (
+          <View key={item.id} style={styles.card}>
+            <Text style={styles.cardTitle}>恢復碼：{item.recoveryCode}</Text>
+            <Text style={styles.cardMeta}>建立時間：{new Date(item.createdAt).toLocaleString("zh-TW")}</Text>
+            <Text style={styles.cardBody}>聊天室：{item.sessionId}</Text>
+            <View style={styles.actionRow}>
+              <Pressable
+                style={styles.primaryButtonInline}
+                disabled={busyKey === `recovery-a-${item.id}`}
+                onPress={() => Alert.alert("確認恢復 A 方", `確定要將恢復碼 ${item.recoveryCode} 接回原聊天室 A 方嗎？`, [
+                  { text: "取消", style: "cancel" },
+                  { text: "確認恢復", onPress: () => void runAction(`recovery-a-${item.id}`, async () => { await approveSessionRecovery(item.recoveryCode, "a"); }) },
+                ])}
+              >
+                <Text style={styles.primaryButtonText}>恢復 A 方</Text>
+              </Pressable>
+              <Pressable
+                style={styles.secondaryButton}
+                disabled={busyKey === `recovery-b-${item.id}`}
+                onPress={() => Alert.alert("確認恢復 B 方", `確定要將恢復碼 ${item.recoveryCode} 接回原聊天室 B 方嗎？`, [
+                  { text: "取消", style: "cancel" },
+                  { text: "確認恢復", onPress: () => void runAction(`recovery-b-${item.id}`, async () => { await approveSessionRecovery(item.recoveryCode, "b"); }) },
+                ])}
+              >
+                <Text style={styles.secondaryButtonText}>恢復 B 方</Text>
+              </Pressable>
+            </View>
+          </View>
+        ))
+      )}
 
       <SectionTitle title="Cases" subtitle="案件列表可做接手、帳號限制，以及 resolve / dismiss。" />
       {cases.length === 0 ? (
