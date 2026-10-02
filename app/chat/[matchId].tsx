@@ -187,7 +187,15 @@ export default function ChatRoomScreen() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          void loadConversation();
+          return;
+        }
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          console.warn(`Realtime chat channel ${status}; Supabase will retry the socket connection.`);
+        }
+      });
 
     channelRef.current = channel;
 
