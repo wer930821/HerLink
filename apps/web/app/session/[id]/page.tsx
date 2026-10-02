@@ -1050,12 +1050,18 @@ export default function RandomSessionPage() {
         if (!authSession) {
           sessionBootstrapStateRef.current = "missing";
           setAuthState("missing");
+          setSessionState("loading");
+          setNotice("正在重新建立匿名身份並嘗試恢復原本聊天室，請稍候。");
           recordSessionRouteDiagnostic("AUTH_MISSING", {
             reason: "AUTH_CONFIRMED_MISSING",
             authState: "missing",
             bootstrapRunId,
           });
-          goHome("AUTH_CONFIRMED_MISSING", { authState: "missing", bootstrapRunId });
+
+          // Do not redirect a saved room link back home just because the old
+          // anonymous auth session expired. The home route can create a new
+          // identity, which destroys the chance to recover the room in-place.
+          // Keep the route stable so recovery can continue after auth is restored.
           return;
         }
 
