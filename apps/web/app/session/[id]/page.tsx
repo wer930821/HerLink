@@ -1730,6 +1730,28 @@ export default function RandomSessionPage() {
           ? "等待對方同意"
           : "保留匿名聯絡";
 
+  const contactRequestCard =
+    contactState?.status !== "active" && contactState?.partner_approved && !contactState.my_approved ? (
+      <section className="notice" style={{ margin: "12px 16px" }}>
+        <strong>{partnerName} 想和你成為匿名聯絡人</strong>
+        <div className="muted small" style={{ marginTop: 6 }}>雙方都同意後，之後可以從「匿名聯絡人」再次找到彼此。</div>
+        <div className="row" style={{ marginTop: 10 }}>
+          <Button size="sm" type="button" onClick={() => void handleAnonymousContact()} disabled={contactBusy}>
+            {contactBusy ? "處理中…" : "同意"}
+          </Button>
+        </div>
+      </section>
+    ) : contactState?.status === "active" ? (
+      <section className="notice" style={{ margin: "12px 16px" }}>
+        <strong>你們已成為匿名聯絡人</strong>
+      </section>
+    ) : contactState?.my_approved && !contactState.partner_approved ? (
+      <section className="notice" style={{ margin: "12px 16px" }}>
+        <strong>已送出匿名聯絡邀請</strong>
+        <div className="muted small" style={{ marginTop: 6 }}>等待 {partnerName} 同意。</div>
+      </section>
+    ) : null;
+
   const copyBrowserHandoffLink = async () => {
     const { data } = await supabase.auth.getSession();
     const authSession = data.session;
@@ -2012,6 +2034,8 @@ export default function RandomSessionPage() {
             </details>
           </div>
         </header>
+
+        {contactRequestCard}
 
         {assistantOpen ? (
           <section className="chat-assist-card" aria-live="polite">
