@@ -252,10 +252,16 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
   }
   // Only the latest session/user event being a subscribe error counts as
   // currently affected. Legacy disconnect/closed events never count.
-  const affectedRealtimeConnections = [...latestRealtimeState.values()].filter(
-    (row) => row.event_type === "realtime_subscribe_error"
-  );
   const nowMs = Date.now();
+  // A brief mobile/WebSocket transport interruption is expected and normally
+  // recovers automatically. Only surface a session as unhealthy after its
+  // latest subscribe error has remained unresolved for at least 60 seconds.
+  const REALTIME_FAILURE_GRACE_MS = 60 * 1000;
+  const affectedRealtimeConnections = [...latestRealtimeState.values()].filter(
+    (row) =>
+      row.event_type === "realtime_subscribe_error" &&
+      nowMs - new Date(row.created_at).getTime() >= REALTIME_FAILURE_GRACE_MS
+  );
   const affectedRealtime1h = affectedRealtimeConnections.filter(
     (row) => nowMs - new Date(row.created_at).getTime() <= 60 * 60 * 1000
   );
