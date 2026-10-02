@@ -169,6 +169,19 @@ export default function RandomSessionPage({ params }: Props) {
 
   const isEasterEggTester = Boolean(EASTER_TEST_USER_ID && myProfile?.id === EASTER_TEST_USER_ID);
 
+  const recordEasterEgg = useCallback(async (sessionId: string, triggerType: "milestone" | "test") => {
+    if (!myProfile?.id) return;
+    const { error } = await supabase.from("chat_easter_egg_events").insert({
+      session_id: sessionId,
+      user_id: myProfile.id,
+      egg_kind: "thousand_messages",
+      trigger_type: triggerType,
+    });
+    if (error) {
+      console.error("Failed to record easter egg event", error);
+    }
+  }, [myProfile?.id]);
+
   const playThousandEgg = useCallback(() => {
     if (thousandEggTimerRef.current) window.clearTimeout(thousandEggTimerRef.current);
     setThousandEggNonce((value) => value + 1);
@@ -230,7 +243,8 @@ export default function RandomSessionPage({ params }: Props) {
       // localStorage 不可用時仍允許本次播放。
     }
     playThousandEgg();
-  }, [playThousandEgg]);
+    void recordEasterEgg(sessionId, "milestone");
+  }, [playThousandEgg, recordEasterEgg]);
 
   const isEnded = session?.status === "ended";
   const partnerName = session?.partner_anonymous_display_name ?? "匿名使用者";
@@ -660,7 +674,10 @@ export default function RandomSessionPage({ params }: Props) {
             {leaveBusy ? "離開中…" : "離開聊天室"}
           </button>
           {isEasterEggTester ? (
-            <button className="button secondary thousand-test-button" type="button" onClick={playThousandEgg}>
+            <button className="button secondary thousand-test-button" type="button" onClick={() => {
+              playThousandEgg();
+              if (session?.id) void recordEasterEgg(session.id, "test");
+            }}>
               測試 1000 則彩蛋
             </button>
           ) : null}
