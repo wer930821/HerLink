@@ -401,14 +401,10 @@ export function getWebAuthCallbackUrl() {
   return `${window.location.origin}/auth/callback?next=/reset-password`;
 }
 
-export async function isCurrentUserAdmin(userId: string) {
-  const result = await supabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", userId)
-    .eq("active", true)
-    .maybeSingle();
-  return { data: Boolean(result.data), error: result.error } as {
+export async function isCurrentUserAdmin(_userId?: string) {
+  // The database decides from auth.uid(); never trust a caller-supplied user id.
+  const result = await supabase.rpc("can_use_chat_assistant");
+  return { data: result.data === true, error: result.error } as {
     data: boolean;
     error: { message?: string } | null;
   };
