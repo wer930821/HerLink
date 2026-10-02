@@ -380,7 +380,7 @@ async function askLaya(messages: ChatAssistMessage[]) {
 
 export async function POST(request: Request) {
   const user = await requireUser(request);
-  if (!user) return json(401, { ok: false, message: "登入狀態已失效。" });
+  if (!user) return json(403, { ok: false, message: "此功能僅限管理員使用。" });
 
   const body = await request.json().catch(() => null);
   const messages = sanitizeMessages(body?.messages);
