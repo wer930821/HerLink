@@ -23,6 +23,12 @@ begin
 
   select * into identity_row from public.anonymous_risk_identities
   where installation_key = installation_key_value and current_user_id = current_actor_id limit 1;
+  if not found then
+    select * into identity_row from public.anonymous_risk_identities
+    where current_user_id = current_actor_id
+    order by last_seen_at desc
+    limit 1;
+  end if;
   if not found then raise exception 'Recovery identity could not be verified.'; end if;
 
   select * into session_row from public.random_chat_sessions
