@@ -55,6 +55,7 @@ export type AdminSessionListItem = {
   status: "waiting" | "active" | "ended";
   participant_count: number;
   message_count: number;
+  first_message_at: string | null;
   last_message_at: string | null;
   ended_at: string | null;
   ended_reason: string | null;
