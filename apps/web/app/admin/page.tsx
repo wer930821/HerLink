@@ -67,6 +67,18 @@ function errorCodeLabel(value: string) {
   return labels[value] ?? "其他錯誤";
 }
 
+function easterEggLabel(value: string) {
+  const labels: Record<string, string> = {
+    goodnight: "晚安", morning: "早安", hello: "安安／哈囉", hi: "Hi／Hello", penguin: "企鵝",
+    sync: "默契", aurora: "想念極光", meteor: "加油流星", secret: "心動秘密",
+    tired: "好累", offwork: "下班", food: "吃飯", curious: "在幹嘛", surprised: "真的假的",
+    cute: "好可愛", sleepless: "睡不著", tomorrow: "明天見",
+    hundred: "100 則", twoHundred: "200 則", threeHundred: "300 則",
+    fourHundred: "400 則", fiveHundred: "500 則", thousand: "1000 則傳說級",
+  };
+  return labels[value] ?? value;
+}
+
 function shortVersion(value: string | null | undefined) {
   if (!value) return "—";
   return value.length > 10 ? value.slice(0, 10) : value;
@@ -408,6 +420,31 @@ export default function AdminDashboardPage() {
           <AdminStat label="配對場次" value={formatCount(data?.seven_day_session_count)} />
           <AdminStat label="進入佇列" value={formatCount(data?.seven_day_queue_join_count)} />
         </AdminStatGrid>
+      </AdminSection>
+
+      <AdminSection title="彩蛋紀錄" description="記錄正式聊天中實際觸發的彩蛋；測試按鈕不會計入，也不保存聊天正文。">
+        <AdminStatGrid>
+          <AdminStat label="今日觸發彩蛋" value={formatCount(data?.today_easter_egg_count)} tone={(data?.today_easter_egg_count ?? 0) > 0 ? "accent" : "default"} />
+        </AdminStatGrid>
+        <div style={{ marginTop: 12 }}>
+          {data?.recent_easter_egg_events?.length ? (
+            <AdminTableWrap>
+              <AdminTable label="最近彩蛋紀錄">
+                <thead><tr><th scope="col">時間</th><th scope="col">彩蛋</th><th scope="col">類型</th><th scope="col">場次</th></tr></thead>
+                <tbody>
+                  {data.recent_easter_egg_events.map((item) => (
+                    <tr key={item.id}>
+                      <td>{formatAdminTime(item.created_at)}</td>
+                      <td><AdminBadge tone={item.trigger_type === "milestone" ? "accent" : "default"}>{easterEggLabel(item.egg_kind)}</AdminBadge></td>
+                      <td>{item.trigger_type === "milestone" ? "訊息里程碑" : "文字彩蛋"}</td>
+                      <td>{shortId(item.session_id)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </AdminTable>
+            </AdminTableWrap>
+          ) : <AdminEmpty>目前還沒有正式觸發的彩蛋紀錄。</AdminEmpty>}
+        </div>
       </AdminSection>
 
       <AdminSection title="最近錯誤摘要" description="彙整最近 24 小時的即時連線、通知與聊天助手備援事件。">
