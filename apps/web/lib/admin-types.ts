@@ -57,6 +57,30 @@ export type AdminSummary = {
   }>;
 };
 
+export type AdminEasterEggEvent = {
+  id: string;
+  session_id: string;
+  egg_kind: string;
+  trigger_type: "text" | "milestone";
+  created_at: string;
+};
+
+export type AdminEasterEggRanking = {
+  egg_kind: string;
+  trigger_type: "text" | "milestone";
+  trigger_count: number;
+  unique_user_count: number;
+  last_triggered_at: string;
+};
+
+export type AdminEasterEggSummary = {
+  total_count: number;
+  today_count: number;
+  unique_user_count: number;
+  ranking: AdminEasterEggRanking[];
+  recent_events: AdminEasterEggEvent[];
+};
+
 export type AdminSessionListItem = {
   id: string;
   created_at: string;
