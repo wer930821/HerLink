@@ -94,6 +94,29 @@ export function isAnonymousProfileReady(profile: WebProfile | null | undefined) 
   return !validateAnonymousDisplayName(profile.anonymous_display_name);
 }
 
+export type AdminRecoveryRequest = {
+  id: string;
+  session_id: string;
+  recovery_code: string;
+  status: string;
+  created_at: string;
+  expires_at: string;
+};
+
+export async function loadAdminRecoveryRequests() {
+  return supabase.rpc("get_admin_session_recovery_requests") as unknown as Promise<{
+    data: AdminRecoveryRequest[] | null;
+    error: { message?: string } | null;
+  }>;
+}
+
+export async function approveAdminRecoveryRequest(code: string, side: "a" | "b") {
+  return supabase.rpc("approve_random_session_recovery", {
+    p_recovery_code: code,
+    p_side: side,
+  });
+}
+
 export async function getCurrentSession() {
   return supabase.auth.getSession();
 }
