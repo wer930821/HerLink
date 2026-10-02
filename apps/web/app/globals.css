@@ -5567,3 +5567,10 @@ body:has(.admin-page),
 .chat-milestone-test-trigger:active { transform:scale(.97); }
 
 @media (max-width: 640px) { .chat-milestone-test-trigger { flex:0 0 auto; min-height:30px; padding:0 9px; font-size:11px; } }
+
+/* Phrase-matched chat easter eggs */
+.egg-text-card{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);min-width:min(76vw,300px);padding:15px 20px;border:1px solid rgba(255,255,255,.18);border-radius:20px;background:rgba(23,20,37,.9);box-shadow:0 16px 48px rgba(0,0,0,.32);text-align:center;animation:mini-milestone-pop 3.2s ease both}
+.egg-text-card b{display:block;font-size:20px;color:#fff}.egg-text-card small{display:block;margin-top:6px;font-size:13px;color:rgba(255,255,255,.78)}
+.egg-text-icon,.egg-text-burst,.egg-food,.egg-eyes,.egg-question,.egg-hearts,.egg-sheep,.egg-tomorrow-stars{position:absolute;left:50%;top:32%;transform:translateX(-50%);font-size:34px;z-index:1;animation:mini-stars 3.2s ease both}
+.egg-text-icon{font-size:48px;opacity:.8}.egg-text-burst,.egg-hearts,.egg-tomorrow-stars{letter-spacing:.22em;color:#ffe29a;text-shadow:0 0 18px rgba(255,203,83,.5)}
+.egg-question{font-size:56px;font-weight:950;letter-spacing:-.08em}.egg-eyes,.egg-food{font-size:44px}.egg-sheep{font-size:30px;white-space:nowrap}
