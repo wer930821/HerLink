@@ -267,8 +267,12 @@ export default function AdminDashboardPage() {
           </div>
         </div>
         <AdminStatGrid>
-          <AdminStat label="目前在線" value={onlineCount === null ? "—" : `${onlineCount} 人`} tone={onlineCountConnected ? "success" : "default"} />
-          <AdminStat label="等待中" value={formatCount(data?.waiting_count)} />
+          <AdminStat label="目前在線" value={onlineCount === null ? formatCount(data?.live_online_count) : `${onlineCount} 人`} tone={onlineCountConnected ? "success" : "default"} />
+          <AdminStat label="目前排隊" value={formatCount(data?.waiting_count)} />
+          <AdminStat label="目前平均等待" value={formatWait(data?.live_avg_wait_seconds)} tone={(data?.live_avg_wait_seconds ?? 0) > 180 ? "warning" : "default"} />
+          <AdminStat label="等待超過 1 分鐘" value={formatCount(data?.waiting_over_1m)} tone={(data?.waiting_over_1m ?? 0) > 0 ? "warning" : "default"} />
+          <AdminStat label="等待超過 3 分鐘" value={formatCount(data?.waiting_over_3m)} tone={(data?.waiting_over_3m ?? 0) > 0 ? "warning" : "default"} />
+          <AdminStat label="等待超過 5 分鐘" value={formatCount(data?.waiting_over_5m)} tone={(data?.waiting_over_5m ?? 0) > 0 ? "danger" : "default"} />
           <AdminStat label="活躍對話" value={formatCount(data?.active_session_count)} />
           <AdminStat label="今日匿名使用者" value={formatCount(data?.today_anonymous_user_count)} />
           <AdminStat label="今日訊息" value={formatCount(data?.today_message_count)} />
