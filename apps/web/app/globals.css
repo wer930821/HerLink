@@ -5351,3 +5351,21 @@ select {
     background: #0c0a12 !important;
   }
 }
+
+
+/* Admin single-color canvas: native shell and web content must visually merge */
+html:has(.admin-page),
+body:has(.admin-page),
+.admin-page,
+.admin-page .admin-layout,
+.admin-page .admin-top,
+.admin-page .admin-content,
+.admin-page .admin-section,
+.admin-page .admin-section-body {
+  background: #0d0b16 !important;
+  background-image: none !important;
+}
+
+.admin-page .admin-layout {
+  min-height: 100dvh;
+}
