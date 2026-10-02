@@ -1337,6 +1337,19 @@ export default function RandomSessionPage() {
         return;
       }
 
+      // Always tear down any previous channel before creating a replacement.
+      // This prevents reconnect races from leaving duplicate channels alive.
+      const previousChannel = chatChannel;
+      if (previousChannel) {
+        chatChannel = null;
+        typingChannelRef.current = null;
+        await supabase.removeChannel(previousChannel).catch(() => undefined);
+      }
+      if (disposed) {
+        startingRealtime = false;
+        return;
+      }
+
       recordDiagnostic("realtime_subscribe_started", {
         sessionId: session.id,
         userId: myProfile.id,
@@ -1398,8 +1411,8 @@ export default function RandomSessionPage() {
             void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
             void refreshSessionFromServerRef.current?.();
 
-            // Refresh auth first. If Supabase has not recovered this channel
-            // within 8 seconds, rebuild it once instead of leaving a stale socket.
+            // Give Supabase time to recover the existing channel. Rebuilding too
+            // aggressively can create a reconnect loop on unstable mobile networks.
             void syncRealtimeAuth();
             if (reconnectTimer === null) {
               reconnectTimer = window.setTimeout(() => {
@@ -1420,7 +1433,7 @@ export default function RandomSessionPage() {
                   }
                 };
                 void restart();
-              }, 8_000);
+              }, 20_000);
             }
             return;
           }
@@ -1448,7 +1461,7 @@ export default function RandomSessionPage() {
                   if (!disposed) void startRealtime();
                 };
                 void restart();
-              }, 3_000);
+              }, 12_000);
             }
           }
         });
