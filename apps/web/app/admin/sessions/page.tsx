@@ -145,7 +145,7 @@ export default function AdminSessionsPage() {
                   </div>
                   <div className="admin-session-meta">
                     <div><span>訊息</span><strong>{item.message_count}</strong></div>
-                    <div><span>最後訊息</span><strong>{formatAdminTime(item.last_message_at)}</strong></div>
+                    <div><span>{sort === "newest" ? "開始時間" : "最後訊息"}</span><strong>{formatAdminTime(sort === "newest" ? item.created_at : item.last_message_at)}</strong></div>
                   </div>
                   <div className="admin-session-bottom">
                     <div className="admin-session-flags">
