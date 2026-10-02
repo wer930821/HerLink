@@ -26,10 +26,13 @@ export default function WaitingPage() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const waitingMountedAtRef = useRef<number>(Date.now());
   const waitingStartedAtRef = useRef<number | null>(null);
+  const requestedMatchRef = useRef<string | null>(null);
   const { onlineCount } = useOnlinePresence(userId);
 
   useEffect(() => {
-    setDebug(new URLSearchParams(window.location.search).get("debug") === "1");
+    const params = new URLSearchParams(window.location.search);
+    setDebug(params.get("debug") === "1");
+    requestedMatchRef.current = params.get("matched");
   }, []);
 
   const waitingTitle = useMemo(() => {
@@ -121,8 +124,15 @@ export default function WaitingPage() {
         const matchedSessionId = queueResult.data?.status === "matched"
           ? queueResult.data.matched_session_id
           : null;
-        if (!debug && (sessionResult.data?.id ?? matchedSessionId)) {
-          router.replace(`/session/${sessionResult.data?.id ?? matchedSessionId}`);
+        const requestedMatchId = requestedMatchRef.current;
+
+        // A "new match" navigation must never be overridden by an older active
+        // session returned by loadMyActiveRandomSession().
+        const destinationSessionId = requestedMatchId ?? matchedSessionId;
+        if (!debug && destinationSessionId) {
+          router.replace(`/session/${destinationSessionId}`);
+        } else if (!debug && !requestedMatchId && sessionResult.data?.id && queueResult.data?.status !== "waiting") {
+          router.replace(`/session/${sessionResult.data.id}`);
         }
       } finally {
         syncing = false;
