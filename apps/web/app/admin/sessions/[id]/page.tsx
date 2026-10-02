@@ -48,6 +48,12 @@ function reportCategoryLabel(value: string) {
 
 function riskTypeLabel(value: string) {
   const labels: Record<string, string> = {
+    suspicious_external_link: "可疑外部連結",
+    repeated_message: "重複訊息",
+    off_platform_contact: "要求站外聯絡",
+    suspicious_money_message: "金錢／匯款相關",
+    suspicious_investment_message: "投資相關",
+    credential_request: "帳號／驗證資料要求",
     scam: "詐騙",
     money_request: "索取金錢",
     investment: "投資",
@@ -63,7 +69,7 @@ function riskTypeLabel(value: string) {
     harassment: "騷擾",
     threat: "威脅",
   };
-  return labels[value] ?? "其他風險";
+  return labels[value] ?? `未分類（${value}）`;
 }
 
 function endedReasonLabel(value: string) {
