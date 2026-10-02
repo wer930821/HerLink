@@ -192,6 +192,12 @@ export async function reportRandomUser(
   } | null;
 }
 
+export async function listMyActiveRandomSessions() {
+  const { data, error } = await rpc.rpc("list_my_active_random_sessions");
+  if (error) throw error;
+  return (data ?? []) as RandomSession[];
+}
+
 export async function getRandomSession(sessionId: string) {
   const { data, error } = await rpc.rpc("get_my_random_session_view", { p_session_id: sessionId });
   if (error) throw error;
