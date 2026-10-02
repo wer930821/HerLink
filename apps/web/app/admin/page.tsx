@@ -24,6 +24,28 @@ function realtimeEventLabel(value: string) {
   return labels[value] ?? "其他事件";
 }
 
+function recoveredRealtimeErrorIds(rows: AdminRealtimeDiagnosticRow[]) {
+  const recovered = new Set<string>();
+  const successAt = new Map<string, number>();
+
+  // Rows are newest-first. Remember the newest successful/recovered event for
+  // each session; an older error for that session is therefore already healed.
+  for (const row of rows) {
+    const key = `${row.session_id ?? ""}`;
+    const at = new Date(row.created_at).getTime();
+    if (row.event_type === "realtime_subscribed" || row.event_type === "realtime_reconnected") {
+      const current = successAt.get(key);
+      if (current === undefined || at > current) successAt.set(key, at);
+      continue;
+    }
+    if (row.event_type === "realtime_subscribe_error") {
+      const recoveredAt = successAt.get(key);
+      if (recoveredAt !== undefined && recoveredAt > at) recovered.add(row.id);
+    }
+  }
+  return recovered;
+}
+
 function formatCount(value: number | null | undefined) {
   return typeof value === "number" ? value.toLocaleString("zh-TW") : "—";
 }
@@ -490,19 +512,27 @@ export default function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.recent_realtime_diagnostics.map((item) => (
-                  <tr key={item.id}>
-                    <td>{formatAdminTime(item.created_at)}</td>
-                    <td>
-                      <AdminBadge tone={item.event_type === "realtime_subscribe_error" ? "danger" : item.event_type === "message_received_realtime" ? "accent" : "default"}>
-                        {realtimeEventLabel(item.event_type)}
-                      </AdminBadge>
-                    </td>
-                    <td>{shortId(item.session_id)}</td>
-                    <td>{item.message_id ? shortId(item.message_id) : "—"}</td>
-                    <td>{errorCodeLabel(item.safe_error_code ?? "UNKNOWN")}</td>
-                  </tr>
-                ))}
+                {(() => {
+                  const recoveredErrors = recoveredRealtimeErrorIds(data.recent_realtime_diagnostics);
+                  return data.recent_realtime_diagnostics.map((item) => {
+                    const recoveredError = recoveredErrors.has(item.id);
+                    const label = recoveredError ? "短暫中斷・已恢復" : realtimeEventLabel(item.event_type);
+                    const tone = item.event_type === "realtime_subscribe_error"
+                      ? (recoveredError ? "warning" : "danger")
+                      : item.event_type === "message_received_realtime"
+                        ? "accent"
+                        : "default";
+                    return (
+                      <tr key={item.id}>
+                        <td>{formatAdminTime(item.created_at)}</td>
+                        <td><AdminBadge tone={tone}>{label}</AdminBadge></td>
+                        <td>{shortId(item.session_id)}</td>
+                        <td>{item.message_id ? shortId(item.message_id) : "—"}</td>
+                        <td>{recoveredError ? "已自動恢復" : errorCodeLabel(item.safe_error_code ?? "UNKNOWN")}</td>
+                      </tr>
+                    );
+                  });
+                })()}
               </tbody>
             </AdminTable>
           </AdminTableWrap>
