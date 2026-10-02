@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import {
   getShortId,
@@ -1555,7 +1555,33 @@ export default function RandomSessionPage() {
     if (now - lastAt < 90_000) return;
     easterEggLastAtRef.current.set(kind, now);
     setEasterEgg(kind);
-    window.setTimeout(() => setEasterEgg((current) => (current === kind ? null : current)), 3200);
+    if (kind === "thousand") {
+      try {
+        navigator.vibrate?.([35, 45, 55]);
+        const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (AudioContextClass) {
+          const audio = new AudioContextClass();
+          const start = audio.currentTime;
+          [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
+            const oscillator = audio.createOscillator();
+            const gain = audio.createGain();
+            oscillator.type = "sine";
+            oscillator.frequency.value = frequency;
+            gain.gain.setValueAtTime(0.0001, start + index * 0.11);
+            gain.gain.exponentialRampToValueAtTime(0.055, start + index * 0.11 + 0.025);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + index * 0.11 + 0.42);
+            oscillator.connect(gain);
+            gain.connect(audio.destination);
+            oscillator.start(start + index * 0.11);
+            oscillator.stop(start + index * 0.11 + 0.44);
+          });
+          window.setTimeout(() => void audio.close(), 1300);
+        }
+      } catch {
+        // Celebration effects are optional and must never interrupt chat.
+      }
+    }
+    window.setTimeout(() => setEasterEgg((current) => (current === kind ? null : current)), kind === "thousand" ? 5400 : 3200);
   };
 
   const maybeTriggerEasterEgg = (content: string) => {
@@ -2201,7 +2227,7 @@ export default function RandomSessionPage() {
 
         {easterEggAllowed && easterEgg ? (
           <div className={`chat-easter-egg chat-easter-egg-${easterEgg}`} aria-hidden="true">
-            {easterEgg === "goodnight" ? <><span className="egg-night-glow" /><span className="egg-cloud egg-cloud-one">☁</span><span className="egg-cloud egg-cloud-two">☁</span><span className="egg-moon">☾</span><span className="egg-stars egg-stars-one">✦　·　✧　·　✦</span><span className="egg-stars egg-stars-two">·　✦　·　✧</span><span className="egg-shooting-star">✦</span><span className="egg-goodnight-text">晚安，今晚做個好夢</span></> : easterEgg === "morning" ? <><span className="egg-sunrise" /><span className="egg-sun">☀</span><span className="egg-morning-cloud cloud-a">☁</span><span className="egg-morning-cloud cloud-b">☁</span><span className="egg-morning-birds">⌁　⌁　⌁</span><span className="egg-morning-text">早安，今天也要有好心情</span></> : easterEgg === "hello" ? <><span className="egg-hello-ripple r1" /><span className="egg-hello-ripple r2" /><span className="egg-hello-bubble b1">嗨</span><span className="egg-hello-bubble b2">安</span><span className="egg-hello-bubble b3">✦</span><span className="egg-hello-wave">👋</span><span className="egg-hello-text">叮！收到一聲安安 ✦</span></> : easterEgg === "hi" ? <><span className="egg-hi-orbit orbit-a">✦</span><span className="egg-hi-orbit orbit-b">✧</span><span className="egg-hi-card"><b>Hi!</b><small>訊號接通，開始聊天吧</small></span><span className="egg-hi-pulse" /></> : easterEgg === "penguin" ? <><span className="egg-snow egg-snow-one">✦　·　❄　·　✦</span><span className="egg-snow egg-snow-two">·　❄　·　✦　·</span><span className="egg-penguin">🐧</span><span className="egg-penguin-text">企鵝路過你的聊天室</span></> : easterEgg === "sync" ? <><span className="egg-sync-burst">✦</span><span className="egg-sync">默契 +1<small>你們笑在同一個頻率上</small></span></> : easterEgg === "thousand" ? <><span className="egg-1000-firework f1">✦</span><span className="egg-1000-firework f2">✦</span><span className="egg-1000-firework f3">✧</span><span className="egg-1000-ring" /><span className="egg-1000-number">1000</span><span className="egg-1000-title">第 1000 句訊息</span><span className="egg-1000-copy">你們把一場陌生的相遇，聊成了很長的故事</span></> : easterEgg === "aurora" ? <><span className="egg-aurora egg-aurora-a" /><span className="egg-aurora egg-aurora-b" /><span className="egg-rare-stars">✦　✧　·　✦　·　✧</span><span className="egg-rare-caption">今晚的聊天室，出現了極光</span></> : easterEgg === "meteor" ? <><span className="egg-meteor m1">✦</span><span className="egg-meteor m2">✦</span><span className="egg-meteor m3">✦</span><span className="egg-meteor m4">✦</span><span className="egg-wish">許個願吧<small>這場流星雨只出現幾秒</small></span></> : <><span className="egg-secret-door">✦</span><span className="egg-secret-room"><b>秘密基地已開啟</b><small>只有今晚知道入口在哪裡</small></span><span className="egg-secret-sparkles">· ✦ · ✧ · ✦ ·</span></>}
+            {easterEgg === "goodnight" ? <><span className="egg-night-glow" /><span className="egg-cloud egg-cloud-one">☁</span><span className="egg-cloud egg-cloud-two">☁</span><span className="egg-moon">☾</span><span className="egg-stars egg-stars-one">✦　·　✧　·　✦</span><span className="egg-stars egg-stars-two">·　✦　·　✧</span><span className="egg-shooting-star">✦</span><span className="egg-goodnight-text">晚安，今晚做個好夢</span></> : easterEgg === "morning" ? <><span className="egg-sunrise" /><span className="egg-sun">☀</span><span className="egg-morning-cloud cloud-a">☁</span><span className="egg-morning-cloud cloud-b">☁</span><span className="egg-morning-birds">⌁　⌁　⌁</span><span className="egg-morning-text">早安，今天也要有好心情</span></> : easterEgg === "hello" ? <><span className="egg-hello-ripple r1" /><span className="egg-hello-ripple r2" /><span className="egg-hello-bubble b1">嗨</span><span className="egg-hello-bubble b2">安</span><span className="egg-hello-bubble b3">✦</span><span className="egg-hello-wave">👋</span><span className="egg-hello-text">叮！收到一聲安安 ✦</span></> : easterEgg === "hi" ? <><span className="egg-hi-orbit orbit-a">✦</span><span className="egg-hi-orbit orbit-b">✧</span><span className="egg-hi-card"><b>Hi!</b><small>訊號接通，開始聊天吧</small></span><span className="egg-hi-pulse" /></> : easterEgg === "penguin" ? <><span className="egg-snow egg-snow-one">✦　·　❄　·　✦</span><span className="egg-snow egg-snow-two">·　❄　·　✦　·</span><span className="egg-penguin">🐧</span><span className="egg-penguin-text">企鵝路過你的聊天室</span></> : easterEgg === "sync" ? <><span className="egg-sync-burst">✦</span><span className="egg-sync">默契 +1<small>你們笑在同一個頻率上</small></span></> : easterEgg === "thousand" ? <><span className="egg-1000-firework f1">✦</span><span className="egg-1000-firework f2">✦</span><span className="egg-1000-firework f3">✧</span><span className="egg-1000-particles" aria-hidden="true">{Array.from({ length: 22 }, (_, index) => <i key={index} style={{ "--particle-index": index } as CSSProperties} />)}</span><span className="egg-1000-ring" /><span className="egg-1000-number">1000</span><span className="egg-1000-title">第 1000 句訊息</span><span className="egg-1000-copy">你們把一場陌生的相遇，聊成了很長的故事</span></> : easterEgg === "aurora" ? <><span className="egg-aurora egg-aurora-a" /><span className="egg-aurora egg-aurora-b" /><span className="egg-rare-stars">✦　✧　·　✦　·　✧</span><span className="egg-rare-caption">今晚的聊天室，出現了極光</span></> : easterEgg === "meteor" ? <><span className="egg-meteor m1">✦</span><span className="egg-meteor m2">✦</span><span className="egg-meteor m3">✦</span><span className="egg-meteor m4">✦</span><span className="egg-wish">許個願吧<small>這場流星雨只出現幾秒</small></span></> : <><span className="egg-secret-door">✦</span><span className="egg-secret-room"><b>秘密基地已開啟</b><small>只有今晚知道入口在哪裡</small></span><span className="egg-secret-sparkles">· ✦ · ✧ · ✦ ·</span></>}
           </div>
         ) : null}
 
