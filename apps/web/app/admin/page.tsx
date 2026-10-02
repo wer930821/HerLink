@@ -169,7 +169,7 @@ export default function AdminDashboardPage() {
       warningReasons.push("聊天助手模型仍在載入");
     }
     if (data.realtime_errors_5m > 0) {
-      warningReasons.push(`近 5 分鐘有 ${data.realtime_errors_5m} 個 即時連線重試裝置`);
+      warningReasons.push(`目前有 ${data.realtime_errors_5m} 個近期異常連線需要觀察`);
     }
     if (
       data.today_chat_assist_requests >= 3 &&
@@ -362,17 +362,17 @@ export default function AdminDashboardPage() {
             tone={typeof data?.today_avg_wait_seconds === "number" && data.today_avg_wait_seconds > 120 ? "warning" : "default"}
           />
           <AdminStat
-            label="近 1 分鐘異常連線"
+            label="近 1 分鐘異常事件"
             value={formatCount(data?.realtime_errors_1m)}
             tone={(data?.realtime_errors_1m ?? 0) > 0 ? "warning" : "success"}
           />
           <AdminStat
-            label="近 5 分鐘異常連線"
+            label="目前受影響連線"
             value={formatCount(data?.realtime_errors_5m)}
             tone={(data?.realtime_errors_5m ?? 0) > 0 ? "warning" : "success"}
           />
           <AdminStat
-            label="近 10 分鐘異常連線"
+            label="近 10 分鐘異常事件"
             value={formatCount(data?.realtime_errors_10m)}
             tone={(data?.realtime_errors_10m ?? 0) > 0 ? "warning" : "success"}
           />
@@ -382,7 +382,7 @@ export default function AdminDashboardPage() {
             tone={(data?.realtime_errors_5m ?? 0) > 0 ? "warning" : "success"}
           />
           <AdminStat
-            label="近 1 小時異常連線"
+            label="近 1 小時異常事件"
             value={formatCount(data?.realtime_errors_1h)}
             tone={(data?.realtime_errors_1h ?? 0) > 0 ? "warning" : "success"}
           />
