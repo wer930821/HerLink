@@ -15,7 +15,8 @@ import {
   buildBrowserHandoffUrl,
   ensureAnonymousBootstrapProfile,
   leaveRandomSession,
-  loadMyProfile,\n  isCurrentUserAdmin,
+  loadMyProfile,
+  isCurrentUserAdmin,
   loadMyRandomSession,
   loadAnonymousContactStatus,
   loadRandomMessages,
@@ -271,7 +272,8 @@ export default function RandomSessionPage() {
   const [reportBusy, setReportBusy] = useState(false);
   const [contactBusy, setContactBusy] = useState(false);
   const [contactState, setContactState] = useState<AnonymousContactStatusRow | null>(null);
-  const [assistantOpen, setAssistantOpen] = useState(false);\n  const [assistantAllowed, setAssistantAllowed] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [assistantAllowed, setAssistantAllowed] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(true);
   const [assistantBusy, setAssistantBusy] = useState(false);
   const [assistantResult, setAssistantResult] = useState<ChatAssistResult | null>(null);
@@ -1058,7 +1060,11 @@ export default function RandomSessionPage() {
         }
 
         const nextProfile = profileResult.data ?? null;
-        setMyProfile(nextProfile);\n        const adminCheck = await isCurrentUserAdmin(authSession.user.id).catch(() => ({ data: false }));\n        if (mounted && bootstrapRunId === sessionBootstrapRunRef.current) {\n          setAssistantAllowed(Boolean(adminCheck.data));\n        }
+        setMyProfile(nextProfile);
+        const adminCheck = await isCurrentUserAdmin(authSession.user.id).catch(() => ({ data: false }));
+        if (mounted && bootstrapRunId === sessionBootstrapRunRef.current) {
+          setAssistantAllowed(Boolean(adminCheck.data));
+        }
         if (!nextProfile) {
           sessionBootstrapStateRef.current = "loading";
           setSessionState("loading");
@@ -1618,7 +1624,9 @@ export default function RandomSessionPage() {
 
   const leave = async (event: MouseEvent<HTMLButtonElement>) => {
     if (!event.nativeEvent.isTrusted || !session || leaveBusy) return;
-    if (!window.confirm("確定要離開這個聊天室嗎？\n\n離開後會回到首頁，不會自動重新配對。")) return;
+    if (!window.confirm("確定要離開這個聊天室嗎？
+
+離開後會回到首頁，不會自動重新配對。")) return;
     setLeaveBusy(true);
     try {
       stopTyping();
