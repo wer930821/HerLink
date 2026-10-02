@@ -199,11 +199,13 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     { data: anonymousStatsData, error: anonymousStatsError },
     { data: healthData, error: healthError },
     { data: recentErrorsData, error: recentErrorsError },
+    { data: liveMatchData, error: liveMatchError },
     deploymentHealthResult,
   ] = await Promise.all([
     client.rpc("get_admin_random_chat_stats"),
     client.rpc("get_admin_health_metrics"),
     client.rpc("get_admin_recent_error_summary"),
+    client.rpc("get_admin_live_match_metrics"),
     deploymentHealthPromise,
   ]);
   if (anonymousStatsError) {
@@ -215,6 +217,9 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
   if (recentErrorsError) {
     throw recentErrorsError;
   }
+  if (liveMatchError) {
+    throw liveMatchError;
+  }
 
   const anonymousStats = Array.isArray(anonymousStatsData)
     ? anonymousStatsData[0] ?? {}
@@ -223,6 +228,9 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     ? healthData[0] ?? {}
     : healthData ?? {};
   const recentErrors = Array.isArray(recentErrorsData) ? recentErrorsData : [];
+  const liveMatchStats = Array.isArray(liveMatchData)
+    ? liveMatchData[0] ?? {}
+    : liveMatchData ?? {};
   const lastSuccessfulDeploymentAt =
     deploymentHealthResult && !deploymentHealthResult.error && typeof deploymentHealthResult.data === "string"
       ? deploymentHealthResult.data
@@ -264,6 +272,11 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     generated_at: new Date().toISOString(),
     waiting_count: waitingCount,
     active_session_count: activeSessionCount,
+    live_online_count: asNumber((liveMatchStats as any).online_now),
+    live_avg_wait_seconds: asNumber((liveMatchStats as any).avg_wait_seconds),
+    waiting_over_1m: asNumber((liveMatchStats as any).waiting_over_1m),
+    waiting_over_3m: asNumber((liveMatchStats as any).waiting_over_3m),
+    waiting_over_5m: asNumber((liveMatchStats as any).waiting_over_5m),
     today_anonymous_user_count: asNumber((anonymousStats as any).today_users),
     today_created_session_count: asNumber((anonymousStats as any).today_sessions),
     today_message_count: asNumber((anonymousStats as any).today_messages),
