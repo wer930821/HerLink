@@ -145,6 +145,7 @@ function AdminApp() {
           key={webKey}
           ref={webRef}
           source={{ uri: ADMIN_URL }}
+          applicationNameForUserAgent="HerLinkAdminApp"
           style={styles.web}
           originWhitelist={["https://*", "http://*"]}
           sharedCookiesEnabled
