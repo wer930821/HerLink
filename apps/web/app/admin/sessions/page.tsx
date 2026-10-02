@@ -140,6 +140,7 @@ export default function AdminSessionsPage() {
                   </div>
                   <div className="admin-session-meta">
                     <div><span>訊息</span><strong>{item.message_count}</strong></div>
+                    <div><span>首次聊天</span><strong>{formatAdminTime(item.first_message_at)}</strong></div>
                     <div><span>最後訊息</span><strong>{formatAdminTime(item.last_message_at)}</strong></div>
                   </div>
                   <div className="admin-session-bottom">
