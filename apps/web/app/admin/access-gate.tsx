@@ -28,11 +28,13 @@ export function AdminAccessGate({ children }: { children: ReactNode }) {
     let mounted = true;
 
     if (!accessToken) {
-      setAuthorized(false);
+      if (!loading) setAuthorized(false);
       return () => {
         mounted = false;
       };
     }
+
+    setAuthorized(null);
 
     void (async () => {
       try {
@@ -64,7 +66,7 @@ export function AdminAccessGate({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, [accessToken]);
+  }, [accessToken, loading]);
 
   useEffect(() => {
     if (!debugEnabled || !accessToken) return;
