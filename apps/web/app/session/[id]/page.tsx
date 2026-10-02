@@ -1087,15 +1087,15 @@ export default function RandomSessionPage() {
             return;
           }
 
-          sessionBootstrapStateRef.current = "missing";
-          setSessionState("missing");
+          sessionBootstrapStateRef.current = "loading";
+          setSessionState("loading");
+          setNotice("聊天室暫時無法確認，請稍候或重新整理，不會自動跳回首頁。");
           recordSessionRouteDiagnostic("SESSION_FETCH_RESULT", {
-            reason: "SESSION_CONFIRMED_MISSING",
+            reason: "SESSION_TEMPORARILY_UNAVAILABLE",
             authState: "ready",
-            sessionState: "missing",
+            sessionState: "loading",
             bootstrapRunId,
           });
-          goHome("SESSION_CONFIRMED_MISSING", { authState: "ready", sessionState: "missing", bootstrapRunId });
           return;
         }
 
