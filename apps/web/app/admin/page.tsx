@@ -424,7 +424,7 @@ export default function AdminDashboardPage() {
 
       <AdminSection title="彩蛋紀錄" description="記錄正式聊天中實際觸發的彩蛋；測試按鈕不會計入，也不保存聊天正文。">
         <AdminStatGrid>
-          <AdminStat label="今日觸發彩蛋" value={formatCount(data?.today_easter_egg_count)} tone={(data?.today_easter_egg_count ?? 0) > 0 ? "accent" : "default"} />
+          <AdminStat label="今日觸發彩蛋" value={formatCount(data?.today_easter_egg_count)} tone={(data?.today_easter_egg_count ?? 0) > 0 ? "success" : "default"} />
         </AdminStatGrid>
         <div style={{ marginTop: 12 }}>
           {data?.recent_easter_egg_events?.length ? (
