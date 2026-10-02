@@ -299,10 +299,10 @@ export type AnonymousAbusePrecheckRow = {
   review_required: boolean;
 };
 
-export type AdminRecoveryRequest = { id:string; session_id:string; recovery_code:string; status:string; created_at:string; expires_at:string };
+export type AdminRecoveryRequest = { id:string; session_id:string; recovery_code:string; status:string; created_at:string; expires_at:string; a_anonymous_name:string; b_anonymous_name:string };
 
 export async function loadAdminRecoveryRequests() {
-  return supabase.rpc("get_admin_session_recovery_requests") as unknown as Promise<{ data: AdminRecoveryRequest[] | null; error: { message?: string } | null }>;
+  return supabase.rpc("get_admin_session_recovery_requests_v2") as unknown as Promise<{ data: AdminRecoveryRequest[] | null; error: { message?: string } | null }>;
 }
 export async function approveAdminRecoveryRequest(code:string, side:"a"|"b") {
   return supabase.rpc("approve_random_session_recovery",{p_recovery_code:code,p_side:side});
