@@ -5536,6 +5536,7 @@ body:has(.admin-page),
 @media (prefers-reduced-motion: reduce) { .egg-1000-particles i { animation:none; opacity:.65; transform:translate(-50%,-50%) rotate(var(--angle)) translateX(110px); } }
 
 
+.egg-1000-badge { position:absolute; left:50%; top:67%; transform:translateX(-50%); width:max-content; max-width:88vw; padding:7px 14px; border:1px solid rgba(255,224,142,.48); border-radius:999px; background:rgba(71,43,7,.72); box-shadow:0 0 22px rgba(255,195,64,.24); color:#ffe7a1; font-size:13px; font-weight:900; letter-spacing:.08em; text-align:center; white-space:nowrap; animation:milestone-copy 5.4s ease .35s both; }
 .egg-1000-legendary { position:absolute; left:50%; top:72%; transform:translate(-50%,18px) scale(.72); width:min(82vw,360px); padding:14px 20px; border:1px solid rgba(255,222,132,.72); border-radius:18px; background:linear-gradient(135deg,rgba(35,22,5,.94),rgba(92,55,8,.92),rgba(25,15,4,.96)); box-shadow:0 0 0 1px rgba(255,245,202,.12) inset,0 0 32px rgba(255,190,55,.42),0 18px 48px rgba(0,0,0,.42); text-align:center; opacity:0; animation:milestone-legendary 5.4s cubic-bezier(.2,.8,.2,1) both; }
 .egg-1000-legendary b { display:block; font-size:20px; letter-spacing:.13em; color:#ffe7a1; text-shadow:0 0 14px rgba(255,199,72,.72); }
 .egg-1000-legendary small { display:block; margin-top:5px; font-size:14px; font-weight:900; letter-spacing:.08em; color:#fff7db; }
