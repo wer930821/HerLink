@@ -5706,3 +5706,15 @@ body:has(.admin-page),
   background:rgba(255,108,100,.035)!important;
   box-shadow:0 0 0 2px rgba(255,108,100,.07)!important;
 }
+
+
+/* Mailbox unread badges */
+.home-mailbox-unread,.admin-mailbox-unread{
+  display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;
+  border-radius:999px;background:#ff4d57;color:#fff;font-size:10px;font-weight:900;
+  line-height:1;box-shadow:0 0 0 2px rgba(13,12,23,.9),0 0 10px rgba(255,77,87,.38);
+}
+.home-mailbox-unread{position:absolute;right:-5px;top:-6px;animation:mail-unread-pulse 2.2s ease-in-out infinite}
+.admin-mailbox-nav-link{display:inline-flex!important;align-items:center;gap:7px}
+@keyframes mail-unread-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}
+@media(prefers-reduced-motion:reduce){.home-mailbox-unread{animation:none}}
