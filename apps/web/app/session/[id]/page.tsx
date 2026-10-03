@@ -1627,7 +1627,30 @@ export default function RandomSessionPage() {
         } else {
           const eventId = typeof insertResult.data === "string" ? insertResult.data : null;
           if (eventId) {
-            await supabase.rpc("record_chat_easter_egg_delivery", { p_event_id: eventId });
+            const clientVersion = "web-v2";
+            const dispatchedResult = await supabase.rpc("mark_chat_easter_egg_dispatched", {
+              p_event_id: eventId,
+              p_client_version: clientVersion,
+            });
+            if (dispatchedResult.error) {
+              console.error("[herlink] easter egg dispatch tracking failed", dispatchedResult.error);
+            }
+
+            const deliveryResult = await supabase.rpc("record_chat_easter_egg_delivery", { p_event_id: eventId });
+            if (deliveryResult.error) {
+              console.error("[herlink] easter egg display tracking failed", deliveryResult.error);
+            } else {
+              const durationMs = kind === "thousand" ? 5400 : 3200;
+              window.setTimeout(() => {
+                void supabase.rpc("complete_chat_easter_egg_delivery", {
+                  p_event_id: eventId,
+                  p_duration_ms: durationMs,
+                  p_client_version: clientVersion,
+                }).then(({ error }) => {
+                  if (error) console.error("[herlink] easter egg completion tracking failed", error);
+                });
+              }, durationMs);
+            }
           }
           try {
             localStorage.removeItem("herlink:last-easter-egg-log-error");
