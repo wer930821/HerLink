@@ -4,12 +4,12 @@ export const revalidate = 0;
 import type { ReactNode } from "react";
 import { Badge } from "../../components/ui";
 import { AdminAccessGate } from "./access-gate";
+import { AdminMailboxNavLink } from "./mailbox/nav-link";
 
 const navItems = [
   { href: "/admin", label: "總覽" },
   { href: "/admin/sessions", label: "聊天場次" },
   { href: "/admin/recovery", label: "聊天室恢復" },
-  { href: "/admin/mailbox", label: "站長信箱" },
   { href: "/admin/easter-eggs", label: "彩蛋紀錄" },
   { href: "/admin/realtime", label: "即時診斷" },
   { href: "/admin/reports", label: "檢舉管理" },
@@ -32,10 +32,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
 
             <nav className="admin-nav" aria-label="後台導覽">
-              {navItems.map((item) => (
-                <a key={item.href} className="admin-nav-link" href={item.href}>
-                  {item.label}
-                </a>
+              {navItems.slice(0, 3).map((item) => (
+                <a key={item.href} className="admin-nav-link" href={item.href}>{item.label}</a>
+              ))}
+              <AdminMailboxNavLink />
+              {navItems.slice(3).map((item) => (
+                <a key={item.href} className="admin-nav-link" href={item.href}>{item.label}</a>
               ))}
             </nav>
           </header>
