@@ -6137,3 +6137,39 @@ body:has(.site-mailbox-viewport){
  .site-mailbox-viewport textarea.mailbox-input{min-height:64px!important;padding:6px 10px!important}
  .site-mailbox-viewport .mailbox-compose-panel>.btn{flex:0 0 40px!important;min-height:40px!important}
 }
+
+
+/* Mailbox mobile spacing: use the screen width while keeping the page fixed */
+@media (max-width:720px){
+ .site-mailbox-viewport>.shell{
+   padding-left:6px!important;
+   padding-right:6px!important;
+ }
+ .site-mailbox-viewport>.shell>.container{
+   width:100%!important;
+   max-width:none!important;
+ }
+ .site-mailbox-viewport .mailbox-fixed{
+   width:100%!important;
+   max-width:none!important;
+ }
+ .site-mailbox-viewport .mailbox-fixed>.surface{
+   width:100%!important;
+   max-width:none!important;
+   padding-left:8px!important;
+   padding-right:8px!important;
+ }
+ .site-mailbox-viewport .mailbox-view-tabs,
+ .site-mailbox-viewport .mailbox-compose-panel,
+ .site-mailbox-viewport .mailbox-inbox-panel{
+   width:100%!important;
+   max-width:none!important;
+ }
+ .site-mailbox-viewport .mailbox-category-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ .site-mailbox-viewport input.mailbox-input,
+ .site-mailbox-viewport textarea.mailbox-input,
+ .site-mailbox-viewport .mailbox-compose-panel>.btn{
+   width:100%!important;
+   max-width:none!important;
+ }
+}
