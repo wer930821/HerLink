@@ -118,7 +118,7 @@ export default function AdminSessionDetailPage() {
   };
 
   const restoreSide = async (side:"a"|"b") => {
-    if (!data || data.status !== "active") return;
+    if (!data) return;
     setRestoreBusy(side);
     setError(null);
     const result = await adminRestoreRandomSessionToSelf(sessionId, side);
@@ -169,7 +169,7 @@ export default function AdminSessionDetailPage() {
               {data.ended_by ? <AdminBadge>結束者：{shortId(data.ended_by)}</AdminBadge> : null}
             </AdminToolbar>
             <AdminSection title="基本資訊">
-              {data.status === "active" ? <div className="row" style={{marginBottom:12}}><Button size="sm" type="button" disabled={restoreBusy!==null} onClick={()=>void restoreSide("a")}>{restoreBusy==="a"?"恢復中…":"恢復 A 方到我的 Web"}</Button><Button size="sm" type="button" disabled={restoreBusy!==null} onClick={()=>void restoreSide("b")}>{restoreBusy==="b"?"恢復中…":"恢復 B 方到我的 Web"}</Button></div> : null}
+              {data ? <div className="row" style={{marginBottom:12}}><Button size="sm" type="button" disabled={restoreBusy!==null} onClick={()=>void restoreSide("a")}>{restoreBusy==="a"?"恢復中…":"恢復 A 方到我的 Web"}</Button><Button size="sm" type="button" disabled={restoreBusy!==null} onClick={()=>void restoreSide("b")}>{restoreBusy==="b"?"恢復中…":"恢復 B 方到我的 Web"}</Button></div> : null}
               <div className="admin-kv-grid">
                 <div><span>建立時間</span><strong>{formatAdminTime(data.created_at)}</strong></div>
                 <div><span>結束時間</span><strong>{formatAdminTime(data.ended_at)}</strong></div>
