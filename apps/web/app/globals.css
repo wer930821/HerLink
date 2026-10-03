@@ -5966,3 +5966,23 @@ html:has(.mailbox-fullscreen){
  .mailbox-compose-section{margin-top:20px;padding:18px 16px 20px;border-radius:18px}
  .mailbox-inbox-section{margin-top:28px;padding-top:22px}
 }
+
+
+/* Mailbox compose and inbox are separate views, not stacked sections */
+.mailbox-view-tabs{
+ display:grid;grid-template-columns:1fr 1fr;gap:8px;
+ margin:24px 0 22px;padding:5px;
+ border:1px solid rgba(255,255,255,.09);border-radius:16px;
+ background:rgba(255,255,255,.025);
+}
+.mailbox-view-tabs button{
+ min-height:46px;border:0;border-radius:12px;background:transparent;
+ color:rgba(239,234,248,.62);font:inherit;font-weight:800;
+ -webkit-tap-highlight-color:transparent;
+}
+.mailbox-view-tabs button.active{
+ background:rgba(255,108,100,.14);
+ color:#fff;border:1px solid rgba(255,108,100,.42);
+}
+.mailbox-compose-panel,.mailbox-inbox-panel{display:grid;gap:14px}
+.mailbox-compose-panel .mailbox-category{margin-top:0}
