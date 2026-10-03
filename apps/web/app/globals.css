@@ -5986,3 +5986,36 @@ html:has(.mailbox-fullscreen){
 }
 .mailbox-compose-panel,.mailbox-inbox-panel{display:grid;gap:14px}
 .mailbox-compose-panel .mailbox-category{margin-top:0}
+
+
+/* Mailbox stays within the phone viewport */
+.mailbox-fixed{
+ min-height:100dvh!important;
+ height:100dvh!important;
+ overflow:hidden!important;
+ padding-bottom:0!important;
+}
+.mailbox-fixed>.surface{
+ height:100%!important;
+ min-height:0!important;
+ overflow:hidden!important;
+ box-sizing:border-box!important;
+}
+.mailbox-fixed .mailbox-head{margin-bottom:0!important}
+.mailbox-fixed .mailbox-view-tabs{margin:18px 0 16px!important}
+.mailbox-fixed .mailbox-compose-panel{
+ min-height:0;
+ gap:10px!important;
+}
+.mailbox-fixed .mailbox-textarea{
+ min-height:120px!important;
+ max-height:clamp(120px,26dvh,230px)!important;
+ resize:none!important;
+}
+@media(max-width:720px){
+ .mailbox-fixed{padding-top:18px!important}
+ .mailbox-fixed .mailbox-head p{margin-bottom:8px!important}
+ .mailbox-fixed .mailbox-view-tabs{margin:14px 0!important}
+ .mailbox-fixed .mailbox-compose-panel{gap:8px!important}
+ .mailbox-fixed .mailbox-textarea{min-height:110px!important;max-height:24dvh!important}
+}
