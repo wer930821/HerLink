@@ -114,7 +114,7 @@ export default function HomePage() {
 
   const refreshMailUnread = useCallback(async () => {
     if (!state.session?.user.id) { setMailUnreadCount(0); return; }
-    const { data } = await supabase.rpc("station_mail_user_unread_count");
+    const { data } = await (supabase as any).rpc("station_mail_user_unread_count");
     setMailUnreadCount(Number(data ?? 0));
   }, [state.session?.user.id]);
 
