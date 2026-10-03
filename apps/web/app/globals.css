@@ -5800,3 +5800,43 @@ body:has(.admin-page),
   background:transparent!important;
   border-color:rgba(255,255,255,.09)!important;
 }
+
+
+/* Mailbox full-screen flat layout */
+.mailbox-fullscreen{
+  width:100%!important;max-width:none!important;
+  margin:0!important;padding:0!important;gap:0!important;
+  min-height:calc(100dvh - 72px);
+  background:#0d0c17!important;
+}
+.mailbox-fullscreen>.surface{
+  width:100%!important;max-width:none!important;margin:0!important;
+  padding:28px max(24px,calc((100vw - 680px)/2))!important;
+  border:0!important;border-radius:0!important;
+  background:#0d0c17!important;background-color:#0d0c17!important;
+  box-shadow:none!important;
+}
+.mailbox-fullscreen>.surface+.surface{
+  border-top:1px solid rgba(255,255,255,.07)!important;
+}
+.mailbox-fullscreen input,
+.mailbox-fullscreen textarea,
+.mailbox-fullscreen .mailbox-input{
+  background:#0d0c17!important;background-color:#0d0c17!important;
+  border:0!important;border-radius:0!important;
+  box-shadow:none!important;outline:0!important;
+}
+.mailbox-fullscreen input:focus,
+.mailbox-fullscreen textarea:focus,
+.mailbox-fullscreen input:focus-visible,
+.mailbox-fullscreen textarea:focus-visible{
+  background:#0d0c17!important;background-color:#0d0c17!important;
+  border:0!important;box-shadow:none!important;outline:0!important;
+}
+.mailbox-fullscreen .mailbox-thread-card{
+  background:#0d0c17!important;background-color:#0d0c17!important;
+  border:0!important;border-radius:0!important;box-shadow:none!important;
+}
+@media(max-width:720px){
+ .mailbox-fullscreen>.surface{padding:24px 24px!important}
+}
