@@ -2,7 +2,7 @@
   "expo": {
     "name": "HerLink 後台",
     "slug": "herlink-admin",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "scheme": "herlinkadmin",
     "userInterfaceStyle": "dark",
@@ -12,12 +12,11 @@
     },
     "android": {
       "package": "com.wer93.herlinkadmin",
-      "versionCode": 2,
+      "versionCode": 3,
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.INTERNET",
-        "android.permission.REQUEST_INSTALL_PACKAGES",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.REQUEST_INSTALL_PACKAGES"
       ],
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
@@ -25,9 +24,7 @@
         "backgroundColor": "#11110f"
       }
     },
-    "plugins": [
-      "expo-notifications"
-    ],
+    "plugins": [],
     "extra": {
       "adminUrl": "https://her-link-kivora3.vercel.app/admin"
     },
