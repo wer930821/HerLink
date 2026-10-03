@@ -20,14 +20,14 @@
       ],
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "foregroundImage": "../apps/web/public/icons/icon-192.png",
-        "backgroundColor": "#0d0b16"
+        "foregroundImage": "./assets/admin-icon.png",
+        "backgroundColor": "#11110f"
       }
     },
     "plugins": [],
     "extra": {
       "adminUrl": "https://her-link-kivora3.vercel.app/admin"
     },
-    "icon": "../apps/web/public/icons/icon-192.png"
+    "icon": "./assets/admin-icon.png"
   }
 }
