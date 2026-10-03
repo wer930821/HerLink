@@ -6254,3 +6254,34 @@ body:has(.site-mailbox-viewport){
  min-height:120px!important;
  max-height:120px!important;
 }
+
+
+/* Final fixed composer: size rows explicitly so the send button never falls below viewport */
+@media (max-width:720px){
+ .site-mailbox-viewport .mailbox-fixed>.surface{padding:6px 8px!important}
+ .site-mailbox-viewport .mailbox-head-compact{flex:0 0 auto!important}
+ .site-mailbox-viewport .mailbox-view-tabs{flex:0 0 52px!important;margin:8px 0!important}
+ .site-mailbox-viewport .mailbox-view-tabs button{min-height:44px!important}
+ .site-mailbox-viewport .mailbox-compose-panel{
+   flex:1 1 auto!important;
+   min-height:0!important;
+   display:grid!important;
+   grid-template-rows:auto auto minmax(90px,1fr) 50px!important;
+   gap:8px!important;
+   overflow:hidden!important;
+ }
+ .site-mailbox-viewport .mailbox-compose-panel .mailbox-category{min-height:0!important}
+ .site-mailbox-viewport .mailbox-category-grid button{min-height:42px!important}
+ .site-mailbox-viewport .mailbox-compose-panel .field{min-height:0!important;margin:0!important}
+ .site-mailbox-viewport .mailbox-compose-panel .field:has(input){display:grid!important;grid-template-rows:auto 44px!important;gap:4px!important}
+ .site-mailbox-viewport .mailbox-compose-panel .field:has(textarea){display:grid!important;grid-template-rows:auto minmax(70px,1fr)!important;gap:4px!important;overflow:hidden!important}
+ .site-mailbox-viewport input.mailbox-input{height:44px!important;min-height:44px!important}
+ .site-mailbox-viewport textarea.mailbox-input{
+   height:100%!important;min-height:0!important;max-height:none!important;
+   flex:none!important;overflow-y:auto!important;
+ }
+ .site-mailbox-viewport .mailbox-compose-panel>.btn{
+   height:50px!important;min-height:50px!important;max-height:50px!important;
+   align-self:end!important;
+ }
+}
