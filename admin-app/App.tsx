@@ -15,7 +15,6 @@ import {
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
-import * as Notifications from "expo-notifications";
 import * as FileSystem from "expo-file-system/legacy";
 import * as IntentLauncher from "expo-intent-launcher";
 import { WebView } from "react-native-webview";
@@ -24,10 +23,6 @@ import type { WebViewNavigation } from "react-native-webview";
 const ADMIN_URL = "https://her-link-kivora3.vercel.app/admin";
 const UPDATE_INFO_URL =
   "https://github.com/wer930821/HerLink/releases/download/admin-latest/admin-update-info.json";
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: true }),
-});
 
 type UpdateInfo = {
   versionCode?: number;
@@ -51,7 +46,6 @@ function AdminApp() {
   const [updateProgress, setUpdateProgress] = useState<number | null>(null);
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
   const updatePromptedRef = useRef<number | null>(null);
-  const lastMailboxUnreadRef = useRef<number | null>(null);
 
   const installUpdateInsideApp = async (info: UpdateInfo) => {
     if (!info.apkUrl || Platform.OS !== "android") return;
@@ -184,42 +178,6 @@ function AdminApp() {
   }, []);
 
 
-  useEffect(() => {
-    if (Platform.OS !== "android") return;
-    void (async () => {
-      const permission = await Notifications.requestPermissionsAsync();
-      if (permission.status === "granted") {
-        await Notifications.setNotificationChannelAsync("mailbox", {
-          name: "站長信箱",
-          importance: Notifications.AndroidImportance.HIGH,
-          sound: "default",
-          vibrationPattern: [0, 220, 120, 220],
-        });
-      }
-    })();
-  }, []);
-
-  const handleWebMessage = async (event: { nativeEvent: { data: string } }) => {
-    try {
-      const msg = JSON.parse(event.nativeEvent.data) as { type?: string; count?: number; subject?: string };
-      if (msg.type !== "mailbox-unread") return;
-      const count = Math.max(0, Number(msg.count ?? 0));
-      const previous = lastMailboxUnreadRef.current;
-      lastMailboxUnreadRef.current = count;
-      await Notifications.setBadgeCountAsync(count);
-      if (count > 0 && previous !== null && count > previous) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: "HerLink 後台｜收到新信",
-            body: msg.subject ? `站長信箱：${msg.subject}` : `站長信箱有 ${count} 封未讀信件`,
-            sound: "default",
-            data: { url: "/admin/mailbox" },
-          },
-          trigger: null,
-        });
-      }
-    } catch {}
-  };
 
   return (
     <SafeAreaView style={styles.root}>
@@ -245,7 +203,6 @@ function AdminApp() {
           allowsBackForwardNavigationGestures
           startInLoadingState={false}
           onNavigationStateChange={handleNavigation}
-          onMessage={(event) => { void handleWebMessage(event); }}
           onLoadStart={() => {
             // 只在 App 第一次開啟或手動重新整理時顯示全頁載入。
             // 後台內頁導覽不再重新蓋上「正在載入後台」。
