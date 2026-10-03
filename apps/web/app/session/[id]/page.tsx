@@ -2223,7 +2223,25 @@ export default function RandomSessionPage() {
                     className="chat-milestone-test-trigger"
                     type="button"
                     onPointerDown={(event) => event.preventDefault()}
-                    onClick={() => triggerEasterEgg(kind, true)}
+                    onClick={async () => {
+                      triggerEasterEgg(kind, false);
+                      if (!session?.id) return;
+                      const result = await supabase.rpc("record_chat_easter_egg_event", {
+                        p_session_id: session.id,
+                        p_egg_kind: kind,
+                        p_trigger_type: "milestone",
+                      });
+                      if (result.error) {
+                        console.error("[herlink] milestone test record failed", result.error);
+                        await supabase.rpc("record_chat_easter_egg_failure", {
+                          p_session_id: session.id,
+                          p_egg_kind: kind,
+                          p_trigger_type: "milestone",
+                          p_error_code: result.error.code ?? "RPC_ERROR",
+                          p_error_message: result.error.message ?? "彩蛋測試紀錄失敗",
+                        });
+                      }
+                    }}
                     title={`播放 ${label} 則彩蛋並寫入一筆測試紀錄，不會新增或修改訊息`}
                   >
                     測試 {label}
