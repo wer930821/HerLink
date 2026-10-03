@@ -1649,7 +1649,7 @@ export default function RandomSessionPage() {
     if (/明天見/.test(normalized)) return triggerEasterEgg("tomorrow", true);
     if (/晚安|先睡了|我要睡了/.test(normalized)) return triggerEasterEgg("goodnight", true);
     if (/企鵝/.test(normalized)) return triggerEasterEgg("penguin", true);
-    if (/吃飯了嗎|吃飽了嗎|吃飯沒|吃了嗎/.test(normalized)) return triggerEasterEgg("food", true);
+    if (/吃飯了嗎|吃飽了嗎|吃飯沒|吃了嗎|吃什麼/.test(normalized)) return triggerEasterEgg("food", true);
     if (/在幹嘛|在幹麻|幹嘛呢|在做什麼/.test(normalized)) return triggerEasterEgg("curious", true);
     if (/真的假的|真的嗎|不會吧|蛤真的/.test(normalized)) return triggerEasterEgg("surprised", true);
     if (/笑死/.test(normalized)) return triggerEasterEgg("sync", true);
