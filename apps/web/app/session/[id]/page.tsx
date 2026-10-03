@@ -1593,14 +1593,29 @@ export default function RandomSessionPage() {
         const authResult = await supabase.auth.getUser();
         const userId = authResult.data.user?.id;
         if (authResult.error || !userId) return;
-        const insertResult = await supabase.from("chat_easter_egg_events").insert({
-          session_id: session.id,
-          user_id: userId,
-          egg_kind: kind,
-          trigger_type: triggerType,
+        const insertResult = await supabase.rpc("record_chat_easter_egg_event", {
+          p_session_id: session.id,
+          p_egg_kind: kind,
+          p_trigger_type: triggerType,
         });
-        if (insertResult.error && process.env.NODE_ENV !== "production") {
-          console.warn("[herlink] easter egg event log failed", insertResult.error.message);
+        if (insertResult.error) {
+          const diagnostic = {
+            at: new Date().toISOString(),
+            session: session.id,
+            user: userId,
+            kind,
+            triggerType,
+            code: insertResult.error.code ?? "RPC_ERROR",
+            message: insertResult.error.message ?? "彩蛋紀錄失敗",
+          };
+          console.error("[herlink] easter egg event RPC failed", diagnostic);
+          try {
+            localStorage.setItem("herlink:last-easter-egg-log-error", JSON.stringify(diagnostic));
+          } catch {}
+        } else {
+          try {
+            localStorage.removeItem("herlink:last-easter-egg-log-error");
+          } catch {}
         }
       })();
     }
