@@ -791,6 +791,8 @@ export default function HomePage() {
           </div>
         </div>
 
+        <a className="home-mailbox-float" href="/mailbox" aria-label="信箱"><span className="home-mailbox-icon" aria-hidden="true">✉</span><span>信箱</span></a>
+
         <div className="home-app-eyebrow">HerLink</div>
         <h1 className="home-app-title">匿名聊天</h1>
         <p className="home-app-copy">不公開個人檔案，不做交友滑卡，只保留匿名隨機配對與聊天室。</p>
@@ -811,7 +813,6 @@ export default function HomePage() {
           </Button>
           {state.activeSession ? <Button variant="secondary" size="lg" href="/chats">我的聊天</Button> : null}
           <Button variant="secondary" size="lg" href="/contacts">匿名聯絡人</Button>
-          <Button variant="secondary" size="lg" href="/mailbox">站長信箱</Button>
         </div>
 
         {state.queue?.status === "waiting" ? (
