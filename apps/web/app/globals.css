@@ -6285,3 +6285,29 @@ body:has(.site-mailbox-viewport){
    align-self:end!important;
  }
 }
+
+
+/* Mailbox content field: user-resizable vertically */
+@media (max-width:720px){
+ .site-mailbox-viewport .mailbox-compose-panel{
+   overflow-y:auto!important;
+   padding-bottom:2px!important;
+ }
+ .site-mailbox-viewport .mailbox-compose-panel .field:has(textarea){
+   display:block!important;
+   overflow:visible!important;
+ }
+ .site-mailbox-viewport .mailbox-compose-panel textarea.mailbox-input{
+   height:150px!important;
+   min-height:80px!important;
+   max-height:42dvh!important;
+   resize:vertical!important;
+   overflow-y:auto!important;
+ }
+ .site-mailbox-viewport .mailbox-compose-panel>.btn{
+   flex:none!important;
+   position:sticky!important;
+   bottom:0!important;
+   width:100%!important;
+ }
+}
