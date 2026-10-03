@@ -684,12 +684,15 @@ export default function HomePage() {
         <Modal open={recoveryOpen} title="找回原本聊天室" onClose={() => !recoveryBusy && setRecoveryOpen(false)}>
           <div className="stack">
             <p className="muted">輸入原本使用的匿名名稱，取得 8 碼恢復碼後傳給管理員協助恢復。</p>
-            <Field
-              label="原本的匿名名稱"
-              value={recoveryName}
-              onChange={(event) => setRecoveryName(event.target.value)}
-              disabled={recoveryBusy || Boolean(recoveryCode)}
-            />
+            <Field label="原本的匿名名稱" htmlFor="recovery-name">
+              <input
+                id="recovery-name"
+                value={recoveryName}
+                onChange={(event) => setRecoveryName(event.target.value)}
+                disabled={recoveryBusy || Boolean(recoveryCode)}
+                autoComplete="off"
+              />
+            </Field>
             {recoveryCode ? (
               <Notice variant="success" title="恢復碼已建立">
                 <strong style={{ fontSize: 22, letterSpacing: 2 }}>{recoveryCode}</strong>
