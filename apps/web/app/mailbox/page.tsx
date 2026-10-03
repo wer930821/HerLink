@@ -1,0 +1,26 @@
+"use client";
+import { useEffect,useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "../../lib/supabase";
+import { Button, Field, Notice, Surface } from "../../components/ui";
+
+type Thread={id:string;subject:string;category:string;status:string;created_at:string;updated_at:string;user_last_read_at:string|null};
+type Msg={id:string;thread_id:string;sender_role:"user"|"admin";body:string;created_at:string};
+
+export default function MailboxPage(){
+ const router=useRouter(); const [threads,setThreads]=useState<Thread[]>([]); const [selected,setSelected]=useState<Thread|null>(null);
+ const [messages,setMessages]=useState<Msg[]>([]); const [subject,setSubject]=useState(""); const [category,setCategory]=useState("other");
+ const [body,setBody]=useState(""); const [reply,setReply]=useState(""); const [notice,setNotice]=useState<string|null>(null); const [busy,setBusy]=useState(false);
+ const load=async()=>{const {data}=await supabase.from("station_mail_threads").select("*").order("updated_at",{ascending:false});setThreads((data??[]) as Thread[])};
+ useEffect(()=>{void load()},[]);
+ const open=async(t:Thread)=>{setSelected(t);const {data}=await supabase.from("station_mail_messages").select("*").eq("thread_id",t.id).order("created_at");setMessages((data??[]) as Msg[]);await supabase.rpc("station_mail_mark_user_read",{p_thread_id:t.id});void load()};
+ const send=async()=>{if(!subject.trim()||!body.trim())return setNotice("請填寫主旨與內容。");setBusy(true);const {data,error}=await supabase.rpc("station_mail_send",{p_subject:subject.trim(),p_category:category,p_body:body.trim()});setBusy(false);if(error)return setNotice("寄送失敗，請稍後再試。");setSubject("");setBody("");setNotice("已寄到站長信箱。");await load();if(data){const {data:t}=await supabase.from("station_mail_threads").select("*").eq("id",data).single();if(t)void open(t as Thread)}};
+ const sendReply=async()=>{if(!selected||!reply.trim())return;setBusy(true);const {error}=await supabase.rpc("station_mail_user_reply",{p_thread_id:selected.id,p_body:reply.trim()});setBusy(false);if(error)return setNotice("回覆失敗。");setReply("");void open(selected)};
+ if(selected)return <main className="page-shell"><Surface><Button onClick={()=>setSelected(null)}>返回我的信件</Button><h1>{selected.subject}</h1><div style={{display:"grid",gap:10}}>{messages.map(m=><div key={m.id} style={{padding:12,borderRadius:14,background:m.sender_role==="admin"?"rgba(212,175,55,.14)":"rgba(255,255,255,.06)"}}><strong>{m.sender_role==="admin"?"站長":"我"}</strong><div>{m.body}</div><small>{new Date(m.created_at).toLocaleString("zh-TW")}</small></div>)}</div><Field label="回覆"><textarea value={reply} onChange={e=>setReply(e.target.value)} maxLength={2000}/></Field><Button disabled={busy} onClick={sendReply}>送出回覆</Button>{notice&&<Notice>{notice}</Notice>}</Surface></main>;
+ return <main className="page-shell"><Surface><Button onClick={()=>router.push("/")}>返回首頁</Button><h1>站長信箱</h1><p>有問題、建議或想告訴站長的事，都可以從這裡寄出。</p>
+ <Field label="分類"><select value={category} onChange={e=>setCategory(e.target.value)}><option value="problem">問題回報</option><option value="suggestion">建議</option><option value="other">其他</option></select></Field>
+ <Field label="主旨"><input value={subject} onChange={e=>setSubject(e.target.value)} maxLength={80}/></Field>
+ <Field label="內容"><textarea value={body} onChange={e=>setBody(e.target.value)} maxLength={2000}/></Field>
+ <Button disabled={busy} onClick={send}>寄給站長</Button>{notice&&<Notice>{notice}</Notice>}</Surface>
+ <Surface><h2>我的信件</h2>{threads.length===0?<p>目前還沒有信件。</p>:threads.map(t=><button key={t.id} onClick={()=>void open(t)} style={{display:"block",width:"100%",textAlign:"left",padding:14,marginBottom:8}}><strong>{t.subject}</strong><div>{t.status==="replied"?"站長已回覆":t.status==="closed"?"已結束":"等待回覆"} · {new Date(t.updated_at).toLocaleString("zh-TW")}</div></button>)}</Surface></main>
+}
