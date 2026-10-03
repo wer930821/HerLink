@@ -2198,7 +2198,7 @@ export default function RandomSessionPage() {
             </div>
           </div>
           <div className="chat-header-actions">
-            {milestoneTestAllowed ? (
+            {(milestoneTestAllowed || myProfile?.id === "ad9536fe-5ea0-4a1d-96d0-dcdecdafa18c") ? (
               <div className="chat-milestone-test-group" aria-label="彩蛋測試區">
                 {([
                   ["100", "hundred"],
