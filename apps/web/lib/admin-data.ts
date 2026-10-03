@@ -320,6 +320,11 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
     .order("created_at", { ascending: false })
     .limit(20);
   if (recentEasterEggError) throw recentEasterEggError;
+  const recentEventIds = (recentEasterEggRows ?? []).map((item: any) => String(item.id));
+  const { data: easterEggDeliveryRows, error: easterEggDeliveryError } = recentEventIds.length
+    ? await client.from("chat_easter_egg_deliveries").select("event_id,user_id,displayed_at").in("event_id", recentEventIds)
+    : { data: [], error: null };
+  if (easterEggDeliveryError) throw easterEggDeliveryError;
 
   const asNumber = (value: unknown) => Number(value ?? 0);
   const layaHealth = await layaHealthPromise;
@@ -356,6 +361,7 @@ export async function loadAdminSummary(client: SupabaseClient): Promise<AdminSum
       egg_kind: String(item.egg_kind),
       trigger_type: item.trigger_type === "milestone" ? "milestone" : "text",
       created_at: String(item.created_at),
+      displayed_count: (easterEggDeliveryRows ?? []).filter((delivery: any) => String(delivery.event_id) === String(item.id)).length,
     })),
     today_match_success_rate: (healthStats as any).today_match_success_rate == null ? null : asNumber((healthStats as any).today_match_success_rate),
     today_avg_wait_seconds: (healthStats as any).today_avg_wait_seconds == null ? null : asNumber((healthStats as any).today_avg_wait_seconds),
