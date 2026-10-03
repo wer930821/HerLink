@@ -1581,7 +1581,7 @@ export default function RandomSessionPage() {
     if (!easterEggAllowed && !recordEvent) return;
     const now = Date.now();
     const lastAt = easterEggLastAtRef.current.get(kind) ?? 0;
-    if (now - lastAt < 90_000) return;
+    if (now - lastAt < 90_000 && !recordEvent) return;
     easterEggLastAtRef.current.set(kind, now);
     setEasterEgg(kind);
     if (recordEvent && session?.id) {
