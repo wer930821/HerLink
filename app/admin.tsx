@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { useAuth } from "../context/auth";
 import {
   approveSessionRecovery,
+  reactivateSessionRecovery,
   createAdminSignedUrl,
   fetchAdminDashboardCounts,
   fetchAnonymousChatStats,
@@ -271,6 +272,20 @@ export default function AdminScreen() {
             <Text style={styles.cardTitle}>恢復碼：{item.recoveryCode}</Text>
             <Text style={styles.cardMeta}>建立時間：{new Date(item.createdAt).toLocaleString("zh-TW")}</Text>
             <Text style={styles.cardBody}>聊天室：{item.sessionId}</Text>
+            {new Date(item.expiresAt).getTime() <= Date.now() ? (
+              <View style={styles.actionRow}>
+                <Pressable
+                  style={styles.secondaryButton}
+                  disabled={busyKey === `reactivate-${item.id}`}
+                  onPress={() => Alert.alert("重新啟用恢復申請", `恢復碼 ${item.recoveryCode} 已過期。要重新開放 30 分鐘讓管理員恢復嗎？`, [
+                    { text: "取消", style: "cancel" },
+                    { text: "重新啟用", onPress: () => void runAction(`reactivate-${item.id}`, async () => { await reactivateSessionRecovery(item.recoveryCode); }) },
+                  ])}
+                >
+                  <Text style={styles.secondaryButtonText}>重新啟用 30 分鐘</Text>
+                </Pressable>
+              </View>
+            ) : null}
             <View style={styles.actionRow}>
               <Pressable
                 style={styles.primaryButtonInline}
