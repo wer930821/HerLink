@@ -105,9 +105,12 @@ export interface SessionRecoveryRequest {
 }
 
 export async function fetchSessionRecoveryRequests() {
-  const { data, error } = await supabase.rpc("get_admin_session_recovery_requests");
+  const { data, error } = await supabase.functions.invoke("admin-reactivate-session-recovery", {
+    method: "GET",
+  });
   if (error) throw error;
-  return (data ?? []).map((row: any) => ({
+  if (!data?.ok) throw new Error(data?.error || "無法載入聊天室恢復申請。");
+  return (data.requests ?? []).map((row: any) => ({
     id: row.id,
     sessionId: row.session_id,
     recoveryCode: row.recovery_code,
