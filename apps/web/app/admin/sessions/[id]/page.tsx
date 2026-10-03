@@ -6,6 +6,7 @@ import { useAdminSession, fetchAdminJson } from "../../../../lib/admin-client";
 import type { AdminSessionDetail } from "../../../../lib/admin-types";
 import { AdminBadge, AdminEmpty, AdminSection, AdminTable, AdminTableWrap, AdminToolbar, formatAdminTime, shortId } from "../../_components";
 import { Button, Notice } from "../../../../components/ui";
+import { adminRestoreRandomSessionToSelf } from "../../../../lib/supabase";
 
 function sessionStatusLabel(value: string) {
   if (value === "waiting") return "等待中";
@@ -91,6 +92,7 @@ export default function AdminSessionDetailPage() {
   const [data, setData] = useState<AdminSessionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [restoreBusy, setRestoreBusy] = useState<"a"|"b"|null>(null);
 
   const sessionState = useMemo(() => {
     if (loading) return "loading";
@@ -115,7 +117,7 @@ export default function AdminSessionDetailPage() {
     }
   };
 
-  useEffect(() => {
+  const restoreSide = async (side:"a"|"b") => {\n    if (!data || data.status !== "active") return;\n    setRestoreBusy(side);\n    setError(null);\n    const result = await adminRestoreRandomSessionToSelf(sessionId, side);\n    if (result.error) setError(result.error.message || "恢復失敗。");\n    else window.location.assign("/");\n    setRestoreBusy(null);\n  };\n\n  useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, sessionId]);
@@ -156,7 +158,7 @@ export default function AdminSessionDetailPage() {
               {data.ended_reason ? <AdminBadge tone="accent">結束原因：{endedReasonLabel(data.ended_reason)}</AdminBadge> : null}
               {data.ended_by ? <AdminBadge>結束者：{shortId(data.ended_by)}</AdminBadge> : null}
             </AdminToolbar>
-            <AdminSection title="基本資訊">
+            <AdminSection title="基本資訊">\n              {data.status === "active" ? <div className="row" style={{marginBottom:12}}><Button size="sm" type="button" disabled={restoreBusy!==null} onClick={()=>void restoreSide("a")}>{restoreBusy==="a"?"恢復中…":"恢復 A 方到我的 Web"}</Button><Button size="sm" type="button" disabled={restoreBusy!==null} onClick={()=>void restoreSide("b")}>{restoreBusy==="b"?"恢復中…":"恢復 B 方到我的 Web"}</Button></div> : null}
               <div className="admin-kv-grid">
                 <div><span>建立時間</span><strong>{formatAdminTime(data.created_at)}</strong></div>
                 <div><span>結束時間</span><strong>{formatAdminTime(data.ended_at)}</strong></div>
