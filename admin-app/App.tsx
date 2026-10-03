@@ -46,6 +46,8 @@ function AdminApp() {
   const [updateProgress, setUpdateProgress] = useState<number | null>(null);
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
   const updatePromptedRef = useRef<number | null>(null);
+  const lastMailboxUnreadRef = useRef<number | null>(null);
+  const [mailboxAlert, setMailboxAlert] = useState<{ count: number; subject?: string } | null>(null);
 
   const installUpdateInsideApp = async (info: UpdateInfo) => {
     if (!info.apkUrl || Platform.OS !== "android") return;
@@ -179,6 +181,28 @@ function AdminApp() {
 
 
 
+  const handleWebMessage = (event: { nativeEvent: { data: string } }) => {
+    try {
+      const message = JSON.parse(event.nativeEvent.data) as { type?: string; count?: number; subject?: string };
+      if (message.type !== "mailbox-unread") return;
+      const count = Math.max(0, Number(message.count ?? 0));
+      const previous = lastMailboxUnreadRef.current;
+      lastMailboxUnreadRef.current = count;
+      if (count > 0 && previous !== null && count > previous) {
+        setMailboxAlert({ count, subject: message.subject });
+      }
+    } catch {
+      // 信箱提醒失敗不能影響 App 啟動或 WebView。
+    }
+  };
+
+  const openMailbox = () => {
+    setMailboxAlert(null);
+    webRef.current?.injectJavaScript(
+      'window.location.href = "/admin/mailbox"; true;'
+    );
+  };
+
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar style="light" backgroundColor="#0d0b16" />
@@ -203,6 +227,7 @@ function AdminApp() {
           allowsBackForwardNavigationGestures
           startInLoadingState={false}
           onNavigationStateChange={handleNavigation}
+          onMessage={handleWebMessage}
           onLoadStart={() => {
             // 只在 App 第一次開啟或手動重新整理時顯示全頁載入。
             // 後台內頁導覽不再重新蓋上「正在載入後台」。
@@ -224,6 +249,23 @@ function AdminApp() {
             }
           }}
         />
+
+        {mailboxAlert ? (
+          <View style={styles.mailboxBanner}>
+            <Pressable style={styles.mailboxBannerBody} onPress={openMailbox}>
+              <View style={styles.mailboxBannerCopy}>
+                <Text style={styles.mailboxBannerTitle}>收到新的站長信箱</Text>
+                <Text style={styles.mailboxBannerText} numberOfLines={1}>
+                  {mailboxAlert.subject ?? `目前有 ${mailboxAlert.count} 封未讀信件`}
+                </Text>
+              </View>
+              <Text style={styles.mailboxBannerAction}>查看</Text>
+            </Pressable>
+            <Pressable style={styles.mailboxBannerClose} onPress={() => setMailboxAlert(null)}>
+              <Text style={styles.mailboxBannerCloseText}>×</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {updateProgress !== null ? (
           <View style={styles.updateOverlay}>
@@ -342,6 +384,38 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0d0b16",
   },
+  mailboxBanner: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    right: 10,
+    zIndex: 30,
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,111,97,0.45)",
+    backgroundColor: "#1b1627",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  mailboxBannerBody: {
+    flex: 1,
+    minHeight: 68,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  mailboxBannerCopy: { flex: 1, minWidth: 0 },
+  mailboxBannerTitle: { color: "#f6f1ff", fontSize: 15, fontWeight: "800" },
+  mailboxBannerText: { marginTop: 3, color: "#b7aecb", fontSize: 12 },
+  mailboxBannerAction: { color: "#ff8a7d", fontSize: 13, fontWeight: "800" },
+  mailboxBannerClose: { paddingHorizontal: 14, alignSelf: "stretch", justifyContent: "center" },
+  mailboxBannerCloseText: { color: "#b7aecb", fontSize: 24, lineHeight: 26 },
   updateOverlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 20,
