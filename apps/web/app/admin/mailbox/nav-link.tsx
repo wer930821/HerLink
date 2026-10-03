@@ -5,7 +5,7 @@ import { useAdminSession } from "../../../../lib/admin-client";
 
 export function AdminMailboxNavLink(){
  const {session}=useAdminSession(); const [count,setCount]=useState(0);
- const refresh=useCallback(async()=>{if(!session){setCount(0);return;}const {data}=await supabase.rpc("station_mail_admin_unread_count");setCount(Number(data??0))},[session]);
+ const refresh=useCallback(async()=>{if(!session){setCount(0);return;}const {data}=await (supabase as any).rpc("station_mail_admin_unread_count");setCount(Number(data??0))},[session]);
  useEffect(()=>{if(!session)return;void refresh();const c=supabase.channel("admin-mailbox-nav")
   .on("postgres_changes",{event:"*",schema:"public",table:"station_mail_threads"},()=>void refresh())
   .on("postgres_changes",{event:"*",schema:"public",table:"station_mail_messages"},()=>void refresh())
