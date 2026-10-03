@@ -791,7 +791,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <a className="home-mailbox-float" href="/mailbox" aria-label="信箱"><span className="home-mailbox-icon" aria-hidden="true">✉</span><span>信箱</span></a>
+        <button type="button" className="home-mailbox-float" aria-label="信箱" onPointerDown={(event)=>event.currentTarget.blur()} onClick={()=>router.push("/mailbox")}><span className="home-mailbox-icon" aria-hidden="true">✉</span><span>信箱</span></button>
 
         <div className="home-app-eyebrow">HerLink</div>
         <h1 className="home-app-title">匿名聊天</h1>
