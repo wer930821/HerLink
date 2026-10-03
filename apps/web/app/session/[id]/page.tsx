@@ -58,6 +58,16 @@ type RealtimePayload<T> = {
   new: T;
 };
 
+type EasterEggKind = "goodnight" | "morning" | "hello" | "hi" | "penguin" | "sync" | "aurora" | "meteor" | "secret" | "hundred" | "twoHundred" | "threeHundred" | "fourHundred" | "tired" | "offwork" | "food" | "curious" | "surprised" | "cute" | "sleepless" | "tomorrow" | "fiveHundred" | "thousand";
+
+type PendingEasterEggEvent = {
+  event_id: string;
+  egg_kind: EasterEggKind;
+  trigger_type: "text" | "milestone";
+  triggered_by: string;
+  created_at: string;
+};
+
 type ChatAssistResult = {
   engine: "laya" | "fallback";
   conversationState: "flowing" | "quiet" | "awkward" | "tense";
@@ -257,6 +267,7 @@ export default function RandomSessionPage() {
   const pendingReplyPreviewRef = useRef<Set<string>>(new Set());
   const easterEggSeenRef = useRef<Set<string>>(new Set());
   const easterEggLastAtRef = useRef<Map<string, number>>(new Map());
+  const easterEggPendingSyncRef = useRef(false);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
   const realtimeClientInstanceIdRef = useRef(
@@ -282,7 +293,7 @@ export default function RandomSessionPage() {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantAllowed, setAssistantAllowed] = useState(false);
   const [milestoneTestAllowed, setMilestoneTestAllowed] = useState(false);
-  const [easterEgg, setEasterEgg] = useState<"goodnight" | "morning" | "hello" | "hi" | "penguin" | "sync" | "aurora" | "meteor" | "secret" | "hundred" | "twoHundred" | "threeHundred" | "fourHundred" | "tired" | "offwork" | "food" | "curious" | "surprised" | "cute" | "sleepless" | "tomorrow" | "fiveHundred" | "thousand" | null>(null);
+  const [easterEgg, setEasterEgg] = useState<EasterEggKind | null>(null);
   const [easterEggAllowed, setEasterEggAllowed] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(true);
   const [assistantBusy, setAssistantBusy] = useState(false);
@@ -1199,7 +1210,9 @@ export default function RandomSessionPage() {
           // Skip the initial history load to avoid replaying old eggs on entry.
           if (previousSeenIds.size > 0) {
             for (const item of newlyReceivedPartnerMessages) {
-              if (item.content) maybeTriggerEasterEgg(item.content);
+              // The sender creates the canonical easter-egg event. The receiver
+              // consumes that same event through get_pending_chat_easter_egg_events,
+              // avoiding duplicate events and guaranteeing retry after reconnect.
             }
           }
           recordDiagnostic("message_loaded_from_db", {
@@ -1577,11 +1590,11 @@ export default function RandomSessionPage() {
     scheduleScrollMessagesToBottom(shouldSmooth ? "smooth" : "auto");
   }, [messages.length, session?.id]);
 
-  const triggerEasterEgg = (kind: "goodnight" | "morning" | "hello" | "hi" | "penguin" | "sync" | "aurora" | "meteor" | "secret" | "hundred" | "twoHundred" | "threeHundred" | "fourHundred" | "tired" | "offwork" | "food" | "curious" | "surprised" | "cute" | "sleepless" | "tomorrow" | "fiveHundred" | "thousand", recordEvent = false) => {
+  const triggerEasterEgg = (kind: EasterEggKind, recordEvent = false, forcePlayback = false) => {
     if (!easterEggAllowed && !recordEvent) return;
     const now = Date.now();
     const lastAt = easterEggLastAtRef.current.get(kind) ?? 0;
-    if (now - lastAt < 90_000 && !recordEvent) return;
+    if (!forcePlayback && now - lastAt < 90_000 && !recordEvent) return;
     easterEggLastAtRef.current.set(kind, now);
     setEasterEgg(kind);
     if (recordEvent && session?.id) {
@@ -1712,6 +1725,71 @@ export default function RandomSessionPage() {
       if (partnerAlsoLaughing && /哈{2,}/.test(partnerAlsoLaughing.content || "")) triggerEasterEgg("sync", true);
     }
   };
+
+  useEffect(() => {
+    if (!session?.id || !myProfile?.id || !easterEggAllowed || isEnded) return;
+
+    let disposed = false;
+    let timer: number | null = null;
+
+    const syncPendingEasterEgg = async () => {
+      if (disposed || easterEggPendingSyncRef.current || document.visibilityState !== "visible") return;
+      easterEggPendingSyncRef.current = true;
+      try {
+        const result = await supabase.rpc("get_pending_chat_easter_egg_events", {
+          p_session_id: session.id,
+          p_limit: 1,
+        });
+        if (result.error || !Array.isArray(result.data) || !result.data[0]) return;
+
+        const pending = result.data[0] as PendingEasterEggEvent;
+        if (easterEggSeenRef.current.has(pending.event_id)) return;
+        easterEggSeenRef.current.add(pending.event_id);
+
+        const durationMs = pending.egg_kind === "thousand" ? 5400 : 3200;
+        triggerEasterEgg(pending.egg_kind, false, true);
+
+        window.setTimeout(() => {
+          if (disposed) return;
+          void (async () => {
+            const displayed = await supabase.rpc("record_chat_easter_egg_delivery", {
+              p_event_id: pending.event_id,
+            });
+            if (displayed.error) {
+              easterEggSeenRef.current.delete(pending.event_id);
+              return;
+            }
+            await supabase.rpc("complete_chat_easter_egg_delivery", {
+              p_event_id: pending.event_id,
+              p_duration_ms: durationMs,
+              p_client_version: "web-v3-reliable-eggs",
+            });
+            void syncPendingEasterEgg();
+          })();
+        }, durationMs);
+      } finally {
+        window.setTimeout(() => {
+          easterEggPendingSyncRef.current = false;
+        }, 250);
+      }
+    };
+
+    const onResume = () => void syncPendingEasterEgg();
+    void syncPendingEasterEgg();
+    timer = window.setInterval(() => void syncPendingEasterEgg(), 2000);
+    window.addEventListener("focus", onResume);
+    window.addEventListener("online", onResume);
+    document.addEventListener("visibilitychange", onResume);
+
+    return () => {
+      disposed = true;
+      if (timer !== null) window.clearInterval(timer);
+      window.removeEventListener("focus", onResume);
+      window.removeEventListener("online", onResume);
+      document.removeEventListener("visibilitychange", onResume);
+      easterEggPendingSyncRef.current = false;
+    };
+  }, [easterEggAllowed, isEnded, myProfile?.id, session?.id]);
 
   const sendMessage = async () => {
     const content = draft.trim();
