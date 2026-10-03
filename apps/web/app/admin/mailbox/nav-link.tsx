@@ -1,7 +1,7 @@
 "use client";
 import { useCallback,useEffect,useState } from "react";
-import { supabase } from "../../../lib/supabase";
-import { useAdminSession } from "../../../lib/admin-client";
+import { supabase } from "../../../../lib/supabase";
+import { useAdminSession } from "../../../../lib/admin-client";
 
 export function AdminMailboxNavLink(){
  const {session}=useAdminSession(); const [count,setCount]=useState(0);
