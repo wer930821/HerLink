@@ -34,6 +34,7 @@ import {
   loadMyRandomQueue,
   registerAnonymousAbuseIdentity,
   signInAnonymously,
+  requestRandomIdentityRecovery,
   signOut,
   type RandomQueueRow,
   type RandomSessionRow,
@@ -93,6 +94,10 @@ export default function HomePage() {
   const [actionBusy, setActionBusy] = useState(false);
   const [femaleOnlyOpen, setFemaleOnlyOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [recoveryName, setRecoveryName] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [debugEnabled, setDebugEnabled] = useState(false);
   const [lastDiagnostic, setLastDiagnostic] = useState<NavigationDiagnosticEvent | null>(null);
   const [activeSessionLookup, setActiveSessionLookup] = useState<ActiveSessionLookup>(initialActiveSessionLookup);
@@ -636,6 +641,25 @@ export default function HomePage() {
     }
   };
 
+  const requestRecovery = async () => {
+    if (recoveryBusy || !recoveryName.trim()) return;
+    setRecoveryBusy(true);
+    setMessage(null);
+    try {
+      const auth = await signInAnonymously();
+      if (auth.error || !auth.data.session) throw auth.error ?? new Error("匿名登入失敗");
+      const result = await requestRandomIdentityRecovery(recoveryName);
+      if (result.error) throw result.error;
+      const row = result.data?.[0];
+      if (!row?.recovery_code) throw new Error("恢復碼建立失敗");
+      setRecoveryCode(row.recovery_code);
+    } catch {
+      setMessage("目前無法建立恢復申請，請確認原本的匿名名稱後再試。");
+    } finally {
+      setRecoveryBusy(false);
+    }
+  };
+
   if (!state.session) {
     return (
       <main className="stack home-fixed home-premium">
@@ -647,6 +671,9 @@ export default function HomePage() {
               <Button size="lg" onClick={startAnonymous} disabled={actionBusy}>
                 {actionBusy ? "建立匿名身份中…" : "開始匿名聊天"}
               </Button>
+              <Button variant="secondary" size="lg" onClick={() => setRecoveryOpen(true)} disabled={actionBusy}>
+                找回原本聊天室
+              </Button>
               {onlineCountConnected ? <Badge variant="success">在線 {onlineCount} 人</Badge> : null}
               <Badge variant="neutral">排隊 {waitingCount === null ? "更新中…" : `${waitingCount} 人`}</Badge>
             </>
@@ -654,6 +681,27 @@ export default function HomePage() {
         >
           {message ? <Notice variant="warning">{message}</Notice> : null}
         </PageHero>
+        <Modal open={recoveryOpen} title="找回原本聊天室" onClose={() => !recoveryBusy && setRecoveryOpen(false)}>
+          <div className="stack">
+            <p className="muted">輸入原本使用的匿名名稱，取得 8 碼恢復碼後傳給管理員協助恢復。</p>
+            <Field
+              label="原本的匿名名稱"
+              value={recoveryName}
+              onChange={(event) => setRecoveryName(event.target.value)}
+              disabled={recoveryBusy || Boolean(recoveryCode)}
+            />
+            {recoveryCode ? (
+              <Notice variant="success" title="恢復碼已建立">
+                <strong style={{ fontSize: 22, letterSpacing: 2 }}>{recoveryCode}</strong>
+                <div className="small" style={{ marginTop: 8 }}>請把這組 8 碼傳給管理員。</div>
+              </Notice>
+            ) : (
+              <Button onClick={() => void requestRecovery()} disabled={recoveryBusy || !recoveryName.trim()}>
+                {recoveryBusy ? "建立中…" : "取得恢復碼"}
+              </Button>
+            )}
+          </div>
+        </Modal>
         <Surface elevation={1}>
           <Notice variant="danger" title="安全提醒">
             請勿向陌生人匯款、投資或提供銀行資料、信用卡資訊與驗證碼。
