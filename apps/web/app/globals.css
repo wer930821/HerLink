@@ -6231,3 +6231,26 @@ body:has(.site-mailbox-viewport){
  }
  .site-mailbox-viewport .mailbox-compose-panel>.btn{flex:0 0 58px!important;min-height:58px!important}
 }
+
+
+/* Mailbox thread detail: keep composer fixed, but allow long conversations to scroll */
+.site-mailbox-viewport .mailbox-thread-view{
+ height:100%!important;
+ min-height:0!important;
+ overflow:hidden!important;
+}
+.site-mailbox-viewport .mailbox-thread-view>.surface{
+ height:100%!important;
+ min-height:0!important;
+ overflow-y:auto!important;
+ overflow-x:hidden!important;
+ overscroll-behavior-y:contain!important;
+ -webkit-overflow-scrolling:touch!important;
+ padding-bottom:max(18px,env(safe-area-inset-bottom))!important;
+}
+.site-mailbox-viewport .mailbox-thread-view textarea.mailbox-input{
+ flex:none!important;
+ height:120px!important;
+ min-height:120px!important;
+ max-height:120px!important;
+}
