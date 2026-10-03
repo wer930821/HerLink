@@ -2211,8 +2211,8 @@ export default function RandomSessionPage() {
                     className="chat-milestone-test-trigger"
                     type="button"
                     onPointerDown={(event) => event.preventDefault()}
-                    onClick={() => triggerEasterEgg(kind)}
-                    title={`只播放 ${label} 則彩蛋，不會新增或修改訊息`}
+                    onClick={() => triggerEasterEgg(kind, true)}
+                    title={`播放 ${label} 則彩蛋並寫入一筆測試紀錄，不會新增或修改訊息`}
                   >
                     測試 {label}
                   </button>
