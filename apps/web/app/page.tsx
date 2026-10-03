@@ -811,6 +811,7 @@ export default function HomePage() {
           </Button>
           {state.activeSession ? <Button variant="secondary" size="lg" href="/chats">我的聊天</Button> : null}
           <Button variant="secondary" size="lg" href="/contacts">匿名聯絡人</Button>
+          <Button variant="secondary" size="lg" href="/mailbox">站長信箱</Button>
         </div>
 
         {state.queue?.status === "waiting" ? (
