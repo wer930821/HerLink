@@ -425,32 +425,6 @@ export default function AdminDashboardPage() {
         </AdminStatGrid>
       </AdminSection>
 
-      <AdminSection title="彩蛋紀錄" description="記錄正式聊天中實際觸發的彩蛋；測試按鈕不會計入，也不保存聊天正文。">
-        <AdminStatGrid>
-          <AdminStat label="今日觸發彩蛋" value={formatCount(data?.today_easter_egg_count)} tone={(data?.today_easter_egg_count ?? 0) > 0 ? "success" : "default"} />
-        </AdminStatGrid>
-        <div style={{ marginTop: 12 }}>
-          {data?.recent_easter_egg_events?.length ? (
-            <AdminTableWrap>
-              <AdminTable label="最近彩蛋紀錄">
-                <thead><tr><th scope="col">時間</th><th scope="col">彩蛋</th><th scope="col">類型</th><th scope="col">顯示狀態</th><th scope="col">場次</th></tr></thead>
-                <tbody>
-                  {data.recent_easter_egg_events.map((item) => (
-                    <tr key={item.id}>
-                      <td>{formatAdminTime(item.created_at)}</td>
-                      <td><AdminBadge tone={item.trigger_type === "milestone" ? "success" : "default"}>{easterEggLabel(item.egg_kind)}</AdminBadge></td>
-                      <td>{item.trigger_type === "milestone" ? "訊息里程碑" : "文字彩蛋"}</td>
-                      <td>{(item.displayed_count ?? 0) >= 2 ? "雙方已顯示" : (item.displayed_count ?? 0) === 1 ? "僅一方已顯示" : "尚未確認顯示"}</td>
-                      <td>{shortId(item.session_id)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </AdminTable>
-            </AdminTableWrap>
-          ) : <AdminEmpty>目前還沒有正式觸發的彩蛋紀錄。</AdminEmpty>}
-        </div>
-      </AdminSection>
-
       <AdminSection title="最近錯誤摘要" description="彙整最近 24 小時的即時連線、通知與聊天助手備援事件。">
         {data?.recent_error_summary?.length ? (
           <AdminTableWrap>
