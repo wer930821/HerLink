@@ -1,7 +1,7 @@
 "use client";
 import { useEffect,useState } from "react";
-import { useAdminSession } from "../_components".includes("") ? "../../lib/admin-client" : "../../lib/admin-client";
-import { supabase } from "../../lib/supabase";
+import { useAdminSession } from "../../../lib/admin-client";
+import { supabase } from "../../../lib/supabase";
 import { AdminEmpty,AdminSection } from "../_components";
 import { Button,Field,Notice } from "../../../components/ui";
 
