@@ -6019,3 +6019,45 @@ html:has(.mailbox-fullscreen){
  .mailbox-fixed .mailbox-compose-panel{gap:8px!important}
  .mailbox-fixed .mailbox-textarea{min-height:110px!important;max-height:24dvh!important}
 }
+
+
+/* True fixed mailbox screen: account for the global header and remove footer/page overflow */
+html:has(.site-mailbox-viewport),
+body:has(.site-mailbox-viewport){
+ height:100dvh!important;
+ min-height:100dvh!important;
+ overflow:hidden!important;
+ overscroll-behavior:none!important;
+}
+.site-mailbox-viewport{
+ height:calc(100dvh - 56px)!important;
+ min-height:0!important;
+ overflow:hidden!important;
+}
+.site-mailbox-viewport>.shell{
+ height:100%!important;
+ min-height:0!important;
+ padding:12px 16px max(12px,env(safe-area-inset-bottom))!important;
+ overflow:hidden!important;
+}
+.site-mailbox-viewport>.shell>.container{
+ height:100%!important;
+ min-height:0!important;
+ overflow:hidden!important;
+}
+.site-mailbox-viewport .mailbox-fixed{
+ width:100%!important;
+ height:100%!important;
+ min-height:0!important;
+ margin:0!important;
+ overflow:hidden!important;
+}
+.site-mailbox-viewport .mailbox-fixed>.surface{
+ height:100%!important;
+ overflow:hidden!important;
+}
+.site-mailbox-viewport .mailbox-head p{line-height:1.45!important}
+.site-mailbox-viewport .mailbox-textarea{
+ min-height:90px!important;
+ max-height:20dvh!important;
+}
