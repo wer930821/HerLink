@@ -6115,3 +6115,25 @@ body:has(.site-mailbox-viewport){
  flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;
  overscroll-behavior:contain!important;
 }
+
+
+/* Mobile mailbox: fit the complete composer above the fold */
+@media (max-width:720px){
+ .site-mailbox-viewport>.shell{padding:6px 14px 8px!important}
+ .site-mailbox-viewport .mailbox-fixed>.surface{padding-top:2px!important}
+ .site-mailbox-viewport .mailbox-head-compact{gap:0!important}
+ .site-mailbox-viewport .mailbox-head-compact .btn{display:none!important}
+ .site-mailbox-viewport .mailbox-head-compact .mailbox-title-row{gap:8px!important}
+ .site-mailbox-viewport .mailbox-head-compact .mailbox-title-icon{width:32px!important;height:32px!important;min-width:32px!important}
+ .site-mailbox-viewport .mailbox-head-compact h1{font-size:1.35rem!important;line-height:1.1!important}
+ .site-mailbox-viewport .mailbox-head-compact p{font-size:.78rem!important;line-height:1.2!important;max-width:100%!important}
+ .site-mailbox-viewport .mailbox-view-tabs{margin:7px 0!important;padding:3px!important}
+ .site-mailbox-viewport .mailbox-view-tabs button{min-height:38px!important;font-size:.86rem!important}
+ .site-mailbox-viewport .mailbox-compose-panel{gap:5px!important}
+ .site-mailbox-viewport .mailbox-field-label,.site-mailbox-viewport .field>label{font-size:.82rem!important;line-height:1.1!important}
+ .site-mailbox-viewport .mailbox-category-grid{gap:6px!important}
+ .site-mailbox-viewport .mailbox-category-grid button{min-height:34px!important;padding:4px 6px!important;font-size:.82rem!important}
+ .site-mailbox-viewport input.mailbox-input{min-height:36px!important;height:36px!important;padding:5px 10px!important}
+ .site-mailbox-viewport textarea.mailbox-input{min-height:64px!important;padding:6px 10px!important}
+ .site-mailbox-viewport .mailbox-compose-panel>.btn{flex:0 0 40px!important;min-height:40px!important}
+}
