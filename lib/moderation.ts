@@ -117,6 +117,15 @@ export async function fetchSessionRecoveryRequests() {
   })) as SessionRecoveryRequest[];
 }
 
+export async function reactivateSessionRecovery(recoveryCode: string) {
+  const { data, error } = await supabase.functions.invoke("admin-reactivate-session-recovery", {
+    body: { recoveryCode },
+  });
+  if (error) throw error;
+  if (!data?.ok) throw new Error(data?.error || "無法重新啟用恢復申請。");
+  return data.request;
+}
+
 export async function approveSessionRecovery(recoveryCode: string, side: "a" | "b") {
   const { data, error } = await supabase.rpc("approve_random_session_recovery", {
     p_recovery_code: recoveryCode,
