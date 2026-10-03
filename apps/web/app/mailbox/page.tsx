@@ -1,5 +1,5 @@
 "use client";
-import { useEffect,useState } from "react";
+import { useCallback,useEffect,useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import { Button, Field, Notice, Surface } from "../../components/ui";
@@ -11,8 +11,8 @@ export default function MailboxPage(){
  const router=useRouter(); const [threads,setThreads]=useState<Thread[]>([]); const [selected,setSelected]=useState<Thread|null>(null);
  const [messages,setMessages]=useState<Msg[]>([]); const [subject,setSubject]=useState(""); const [category,setCategory]=useState("other");
  const [body,setBody]=useState(""); const [reply,setReply]=useState(""); const [notice,setNotice]=useState<string|null>(null); const [busy,setBusy]=useState(false);
- const load=async()=>{const {data}=await supabase.from("station_mail_threads").select("*").order("updated_at",{ascending:false});setThreads((data??[]) as Thread[])};
- useEffect(()=>{void load()},[]);
+ const load=useCallback(async()=>{const {data}=await supabase.from("station_mail_threads").select("*").order("updated_at",{ascending:false});setThreads((data??[]) as Thread[])},[]);
+ useEffect(()=>{void load();const c=supabase.channel("user-mailbox-page").on("postgres_changes",{event:"*",schema:"public",table:"station_mail_threads"},()=>void load()).on("postgres_changes",{event:"*",schema:"public",table:"station_mail_messages"},async(payload)=>{void load();if(selected){const row=payload.new as {thread_id?:string};if(row?.thread_id===selected.id){const {data}=await supabase.from("station_mail_messages").select("*").eq("thread_id",selected.id).order("created_at");setMessages((data??[]) as Msg[]);await supabase.rpc("station_mail_mark_user_read",{p_thread_id:selected.id})}}}).subscribe();return()=>{void supabase.removeChannel(c)}},[load,selected]);
  const open=async(t:Thread)=>{setSelected(t);const {data}=await supabase.from("station_mail_messages").select("*").eq("thread_id",t.id).order("created_at");setMessages((data??[]) as Msg[]);await supabase.rpc("station_mail_mark_user_read",{p_thread_id:t.id});void load()};
  const send=async()=>{if(!subject.trim()||!body.trim())return setNotice("請填寫主旨與內容。");setBusy(true);const {data,error}=await supabase.rpc("station_mail_send",{p_subject:subject.trim(),p_category:category,p_body:body.trim()});setBusy(false);if(error)return setNotice("寄送失敗，請稍後再試。");setSubject("");setBody("");setNotice("已寄到站長信箱。");await load();if(data){const {data:t}=await supabase.from("station_mail_threads").select("*").eq("id",data).single();if(t)void open(t as Thread)}};
  const sendReply=async()=>{if(!selected||!reply.trim())return;setBusy(true);const {error}=await supabase.rpc("station_mail_user_reply",{p_thread_id:selected.id,p_body:reply.trim()});setBusy(false);if(error)return setNotice("回覆失敗。");setReply("");void open(selected)};
