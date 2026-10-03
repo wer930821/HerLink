@@ -5648,3 +5648,32 @@ body:has(.admin-page),
 }
 .mailbox-category-grid button:active{background:rgba(255,255,255,.045)}
 .mailbox-category-grid button.active:active{background:color-mix(in srgb,var(--color-accent) 12%,transparent)}
+
+
+/* Mobile/WebView: remove native blue tap/focus flash across the public home UI */
+.home-app-shell,
+.home-app-shell *,
+.home-app-shell a,
+.home-app-shell button {
+  -webkit-tap-highlight-color: transparent !important;
+}
+.home-app-shell a:focus,
+.home-app-shell a:focus-visible,
+.home-app-shell button:focus,
+.home-app-shell button:focus-visible {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+.home-app-shell .btn:focus,
+.home-app-shell .btn:focus-visible,
+.home-app-shell .button:focus,
+.home-app-shell .button:focus-visible,
+.home-mailbox-float:focus,
+.home-mailbox-float:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+.home-app-shell a,
+.home-app-shell button {
+  -webkit-touch-callout: none;
+}
