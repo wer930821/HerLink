@@ -433,13 +433,14 @@ export default function AdminDashboardPage() {
           {data?.recent_easter_egg_events?.length ? (
             <AdminTableWrap>
               <AdminTable label="最近彩蛋紀錄">
-                <thead><tr><th scope="col">時間</th><th scope="col">彩蛋</th><th scope="col">類型</th><th scope="col">場次</th></tr></thead>
+                <thead><tr><th scope="col">時間</th><th scope="col">彩蛋</th><th scope="col">類型</th><th scope="col">顯示狀態</th><th scope="col">場次</th></tr></thead>
                 <tbody>
                   {data.recent_easter_egg_events.map((item) => (
                     <tr key={item.id}>
                       <td>{formatAdminTime(item.created_at)}</td>
                       <td><AdminBadge tone={item.trigger_type === "milestone" ? "success" : "default"}>{easterEggLabel(item.egg_kind)}</AdminBadge></td>
                       <td>{item.trigger_type === "milestone" ? "訊息里程碑" : "文字彩蛋"}</td>
+                      <td>{(item.displayed_count ?? 0) >= 2 ? "雙方已顯示" : (item.displayed_count ?? 0) === 1 ? "僅一方已顯示" : "尚未確認顯示"}</td>
                       <td>{shortId(item.session_id)}</td>
                     </tr>
                   ))}
