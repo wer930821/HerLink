@@ -5931,3 +5931,38 @@ html:has(.mailbox-fullscreen){
   border-color:rgba(255,108,100,.55)!important;
   box-shadow:0 0 0 2px rgba(255,108,100,.06)!important;
 }
+
+
+/* Clear visual separation between composing mail and inbox */
+.mailbox-compose-section{
+  margin-top:24px;
+  padding:22px 20px 24px;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:20px;
+  background:rgba(255,255,255,.025);
+}
+.mailbox-section-heading{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin:0 0 18px;padding-bottom:13px;
+  border-bottom:1px solid rgba(255,255,255,.09);
+}
+.mailbox-section-heading>span{font-size:1.12rem;font-weight:850;color:#f8f5ff}
+.mailbox-section-heading>small{
+  font-size:.68rem;font-weight:800;letter-spacing:.08em;
+  color:rgba(255,255,255,.42);
+}
+.mailbox-inbox-section{
+  margin-top:34px;
+  padding-top:24px;
+  border-top:1px solid rgba(255,255,255,.12);
+}
+.mailbox-inbox-heading{margin-bottom:8px}
+.mailbox-inbox-heading>small{
+  min-width:28px;padding:4px 8px;border-radius:999px;
+  background:rgba(255,108,100,.10);color:rgba(255,190,185,.9);
+  text-align:center;letter-spacing:0;
+}
+@media(max-width:720px){
+ .mailbox-compose-section{margin-top:20px;padding:18px 16px 20px;border-radius:18px}
+ .mailbox-inbox-section{margin-top:28px;padding-top:22px}
+}
