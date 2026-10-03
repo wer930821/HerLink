@@ -402,6 +402,15 @@ export async function signInAnonymously() {
   return supabase.auth.signInAnonymously();
 }
 
+export async function requestRandomIdentityRecovery(displayName: string) {
+  return supabase.rpc("request_random_identity_recovery", {
+    p_display_name: displayName.trim(),
+  }) as unknown as Promise<{
+    data: { recovery_code: string; expires_at: string }[] | null;
+    error: { message?: string } | null;
+  }>;
+}
+
 export async function signOut() {
   return supabase.auth.signOut();
 }
