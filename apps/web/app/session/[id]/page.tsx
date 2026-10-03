@@ -2234,8 +2234,16 @@ export default function RandomSessionPage() {
                         window.alert(`彩蛋測試失敗：登入狀態無效（${authCheck.error?.message ?? "找不到使用者"}）`);
                         return;
                       }
+                      // Refresh the server-owned session first. This also runs installation recovery
+                      // when the browser auth identity rotated, so the participant binding is
+                      // synchronized before the protected event RPC is attempted.
+                      const syncedSession = await refreshSessionFromServerRef.current?.();
+                      if (!syncedSession?.id) {
+                        window.alert("彩蛋測試失敗：聊天室身分同步失敗，請重新整理後再試");
+                        return;
+                      }
                       const result = await supabase.rpc("record_chat_easter_egg_event", {
-                        p_session_id: session.id,
+                        p_session_id: syncedSession.id,
                         p_egg_kind: kind,
                         p_trigger_type: "milestone",
                       });
