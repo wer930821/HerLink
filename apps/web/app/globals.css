@@ -5883,3 +5883,51 @@ body:has(.admin-page),
 .mailbox-fullscreen textarea.mailbox-input{
   background:rgba(255,255,255,.035)!important;
 }
+
+
+/* Mailbox final layout: full viewport background + visible input boxes */
+body:has(.mailbox-fullscreen),
+html:has(.mailbox-fullscreen){
+  background:#0d0c17!important;
+  background-image:none!important;
+}
+.mailbox-fullscreen{
+  position:relative!important;
+  width:100vw!important;
+  max-width:none!important;
+  margin-left:calc(50% - 50vw)!important;
+  margin-right:calc(50% - 50vw)!important;
+  background:#0d0c17!important;
+  background-image:none!important;
+}
+.mailbox-fullscreen>.surface{
+  background:#0d0c17!important;
+  background-color:#0d0c17!important;
+  background-image:none!important;
+}
+.mailbox-fullscreen input.mailbox-input{
+  display:block!important;
+  min-height:52px!important;
+  background:#171522!important;
+  background-color:#171522!important;
+  border:1px solid rgba(255,255,255,.16)!important;
+  border-radius:14px!important;
+  padding:13px 14px!important;
+}
+.mailbox-fullscreen textarea.mailbox-input{
+  display:block!important;
+  min-height:150px!important;
+  background:#171522!important;
+  background-color:#171522!important;
+  border:1px solid rgba(255,255,255,.16)!important;
+  border-radius:14px!important;
+  padding:13px 14px!important;
+}
+.mailbox-fullscreen input.mailbox-input:focus,
+.mailbox-fullscreen textarea.mailbox-input:focus,
+.mailbox-fullscreen input.mailbox-input:focus-visible,
+.mailbox-fullscreen textarea.mailbox-input:focus-visible{
+  background:#171522!important;
+  border-color:rgba(255,108,100,.55)!important;
+  box-shadow:0 0 0 2px rgba(255,108,100,.06)!important;
+}
