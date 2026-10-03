@@ -12,12 +12,13 @@ export function SiteChrome({ children }: { children: ReactNode }) {
     pathname?.startsWith("/session") === true ||
     pathname === "/login";
   const isHome = pathname === "/";
+  const isMailbox = pathname === "/mailbox";
 
   return (
     <>
       {!isChromeHidden ? <SiteHeader /> : null}
-      {isHome ? <div className="site-home-viewport">{children}</div> : children}
-      {!isChromeHidden && !isHome ? <SiteFooter /> : null}
+      {isHome ? <div className="site-home-viewport">{children}</div> : isMailbox ? <div className="site-mailbox-viewport">{children}</div> : children}
+      {!isChromeHidden && !isHome && !isMailbox ? <SiteFooter /> : null}
     </>
   );
 }
