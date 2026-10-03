@@ -1578,7 +1578,7 @@ export default function RandomSessionPage() {
   }, [messages.length, session?.id]);
 
   const triggerEasterEgg = (kind: "goodnight" | "morning" | "hello" | "hi" | "penguin" | "sync" | "aurora" | "meteor" | "secret" | "hundred" | "twoHundred" | "threeHundred" | "fourHundred" | "tired" | "offwork" | "food" | "curious" | "surprised" | "cute" | "sleepless" | "tomorrow" | "fiveHundred" | "thousand", recordEvent = false) => {
-    if (!easterEggAllowed) return;
+    if (!easterEggAllowed && !recordEvent) return;
     const now = Date.now();
     const lastAt = easterEggLastAtRef.current.get(kind) ?? 0;
     if (now - lastAt < 90_000) return;
