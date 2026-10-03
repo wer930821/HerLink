@@ -671,8 +671,8 @@ export default function HomePage() {
               <Button size="lg" onClick={startAnonymous} disabled={actionBusy}>
                 {actionBusy ? "建立匿名身份中…" : "開始匿名聊天"}
               </Button>
-              <Button variant="secondary" size="lg" onClick={() => setRecoveryOpen(true)} disabled={actionBusy}>
-                找回原本聊天室
+              <Button variant="link" onClick={() => setRecoveryOpen(true)} disabled={actionBusy}>
+                無法進入原本聊天室？
               </Button>
               {onlineCountConnected ? <Badge variant="success">在線 {onlineCount} 人</Badge> : null}
               <Badge variant="neutral">排隊 {waitingCount === null ? "更新中…" : `${waitingCount} 人`}</Badge>
