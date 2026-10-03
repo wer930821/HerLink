@@ -1646,8 +1646,8 @@ export default function RandomSessionPage() {
                   p_event_id: eventId,
                   p_duration_ms: durationMs,
                   p_client_version: clientVersion,
-                }).then(({ error }) => {
-                  if (error) console.error("[herlink] easter egg completion tracking failed", error);
+                }).then((result: { error?: unknown }) => {
+                  if (result.error) console.error("[herlink] easter egg completion tracking failed", result.error);
                 });
               }, durationMs);
             }
