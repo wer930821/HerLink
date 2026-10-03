@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import { Button, Field, Notice, Surface } from "../../components/ui";
 
-type Thread={id:string;subject:string;category:string;status:string;created_at:string;updated_at:string;user_last_read_at:string|null};
+type Thread={id:string;subject:string;category:string;status:string;created_at:string;updated_at:string;user_last_read_at:string|null;admin_last_read_at?:string|null};
 type Msg={id:string;thread_id:string;sender_role:"user"|"admin";body:string;created_at:string};
 
 export default function MailboxPage(){
@@ -17,9 +17,10 @@ export default function MailboxPage(){
  const send=async()=>{if(!subject.trim()||!body.trim())return setNotice("請填寫主旨與內容。");setBusy(true);const {data,error}=await (supabase as any).rpc("station_mail_send",{p_subject:subject.trim(),p_category:category,p_body:body.trim()});setBusy(false);if(error)return setNotice("寄送失敗，請稍後再試。");setSubject("");setBody("");setNotice("已寄到站長信箱。");await load();if(data){const {data:t}=await (supabase as any).from("station_mail_threads").select("*").eq("id",data).single();if(t)void open(t as Thread)}};
  const sendReply=async()=>{if(!selected||!reply.trim())return;setBusy(true);const {error}=await (supabase as any).rpc("station_mail_user_reply",{p_thread_id:selected.id,p_body:reply.trim()});setBusy(false);if(error)return setNotice("回覆失敗。");setReply("");void open(selected)};
  if(selected)return <main className="page-shell mailbox-page mailbox-fullscreen"><Surface><Button onClick={()=>setSelected(null)}>返回我的信件</Button><h1>{selected.subject}</h1><div style={{display:"grid",gap:10}}>{messages.map(m=><div key={m.id} style={{padding:12,borderRadius:14,background:m.sender_role==="admin"?"rgba(212,175,55,.14)":"rgba(255,255,255,.06)"}}><strong>{m.sender_role==="admin"?"站長":"我"}</strong><div>{m.body}</div><small>{new Date(m.created_at).toLocaleString("zh-TW")}</small></div>)}</div><Field label="回覆"><textarea className="mailbox-input mailbox-textarea" value={reply} onChange={e=>setReply(e.target.value)} maxLength={2000}/></Field><Button disabled={busy} onClick={sendReply}>送出回覆</Button>{notice&&<Notice>{notice}</Notice>}</Surface></main>;
- return <main className="page-shell mailbox-page mailbox-fullscreen"><Surface>
+ const unreadThreads=threads.filter(t=>t.status==="replied" && (!t.user_last_read_at || new Date(t.updated_at).getTime()>new Date(t.user_last_read_at).getTime()));
+ return <main className="page-shell mailbox-page mailbox-fullscreen mailbox-fixed"><Surface>
  <div className="mailbox-head"><Button variant="link" onClick={()=>router.push("/")}>← 返回首頁</Button><div className="mailbox-title-row"><span className="mailbox-title-icon">✉</span><h1>站長信箱</h1></div><p>有問題、建議或想告訴站長的事，都可以從這裡寄出。</p></div>
- <div className="mailbox-view-tabs"><button type="button" className={view==="compose"?"active":""} onClick={()=>setView("compose")}>寫信給站長</button><button type="button" className={view==="inbox"?"active":""} onClick={()=>setView("inbox")}>我的信件{threads.length>0?`（${threads.length}）`:""}</button></div>
+ <div className="mailbox-view-tabs"><button type="button" className={view==="compose"?"active":""} onClick={()=>setView("compose")}>寫信給站長</button><button type="button" className={view==="inbox"?"active":""} onClick={()=>setView("inbox")}>我的信件{unreadThreads.length>0?`（${unreadThreads.length}）`:""}</button></div>
  {view==="compose"?<section className="mailbox-compose-panel">
  <div className="mailbox-category"><div className="mailbox-field-label">信件分類</div><div className="mailbox-category-grid"><button type="button" className={category==="problem"?"active":""} onClick={()=>setCategory("problem")}>問題回報</button><button type="button" className={category==="suggestion"?"active":""} onClick={()=>setCategory("suggestion")}>建議</button><button type="button" className={category==="other"?"active":""} onClick={()=>setCategory("other")}>其他</button></div></div>
  <Field label="主旨"><input className="mailbox-input" value={subject} onChange={e=>setSubject(e.target.value)} maxLength={80}/></Field>
