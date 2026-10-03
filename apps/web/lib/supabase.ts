@@ -313,6 +313,10 @@ export async function adminRestoreRandomSessionToSelf(sessionId:string, side:"a"
   return supabase.rpc("admin_restore_random_session_to_self",{p_session_id:sessionId,p_side:side});
 }
 
+export async function adminRestoreRandomSessionByName(sessionId:string, side:"a"|"b", targetName:string) {
+  return supabase.rpc("admin_restore_random_session_by_name",{p_session_id:sessionId,p_side:side,p_target_name:targetName});
+}
+
 export async function getCurrentSession() {
   return supabase.auth.getSession();
 }
