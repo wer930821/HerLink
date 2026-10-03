@@ -2252,6 +2252,11 @@ export default function RandomSessionPage() {
                         p_egg_kind: kind,
                         p_trigger_type: "milestone",
                       });
+                      if (result.error?.code === "P0001") {
+                        const authId = verifiedAuth.data.user.id;
+                        window.alert(`彩蛋寫入失敗：P0001｜Auth ${authId.slice(0, 8)}…｜聊天室 ${syncedSession.id.slice(0, 8)}…｜目前身分不是此聊天室參與者`);
+                        return;
+                      }
                       if (result.error) {
                         window.alert(`彩蛋寫入失敗：${result.error.code ?? "RPC_ERROR"}｜${result.error.message ?? "未知錯誤"}`);
                         console.error("[herlink] milestone test record failed", result.error);
