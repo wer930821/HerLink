@@ -41,6 +41,7 @@ import {
   type Session,
   type AnonymousAbusePrecheckRow,
   type WebProfile,
+  supabase,
 } from "../lib/supabase";
 import { Badge, Button, Field, Modal, Notice, PageHero, Surface } from "../components/ui";
 
@@ -107,8 +108,25 @@ export default function HomePage() {
   const [randomBusy, setRandomBusy] = useState(false);
   const [renameNotice, setRenameNotice] = useState<string | null>(null);
   const [waitingCount, setWaitingCount] = useState<number | null>(null);
+  const [mailUnreadCount, setMailUnreadCount] = useState(0);
   const waitingCountRequestRef = useRef(0);
   const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
+
+  const refreshMailUnread = useCallback(async () => {
+    if (!state.session?.user.id) { setMailUnreadCount(0); return; }
+    const { data } = await supabase.rpc("station_mail_user_unread_count");
+    setMailUnreadCount(Number(data ?? 0));
+  }, [state.session?.user.id]);
+
+  useEffect(() => {
+    if (!state.session?.user.id) return;
+    void refreshMailUnread();
+    const channel = supabase.channel(`home-mailbox-${state.session.user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "station_mail_threads", filter: `user_id=eq.${state.session.user.id}` }, () => void refreshMailUnread())
+      .on("postgres_changes", { event: "*", schema: "public", table: "station_mail_messages" }, () => void refreshMailUnread())
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [state.session?.user.id, refreshMailUnread]);
 
   const refreshWaitingCount = useCallback(async () => {
     const requestId = ++waitingCountRequestRef.current;
@@ -791,7 +809,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <button type="button" className="home-mailbox-float" aria-label="信箱" onPointerDown={(event)=>event.currentTarget.blur()} onClick={()=>router.push("/mailbox")}><span className="home-mailbox-icon" aria-hidden="true">✉</span><span>信箱</span></button>
+        <button type="button" className="home-mailbox-float" aria-label="信箱" onPointerDown={(event)=>event.currentTarget.blur()} onClick={()=>router.push("/mailbox")}><span className="home-mailbox-icon" aria-hidden="true">✉</span><span>信箱</span>{mailUnreadCount>0?<span className="home-mailbox-unread" aria-label={`${mailUnreadCount} 封未讀`}>{mailUnreadCount>99?"99+":mailUnreadCount}</span>:null}</button>
 
         <div className="home-app-eyebrow">HerLink</div>
         <h1 className="home-app-title">匿名聊天</h1>
