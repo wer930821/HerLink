@@ -5620,3 +5620,31 @@ body:has(.admin-page),
 .mailbox-page>.surface>.btn-lg{width:100%;margin-top:8px}
 .mailbox-page>.surface+ .surface h2{font-size:1.35rem;margin-bottom:16px}
 @media(max-width:520px){.mailbox-page{padding-inline:14px}.mailbox-page>.surface{padding:20px 18px}.mailbox-title-row h1{font-size:1.75rem}.mailbox-category-grid{gap:6px}.mailbox-category-grid button{font-size:.8rem;padding-inline:5px}}
+
+
+/* Mailbox controls: avoid browser/WebView native gray + blue tap highlight */
+.mailbox-page,.mailbox-page *{-webkit-tap-highlight-color:transparent}
+.mailbox-input{
+  display:block;width:100%;appearance:none;-webkit-appearance:none;
+  border:1px solid rgba(255,255,255,.10)!important;border-radius:14px!important;
+  background:rgba(255,255,255,.035)!important;color:var(--color-text)!important;
+  padding:13px 14px!important;outline:none!important;
+  caret-color:var(--color-accent);
+  box-shadow:none!important;
+  transition:border-color .18s ease,background .18s ease,box-shadow .18s ease;
+}
+.mailbox-input:focus,.mailbox-input:focus-visible{
+  outline:none!important;
+  border-color:rgba(255,108,100,.52)!important;
+  background:rgba(255,108,100,.035)!important;
+  box-shadow:0 0 0 2px rgba(255,108,100,.07)!important;
+}
+.mailbox-textarea{min-height:112px!important;resize:vertical}
+.mailbox-category-grid button{
+  -webkit-tap-highlight-color:transparent;outline:none!important;
+}
+.mailbox-category-grid button:focus,.mailbox-category-grid button:focus-visible{
+  outline:none!important;box-shadow:none!important;
+}
+.mailbox-category-grid button:active{background:rgba(255,255,255,.045)}
+.mailbox-category-grid button.active:active{background:color-mix(in srgb,var(--color-accent) 12%,transparent)}
