@@ -6214,3 +6214,20 @@ body:has(.site-mailbox-viewport){
    flex:0 0 52px!important;min-height:52px!important;
  }
 }
+
+
+/* Mailbox final mobile vertical sizing */
+@media (max-width:720px){
+ .site-mailbox-viewport .mailbox-view-tabs{margin:16px 0!important}
+ .site-mailbox-viewport .mailbox-view-tabs button{min-height:56px!important}
+ .site-mailbox-viewport .mailbox-compose-panel{gap:14px!important}
+ .site-mailbox-viewport .mailbox-category-grid button{min-height:54px!important}
+ .site-mailbox-viewport input.mailbox-input{height:58px!important;min-height:58px!important}
+ .site-mailbox-viewport textarea.mailbox-input{
+   flex:1 1 260px!important;
+   height:auto!important;
+   min-height:220px!important;
+   max-height:none!important;
+ }
+ .site-mailbox-viewport .mailbox-compose-panel>.btn{flex:0 0 58px!important;min-height:58px!important}
+}
