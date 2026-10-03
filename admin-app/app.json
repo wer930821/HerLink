@@ -2,7 +2,7 @@
   "expo": {
     "name": "HerLink 後台",
     "slug": "herlink-admin",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "scheme": "herlinkadmin",
     "userInterfaceStyle": "dark",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.wer93.herlinkadmin",
-      "versionCode": 3,
+      "versionCode": 4,
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.INTERNET",
