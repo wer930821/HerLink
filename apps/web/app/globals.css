@@ -5865,3 +5865,21 @@ body:has(.admin-page),
   box-shadow:0 0 0 2px rgba(255,108,100,.07)!important;
   outline:none!important;
 }
+
+
+/* Mailbox: use the same page background as the rest of HerLink */
+.mailbox-fullscreen,
+.mailbox-fullscreen>.surface,
+.mailbox-fullscreen input.mailbox-input,
+.mailbox-fullscreen textarea.mailbox-input{
+  background-color:transparent!important;
+}
+.mailbox-fullscreen{background:transparent!important}
+.mailbox-fullscreen>.surface{
+  background:transparent!important;
+  background-image:none!important;
+}
+.mailbox-fullscreen input.mailbox-input,
+.mailbox-fullscreen textarea.mailbox-input{
+  background:rgba(255,255,255,.035)!important;
+}
