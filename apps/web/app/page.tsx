@@ -14,6 +14,7 @@ import {
   loadMyProfile,
   loadMyRandomQueue,
   signInAnonymously,
+  requestRandomIdentityRecovery,
   signOut,
   type RandomQueueRow,
   type RandomSessionRow,
@@ -41,6 +42,9 @@ export default function HomePage() {
   const [state, setState] = useState<BootstrapState>(emptyBootstrapState);
   const [actionBusy, setActionBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryName, setRecoveryName] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -169,6 +173,29 @@ export default function HomePage() {
     }
   };
 
+  const startRecovery = async () => {
+    if (actionBusy || !recoveryName.trim()) return;
+    setActionBusy(true);
+    setMessage(null);
+    try {
+      let { data: sessionData } = await getCurrentSession();
+      if (!sessionData.session) {
+        const signInResult = await signInAnonymously();
+        if (signInResult.error) throw signInResult.error;
+        sessionData = { session: signInResult.data.session };
+      }
+      const result = await requestRandomIdentityRecovery(recoveryName);
+      if (result.error) throw result.error;
+      const row = result.data?.[0];
+      if (!row?.recovery_code) throw new Error("無法建立恢復申請");
+      setRecoveryCode(row.recovery_code);
+    } catch {
+      setMessage("目前找不到可恢復的聊天室，請確認原本的匿名名稱，或聯絡管理員協助。");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
   if (!state.session) {
     return (
       <main className="stack">
@@ -177,9 +204,35 @@ export default function HomePage() {
           <p className="hero-copy">不用註冊、不用公開真實資料，直接建立匿名身份開始聊天。</p>
           <div className="row">
             <button className="button" onClick={startAnonymous} disabled={actionBusy}>
-              {actionBusy ? "建立匿名身份中…" : "開始匿名聊天"}
+              {actionBusy ? "處理中…" : "開始匿名聊天"}
+            </button>
+            <button className="ghost" onClick={() => setShowRecovery((value) => !value)} disabled={actionBusy}>
+              找回原本聊天室
             </button>
           </div>
+          {showRecovery ? (
+            <div className="panel" style={{ marginTop: 14 }}>
+              <p className="title">找回原本聊天室</p>
+              <p className="hero-copy">輸入您原本使用的匿名名稱，系統會建立 8 碼恢復碼。</p>
+              <input
+                value={recoveryName}
+                onChange={(event) => setRecoveryName(event.target.value)}
+                placeholder="原本的匿名名稱"
+                disabled={actionBusy || Boolean(recoveryCode)}
+                style={{ width: "100%", padding: 12, borderRadius: 12, marginBottom: 10 }}
+              />
+              {!recoveryCode ? (
+                <button className="button" onClick={startRecovery} disabled={actionBusy || !recoveryName.trim()}>
+                  {actionBusy ? "建立恢復碼中…" : "取得恢復碼"}
+                </button>
+              ) : (
+                <div className="notice">
+                  您的恢復碼：<strong style={{ fontSize: 22, letterSpacing: 2 }}>{recoveryCode}</strong>
+                  <div className="small" style={{ marginTop: 8 }}>請把這組 8 碼提供給管理員。核准後，原本保留的聊天室會一起恢復。</div>
+                </div>
+              )}
+            </div>
+          ) : null}
           {message ? <div className="notice">{message}</div> : null}
         </section>
         <section className="panel">
