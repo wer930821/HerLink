@@ -1625,6 +1625,10 @@ export default function RandomSessionPage() {
             console.error("[herlink] easter egg failure diagnostic RPC failed", failureResult.error);
           }
         } else {
+          const eventId = typeof insertResult.data === "string" ? insertResult.data : null;
+          if (eventId) {
+            await supabase.rpc("record_chat_easter_egg_delivery", { p_event_id: eventId });
+          }
           try {
             localStorage.removeItem("herlink:last-easter-egg-log-error");
           } catch {}
