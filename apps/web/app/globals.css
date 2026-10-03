@@ -5735,3 +5735,19 @@ body:has(.admin-page),
   outline:none;background:rgba(255,108,100,.035);
   border-color:rgba(255,108,100,.32);box-shadow:none;
 }
+
+.mailbox-page .mailbox-thread-card{
+  background:#151322!important;
+  background-color:#151322!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  color:#f7f4ff!important;
+  box-shadow:none!important;
+  -webkit-tap-highlight-color:transparent!important;
+}
+.mailbox-page .mailbox-thread-card:active,
+.mailbox-page .mailbox-thread-card:focus,
+.mailbox-page .mailbox-thread-card:focus-visible{
+  background:#191625!important;
+  background-color:#191625!important;
+  outline:none!important;box-shadow:none!important;
+}
