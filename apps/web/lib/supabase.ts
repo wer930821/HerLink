@@ -308,6 +308,10 @@ export async function approveAdminRecoveryRequest(code:string, side:"a"|"b") {
   return supabase.rpc("approve_random_session_recovery",{p_recovery_code:code,p_side:side});
 }
 
+export async function adminRestoreRandomSessionToSelf(sessionId:string, side:"a"|"b") {
+  return supabase.rpc("admin_restore_random_session_to_self",{p_session_id:sessionId,p_side:side});
+}
+
 export async function getCurrentSession() {
   return supabase.auth.getSession();
 }
