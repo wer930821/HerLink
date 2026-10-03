@@ -1582,17 +1582,26 @@ export default function RandomSessionPage() {
     if (now - lastAt < 90_000) return;
     easterEggLastAtRef.current.set(kind, now);
     setEasterEgg(kind);
-    if (recordEvent && session?.id && myProfile?.id) {
+    if (recordEvent && session?.id) {
       const triggerType = ["hundred", "twoHundred", "threeHundred", "fourHundred", "fiveHundred", "thousand"].includes(kind)
         ? "milestone"
         : "text";
-      void supabase.from("chat_easter_egg_events").insert({
-        session_id: session.id,
-        user_id: myProfile.id,
-        egg_kind: kind,
-        trigger_type: triggerType,
-      }).then((result: { error: { message?: string } | null }) => {
-        if (result.error && process.env.NODE_ENV !== "production") console.warn("[herlink] easter egg event log failed", result.error.message);
+      // The session participant IDs are the auth user IDs. Use the current
+      // authenticated user as the event owner instead of the optional profile
+      // object so RLS can reliably accept the insert for every chat user.
+      void supabase.auth.getUser().then(({ data: authData, error: authError }) => {
+        const userId = authData.user?.id;
+        if (authError || !userId) return;
+        return supabase.from("chat_easter_egg_events").insert({
+          session_id: session.id,
+          user_id: userId,
+          egg_kind: kind,
+          trigger_type: triggerType,
+        });
+      }).then((result) => {
+        if (result && "error" in result && result.error && process.env.NODE_ENV !== "production") {
+          console.warn("[herlink] easter egg event log failed", result.error.message);
+        }
       });
     }
     if (kind === "thousand") {
