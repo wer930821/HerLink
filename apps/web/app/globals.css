@@ -5751,3 +5751,52 @@ body:has(.admin-page),
   background-color:#191625!important;
   outline:none!important;box-shadow:none!important;
 }
+
+
+/* Mailbox flat controls: no boxes / no gray surfaces */
+.mailbox-page .mailbox-input,
+.mailbox-page input.mailbox-input,
+.mailbox-page textarea.mailbox-input{
+  background:transparent!important;
+  background-color:transparent!important;
+  border:0!important;
+  border-bottom:1px solid rgba(255,255,255,.14)!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  outline:none!important;
+  padding:12px 2px!important;
+}
+.mailbox-page textarea.mailbox-input{
+  min-height:150px!important;
+  border:0!important;
+  border-bottom:1px solid rgba(255,255,255,.14)!important;
+}
+.mailbox-page .mailbox-input:focus,
+.mailbox-page .mailbox-input:focus-visible{
+  background:transparent!important;
+  border-color:rgba(255,108,100,.55)!important;
+  box-shadow:none!important;
+  outline:none!important;
+}
+.mailbox-page .mailbox-category-grid button{
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.mailbox-page .mailbox-category-grid button.active{
+  background:rgba(255,108,100,.07)!important;
+}
+.mailbox-page .mailbox-thread-card{
+  background:transparent!important;
+  background-color:transparent!important;
+  border:0!important;
+  border-bottom:1px solid rgba(255,255,255,.09)!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  padding:14px 2px!important;
+}
+.mailbox-page .mailbox-thread-card:active,
+.mailbox-page .mailbox-thread-card:focus,
+.mailbox-page .mailbox-thread-card:focus-visible{
+  background:transparent!important;
+  border-color:rgba(255,255,255,.09)!important;
+}
