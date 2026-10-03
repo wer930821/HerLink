@@ -5690,3 +5690,19 @@ body:has(.admin-page),
   outline:0!important;
   -webkit-tap-highlight-color:rgba(0,0,0,0)!important;
 }
+
+
+/* Admin mailbox reply: match dark HerLink controls, no native gray/blue state */
+.admin-mailbox-reply{
+  display:block;width:100%;min-height:112px;padding:13px 14px;
+  appearance:none;-webkit-appearance:none;
+  border:1px solid rgba(255,255,255,.10)!important;border-radius:14px;
+  background:rgba(255,255,255,.035)!important;color:var(--color-text)!important;
+  outline:none!important;box-shadow:none!important;caret-color:var(--color-accent);
+  resize:vertical;-webkit-tap-highlight-color:transparent!important;
+}
+.admin-mailbox-reply:focus,.admin-mailbox-reply:focus-visible{
+  outline:none!important;border-color:rgba(255,108,100,.52)!important;
+  background:rgba(255,108,100,.035)!important;
+  box-shadow:0 0 0 2px rgba(255,108,100,.07)!important;
+}
