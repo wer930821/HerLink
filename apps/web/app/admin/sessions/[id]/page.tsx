@@ -93,6 +93,7 @@ export default function AdminSessionDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [restoreBusy, setRestoreBusy] = useState<"a"|"b"|null>(null);
+  const [targetWebUserId, setTargetWebUserId] = useState("");
 
   const sessionState = useMemo(() => {
     if (loading) return "loading";
@@ -121,7 +122,9 @@ export default function AdminSessionDetailPage() {
     if (!data) return;
     setRestoreBusy(side);
     setError(null);
-    const result = await adminRestoreRandomSessionToSelf(sessionId, side);
+    const target = targetWebUserId.trim();
+    if (!target) { setError("請先輸入目前匿名 Web 的完整使用者 ID。"); setRestoreBusy(null); return; }
+    const result = await adminRestoreRandomSessionToSelf(sessionId, side, target);
     if (result.error) setError(result.error.message || "恢復失敗。");
     else window.location.assign("/");
     setRestoreBusy(null);
@@ -169,7 +172,7 @@ export default function AdminSessionDetailPage() {
               {data.ended_by ? <AdminBadge>結束者：{shortId(data.ended_by)}</AdminBadge> : null}
             </AdminToolbar>
             <AdminSection title="基本資訊">
-              {data ? <div className="row" style={{marginBottom:12}}><Button size="sm" type="button" disabled={restoreBusy!==null} onClick={()=>void restoreSide("a")}>{restoreBusy==="a"?"恢復中…":"恢復 A 方到我的 Web"}</Button><Button size="sm" type="button" disabled={restoreBusy!==null} onClick={()=>void restoreSide("b")}>{restoreBusy==="b"?"恢復中…":"恢復 B 方到我的 Web"}</Button></div> : null}
+              {data ? <div className="stack" style={{marginBottom:12}}><input value={targetWebUserId} onChange={(e)=>setTargetWebUserId(e.target.value)} placeholder="目前匿名 Web 的完整使用者 ID" style={{width:"100%",padding:"12px",borderRadius:10}}/><div className="row"><Button size="sm" type="button" disabled={restoreBusy!==null} onClick={()=>void restoreSide("a")}>{restoreBusy==="a"?"恢復中…":"恢復 A 方到這個 Web 身分"}</Button><Button size="sm" type="button" disabled={restoreBusy!==null} onClick={()=>void restoreSide("b")}>{restoreBusy==="b"?"恢復中…":"恢復 B 方到這個 Web 身分"}</Button></div></div> : null}
               <div className="admin-kv-grid">
                 <div><span>建立時間</span><strong>{formatAdminTime(data.created_at)}</strong></div>
                 <div><span>結束時間</span><strong>{formatAdminTime(data.ended_at)}</strong></div>
