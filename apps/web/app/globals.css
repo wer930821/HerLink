@@ -5600,3 +5600,23 @@ body:has(.admin-page),
 @keyframes home-mailbox-dot{0%,100%{opacity:.55;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
 @media(max-width:520px){.home-mailbox-float{top:92px;right:14px;min-height:34px;padding:6px 10px;font-size:.74rem}}
 @media(prefers-reduced-motion:reduce){.home-mailbox-float,.home-mailbox-icon,.home-mailbox-float::after{animation:none}}
+
+
+/* Station mailbox */
+.mailbox-page{gap:14px}
+.mailbox-page>.surface{border-radius:24px;background:linear-gradient(180deg,rgba(24,21,39,.96),rgba(15,14,27,.98));border:1px solid rgba(255,255,255,.08);box-shadow:0 18px 50px rgba(0,0,0,.18)}
+.mailbox-head{margin-bottom:24px}
+.mailbox-head .btn-link{width:auto;min-height:34px;padding:0;color:var(--color-text-muted);font-size:.86rem}
+.mailbox-title-row{display:flex;align-items:center;gap:10px;margin-top:18px}
+.mailbox-title-row h1{margin:0;font-size:2rem;letter-spacing:-.035em}
+.mailbox-title-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:rgba(255,108,100,.11);color:var(--color-accent-strong);font-size:1.05rem}
+.mailbox-head p{margin:10px 0 0;max-width:32rem;color:var(--color-text-muted);line-height:1.6}
+.mailbox-field-label{margin-bottom:9px;color:var(--color-text);font-size:.9rem;font-weight:800}
+.mailbox-category{margin-bottom:18px}
+.mailbox-category-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mailbox-category-grid button{min-height:42px;padding:8px 10px;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:rgba(255,255,255,.025);color:var(--color-text-muted);font:inherit;font-size:.86rem;font-weight:750;cursor:pointer}
+.mailbox-category-grid button.active{border-color:color-mix(in srgb,var(--color-accent) 60%,transparent);background:color-mix(in srgb,var(--color-accent) 10%,transparent);color:var(--color-text);box-shadow:0 0 0 1px color-mix(in srgb,var(--color-accent) 12%,transparent) inset}
+.mailbox-page textarea{min-height:112px}
+.mailbox-page>.surface>.btn-lg{width:100%;margin-top:8px}
+.mailbox-page>.surface+ .surface h2{font-size:1.35rem;margin-bottom:16px}
+@media(max-width:520px){.mailbox-page{padding-inline:14px}.mailbox-page>.surface{padding:20px 18px}.mailbox-title-row h1{font-size:1.75rem}.mailbox-category-grid{gap:6px}.mailbox-category-grid button{font-size:.8rem;padding-inline:5px}}
