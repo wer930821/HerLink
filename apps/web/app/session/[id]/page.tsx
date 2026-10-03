@@ -2225,13 +2225,22 @@ export default function RandomSessionPage() {
                     onPointerDown={(event) => event.preventDefault()}
                     onClick={async () => {
                       triggerEasterEgg(kind, false);
-                      if (!session?.id) return;
+                      if (!session?.id) {
+                        window.alert("彩蛋測試失敗：目前沒有聊天室 session");
+                        return;
+                      }
+                      const authCheck = await supabase.auth.getUser();
+                      if (authCheck.error || !authCheck.data.user) {
+                        window.alert(`彩蛋測試失敗：登入狀態無效（${authCheck.error?.message ?? "找不到使用者"}）`);
+                        return;
+                      }
                       const result = await supabase.rpc("record_chat_easter_egg_event", {
                         p_session_id: session.id,
                         p_egg_kind: kind,
                         p_trigger_type: "milestone",
                       });
                       if (result.error) {
+                        window.alert(`彩蛋寫入失敗：${result.error.code ?? "RPC_ERROR"}｜${result.error.message ?? "未知錯誤"}`);
                         console.error("[herlink] milestone test record failed", result.error);
                         await supabase.rpc("record_chat_easter_egg_failure", {
                           p_session_id: session.id,
@@ -2240,6 +2249,8 @@ export default function RandomSessionPage() {
                           p_error_code: result.error.code ?? "RPC_ERROR",
                           p_error_message: result.error.message ?? "彩蛋測試紀錄失敗",
                         });
+                      } else {
+                        window.alert(`彩蛋紀錄成功：${kind}｜${String(result.data ?? "")}`);
                       }
                     }}
                     title={`播放 ${label} 則彩蛋並寫入一筆測試紀錄，不會新增或修改訊息`}
