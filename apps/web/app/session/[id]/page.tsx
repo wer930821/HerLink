@@ -281,6 +281,7 @@ export default function RandomSessionPage() {
   const [contactState, setContactState] = useState<AnonymousContactStatusRow | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantAllowed, setAssistantAllowed] = useState(false);
+  const [milestoneTestAllowed, setMilestoneTestAllowed] = useState(false);
   const [easterEgg, setEasterEgg] = useState<"goodnight" | "morning" | "hello" | "hi" | "penguin" | "sync" | "aurora" | "meteor" | "secret" | "hundred" | "twoHundred" | "threeHundred" | "fourHundred" | "tired" | "offwork" | "food" | "curious" | "surprised" | "cute" | "sleepless" | "tomorrow" | "fiveHundred" | "thousand" | null>(null);
   const [easterEggAllowed, setEasterEggAllowed] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(true);
@@ -1101,6 +1102,7 @@ export default function RandomSessionPage() {
         const adminCheck = await isCurrentUserAdmin(authSession.user.id).catch(() => ({ data: false }));
         if (mounted && bootstrapRunId === sessionBootstrapRunRef.current) {
           setAssistantAllowed(Boolean(adminCheck.data));
+          setMilestoneTestAllowed(Boolean(adminCheck.data) || authSession.user.id === "ad9536fe-5ea0-4a1d-96d0-dcdecdafa18c");
           setEasterEggAllowed(true);
         }
         if (!nextProfile) {
@@ -2196,7 +2198,7 @@ export default function RandomSessionPage() {
             </div>
           </div>
           <div className="chat-header-actions">
-            {assistantAllowed ? (
+            {milestoneTestAllowed ? (
               <div className="chat-milestone-test-group" aria-label="彩蛋測試區">
                 {([
                   ["100", "hundred"],
