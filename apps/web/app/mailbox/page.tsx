@@ -22,5 +22,5 @@ export default function MailboxPage(){
  <Field label="主旨"><input className="mailbox-input" value={subject} onChange={e=>setSubject(e.target.value)} maxLength={80}/></Field>
  <Field label="內容"><textarea className="mailbox-input mailbox-textarea" value={body} onChange={e=>setBody(e.target.value)} maxLength={2000}/></Field>
  <Button size="lg" disabled={busy} onClick={send}>寄給站長</Button>{notice&&<Notice>{notice}</Notice>}</Surface>
- <Surface><h2>我的信件</h2>{threads.length===0?<p>目前還沒有信件。</p>:threads.map(t=><button key={t.id} onClick={()=>void open(t)} style={{display:"block",width:"100%",textAlign:"left",padding:14,marginBottom:8}}><strong>{t.subject}</strong><div>{t.status==="replied"?"站長已回覆":t.status==="closed"?"已結束":"等待回覆"} · {new Date(t.updated_at).toLocaleString("zh-TW")}</div></button>)}</Surface></main>
+ <Surface><h2>我的信件</h2>{threads.length===0?<p>目前還沒有信件。</p>:threads.map(t=><button key={t.id} className="mailbox-thread-card" onClick={()=>void open(t)}><strong>{t.subject}</strong><div>{t.status==="replied"?"站長已回覆":t.status==="closed"?"已結束":"等待回覆"} · {new Date(t.updated_at).toLocaleString("zh-TW")}</div></button>)}</Surface></main>
 }
