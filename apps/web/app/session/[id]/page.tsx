@@ -2242,6 +2242,11 @@ export default function RandomSessionPage() {
                         window.alert("彩蛋測試失敗：聊天室身分同步失敗，請重新整理後再試");
                         return;
                       }
+                      const verifiedAuth = await supabase.auth.getUser();
+                      if (verifiedAuth.error || !verifiedAuth.data.user) {
+                        window.alert("彩蛋測試失敗：同步後登入狀態無效");
+                        return;
+                      }
                       const result = await supabase.rpc("record_chat_easter_egg_event", {
                         p_session_id: syncedSession.id,
                         p_egg_kind: kind,
