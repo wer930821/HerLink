@@ -1614,6 +1614,16 @@ export default function RandomSessionPage() {
           try {
             localStorage.setItem("herlink:last-easter-egg-log-error", JSON.stringify(diagnostic));
           } catch {}
+          const failureResult = await supabase.rpc("record_chat_easter_egg_failure", {
+            p_session_id: session.id,
+            p_egg_kind: kind,
+            p_trigger_type: triggerType,
+            p_error_code: diagnostic.code,
+            p_error_message: diagnostic.message,
+          });
+          if (failureResult.error) {
+            console.error("[herlink] easter egg failure diagnostic RPC failed", failureResult.error);
+          }
         } else {
           try {
             localStorage.removeItem("herlink:last-easter-egg-log-error");
