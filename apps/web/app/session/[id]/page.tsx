@@ -2225,41 +2225,23 @@ export default function RandomSessionPage() {
                     onPointerDown={(event) => event.preventDefault()}
                     onClick={async () => {
                       triggerEasterEgg(kind, false);
-                      if (!session?.id) {
-                        window.alert("彩蛋測試失敗：目前沒有聊天室 session");
-                        return;
-                      }
+                      if (!session?.id) return;
                       const authCheck = await supabase.auth.getUser();
-                      if (authCheck.error || !authCheck.data.user) {
-                        window.alert(`彩蛋測試失敗：登入狀態無效（${authCheck.error?.message ?? "找不到使用者"}）`);
-                        return;
-                      }
+                      if (authCheck.error || !authCheck.data.user) return;
                       // Refresh the server-owned session first. This also runs installation recovery
                       // when the browser auth identity rotated, so the participant binding is
                       // synchronized before the protected event RPC is attempted.
                       const syncedSession = await refreshSessionFromServerRef.current?.();
-                      if (!syncedSession?.id) {
-                        window.alert("彩蛋測試失敗：聊天室身分同步失敗，請重新整理後再試");
-                        return;
-                      }
+                      if (!syncedSession?.id) return;
                       const verifiedAuth = await supabase.auth.getUser();
-                      if (verifiedAuth.error || !verifiedAuth.data.user) {
-                        window.alert("彩蛋測試失敗：同步後登入狀態無效");
-                        return;
-                      }
+                      if (verifiedAuth.error || !verifiedAuth.data.user) return;
                       const result = await supabase.rpc("record_chat_easter_egg_event", {
                         p_session_id: syncedSession.id,
                         p_egg_kind: kind,
                         p_trigger_type: "milestone",
                       });
-                      if (result.error?.code === "P0001") {
-                        const authId = verifiedAuth.data.user.id;
-                        window.alert(`彩蛋寫入失敗：P0001｜Auth ${authId.slice(0, 8)}…｜聊天室 ${syncedSession.id.slice(0, 8)}…｜目前身分不是此聊天室參與者`);
-                        return;
-                      }
-                      if (result.error) {
-                        window.alert(`彩蛋寫入失敗：${result.error.code ?? "RPC_ERROR"}｜${result.error.message ?? "未知錯誤"}`);
-                        console.error("[herlink] milestone test record failed", result.error);
+                       if (result.error) {
+                         console.error("[herlink] milestone test record failed", result.error);
                         await supabase.rpc("record_chat_easter_egg_failure", {
                           p_session_id: session.id,
                           p_egg_kind: kind,
@@ -2267,8 +2249,6 @@ export default function RandomSessionPage() {
                           p_error_code: result.error.code ?? "RPC_ERROR",
                           p_error_message: result.error.message ?? "彩蛋測試紀錄失敗",
                         });
-                      } else {
-                        window.alert(`彩蛋紀錄成功：${kind}｜${String(result.data ?? "")}`);
                       }
                     }}
                     title={`播放 ${label} 則彩蛋並寫入一筆測試紀錄，不會新增或修改訊息`}
