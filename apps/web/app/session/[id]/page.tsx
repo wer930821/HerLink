@@ -1118,11 +1118,11 @@ export default function RandomSessionPage() {
           return;
         }
 
-        // Synchronize this browser installation with the current anonymous
-        // auth user before attempting to restore a room owned by the previous
-        // anonymous identity. Recovery intentionally requires this binding.
-        await registerAnonymousAbuseIdentity().catch(() => undefined);
-
+        // Do not rotate the installation binding before restoring this room.
+        // The recovery RPC now atomically verifies the previous installation
+        // owner, migrates the room to the current auth uid, and only then
+        // advances current_user_id. Updating the binding first loses the
+        // previous participant identity and makes recovery impossible.
         const nextSession = await (async () => {
           for (let attempt = 0; attempt < 3; attempt += 1) {
             const restoredSession = await refreshSessionFromServerRef.current?.();
