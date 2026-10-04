@@ -19,11 +19,7 @@
         "android.permission.REQUEST_INSTALL_PACKAGES",
         "android.permission.POST_NOTIFICATIONS"
       ],
-      "softwareKeyboardLayoutMode": "resize",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/admin-icon.png",
-        "backgroundColor": "#11110f"
-      }
+      "softwareKeyboardLayoutMode": "resize"
     },
     "plugins": [
       "expo-notifications"
@@ -33,7 +29,6 @@
       "eas": {
         "projectId": "f2cdaed8-e7a6-48ba-aa41-c2cd32f88720"
       }
-    },
-    "icon": "./assets/admin-icon.png"
+    }
   }
 }
