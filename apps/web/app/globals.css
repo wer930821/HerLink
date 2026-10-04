@@ -8278,3 +8278,26 @@ background-size:170px 170px,230px 230px,210px 210px,280px 280px;animation:eterna
 @media(max-width:640px){
   .eternal-chat-header-badge{min-height:24px!important;padding:3px 9px!important;font-size:10px!important;margin-left:4px!important}
 }
+
+/* Final private tester layout: one trigger only, never competes with chat header actions. */
+.milestone-test-compact{
+ position:fixed!important;left:12px!important;right:auto!important;
+ top:calc(env(safe-area-inset-top,0px) + 118px)!important;z-index:80!important;
+ width:auto!important;height:auto!important;display:block!important;
+}
+.milestone-test-toggle{
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;
+ width:auto!important;min-width:0!important;min-height:30px!important;padding:5px 10px!important;
+ border-radius:999px!important;font-size:10px!important;white-space:nowrap!important;
+}
+.milestone-test-popover{
+ position:absolute!important;left:0!important;right:auto!important;top:36px!important;
+ display:grid!important;grid-template-columns:repeat(5,max-content)!important;gap:4px!important;
+ width:max-content!important;max-width:calc(100vw - 24px)!important;padding:5px!important;
+ overflow-x:auto!important;z-index:81!important;
+}
+.milestone-test-popover button{min-width:42px!important;height:30px!important;padding:0 6px!important;font-size:10px!important}
+@media(max-width:640px){
+ .milestone-test-compact{left:8px!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 116px)!important}
+ .milestone-test-popover{max-width:calc(100vw - 16px)!important}
+}
