@@ -1757,6 +1757,37 @@ export default function RandomSessionClient() {
         if (AC) { const a=new AC(); const o=a.createOscillator(); const g=a.createGain(); o.frequency.value=effectMeta.tone; g.gain.setValueAtTime(.0001,a.currentTime); g.gain.exponentialRampToValueAtTime(.045,a.currentTime+.02); g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+.32); o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+.34); window.setTimeout(()=>void a.close(),500); }
       } catch {}
     }
+    if (kind === "eternal_bond") {
+      try {
+        navigator.vibrate?.([80,45,120,60,180,80,260]);
+        const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (AudioContextClass) {
+          const audio = new AudioContextClass();
+          const start = audio.currentTime;
+          const master = audio.createGain();
+          master.gain.setValueAtTime(.0001,start);
+          master.gain.exponentialRampToValueAtTime(.18,start+.8);
+          master.gain.setValueAtTime(.18,start+8.8);
+          master.gain.exponentialRampToValueAtTime(.0001,start+11.7);
+          master.connect(audio.destination);
+          const note=(freq:number,at:number,len:number,type:OscillatorType,gainValue:number)=>{
+            const o=audio.createOscillator(),g=audio.createGain();
+            o.type=type;o.frequency.value=freq;
+            g.gain.setValueAtTime(.0001,start+at);
+            g.gain.exponentialRampToValueAtTime(gainValue,start+at+.08);
+            g.gain.exponentialRampToValueAtTime(.0001,start+at+len);
+            o.connect(g);g.connect(master);o.start(start+at);o.stop(start+at+len+.05);
+          };
+          [65.41,98,130.81].forEach((n,i)=>note(n,0,5.2,"sine",.16-i*.025));
+          [[261.63,1.1],[329.63,1.45],[392,1.8],[523.25,2.15],[659.25,2.55],[783.99,2.95]].forEach(([n,t])=>note(n,t,2.5,"sine",.11));
+          [523.25,659.25,783.99,1046.5,1318.51].forEach((n,i)=>note(n,4.2+i*.18,3.6,"triangle",.08));
+          [1046.5,1318.51,1567.98,2093].forEach((n,i)=>note(n,6.5+i*.32,1.8,"sine",.065));
+          [392,523.25,659.25,783.99,1046.5].forEach((n,i)=>note(n,8.4+i*.12,2.8,"sine",.09));
+          note(130.81,9.1,2.5,"sine",.14); note(261.63,9.1,2.5,"sine",.09);
+          window.setTimeout(()=>void audio.close(),12500);
+        }
+      } catch {}
+    }
     if (kind === "thousand") {
       try {
         navigator.vibrate?.([35, 45, 55]);
