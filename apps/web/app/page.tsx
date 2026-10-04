@@ -115,7 +115,6 @@ export default function HomePage() {
   const [renameNotice, setRenameNotice] = useState<string | null>(null);
   const [waitingCount, setWaitingCount] = useState<number | null>(null);
   const [mailUnreadCount, setMailUnreadCount] = useState(0);
-  const [homeCollectionOpen, setHomeCollectionOpen] = useState(false);
   const waitingCountRequestRef = useRef(0);
   const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
 
@@ -888,7 +887,7 @@ export default function HomePage() {
         </div>
 
         {anonymousSummary?.name === "孤星企鵝" ? (
-          <button type="button" className="home-collection-entry" onClick={() => setHomeCollectionOpen(true)}>
+          <button type="button" className="home-collection-entry" onClick={() => router.push("/collection")}>
             <span className="home-collection-entry-icon">♛</span>
             <span><b>彩蛋圖鑑與任務</b><small>收集彩蛋 · 完成任務 · 解鎖成就</small></span>
             <span className="home-collection-entry-arrow">›</span>
@@ -929,18 +928,6 @@ export default function HomePage() {
           <Button variant="link" onClick={logout} disabled={actionBusy}>登出</Button>
         </div>
       </footer>
-
-      <Modal open={homeCollectionOpen} title="彩蛋圖鑑與任務" onClose={() => setHomeCollectionOpen(false)} className="home-collection-modal">
-        <div className="home-collection-preview">
-          <div className="home-collection-preview-grid">
-            <article><span>✦</span><b>彩蛋圖鑑</b><small>查看已發現與尚未解鎖的彩蛋</small></article>
-            <article><span>✓</span><b>任務</b><small>完成聊天與探索任務</small></article>
-            <article><span>♛</span><b>成就</b><small>挑戰傳說與永恆聊天室</small></article>
-          </div>
-          <p>目前為私人測試版；正式開放前不會發放正式獎勵。</p>
-          {state.activeSession?.id ? <Button size="lg" onClick={() => { setHomeCollectionOpen(false); navigatingToSessionRef.current = true; router.push(withNavigationDebugParam(`/session/${state.activeSession!.id}`)); }}>進入聊天室查看完整圖鑑</Button> : <div className="muted small">開始匿名配對後，可在聊天室內查看完整圖鑑、任務與成就進度。</div>}
-        </div>
-      </Modal>
 
       <Modal
         open={femaleOnlyOpen}
