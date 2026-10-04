@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import {
   getShortId,
   isNavigationDebugEnabled,
@@ -2733,27 +2734,30 @@ export default function RandomSessionClient() {
         <p>目前這個聊天室會立即結束，送出後無法復原。</p>
       </Modal>
 
-      {previewMessage?.media_path ? (
-        <div
-          className="chat-image-lightbox"
-          role="dialog"
-          aria-modal="true"
-          aria-label="圖片預覽"
-          onClick={() => setPreviewMessage(null)}
-        >
-          <button
-            type="button"
-            className="chat-image-lightbox-close"
-            aria-label="關閉圖片預覽"
-            onClick={() => setPreviewMessage(null)}
-          >
-            ×
-          </button>
-          <div className="chat-image-lightbox-content" onClick={(event) => event.stopPropagation()}>
-            <ChatImage path={previewMessage.media_path} alt="聊天室圖片" large />
-          </div>
-        </div>
-      ) : null}
+      {previewMessage?.media_path && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="chat-image-lightbox"
+              role="dialog"
+              aria-modal="true"
+              aria-label="圖片預覽"
+              onClick={() => setPreviewMessage(null)}
+            >
+              <button
+                type="button"
+                className="chat-image-lightbox-close"
+                aria-label="關閉圖片預覽"
+                onClick={() => setPreviewMessage(null)}
+              >
+                ×
+              </button>
+              <div className="chat-image-lightbox-content" onClick={(event) => event.stopPropagation()}>
+                <ChatImage path={previewMessage.media_path} alt="聊天室圖片" large />
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
       {debugPanel}
     </main>
   );
