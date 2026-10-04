@@ -103,7 +103,8 @@ export default function AnonymousContactsPage() {
   };
 
   return (
-    <main className="stack">
+    <main className="stack halloween-contacts-page">
+      <div className="halloween-contacts-decor" aria-hidden="true"><span>🕸️</span><span>🦇</span><span>👻</span><span>🎃</span></div>
       <PageHero
         kicker="HerLink"
         title="匿名聯絡人"
