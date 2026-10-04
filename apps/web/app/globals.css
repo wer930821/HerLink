@@ -6575,3 +6575,18 @@ body:has(.chat-page .halloween-chat-decor) .chat-page > .chat-shell {
     radial-gradient(circle at 0% 85%, rgba(101,54,160,.12), transparent 32%),
     transparent !important;
 }
+
+
+/* Halloween chat composer: merge the bottom input area into the same surface */
+body:has(.chat-page .halloween-chat-decor) .chat-composer {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-top-color: rgba(255,128,35,.16) !important;
+  box-shadow: none !important;
+}
+body:has(.chat-page .halloween-chat-decor) .chat-composer-main {
+  background: rgba(31,27,48,.82) !important;
+  border-color: rgba(255,128,35,.16) !important;
+  box-shadow: 0 8px 22px rgba(0,0,0,.18) !important;
+}
