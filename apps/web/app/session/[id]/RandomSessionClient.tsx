@@ -2342,7 +2342,8 @@ export default function RandomSessionClient() {
                 <div className="title chat-partner-name">{partnerName}</div>
                 {partnerVerified ? <span className="chat-verified">✓</span> : null}
               </div>
-              <div className="chat-my-name">你：{myAnonymousName}{isEnded ? " · 聊天已結束" : ""}</div>\n              <div className="chat-message-count" aria-live="polite">目前訊息數：{sessionMessageCount === null ? "讀取中…" : sessionMessageCount.toLocaleString("zh-TW")}</div>
+              <div className="chat-my-name">你：{myAnonymousName}{isEnded ? " · 聊天已結束" : ""}</div>
+              <div className="chat-message-count" aria-live="polite">目前訊息數：{sessionMessageCount === null ? "讀取中…" : sessionMessageCount.toLocaleString("zh-TW")}</div>
             </div>
           </div>
           <div className="chat-header-actions">
