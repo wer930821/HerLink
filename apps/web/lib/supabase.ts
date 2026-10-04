@@ -398,15 +398,58 @@ export async function signUp(email: string, password: string) {
   return supabase.auth.signUp({ email, password });
 }
 
+const ANONYMOUS_SESSION_BACKUP_COOKIE = "herlink_anon_session_backup";
+
+function writeAnonymousSessionBackup(session: { access_token: string; refresh_token: string } | null) {
+  if (typeof document === "undefined" || !session?.access_token || !session?.refresh_token) return;
+  try {
+    const value = encodeURIComponent(JSON.stringify({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    }));
+    document.cookie = `${ANONYMOUS_SESSION_BACKUP_COOKIE}=${value}; Max-Age=31536000; Path=/; SameSite=Lax; Secure`;
+  } catch {
+    // The normal Supabase persisted session remains the primary source.
+  }
+}
+
+async function restoreAnonymousSessionBackup() {
+  if (typeof document === "undefined") return null;
+  try {
+    const raw = document.cookie.split("; ").find((part) => part.startsWith(`${ANONYMOUS_SESSION_BACKUP_COOKIE}=`));
+    if (!raw) return null;
+    const value = raw.slice(raw.indexOf("=") + 1);
+    const saved = JSON.parse(decodeURIComponent(value)) as { access_token?: string; refresh_token?: string };
+    if (!saved.access_token || !saved.refresh_token) return null;
+    const restored = await supabase.auth.setSession({
+      access_token: saved.access_token,
+      refresh_token: saved.refresh_token,
+    });
+    if (restored.data.session) writeAnonymousSessionBackup(restored.data.session);
+    return restored;
+  } catch {
+    return null;
+  }
+}
+
 export async function signInAnonymously() {
-  // Keep the current anonymous Supabase session whenever it is still valid.
-  // Creating a second anonymous auth user here would detach the browser from
-  // its existing chats/profile.
+  // Keep the existing identity first. A redundant cookie copy protects against
+  // the common case where localStorage/session persistence disappears while
+  // cookies are still available.
   const current = await supabase.auth.getSession();
   if (current.data.session?.user) {
+    writeAnonymousSessionBackup(current.data.session);
     return { data: { user: current.data.session.user, session: current.data.session }, error: null };
   }
-  return supabase.auth.signInAnonymously();
+
+  const restored = await restoreAnonymousSessionBackup();
+  if (restored?.data.session?.user) {
+    return { data: { user: restored.data.session.user, session: restored.data.session }, error: null };
+  }
+
+  const created = await supabase.auth.signInAnonymously();
+  if (created.data.session) writeAnonymousSessionBackup(created.data.session);
+  return created;
 }
 
 export async function requestRandomIdentityRecovery(displayName: string) {
