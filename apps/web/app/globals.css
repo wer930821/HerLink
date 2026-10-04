@@ -8773,3 +8773,19 @@ body:has(.site-collection-viewport) .collection-skip-link:not(:focus) {
 /* Eternal Bond must render as a full-screen cinematic overlay above chat chrome. */
 .egg-effect:has(.egg-eternal-bond){position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;z-index:2147483000!important;overflow:hidden!important;pointer-events:none!important}
 .egg-effect:has(.egg-eternal-bond) .egg-eternal-bond{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;z-index:1!important}
+
+
+/* Eternal Bond: 12-second mythic finale */
+.egg-eternal-bond{animation-duration:12s!important}
+.egg-eternal-bond .eternal-gate{animation-duration:11.6s!important;box-shadow:0 0 35px #fff0b8,0 0 100px #ffc84e,0 0 190px rgba(151,76,255,.85),inset 0 0 65px rgba(255,227,145,.5)!important}
+.egg-eternal-bond .r1,.egg-eternal-bond .r2,.egg-eternal-bond .r3,.egg-eternal-bond .eternal-wing,.egg-eternal-bond .eternal-beam,.egg-eternal-bond .eternal-core,.egg-eternal-bond .eternal-stars{animation-duration:11.6s!important}
+.egg-eternal-bond .eternal-core{font-size:24vmin!important;text-shadow:0 0 12px #fff,0 0 35px #ffd15c,0 0 95px #a76cff,0 0 170px #ffb92f!important}
+.egg-eternal-bond .eternal-shockwave{position:absolute;width:18vmin;height:18vmin;border:3px solid rgba(255,238,184,.95);border-radius:50%;box-shadow:0 0 24px #fff1b6,0 0 70px #b975ff;opacity:0;animation:eternal-shock 12s ease-out both}
+.egg-eternal-bond .s2{animation-delay:.45s}.egg-eternal-bond .s3{animation-delay:.9s}
+.egg-eternal-bond .eternal-crown{position:absolute;top:20%;font-style:normal;font-size:13vmin;color:#ffe39a;text-shadow:0 0 15px #fff,0 0 45px #ffbd36,0 0 100px #a35cff;opacity:0;animation:eternal-crown 12s ease both}
+.egg-eternal-bond .eternal-runes{position:absolute;top:50%;width:92vw;text-align:center;font-style:normal;font-size:clamp(18px,5vw,38px);letter-spacing:1.2em;color:#fff0bb;text-shadow:0 0 15px #ffd45d,0 0 42px #9d5cff;opacity:0;animation:eternal-runes 12s ease both}
+.egg-eternal-bond strong{animation-duration:12s!important;font-size:clamp(40px,10vw,82px)!important;text-shadow:0 0 12px #fff,0 0 30px #f7c64c,0 0 80px #9d59ff!important}
+.egg-eternal-bond b{animation-duration:12s!important;font-size:clamp(15px,4vw,28px)!important}.egg-eternal-bond small{animation-duration:12s!important;font-size:clamp(14px,3.5vw,20px)!important}
+@keyframes eternal-shock{0%,38%{opacity:0;transform:scale(.1)}43%{opacity:1}70%{opacity:.65;transform:scale(7)}100%{opacity:0;transform:scale(11)}}
+@keyframes eternal-crown{0%,30%{opacity:0;transform:translateY(-18vh) scale(.3)}48%,78%{opacity:1;transform:translateY(0) scale(1.2)}92%,100%{opacity:0;transform:translateY(-3vh) scale(1.5)}}
+@keyframes eternal-runes{0%,35%{opacity:0;transform:scale(.3) rotate(-8deg)}52%,82%{opacity:.95;transform:scale(1) rotate(0)}100%{opacity:0;transform:scale(1.6) rotate(8deg)}}
