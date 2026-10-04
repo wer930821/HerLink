@@ -2211,7 +2211,7 @@ export default function RandomSessionPage() {
               title="回覆"
               onClick={() => startReply(message)}
             >
-              回覆
+              <span aria-hidden="true">↩</span>
             </button>
           </div>
         </div>
