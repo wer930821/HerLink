@@ -2050,7 +2050,7 @@ export default function RandomSessionPage() {
         <strong>{partnerName} 想和你成為匿名聯絡人</strong>
         <div className="muted small" style={{ marginTop: 6 }}>雙方都同意後，之後可以從「匿名聯絡人」再次找到彼此。</div>
         <div className="row" style={{ marginTop: 10 }}>
-          <Button size="sm" type="button" onClick={() => void handleAnonymousContact()} disabled={contactBusy}>
+          <Button size="sm" type="button" onPointerDown={(event) => { event.preventDefault(); event.stopPropagation(); void handleAnonymousContact(); }} disabled={contactBusy}>
             {contactBusy ? "處理中…" : "同意"}
           </Button>
         </div>
@@ -2330,12 +2330,19 @@ export default function RandomSessionPage() {
                 aria-label="更多聊天室選項"
                 title="更多"
                 aria-expanded={headerMenuOpen}
-                onClick={() => setHeaderMenuOpen((open) => !open)}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setHeaderMenuOpen((open) => !open);
+                }}
               >
                 •••
               </button>
               {headerMenuOpen ? (
-                <div className="chat-more-menu">
+                <div
+                  className="chat-more-menu"
+                  onPointerDown={(event) => event.stopPropagation()}
+                >
                 <button
                   className="button secondary chat-contact"
                   type="button"
@@ -2347,11 +2354,11 @@ export default function RandomSessionPage() {
                 <button
                   className="button secondary"
                   type="button"
-                  onClick={() => void copyBrowserHandoffLink()}
+                  onPointerDown={(event) => { event.preventDefault(); event.stopPropagation(); void copyBrowserHandoffLink(); }}
                 >
                   跨瀏覽器續聊
                 </button>
-                <button className="button secondary chat-safety" type="button" onClick={() => setSafetyMenuOpen(true)}>
+                <button className="button secondary chat-safety" type="button" onPointerDown={(event) => { event.preventDefault(); event.stopPropagation(); setSafetyMenuOpen(true); setHeaderMenuOpen(false); }}>
                   安全
                 </button>
                 <div className="chat-menu-explain">
@@ -2365,7 +2372,7 @@ export default function RandomSessionPage() {
                 <button
                   className="button secondary chat-menu-leave"
                   type="button"
-                  onClick={leave}
+                  onPointerDown={(event) => { event.stopPropagation(); void leave(event as unknown as MouseEvent<HTMLButtonElement>); }}
                   disabled={leaveBusy}
                   title="結束聊天並回到首頁，不會自動重新配對"
                 >
