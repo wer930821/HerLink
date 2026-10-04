@@ -7450,3 +7450,26 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
     visibility: visible !important;
   }
 }
+
+
+/* Desktop chat polish: widen the stable contained layout without reintroducing viewport overflow. */
+@media (min-width: 769px) {
+  .chat-page > .chat-shell {
+    width: min(94%, 1120px) !important;
+    max-width: 1120px !important;
+    margin-inline: auto !important;
+    padding-left: 28px !important;
+    padding-right: 28px !important;
+  }
+
+  .chat-page .chat-message .chat-bubble {
+    max-width: min(62%, 680px) !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  .chat-page > .chat-shell {
+    width: min(92%, 1240px) !important;
+    max-width: 1240px !important;
+  }
+}
