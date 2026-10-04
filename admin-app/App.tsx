@@ -188,8 +188,11 @@ function AdminApp() {
       const count = Math.max(0, Number(message.count ?? 0));
       const previous = lastMailboxUnreadRef.current;
       lastMailboxUnreadRef.current = count;
-      if (count > 0 && previous !== null && count > previous) {
+      if (count > 0 && (previous === null || count > previous)) {
         setMailboxAlert({ count, subject: message.subject });
+        if (Platform.OS === "android") {
+          ToastAndroid.show(`站長信箱有 ${count} 封未讀信件`, ToastAndroid.LONG);
+        }
       }
     } catch {
       // 信箱提醒失敗不能影響 App 啟動或 WebView。
