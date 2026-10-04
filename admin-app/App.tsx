@@ -248,7 +248,18 @@ function AdminApp() {
 
   const handleWebMessage = (event: { nativeEvent: { data: string } }) => {
     try {
-      const message = JSON.parse(event.nativeEvent.data) as { type?: string; count?: number; subject?: string };
+      const message = JSON.parse(event.nativeEvent.data) as { type?: string; count?: number; subject?: string; ok?: boolean; error?: string | null };
+      if (message.type === "admin-push-token-request") {
+        const token = adminPushTokenRef.current;
+        if (token) sendAdminPushTokenToWeb(token);
+        return;
+      }
+      if (message.type === "admin-push-registration") {
+        if (Platform.OS === "android") {
+          ToastAndroid.show(message.ok ? "後台通知已啟用" : `後台通知註冊失敗：${message.error ?? "未知錯誤"}`, ToastAndroid.LONG);
+        }
+        return;
+      }
       if (message.type !== "mailbox-unread") return;
       const count = Math.max(0, Number(message.count ?? 0));
       const previous = lastMailboxUnreadRef.current;
