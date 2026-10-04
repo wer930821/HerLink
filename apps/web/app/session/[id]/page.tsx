@@ -173,7 +173,7 @@ export default function RandomSessionPage({ params }: Props) {
   const thousandEggTimerRef = useRef<number | null>(null);
   const lastKnownMessageCountRef = useRef<number | null>(null);
 
-  const isEasterEggTester = Boolean(EASTER_TEST_USER_ID && myProfile?.id === EASTER_TEST_USER_ID);
+  const isEasterEggTester = Boolean(\n    (EASTER_TEST_USER_ID && myProfile?.id === EASTER_TEST_USER_ID) ||\n    myProfile?.anonymous_display_name === "孤星企鵝" ||\n    isAdminReplyTester\n  );
 
   const recordEasterEgg = useCallback(async (sessionId: string, triggerType: "milestone" | "test") => {
     if (!myProfile?.id) return;
