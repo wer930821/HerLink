@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -88,7 +89,7 @@ export function Modal({ open, title, children, actions, onClose, closeLabel = "é
     return null;
   }
 
-  return (
+  return createPortal(
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <div
         className={`modal-card${tone === "danger" ? " modal-danger" : ""}${className ? ` ${className}` : ""}`}
@@ -113,6 +114,7 @@ export function Modal({ open, title, children, actions, onClose, closeLabel = "é
         {children}
         {actions ? <div className="modal-actions">{actions}</div> : null}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
