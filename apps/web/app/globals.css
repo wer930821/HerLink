@@ -6311,3 +6311,54 @@ body:has(.site-mailbox-viewport){
    width:100%!important;
  }
 }
+
+
+/* Home footer: presence above, utility actions below */
+.home-app-footer {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.home-app-presence {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.home-app-presence-item {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-surface-2) 72%, transparent);
+  white-space: nowrap;
+}
+.home-app-presence-item strong {
+  color: var(--color-text);
+  font-size: 0.92rem;
+}
+.home-app-presence-dot,
+.home-app-wait-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex: none;
+  background: var(--color-accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+.home-app-wait-dot {
+  background: color-mix(in srgb, var(--color-accent) 60%, #ffffff);
+}
+.home-app-footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+}
+.home-app-footer-sep {
+  opacity: .45;
+}
