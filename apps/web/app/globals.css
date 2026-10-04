@@ -7671,3 +7671,31 @@ body > .chat-more-menu-portal .button:active {
 body > .chat-more-menu-portal .chat-menu-leave {
   color: rgba(255, 158, 169, 0.96) !important;
 }
+
+/* Unified chat menu: one continuous card with subtle separators. */
+body > .chat-more-menu-portal {
+  gap: 0 !important;
+  padding: 6px !important;
+  overflow: hidden !important;
+}
+body > .chat-more-menu-portal .button {
+  min-height: 46px !important;
+  margin: 0 !important;
+  padding: 10px 14px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body > .chat-more-menu-portal .button + .button {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body > .chat-more-menu-portal .button:first-child {
+  border-radius: 12px 12px 0 0 !important;
+}
+body > .chat-more-menu-portal .button:last-child {
+  border-radius: 0 0 12px 12px !important;
+}
+body > .chat-more-menu-portal .button:active {
+  background: rgba(255, 108, 128, 0.1) !important;
+}
