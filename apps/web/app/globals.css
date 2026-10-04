@@ -8129,3 +8129,44 @@ body > .chat-more-menu-portal {
   font-weight: 700;
   letter-spacing: .08em;
 }
+
+
+/* Mobile visual viewport hardening: keyboard close must restore the full chat and keep menus above messages. */
+.chat-page {
+  top: var(--chat-viewport-top, 0px) !important;
+  bottom: auto !important;
+  height: var(--chat-viewport-height, 100dvh) !important;
+  min-height: 0 !important;
+}
+.chat-page > .chat-shell {
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+.chat-page .chat-header {
+  position: relative !important;
+  z-index: 60 !important;
+  flex: 0 0 auto !important;
+}
+.chat-page .chat-messages {
+  position: relative !important;
+  z-index: 1 !important;
+  min-height: 0 !important;
+}
+body > .chat-more-menu-portal {
+  z-index: 10000 !important;
+  isolation: isolate !important;
+}
+@media (max-width: 768px) {
+  .chat-page {
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+  .chat-page .chat-header {
+    padding-top: max(8px, env(safe-area-inset-top)) !important;
+  }
+  .chat-page .chat-composer {
+    flex: 0 0 auto !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  }
+}
