@@ -8550,3 +8550,13 @@ details.milestone-test-compact[open]>.milestone-test-popover{display:grid!import
     padding-top: 52px !important;
   }
 }
+
+
+/* Collection page: use a single page background, remove the second inner layer */
+.collection-page {
+  background: transparent !important;
+}
+body:has(.collection-page) {
+  min-height: 100dvh;
+  background: radial-gradient(circle at 50% 0,rgba(111,54,145,.22),transparent 35%),linear-gradient(180deg,#130d1d,#0b0810 72%) !important;
+}
