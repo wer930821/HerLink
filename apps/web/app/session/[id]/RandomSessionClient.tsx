@@ -1763,11 +1763,12 @@ export default function RandomSessionClient() {
         const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
         if (AudioContextClass) {
           const audio = new AudioContextClass();
-          const start = audio.currentTime;
+          void audio.resume();
+          const start = audio.currentTime + .03;
           const master = audio.createGain();
           master.gain.setValueAtTime(.0001,start);
-          master.gain.exponentialRampToValueAtTime(.18,start+.8);
-          master.gain.setValueAtTime(.18,start+8.8);
+          master.gain.exponentialRampToValueAtTime(.42,start+.35);
+          master.gain.setValueAtTime(.42,start+8.8);
           master.gain.exponentialRampToValueAtTime(.0001,start+11.7);
           master.connect(audio.destination);
           const note=(freq:number,at:number,len:number,type:OscillatorType,gainValue:number)=>{
