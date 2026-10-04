@@ -332,8 +332,17 @@ export default function RandomSessionClient() {
       });
     };
     updateMenuPosition();
+    const viewport = window.visualViewport;
     window.addEventListener("resize", updateMenuPosition);
-    return () => window.removeEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+    viewport?.addEventListener("resize", updateMenuPosition);
+    viewport?.addEventListener("scroll", updateMenuPosition);
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+      viewport?.removeEventListener("resize", updateMenuPosition);
+      viewport?.removeEventListener("scroll", updateMenuPosition);
+    };
   }, [headerMenuOpen]);
   const [safetyMenuOpen, setSafetyMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -1308,17 +1317,30 @@ export default function RandomSessionClient() {
     const updateKeyboardInset = () => {
       const nextInset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
       setKeyboardInset(nextInset);
+      document.documentElement.style.setProperty("--chat-viewport-height", `${viewport.height}px`);
+      document.documentElement.style.setProperty("--chat-viewport-top", `${Math.max(0, viewport.offsetTop)}px`);
+    };
+
+    const resetViewportAfterKeyboard = () => {
+      window.setTimeout(updateKeyboardInset, 80);
+      window.setTimeout(updateKeyboardInset, 240);
     };
 
     updateKeyboardInset();
     viewport.addEventListener("resize", updateKeyboardInset);
     viewport.addEventListener("scroll", updateKeyboardInset);
     window.addEventListener("orientationchange", updateKeyboardInset);
+    window.addEventListener("resize", updateKeyboardInset);
+    document.addEventListener("focusout", resetViewportAfterKeyboard);
 
     return () => {
       viewport.removeEventListener("resize", updateKeyboardInset);
       viewport.removeEventListener("scroll", updateKeyboardInset);
       window.removeEventListener("orientationchange", updateKeyboardInset);
+      window.removeEventListener("resize", updateKeyboardInset);
+      document.removeEventListener("focusout", resetViewportAfterKeyboard);
+      document.documentElement.style.removeProperty("--chat-viewport-height");
+      document.documentElement.style.removeProperty("--chat-viewport-top");
     };
   }, []);
 
