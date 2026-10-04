@@ -2552,9 +2552,6 @@ export default function RandomSessionClient() {
           <Button variant="secondary" type="button" onClick={() => { setHeaderMenuOpen(false); setSafetyMenuOpen(true); }}>
             安全
           </Button>
-          <Button variant="secondary" type="button" onClick={() => { setHeaderMenuOpen(false); setNextConfirmOpen(true); }} disabled={nextBusy}>
-            {nextBusy ? "處理中…" : "下一位"}
-          </Button>
           <Button
             variant="secondary"
             type="button"
