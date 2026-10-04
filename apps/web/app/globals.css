@@ -7881,3 +7881,12 @@ body > .chat-more-menu-portal::before {
   height: 18px !important;
   border-radius: 7px 7px 0 0 !important;
 }
+
+/* Smooth the ellipsis connector: narrow at trigger, wider into menu. */
+body > .chat-more-menu-portal::before {
+  right: 7px !important;
+  width: 30px !important;
+  height: 18px !important;
+  border-radius: 12px 12px 0 0 !important;
+  clip-path: polygon(28% 0, 72% 0, 100% 100%, 0 100%) !important;
+}
