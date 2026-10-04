@@ -7699,3 +7699,29 @@ body > .chat-more-menu-portal .button:last-child {
 body > .chat-more-menu-portal .button:active {
   background: rgba(255, 108, 128, 0.1) !important;
 }
+
+/* Frameless chat menu: items float as one clean list without an outer card. */
+body > .chat-more-menu-portal {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: visible !important;
+}
+body > .chat-more-menu-portal .button {
+  background: rgba(22, 18, 34, 0.94) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+body > .chat-more-menu-portal .button:first-child {
+  border-radius: 14px 14px 0 0 !important;
+}
+body > .chat-more-menu-portal .button:last-child {
+  border-radius: 0 0 14px 14px !important;
+}
+body > .chat-more-menu-portal .button + .button {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
