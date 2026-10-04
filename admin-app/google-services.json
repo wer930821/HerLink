@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "726591095083",
+    "project_id": "comwer93herlink",
+    "storage_bucket": "comwer93herlink.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:726591095083:android:961280203f342a861d456e",
+        "android_client_info": {
+          "package_name": "com.wer93.herlink"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZdhR533CXm8tCqT6ek2dOGYRfIoq7pnk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:726591095083:android:234c3007b15e7cf31d456e",
+        "android_client_info": {
+          "package_name": "com.wer93.herlinkadmin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZdhR533CXm8tCqT6ek2dOGYRfIoq7pnk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
