@@ -8528,3 +8528,14 @@ details.milestone-test-compact[open]>.milestone-test-popover{display:grid!import
   margin-left: auto !important;
   margin-right: auto !important;
 }
+
+
+/* Lower centered mailbox content slightly */
+.mailbox-fullscreen > .surface {
+  padding-top: 44px !important;
+}
+@media (max-width: 720px) {
+  .mailbox-fullscreen > .surface {
+    padding-top: 40px !important;
+  }
+}
