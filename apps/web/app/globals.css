@@ -8679,3 +8679,20 @@ body:has(.site-collection-viewport) .collection-skip-link:not(:focus) {
     padding-top: 14px !important;
   }
 }
+
+
+/* Collection readability */
+.collection-page { font-size: 17px; }
+.collection-page-header h1,
+.collection-page-hero h1 { font-size: 22px !important; }
+.collection-page-header p,
+.collection-page-hero p,
+.collection-page small { font-size: 15px !important; line-height: 1.55; }
+.collection-page-grid article b { font-size: 17px !important; }
+.collection-page button,
+.collection-page .collection-tabs { font-size: 16px; }
+@media (max-width: 520px) {
+  .collection-page { font-size: 17px; }
+  .collection-page-header h1,
+  .collection-page-hero h1 { font-size: 21px !important; }
+}
