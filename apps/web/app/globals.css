@@ -8301,3 +8301,9 @@ background-size:170px 170px,230px 230px,210px 210px,280px 280px;animation:eterna
  .milestone-test-compact{left:8px!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 116px)!important}
  .milestone-test-popover{max-width:calc(100vw - 16px)!important}
 }
+
+/* Ensure private tester remains interactive above seasonal/chat decoration layers. */
+.milestone-test-compact,.milestone-test-toggle,.milestone-test-popover,.milestone-test-popover button{pointer-events:auto!important}
+.milestone-test-compact{z-index:2147483000!important;isolation:isolate!important}
+.milestone-test-toggle{position:relative!important;z-index:2!important;touch-action:manipulation!important;cursor:pointer!important}
+.milestone-test-popover{z-index:3!important}
