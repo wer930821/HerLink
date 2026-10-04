@@ -2166,7 +2166,7 @@ export default function RandomSessionPage() {
 
     return (
       <article key={message.id} id={`chat-msg-${message.id}`} className={`chat-message ${message.is_mine ? "mine" : "theirs"}`}>
-        <div className={`chat-bubble ${message.message_type === "image" ? "image-message" : ""} ${message.risk_level !== "low" ? "risky" : ""}`}>
+        <div className={`chat-bubble ${message.message_type === "image" ? "image-message" : ""} ${message.risk_level !== "low" ? "risky" : ""}`} role="button" tabIndex={0} aria-label="回覆這則訊息" onClick={() => startReply(message)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); startReply(message); } }}>
           {riskLabel ? <div className="chat-risk-badge">{riskLabel}</div> : null}
           {message.reply_to_message_id ? (
             <button
@@ -2203,17 +2203,6 @@ export default function RandomSessionPage() {
           ) : (
             <div className="chat-message-content">{renderMessageContent(message.content, openExternalLink)}</div>
           )}
-          <div className="chat-message-footer">
-            <button
-              type="button"
-              className="chat-reply-button"
-              aria-label="回覆這則訊息"
-              title="回覆"
-              onClick={() => startReply(message)}
-            >
-              <span aria-hidden="true">↩</span>
-            </button>
-          </div>
         </div>
         <div className="chat-meta chat-meta-outside">{formatTime(message.created_at)}</div>
       </article>
