@@ -6729,3 +6729,25 @@ body:has(.halloween-contacts-page) {
 @keyframes contactsTwinkle { 0%,100%{opacity:.25;transform:scale(.96)} 50%{opacity:.62;transform:scale(1.04)} }
 @keyframes contactsCat { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-5px) rotate(2deg)} }
 @keyframes contactsBat { 0%,100%{transform:translate(0,0) rotate(-8deg)} 45%{transform:translate(24px,-12px) rotate(10deg)} 75%{transform:translate(9px,5px) rotate(-3deg)} }
+
+
+/* Contacts: force a single continuous surface */
+.halloween-contacts-page {
+  gap: 0 !important;
+  padding: 0 20px 28px !important;
+}
+.halloween-contacts-page > .hero,
+.halloween-contacts-page > .surface {
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.halloween-contacts-page > .hero {
+  padding: 34px 20px 26px !important;
+}
+.halloween-contacts-page > .surface {
+  padding: 26px 20px !important;
+  border-top: 1px solid rgba(240,217,164,.12) !important;
+}
