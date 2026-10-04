@@ -6397,3 +6397,68 @@ body:has(.site-mailbox-viewport){
 @media (prefers-reduced-motion: reduce) {
  .halloween-home-decor span,.halloween-chat-decor span { animation: none!important; }
 }
+
+
+/* Richer Halloween preview — test identity only renders these layers */
+.halloween-home-decor::before,
+.halloween-chat-decor::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 82% 16%, rgba(255,122,24,.14), transparent 18%),
+    radial-gradient(circle at 12% 72%, rgba(116,72,180,.13), transparent 22%);
+}
+.halloween-home-decor::after,
+.halloween-chat-decor::after {
+  content: "🕸️";
+  position: absolute;
+  top: -12px;
+  right: -8px;
+  font-size: 5.4rem;
+  opacity: .24;
+  transform: rotate(8deg);
+}
+.halloween-home-decor span:nth-child(1) {
+  top: 8%; right: 6%; font-size: 2.55rem;
+  animation: herlinkPumpkinGlow 3.4s ease-in-out infinite;
+}
+.halloween-home-decor span:nth-child(2) {
+  top: 29%; left: 2%; font-size: 2rem;
+  animation: herlinkGhostFloat 4.2s ease-in-out infinite;
+}
+.halloween-home-decor span:nth-child(3) {
+  top: 4%; left: 10%; font-size: 1.55rem;
+  animation: herlinkBatSweep 6s ease-in-out infinite;
+}
+.halloween-chat-decor span:nth-child(1) {
+  top: 7%; right: 5%; font-size: 1.45rem;
+  animation: herlinkBatSweep 5.8s ease-in-out infinite;
+}
+.halloween-chat-decor span:nth-child(2) {
+  bottom: 10%; left: 2%; font-size: 1.85rem; opacity: .66;
+  animation: herlinkPumpkinGlow 3.8s ease-in-out infinite;
+}
+.halloween-chat-decor span:nth-child(3) {
+  top: 31%; left: 1%; font-size: 1.55rem; opacity: .58;
+  animation: herlinkGhostFloat 4.6s ease-in-out infinite;
+}
+.halloween-home-decor {
+  background-image:
+    linear-gradient(115deg, transparent 48%, rgba(255,255,255,.018) 49%, transparent 50%),
+    radial-gradient(circle at 50% 110%, rgba(255,106,0,.08), transparent 36%);
+}
+.halloween-chat-decor {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255,105,0,.08), transparent 26%),
+    radial-gradient(circle at 0% 100%, rgba(101,54,160,.09), transparent 30%);
+}
+@keyframes herlinkPumpkinGlow {
+  0%,100% { transform: rotate(-4deg) scale(1); filter: drop-shadow(0 0 5px rgba(255,122,24,.22)); }
+  50% { transform: rotate(4deg) scale(1.08); filter: drop-shadow(0 0 16px rgba(255,122,24,.5)); }
+}
+@keyframes herlinkBatSweep {
+  0%,100% { transform: translate(0,0) rotate(-12deg); }
+  35% { transform: translate(14px,-9px) rotate(9deg); }
+  70% { transform: translate(-6px,5px) rotate(-4deg); }
+}
