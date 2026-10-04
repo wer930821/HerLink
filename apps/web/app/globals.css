@@ -7910,3 +7910,24 @@ body > .chat-more-menu-portal::before {
 body > .chat-more-menu-portal {
   border-radius: 14px 0 14px 14px !important;
 }
+
+/* Anonymous-contact pending state: keep each line in normal document flow. */
+.contact-request-status {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 6px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  line-height: 1.45 !important;
+}
+.contact-request-status__title,
+.contact-request-status__description,
+.contact-request-status__waiting {
+  position: static !important;
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  transform: none !important;
+  white-space: normal !important;
+}
