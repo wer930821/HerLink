@@ -28,7 +28,7 @@ type Props = {
 
 const EXTERNAL_URL_PATTERN = /((?:https?:\/\/|www\.)[^\s<>"'`]+)/gi;
 const THOUSAND_MILESTONE = 1000;
-const THOUSAND_EGG_STORAGE_PREFIX = "herlink:thousand-egg:";
+const THOUSAND_EGG_STORAGE_PREFIX = "herlink:thousand-egg:";\nconst IMAGE_URL_PATTERN = /\\.(?:png|jpe?g|gif|webp|avif)(?:\\?[^\\s]*)?$/i;
 const EASTER_TEST_USER_ID = process.env.NEXT_PUBLIC_EASTER_EGG_TEST_USER_ID?.trim() ?? "";
 
 const REPORT_CATEGORY_LABELS: Record<RandomReportCategory, string> = {
@@ -161,7 +161,7 @@ export default function RandomSessionPage({ params }: Props) {
   const [safetyMenuOpen, setSafetyMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
-  const [pendingExternalUrl, setPendingExternalUrl] = useState<string | null>(null);
+  const [pendingExternalUrl, setPendingExternalUrl] = useState<string | null>(null);\n  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [reportCategory, setReportCategory] = useState<RandomReportCategory>("harassment");
   const [reportDescription, setReportDescription] = useState("");
   const [reportBlock, setReportBlock] = useState(true);
@@ -325,7 +325,7 @@ export default function RandomSessionPage({ params }: Props) {
           const nextMessages = Array.isArray(messagesResult.data) ? messagesResult.data : [];
           seenMessageIdsRef.current = new Set(nextMessages.map((item) => item.id));
           setMessages(nextMessages);
-          void checkThousandMilestone(nextSession.id, false);
+          // 舊聊天室也要回溯歷史訊息數；localStorage 會確保同一裝置只播放一次。\n          void checkThousandMilestone(nextSession.id, true);
         }
 
         if (nextSession.status === "ended") {
@@ -637,7 +637,7 @@ export default function RandomSessionPage({ params }: Props) {
         ) : null}
         <div className={`chat-bubble ${message.risk_level !== "low" ? "risky" : ""}`}>
           {riskLabel ? <div className="chat-risk-badge">{riskLabel}</div> : null}
-          <div className="chat-message-content">{renderMessageContent(message.content, openExternalLink)}</div>
+          <div className="chat-message-content">{renderMessageContent(message.content, openExternalLink, setPreviewImageUrl)}</div>
           <div className="chat-meta">{formatTime(message.created_at)}</div>
         </div>
       </article>
@@ -901,7 +901,7 @@ export default function RandomSessionPage({ params }: Props) {
         </div>
       ) : null}
 
-      {pendingExternalUrl ? (
+      {previewImageUrl ? (\n        <div className="modal-backdrop" role="presentation" onClick={() => setPreviewImageUrl(null)}>\n          <div className="modal-card" role="dialog" aria-modal="true" aria-label="圖片預覽" onClick={(event) => event.stopPropagation()} style={{ width: "min(94vw, 900px)", maxWidth: "94vw", padding: 12 }}>\n            <button className="ghost" type="button" onClick={() => setPreviewImageUrl(null)} style={{ marginLeft: "auto", display: "block" }}>關閉</button>\n            <img src={previewImageUrl} alt="圖片預覽" style={{ width: "100%", maxHeight: "82vh", objectFit: "contain", display: "block", borderRadius: 12 }} />\n          </div>\n        </div>\n      ) : null}\n\n      {pendingExternalUrl ? (
         <div className="modal-backdrop" role="presentation" onClick={() => setPendingExternalUrl(null)}>
           <div className="modal-card" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
             <div className="modal-title">你即將離開 HerLink</div>
