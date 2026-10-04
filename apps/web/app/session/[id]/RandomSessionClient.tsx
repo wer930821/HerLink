@@ -1835,7 +1835,16 @@ export default function RandomSessionClient() {
       const replay = sessionStorage.getItem("herlink:replay-egg") as EasterEggKind | null;
       if (!replay) return;
       sessionStorage.removeItem("herlink:replay-egg");
-      window.setTimeout(() => triggerEasterEgg(replay, false, true), 120);
+      window.setTimeout(() => {
+        if (["twoThousand","threeThousand","fiveThousand","tenThousand"].includes(replay)) {
+          const milestone = replay === "twoThousand" ? 2000 : replay === "threeThousand" ? 3000 : replay === "fiveThousand" ? 5000 : 10000;
+          setTestMilestone(milestone);
+          triggerEasterEgg("thousand", false, true);
+          window.setTimeout(() => setTestMilestone((current) => current === milestone ? null : current), 7000);
+          return;
+        }
+        triggerEasterEgg(replay, false, true);
+      }, 120);
     } catch {}
   }, [easterEggAllowed, myProfile]);
 
