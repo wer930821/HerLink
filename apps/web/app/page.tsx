@@ -862,7 +862,7 @@ export default function HomePage() {
 
         <button type="button" className="home-mailbox-float" aria-label="信箱" onPointerDown={(event)=>event.currentTarget.blur()} onClick={()=>router.push("/mailbox")}><span className="home-mailbox-icon" aria-hidden="true">✉</span><span>信箱</span>{mailUnreadCount>0?<span className="home-mailbox-unread" aria-label={`${mailUnreadCount} 封未讀`}>{mailUnreadCount>99?"99+":mailUnreadCount}</span>:null}</button>
 
-        {state.profile?.anonymous_display_name === "孤星企鵝" ? <div className="halloween-home-decor" aria-hidden="true"><span>🎃</span><span>👻</span><span>🦇</span></div> : null}
+        <div className="halloween-home-decor" aria-hidden="true"><span>🎃</span><span>👻</span><span>🦇</span></div>
         <div className="home-app-eyebrow">HerLink</div>
         <h1 className="home-app-title">匿名聊天</h1>
         <p className="home-app-copy">不公開個人檔案，不做交友滑卡，只保留匿名隨機配對與聊天室。</p>
