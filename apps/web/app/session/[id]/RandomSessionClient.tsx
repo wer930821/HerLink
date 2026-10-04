@@ -2371,6 +2371,7 @@ export default function RandomSessionClient() {
             </button>
             <div className="chat-more chat-header-more" onClick={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
               <button
+                ref={headerMoreButtonRef}
                 className="ghost chat-more-summary"
                 type="button"
                 aria-label="更多聊天室選項"
