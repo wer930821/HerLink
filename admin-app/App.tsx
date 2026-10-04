@@ -52,6 +52,7 @@ function AdminApp() {
   const adminPushTokenRef = useRef<string | null>(null);
   const pendingMailboxOpenRef = useRef(false);
   const webReadyRef = useRef(false);
+  const pushRetryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const sendAdminPushTokenToWeb = (token: string) => {
     if (!webReadyRef.current) return;
@@ -66,7 +67,7 @@ function AdminApp() {
     let mounted = true;
     const setupNotifications = async () => {
       try {
-        await Notifications.setNotificationChannelAsync("herlink-admin-mailbox", {
+        await Notifications.setNotificationChannelAsync("admin-mail", {
           name: "站長信箱",
           importance: Notifications.AndroidImportance.HIGH,
           sound: "default",
@@ -90,6 +91,13 @@ function AdminApp() {
       }
     };
 
+    // WebView may load before the admin session is restored. Retry token delivery so
+    // the authenticated page can persist it after login/session restoration.
+    pushRetryTimerRef.current = setInterval(() => {
+      const token = adminPushTokenRef.current;
+      if (token && webReadyRef.current) sendAdminPushTokenToWeb(token);
+    }, 5000);
+
     const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data as { event_type?: string; target_url?: string };
       if (data.event_type === "admin_mail" || data.target_url === "/admin/mailbox") {
@@ -109,6 +117,8 @@ function AdminApp() {
     return () => {
       mounted = false;
       responseSub.remove();
+      if (pushRetryTimerRef.current) clearInterval(pushRetryTimerRef.current);
+      pushRetryTimerRef.current = null;
     };
   }, []);
 
