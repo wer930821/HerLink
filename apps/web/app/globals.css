@@ -7374,3 +7374,79 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
     visibility: visible !important;
   }
 }
+
+
+/* Desktop containment hotfix: size the chat to its containing block, never to viewport units. */
+@media (min-width: 769px) {
+  html:has(.chat-page),
+  body:has(.chat-page) {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .chat-page {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .chat-page > .chat-shell {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 14px 32px 12px !important;
+  }
+
+  .chat-page .chat-header,
+  .chat-page .chat-messages,
+  .chat-page .chat-composer,
+  .chat-page .chat-composer-main {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .chat-page .chat-message.mine,
+  .chat-page .chat-message.theirs {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .chat-page .chat-message.mine {
+    display: flex !important;
+    align-items: flex-end !important;
+  }
+
+  .chat-page .chat-message.theirs {
+    display: flex !important;
+    align-items: flex-start !important;
+  }
+
+  .chat-page .chat-composer-main {
+    overflow: visible !important;
+  }
+
+  .chat-page .chat-input {
+    flex: 1 1 0% !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  .chat-page .chat-send {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 72px !important;
+    visibility: visible !important;
+  }
+}
