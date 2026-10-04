@@ -2334,6 +2334,41 @@ export default function RandomSessionClient() {
               >
                 •••
               </button>
+              {headerMenuOpen ? (
+                <div className="chat-more-menu">
+                  <button
+                    className="button secondary chat-contact"
+                    type="button"
+                    onClick={() => { setHeaderMenuOpen(false); void handleAnonymousContact(); }}
+                    disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}
+                  >
+                    {contactBusy ? "處理中…" : anonymousContactLabel}
+                  </button>
+                  <button
+                    className="button secondary"
+                    type="button"
+                    onClick={() => { setHeaderMenuOpen(false); void copyBrowserHandoffLink(); }}
+                  >
+                    跨瀏覽器續聊
+                  </button>
+                  <button
+                    className="button secondary chat-safety"
+                    type="button"
+                    onClick={() => { setHeaderMenuOpen(false); setSafetyMenuOpen(true); }}
+                  >
+                    安全
+                  </button>
+                  <button
+                    className="button secondary chat-menu-leave"
+                    type="button"
+                    onClick={(event) => { setHeaderMenuOpen(false); void leave(event); }}
+                    disabled={leaveBusy}
+                    title="結束聊天並回到首頁，不會自動重新配對"
+                  >
+                    {leaveBusy ? "離開中…" : "離開聊天室"}
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
         </header>
@@ -2526,42 +2561,6 @@ export default function RandomSessionClient() {
           </div>
         </form>
       </section>
-
-      <Modal
-        open={headerMenuOpen}
-        title="聊天室選項"
-        onClose={() => setHeaderMenuOpen(false)}
-        actions={
-          <Button variant="ghost" type="button" onClick={() => setHeaderMenuOpen(false)}>
-            關閉
-          </Button>
-        }
-      >
-        <div className="stack">
-          <Button
-            variant="secondary"
-            type="button"
-            onClick={() => { setHeaderMenuOpen(false); void handleAnonymousContact(); }}
-            disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}
-          >
-            {contactBusy ? "處理中…" : anonymousContactLabel}
-          </Button>
-          <Button variant="secondary" type="button" onClick={() => { setHeaderMenuOpen(false); void copyBrowserHandoffLink(); }}>
-            跨瀏覽器續聊
-          </Button>
-          <Button variant="secondary" type="button" onClick={() => { setHeaderMenuOpen(false); setSafetyMenuOpen(true); }}>
-            安全
-          </Button>
-          <Button
-            variant="secondary"
-            type="button"
-            onClick={(event) => { setHeaderMenuOpen(false); void leave(event); }}
-            disabled={leaveBusy}
-          >
-            {leaveBusy ? "離開中…" : "離開聊天室"}
-          </Button>
-        </div>
-      </Modal>
 
       <Modal
         open={safetyMenuOpen}
