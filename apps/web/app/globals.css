@@ -8477,11 +8477,3 @@ details.milestone-test-compact[open]>.milestone-test-popover{display:grid!import
 .halloween-contacts-page .anonymous-contact-card-actions{
   margin-top:2px!important;
 }
-
-
-/* Slightly lower homepage content for mobile safe-area balance */
-@media (max-width: 640px) {
-  .home-app-like {
-    padding-top: calc(34px + env(safe-area-inset-top));
-  }
-}
