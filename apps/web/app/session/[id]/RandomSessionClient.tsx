@@ -267,7 +267,7 @@ export default function RandomSessionClient() {
   const pendingReplyPreviewRef = useRef<Set<string>>(new Set());
   const easterEggSeenRef = useRef<Set<string>>(new Set());
   const easterEggLastAtRef = useRef<Map<string, number>>(new Map());
-  const easterEggPendingSyncRef = useRef(false);
+  const easterEggPendingSyncRef = useRef(false);\n  const historicalThousandCheckedRef = useRef<Set<string>>(new Set());
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
   const realtimeClientInstanceIdRef = useRef(
@@ -1700,6 +1700,22 @@ export default function RandomSessionClient() {
     }
     window.setTimeout(() => setEasterEgg((current) => (current === kind ? null : current)), kind === "thousand" ? 5400 : 3200);
   };
+
+  useEffect(() => {
+    if (!easterEggAllowed || !session?.id || isEnded || historicalThousandCheckedRef.current.has(session.id)) return;
+    historicalThousandCheckedRef.current.add(session.id);
+
+    void getRandomChatMessageCount(session.id)
+      .then((result) => {
+        const count = Number(result.data);
+        if (!result.error && Number.isFinite(count) && count >= 1000) {
+          triggerEasterEgg("thousand", true);
+        }
+      })
+      .catch(() => {
+        historicalThousandCheckedRef.current.delete(session.id);
+      });
+  }, [easterEggAllowed, isEnded, session?.id]);
 
   const maybeTriggerEasterEgg = (content: string) => {
     if (!easterEggAllowed) return;
