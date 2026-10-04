@@ -8198,3 +8198,38 @@ body > .chat-more-menu-portal {
    margin-top:0!important;
  }
 }
+
+
+/* Private milestone preview tiers: 1000 remains the baseline. */
+.egg-milestone-stage{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.milestone-meteor{position:absolute;width:42vw;max-width:360px;height:3px;background:linear-gradient(90deg,transparent,rgba(255,224,143,.9),#fff);box-shadow:0 0 16px rgba(255,202,82,.9);opacity:0;transform:rotate(-24deg);animation:epic-meteor 3.8s ease-out both}
+.meteor-a{left:-28%;top:24%}.meteor-b{right:-28%;top:36%;animation-delay:.55s}
+.milestone-epic-halo{position:absolute;left:50%;top:42%;width:38vmin;height:38vmin;border:3px solid rgba(255,210,103,.7);border-radius:50%;transform:translate(-50%,-50%) scale(.1);box-shadow:0 0 70px rgba(255,188,48,.5);animation:epic-halo 4.2s ease-out both}
+@keyframes epic-meteor{0%,10%{opacity:0;transform:translate(-20vw,-12vh) rotate(-24deg)}25%{opacity:1}60%,100%{opacity:0;transform:translate(125vw,52vh) rotate(-24deg)}}
+@keyframes epic-halo{0%,15%{opacity:0;transform:translate(-50%,-50%) scale(.1)}35%{opacity:1}75%,100%{opacity:0;transform:translate(-50%,-50%) scale(3.4)}}
+
+.milestone-soul-stream{position:absolute;top:42%;width:44%;height:8px;opacity:0;filter:blur(.2px);box-shadow:0 0 28px currentColor;animation:soul-converge 4.8s cubic-bezier(.2,.8,.2,1) both}
+.soul-left{left:-42%;color:#c6a7ff;background:linear-gradient(90deg,transparent,currentColor);border-radius:0 99px 99px 0}
+.soul-right{right:-42%;color:#8eeaff;background:linear-gradient(90deg,currentColor,transparent);border-radius:99px 0 0 99px}
+.milestone-soul-wave{position:absolute;left:50%;top:42%;width:80px;height:80px;border:2px solid rgba(207,232,255,.8);border-radius:50%;opacity:0;transform:translate(-50%,-50%) scale(.2);animation:soul-wave 4.8s ease-out 1.2s both}
+.soul-wave-b{animation-delay:1.55s}
+@keyframes soul-converge{0%,12%{opacity:0}25%{opacity:.9}42%{opacity:1;transform:translateX(100%)}55%,100%{opacity:0;transform:translateX(100%)}}
+.soul-right{animation-name:soul-converge-right}@keyframes soul-converge-right{0%,12%{opacity:0}25%{opacity:.9}42%{opacity:1;transform:translateX(-100%)}55%,100%{opacity:0;transform:translateX(-100%)}}
+@keyframes soul-wave{0%{opacity:0;transform:translate(-50%,-50%) scale(.2)}18%{opacity:1}70%,100%{opacity:0;transform:translate(-50%,-50%) scale(8)}}
+
+.milestone-5000{background:radial-gradient(circle at 50% 45%,rgba(78,48,155,.18),transparent 48%)}
+.milestone-galaxy{position:absolute;left:50%;top:43%;width:115vmax;height:42vmax;border-radius:50%;transform:translate(-50%,-50%) rotate(-18deg) scale(.1);opacity:0;background:radial-gradient(ellipse,rgba(255,255,255,.9) 0 1%,rgba(154,126,255,.55) 4%,rgba(86,54,160,.28) 20%,transparent 58%);box-shadow:0 0 90px rgba(123,88,255,.35);animation:galaxy-open 5.8s ease both}
+.milestone-startrail{position:absolute;left:-20%;top:34%;width:140%;height:2px;background:linear-gradient(90deg,transparent,#fff,rgba(174,151,255,.9),transparent);box-shadow:0 0 24px rgba(185,163,255,.9);opacity:0;transform:rotate(-12deg);animation:startrail 5.8s ease 1.3s both}
+.milestone-destined-core{position:absolute;left:50%;top:42%;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 0 35px 12px rgba(192,166,255,.75);animation:destined-core 5.8s ease both}
+@keyframes galaxy-open{0%,8%{opacity:0;transform:translate(-50%,-50%) rotate(-30deg) scale(.1)}30%,75%{opacity:.9;transform:translate(-50%,-50%) rotate(8deg) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) rotate(28deg) scale(1.18)}}
+@keyframes startrail{0%,15%{opacity:0;transform:translateX(-30%) rotate(-12deg)}35%{opacity:1}65%,100%{opacity:0;transform:translateX(30%) rotate(-12deg)}}
+@keyframes destined-core{0%,15%{opacity:0;transform:scale(.1)}35%{opacity:1;transform:scale(1)}70%,100%{opacity:0;transform:scale(8)}}
+
+.milestone-eternal-blackout{position:absolute;inset:0;background:#030207;opacity:0;animation:eternal-blackout 7s ease both}
+.milestone-eternal-core{position:absolute;left:50%;top:42%;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 24px #fff,0 0 70px rgba(255,206,91,.9);opacity:0;animation:eternal-core 7s cubic-bezier(.16,.8,.2,1) both}
+.milestone-eternal-pillar{position:absolute;left:50%;top:-15%;width:5px;height:130%;background:linear-gradient(transparent,rgba(255,240,180,.95),#fff,rgba(255,205,72,.8),transparent);box-shadow:0 0 45px rgba(255,211,93,.9);opacity:0;transform:translateX(-50%) scaleX(.1);animation:eternal-pillar 7s ease both}
+.milestone-eternal-burst{position:absolute;left:50%;top:42%;width:16vmin;height:16vmin;border-radius:50%;background:radial-gradient(circle,#fff 0 4%,#ffe38d 10%,rgba(255,188,43,.5) 25%,transparent 68%);opacity:0;transform:translate(-50%,-50%) scale(.1);animation:eternal-burst 7s cubic-bezier(.1,.8,.2,1) both}
+@keyframes eternal-blackout{0%{opacity:0}6%,17%{opacity:.9}31%,88%{opacity:.28}100%{opacity:0}}
+@keyframes eternal-core{0%,10%{opacity:0;transform:translate(-50%,-50%) scale(.1)}18%{opacity:1;transform:translate(-50%,-50%) scale(1)}32%{opacity:1;transform:translate(-50%,-50%) scale(2)}45%,100%{opacity:0;transform:translate(-50%,-50%) scale(18)}}
+@keyframes eternal-pillar{0%,24%{opacity:0;transform:translateX(-50%) scaleX(.1)}34%{opacity:1;transform:translateX(-50%) scaleX(1)}48%,100%{opacity:0;transform:translateX(-50%) scaleX(10)}}
+@keyframes eternal-burst{0%,27%{opacity:0;transform:translate(-50%,-50%) scale(.1)}38%{opacity:1;transform:translate(-50%,-50%) scale(1)}68%{opacity:.9;transform:translate(-50%,-50%) scale(8)}100%{opacity:0;transform:translate(-50%,-50%) scale(12)}}
