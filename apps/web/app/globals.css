@@ -6792,3 +6792,47 @@ body:has(.halloween-contacts-page) {
     overflow: hidden !important;
   }
 }
+
+
+/* Chat: hard-lock outer viewport; only message history may scroll */
+html:has(.chat-page),
+body:has(.chat-page) {
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+body:has(.chat-page) > * {
+  overscroll-behavior: none !important;
+}
+@media (max-width:768px) {
+  .chat-page {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
+  }
+  .chat-page > .chat-shell {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0,1fr) auto !important;
+  }
+  .chat-page .chat-header,
+  .chat-page .chat-composer {
+    position: relative !important;
+    flex: none !important;
+    min-height: 0 !important;
+  }
+  .chat-page .chat-messages {
+    min-height: 0 !important;
+    height: auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain !important;
+    touch-action: pan-y !important;
+  }
+}
