@@ -14,6 +14,7 @@ export function AdminMailboxNavLink(){
    try {(window as any).ReactNativeWebView?.postMessage(JSON.stringify({type:"admin-push-registration",ok:!error,error:error?.message??null}));} catch {}
   };
   window.addEventListener("herlink-admin-push-token",onNativePushToken as EventListener);
+  try {(window as any).ReactNativeWebView?.postMessage(JSON.stringify({type:"admin-push-token-request"}));} catch {}
   const c=supabase.channel("admin-mailbox-nav")
   .on("postgres_changes",{event:"*",schema:"public",table:"station_mail_threads"},()=>void refresh())
   .on("postgres_changes",{event:"*",schema:"public",table:"station_mail_messages"},()=>void refresh())
