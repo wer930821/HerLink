@@ -8050,3 +8050,21 @@ body > .chat-more-menu-portal {
     min-height: 0 !important;
   }
 }
+
+
+/* Halloween chat decor visibility: keep seasonal accents visible after loading */
+.chat-page > .halloween-chat-decor {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 3 !important;
+  pointer-events: none !important;
+}
+.chat-page > .halloween-chat-decor::before,
+.chat-page > .halloween-chat-decor::after,
+.chat-page > .halloween-chat-decor span {
+  pointer-events: none !important;
+}
+.chat-page > .chat-shell {
+  position: relative;
+  z-index: 2;
+}
