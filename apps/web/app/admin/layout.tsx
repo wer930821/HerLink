@@ -32,11 +32,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
 
             <nav className="admin-nav" aria-label="後台導覽">
-              {navItems.slice(0, 3).map((item) => (
+              {navItems.slice(0, 1).map((item) => (
                 <a key={item.href} className="admin-nav-link" href={item.href}>{item.label}</a>
               ))}
               <AdminMailboxNavLink />
-              {navItems.slice(3).map((item) => (
+              {navItems.slice(1).map((item) => (
                 <a key={item.href} className="admin-nav-link" href={item.href}>{item.label}</a>
               ))}
             </nav>
