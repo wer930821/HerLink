@@ -6940,3 +6940,40 @@ body:has(.chat-page .halloween-chat-decor) .chat-message-other {
   0%,100% { box-shadow:0 0 0 1px rgba(151,99,211,.06),0 0 13px rgba(130,76,190,.14),0 0 27px rgba(130,76,190,.06); }
   50% { box-shadow:0 0 0 1px rgba(151,99,211,.14),0 0 23px rgba(130,76,190,.30),0 0 40px rgba(130,76,190,.13); }
 }
+
+
+/* Halloween chat v6: crypt theme, deliberately different from homepage */
+.chat-page .halloween-chat-decor::after {
+  content: "🪦" !important;
+  top: auto !important;
+  right: 3% !important;
+  bottom: 112px !important;
+  font-size: 3.1rem !important;
+  opacity: .34 !important;
+  animation: graveMist 6s ease-in-out infinite !important;
+}
+.chat-page .halloween-chat-decor span:nth-child(1) {
+  left: 4% !important; right: auto !important;
+  top: 28% !important; bottom: auto !important;
+  font-size: 2.15rem !important;
+  opacity: .58 !important;
+  animation: skullHover 5.5s ease-in-out infinite !important;
+}
+.chat-page .halloween-chat-decor span:nth-child(2) {
+  left: 5% !important; right: auto !important;
+  bottom: 116px !important;
+  font-size: 2.25rem !important;
+  opacity: .8 !important;
+  animation: candleFlicker 2.2s ease-in-out infinite !important;
+}
+.chat-page .halloween-chat-decor span:nth-child(3) {
+  right: 4% !important; left: auto !important;
+  top: 49% !important; bottom: auto !important;
+  font-size: 2.25rem !important;
+  opacity: .36 !important;
+  animation: coffinFloat 7s ease-in-out infinite !important;
+}
+@keyframes skullHover { 0%,100%{transform:translateY(0) rotate(-4deg);opacity:.48} 50%{transform:translateY(-12px) rotate(4deg);opacity:.7} }
+@keyframes candleFlicker { 0%,100%{filter:drop-shadow(0 0 5px rgba(255,167,65,.3));transform:scale(1)} 45%{filter:drop-shadow(0 0 20px rgba(255,143,42,.75));transform:scale(1.05)} 55%{filter:drop-shadow(0 0 7px rgba(255,143,42,.35));transform:scale(.98)} }
+@keyframes coffinFloat { 0%,100%{transform:translateY(0) rotate(4deg)} 50%{transform:translateY(-8px) rotate(-3deg)} }
+@keyframes graveMist { 0%,100%{filter:blur(0);transform:translateX(0);opacity:.26} 50%{filter:blur(.4px);transform:translateX(-8px);opacity:.42} }
