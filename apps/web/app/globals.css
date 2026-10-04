@@ -7451,3 +7451,82 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
     z-index: 10002 !important;
   }
 }
+
+
+/* Compact desktop chat options, rendered outside the chat header stacking context. */
+@media (min-width: 769px) {
+  .chat-header-popover {
+    position: fixed;
+    top: 64px;
+    right: 24px;
+    z-index: 20000;
+    width: min(240px, calc(100vw - 32px));
+    padding: 8px;
+    display: grid;
+    gap: 6px;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 14px;
+    background: rgba(24, 28, 43, .98);
+    box-shadow: 0 18px 50px rgba(0,0,0,.38);
+    backdrop-filter: blur(18px);
+  }
+
+  .chat-header-popover button {
+    width: 100%;
+    min-height: 42px;
+    padding: 9px 12px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .chat-header-popover button:hover,
+  .chat-header-popover button:focus-visible {
+    background: rgba(255,255,255,.09);
+    outline: none;
+  }
+
+  .chat-header-popover button.danger {
+    color: #ffb4bd;
+  }
+
+  .chat-header-popover button:disabled {
+    opacity: .55;
+    cursor: default;
+  }
+}
+
+@media (max-width: 768px) {
+  .chat-header-popover {
+    position: fixed;
+    top: 58px;
+    right: 12px;
+    z-index: 20000;
+    width: min(230px, calc(100vw - 24px));
+    padding: 8px;
+    display: grid;
+    gap: 6px;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 14px;
+    background: rgba(24, 28, 43, .98);
+    box-shadow: 0 18px 50px rgba(0,0,0,.38);
+  }
+
+  .chat-header-popover button {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+  }
+
+  .chat-header-popover button.danger { color: #ffb4bd; }
+}
