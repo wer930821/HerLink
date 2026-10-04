@@ -282,7 +282,8 @@ export default function RandomSessionClient() {
   const scrollRafRef = useRef<number | null>(null);
   const [myProfile, setMyProfile] = useState<WebProfile | null>(null);
   const [session, setSession] = useState<RandomSessionRow | null>(null);
-  const [messages, setMessages] = useState<RandomChatMessageRow[]>([]);\n  const [sessionMessageCount, setSessionMessageCount] = useState<number | null>(null);
+  const [messages, setMessages] = useState<RandomChatMessageRow[]>([]);
+  const [sessionMessageCount, setSessionMessageCount] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [sendBusy, setSendBusy] = useState(false);
