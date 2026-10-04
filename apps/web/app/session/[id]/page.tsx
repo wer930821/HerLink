@@ -2322,9 +2322,18 @@ export default function RandomSessionPage() {
             >
               {nextBusy ? "處理中…" : "下一位"}
             </button>
-            <details className="chat-more chat-header-more">
+            <details
+              className="chat-more chat-header-more"
+              onClick={(event) => {
+                const target = event.target as HTMLElement;
+                if (target.closest(".chat-more-menu button")) {
+                  const details = event.currentTarget;
+                  window.setTimeout(() => details.removeAttribute("open"), 0);
+                }
+              }}
+            >
               <summary className="ghost chat-more-summary" aria-label="更多聊天室選項" title="更多">•••</summary>
-              <div className="chat-more-menu">
+              <div className="chat-more-menu" onClick={(event) => event.stopPropagation()}>
                 <button
                   className="button secondary chat-contact"
                   type="button"
