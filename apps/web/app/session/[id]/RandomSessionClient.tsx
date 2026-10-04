@@ -2527,35 +2527,44 @@ export default function RandomSessionClient() {
         </form>
       </section>
 
-      {headerMenuOpen ? (
-        <div className="chat-header-popover-backdrop" onClick={() => setHeaderMenuOpen(false)}>
-          <div className="chat-header-popover" role="menu" aria-label="聊天室選項" onClick={(event) => event.stopPropagation()}>
-          <button
+      <Modal
+        open={headerMenuOpen}
+        title="聊天室選項"
+        onClose={() => setHeaderMenuOpen(false)}
+        actions={
+          <Button variant="ghost" type="button" onClick={() => setHeaderMenuOpen(false)}>
+            關閉
+          </Button>
+        }
+      >
+        <div className="stack">
+          <Button
+            variant="secondary"
             type="button"
-            role="menuitem"
             onClick={() => { setHeaderMenuOpen(false); void handleAnonymousContact(); }}
             disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}
           >
             {contactBusy ? "處理中…" : anonymousContactLabel}
-          </button>
-          <button type="button" role="menuitem" onClick={() => { setHeaderMenuOpen(false); void copyBrowserHandoffLink(); }}>
+          </Button>
+          <Button variant="secondary" type="button" onClick={() => { setHeaderMenuOpen(false); void copyBrowserHandoffLink(); }}>
             跨瀏覽器續聊
-          </button>
-          <button type="button" role="menuitem" onClick={() => { setHeaderMenuOpen(false); setSafetyMenuOpen(true); }}>
+          </Button>
+          <Button variant="secondary" type="button" onClick={() => { setHeaderMenuOpen(false); setSafetyMenuOpen(true); }}>
             安全
-          </button>
-          <button
-            className="danger"
+          </Button>
+          <Button variant="secondary" type="button" onClick={() => { setHeaderMenuOpen(false); setNextConfirmOpen(true); }} disabled={nextBusy}>
+            {nextBusy ? "處理中…" : "下一位"}
+          </Button>
+          <Button
+            variant="secondary"
             type="button"
-            role="menuitem"
             onClick={(event) => { setHeaderMenuOpen(false); void leave(event); }}
             disabled={leaveBusy}
           >
             {leaveBusy ? "離開中…" : "離開聊天室"}
-          </button>
-          </div>
+          </Button>
         </div>
-      ) : null}
+      </Modal>
 
       <Modal
         open={safetyMenuOpen}
