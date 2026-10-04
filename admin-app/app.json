@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "HerLink 後台",
+    "slug": "herlink-admin",
+    "version": "1.0.3",
+    "orientation": "portrait",
+    "scheme": "herlinkadmin",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.wer93.herlinkadmin"
+    },
+    "android": {
+      "package": "com.wer93.herlinkadmin",
+      "versionCode": 4,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.REQUEST_INSTALL_PACKAGES",
+        "android.permission.POST_NOTIFICATIONS"
+      ],
+      "softwareKeyboardLayoutMode": "resize",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/admin-icon.png",
+        "backgroundColor": "#11110f"
+      }
+    },
+    "plugins": [
+      "expo-notifications"
+    ],
+    "extra": {
+      "adminUrl": "https://her-link-kivora3.vercel.app/admin",
+      "eas": {
+        "projectId": "f2cdaed8-e7a6-48ba-aa41-c2cd32f88720"
+      }
+    },
+    "icon": "./assets/admin-icon.png"
+  }
+}
