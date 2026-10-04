@@ -489,6 +489,31 @@ export async function isCurrentUserAdmin(_userId?: string) {
   };
 }
 
+export async function getMyAdminFixedAnonymousIdentity() {
+  const result = await (supabase as any).rpc("get_my_admin_fixed_anonymous_identity");
+  return {
+    data: typeof result.data === "string" ? result.data : null,
+    error: result.error,
+  } as { data: string | null; error: { message?: string } | null };
+}
+
+export async function bindMyAdminFixedAnonymousIdentity(profileId: string) {
+  return (supabase as any).rpc("bind_my_admin_fixed_anonymous_identity", {
+    p_fixed_profile_id: profileId,
+  }) as Promise<{ data: boolean | null; error: { message?: string } | null }>;
+}
+
+export async function ensureMyAdminFixedAnonymousIdentity(profile: WebProfile | null) {
+  if (!profile?.id) return { data: null, error: null };
+  const admin = await isCurrentUserAdmin();
+  if (admin.error || !admin.data) return { data: null, error: admin.error };
+  const current = await getMyAdminFixedAnonymousIdentity();
+  if (current.error || current.data) return current;
+  if (profile.anonymous_display_name !== "孤星企鵝") return { data: null, error: null };
+  const bound = await bindMyAdminFixedAnonymousIdentity(profile.id);
+  return { data: bound.error ? null : profile.id, error: bound.error };
+}
+
 export async function loadMyProfile(userId: string) {
   return (supabase
     .from("profiles")
