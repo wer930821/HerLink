@@ -8560,3 +8560,31 @@ body:has(.collection-page) {
   min-height: 100dvh;
   background: radial-gradient(circle at 50% 0,rgba(111,54,145,.22),transparent 35%),linear-gradient(180deg,#130d1d,#0b0810 72%) !important;
 }
+
+
+/* Collection page owns the full mobile viewport; remove outer shell/container layer */
+body:has(.collection-page) .shell,
+body:has(.collection-page) .container {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+body:has(.collection-page) .shell {
+  min-height: 100dvh !important;
+}
+.collection-page {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  min-height: 100dvh !important;
+}
+@media (min-width: 761px) {
+  .collection-page > * {
+    width: min(728px, calc(100% - 32px));
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
