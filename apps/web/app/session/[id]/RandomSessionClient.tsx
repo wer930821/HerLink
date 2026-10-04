@@ -2496,6 +2496,7 @@ export default function RandomSessionClient() {
                       {milestoneTestAllowed ? (
                         <button className="home-collection-entry chat-collection-menu" type="button" onClick={() => { setHeaderMenuOpen(false); router.push("/collection"); }}><span className="home-collection-entry-icon">♛</span><span><b>彩蛋圖鑑與任務</b><small>收集彩蛋 · 完成任務 · 解鎖成就</small></span><span className="home-collection-entry-arrow">›</span></button>
                       ) : null}
+                      {milestoneTestAllowed ? <button className="button secondary" type="button" onClick={() => { setHeaderMenuOpen(false); setTestMilestone(null); triggerEasterEgg("eternal_bond", false, true); }}>測試永恆之約特效</button> : null}
                       <button className="button secondary" type="button" onClick={() => { setHeaderMenuOpen(false); void copyBrowserHandoffLink(); }}>跨瀏覽器續聊</button>
                       <button className="button secondary chat-safety" type="button" onClick={() => { setHeaderMenuOpen(false); setSafetyMenuOpen(true); }}>安全</button>
                       <button className="button secondary chat-menu-leave" type="button" onClick={(event) => { setHeaderMenuOpen(false); void leave(event); }} disabled={leaveBusy} title="結束聊天並回到首頁，不會自動重新配對">
