@@ -7244,3 +7244,41 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
     pointer-events: none !important;
   }
 }
+
+
+/* Desktop homepage scale: use the available screen instead of a phone-sized column */
+@media (min-width: 769px) {
+  .site-home-viewport .home-app-like {
+    width: min(100%, 1440px) !important;
+    padding: 40px clamp(40px, 7vw, 110px) !important;
+  }
+  .site-home-viewport .home-app-hero {
+    width: min(100%, 860px) !important;
+    padding-top: 92px !important;
+  }
+  .site-home-viewport .home-app-title {
+    font-size: clamp(3rem, 4.4vw, 4.6rem) !important;
+  }
+  .site-home-viewport .home-app-copy {
+    max-width: 52rem !important;
+    font-size: 1.12rem !important;
+  }
+  .site-home-viewport .home-app-identity {
+    padding: 18px 20px !important;
+  }
+  .site-home-viewport .home-app-name {
+    font-size: 1.2rem !important;
+  }
+  .site-home-viewport .home-app-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+  .site-home-viewport .home-app-actions .btn {
+    min-height: 58px !important;
+    font-size: 1.05rem !important;
+  }
+  .site-home-viewport .home-app-footer {
+    width: min(100%, 860px) !important;
+    font-size: .9rem !important;
+  }
+}
