@@ -8381,3 +8381,17 @@ details.milestone-test-compact[open]>.milestone-test-popover{display:grid!import
     padding-right:0!important;
   }
 }
+
+
+/* Mobile app-like shell: remove the global desktop navigation from every public page. */
+@media(max-width:768px){
+  body>.site-header,
+  .site-header{
+    display:none!important;
+  }
+  main:first-of-type,
+  .site-mailbox-viewport,
+  .site-home-viewport{
+    padding-top:0!important;
+  }
+}
