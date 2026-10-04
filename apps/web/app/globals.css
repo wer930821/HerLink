@@ -8517,3 +8517,14 @@ details.milestone-test-compact[open]>.milestone-test-popover{display:grid!import
     font-size: 1.85rem !important;
   }
 }
+
+
+/* Center mailbox content as one column */
+.mailbox-fullscreen > .surface {
+  box-sizing: border-box !important;
+}
+.mailbox-fullscreen > .surface > * {
+  width: min(100%, 680px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
