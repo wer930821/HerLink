@@ -399,6 +399,13 @@ export async function signUp(email: string, password: string) {
 }
 
 export async function signInAnonymously() {
+  // Keep the current anonymous Supabase session whenever it is still valid.
+  // Creating a second anonymous auth user here would detach the browser from
+  // its existing chats/profile.
+  const current = await supabase.auth.getSession();
+  if (current.data.session?.user) {
+    return { data: { user: current.data.session.user, session: current.data.session }, error: null };
+  }
   return supabase.auth.signInAnonymously();
 }
 
