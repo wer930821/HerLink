@@ -1165,6 +1165,7 @@ export default function RandomSessionClient() {
           setMilestoneTestAllowed(
             Boolean(adminCheck.data) ||
             authSession.user.id === "ad9536fe-5ea0-4a1d-96d0-dcdecdafa18c" ||
+            authSession.user.id === "e2817803-1304-4ef0-b0b8-66f473b12886" ||
             nextProfile?.anonymous_display_name === "孤星企鵝"
           );
           setEasterEggAllowed(true);
