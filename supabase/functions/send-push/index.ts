@@ -7,7 +7,8 @@ type EventType =
   | "verification_result"
   | "push_test"
   | "random_match"
-  | "random_message"\n  | "admin_mail";
+  | "random_message"
+  | "admin_mail";
 
 type DeliveryTarget = "web" | "native" | "both";
 type TargetName = "web" | "native";
@@ -290,7 +291,18 @@ async function shouldSendEvent(
   supabaseAdmin: ReturnType<typeof buildAdminClient>,
   event: PushEventRow
 ) {
-  if (event.event_type === "admin_mail") {\n    const { data: adminRow, error: adminError } = await supabaseAdmin\n      .from("admin_users")\n      .select("user_id,active")\n      .eq("user_id", event.user_id)\n      .eq("active", true)\n      .maybeSingle();\n    if (adminError) throw adminError;\n    return Boolean(adminRow);\n  }\n\n  const profile = await loadRecipientProfile(supabaseAdmin, event.user_id);
+  if (event.event_type === "admin_mail") {
+    const { data: adminRow, error: adminError } = await supabaseAdmin
+      .from("admin_users")
+      .select("user_id,active")
+      .eq("user_id", event.user_id)
+      .eq("active", true)
+      .maybeSingle();
+    if (adminError) throw adminError;
+    return Boolean(adminRow);
+  }
+
+  const profile = await loadRecipientProfile(supabaseAdmin, event.user_id);
 
   if (event.event_type === "verification_result") {
     return profile.account_status !== "deletion_pending";
@@ -628,7 +640,10 @@ function buildNativePushData(event: PushEventRow): Record<string, unknown> {
       ? event.payload.match_id
       : null);
 
-  let targetUrl =\n    event.event_type === "admin_mail" && event.payload && typeof event.payload.target_url === "string"\n      ? event.payload.target_url\n      : "/";
+  let targetUrl =
+    event.event_type === "admin_mail" && event.payload && typeof event.payload.target_url === "string"
+      ? event.payload.target_url
+      : "/";
   if (isRandomEvent && sessionId) {
     targetUrl = `/random-session/${sessionId}`;
   } else if (matchId) {
@@ -800,7 +815,8 @@ async function deliverNativePush(
     title: event.title,
     body: event.body,
     sound: "default",
-    channelId: event.event_type === "admin_mail" ? "admin-mail" : "herlink-chat",\n    priority: event.event_type === "admin_mail" ? "high" : undefined,
+    channelId: event.event_type === "admin_mail" ? "herlink-admin-mailbox" : "herlink-chat",
+    priority: event.event_type === "admin_mail" ? "high" : undefined,
     data: buildNativePushData(event),
   }));
 
