@@ -6590,3 +6590,50 @@ body:has(.chat-page .halloween-chat-decor) .chat-composer-main {
   border-color: rgba(255,128,35,.16) !important;
   box-shadow: 0 8px 22px rgba(0,0,0,.18) !important;
 }
+
+
+/* Mobile chat viewport lock: messages scroll, composer stays fixed in layout */
+html:has(.chat-page),
+body:has(.chat-page) {
+  width: 100% !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+@media (max-width:768px) {
+  .chat-page {
+    position: fixed !important;
+    inset: 0 !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+  }
+  .chat-page > .chat-shell {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+  }
+  .chat-page .chat-messages {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior-y: contain !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .chat-page .chat-composer {
+    flex: 0 0 auto !important;
+    position: relative !important;
+    bottom: auto !important;
+    margin: 0 !important;
+    padding: 6px 8px max(6px, env(safe-area-inset-bottom)) !important;
+    box-sizing: border-box !important;
+  }
+}
