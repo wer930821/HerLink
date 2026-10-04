@@ -2342,7 +2342,7 @@ export default function RandomSessionClient() {
                 <div className="title chat-partner-name">{partnerName}</div>
                 {partnerVerified ? <span className="chat-verified">✓</span> : null}
               </div>
-              <div className="chat-my-name">你：{myAnonymousName}{isEnded ? " · 聊天已結束" : ""}</div>
+              <div className="chat-my-name">你：{myAnonymousName}{isEnded ? " · 聊天已結束" : ""}</div>\n              <div className="chat-message-count" aria-live="polite">目前訊息數：{sessionMessageCount === null ? "讀取中…" : sessionMessageCount.toLocaleString("zh-TW")}</div>
             </div>
           </div>
           <div className="chat-header-actions">
@@ -2387,7 +2387,6 @@ export default function RandomSessionClient() {
                       onClick={(event) => event.stopPropagation()}
                       onPointerDown={(event) => event.stopPropagation()}
                     >
-                      <div className="chat-menu-message-count" aria-live="polite">目前訊息數：{sessionMessageCount === null ? "讀取中…" : sessionMessageCount.toLocaleString("zh-TW")}</div>
                       <button className="button secondary chat-contact" type="button" onClick={() => { setHeaderMenuOpen(false); void handleAnonymousContact(); }} disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}>
                         {contactBusy ? "處理中…" : anonymousContactLabel}
                       </button>
