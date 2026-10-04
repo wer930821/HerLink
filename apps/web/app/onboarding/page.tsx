@@ -66,6 +66,7 @@ export default function OnboardingPage() {
     try {
       const { error: saveError } = await saveAnonymousProfile(userId, {
         anonymous_display_name: anonymousDisplayName.trim(),
+        anonymous_avatar: "avatar_01",
         anonymous_mode_enabled: true,
         onboarding_completed: true,
       });
