@@ -169,7 +169,7 @@ export default function RandomSessionPage({ params }: Props) {
   const [reportDescription, setReportDescription] = useState("");
   const [reportBlock, setReportBlock] = useState(true);
   const [thousandEggOpen, setThousandEggOpen] = useState(false);
-  const [thousandEggNonce, setThousandEggNonce] = useState(0);
+  const [thousandEggNonce, setThousandEggNonce] = useState(0);\n  const [testMilestone, setTestMilestone] = useState<number | null>(null);
   const thousandEggTimerRef = useRef<number | null>(null);
   const lastKnownMessageCountRef = useRef<number | null>(null);
 
@@ -188,7 +188,7 @@ export default function RandomSessionPage({ params }: Props) {
     }
   }, [myProfile?.id]);
 
-  const playThousandEgg = useCallback(() => {
+  const playTestMilestone = useCallback((milestone: number) => {\n    setTestMilestone(milestone);\n    setThousandEggNonce((value) => value + 1);\n    setThousandEggOpen(true);\n    if (thousandEggTimerRef.current) window.clearTimeout(thousandEggTimerRef.current);\n    try { if ("vibrate" in navigator) navigator.vibrate([70, 55, 130]); } catch {}\n    thousandEggTimerRef.current = window.setTimeout(() => { setThousandEggOpen(false); setTestMilestone(null); thousandEggTimerRef.current = null; }, 6800);\n  }, []);\n\n  const playThousandEgg = useCallback(() => {\n    setTestMilestone(null);
     if (thousandEggTimerRef.current) window.clearTimeout(thousandEggTimerRef.current);
     setThousandEggNonce((value) => value + 1);
     setThousandEggOpen(true);
@@ -702,12 +702,17 @@ ${plainContent}`
             {leaveBusy ? "離開中…" : "離開聊天室"}
           </button>
           {isEasterEggTester ? (
-            <button className="button secondary thousand-test-button" type="button" onClick={() => {
-              playThousandEgg();
-              if (session?.id) void recordEasterEgg(session.id, "test");
-            }}>
-              測試 1000 則彩蛋
-            </button>
+            <>
+              <button className="button secondary thousand-test-button" type="button" onClick={() => {
+                playThousandEgg();
+                if (session?.id) void recordEasterEgg(session.id, "test");
+              }}>測試 1000 則彩蛋</button>
+              {[2000, 3000, 5000, 10000].map((milestone) => (
+                <button key={milestone} className="button secondary thousand-test-button" type="button" onClick={() => playTestMilestone(milestone)}>
+                  測試 {milestone} 則彩蛋
+                </button>
+              ))}
+            </>
           ) : null}
         </div>
 
