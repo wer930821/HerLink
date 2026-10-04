@@ -7793,3 +7793,14 @@ body > .chat-more-menu-portal .button:first-child {
 body > .chat-more-menu-portal .button:last-child {
   border-radius: 0 0 12px 12px !important;
 }
+
+/* Visually connect the expanded menu to the ellipsis trigger row. */
+body > .chat-more-menu-portal {
+  padding-top: 44px !important;
+  background: rgba(22, 18, 34, 0.94) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+body > .chat-more-menu-portal .button {
+  background: transparent !important;
+}
