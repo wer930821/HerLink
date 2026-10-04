@@ -1,4 +1,4 @@
-name: HerLink Android Release
+name: HerLink Android Release\n# release trigger 2026-10-04
 
 on:
   workflow_dispatch:
