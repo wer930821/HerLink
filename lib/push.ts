@@ -24,7 +24,7 @@ let registrationPromise: Promise<string | null> | null = null;\n\nasync function
   const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
   if (!projectId) throw new Error("找不到 Expo projectId，無法註冊推播。");
 
-  const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+  const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;\n  if (!token || !/^(ExponentPushToken|ExpoPushToken)\\[[^\\]]+\\]$/.test(token)) {\n    throw new Error("取得的 Expo Push Token 無效。");\n  }
   const deviceHash = await getDeviceHash();
   const { error } = await supabase.rpc("create_or_update_push_token", {
     p_expo_push_token: token,
