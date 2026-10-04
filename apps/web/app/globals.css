@@ -7865,3 +7865,11 @@ body > .chat-more-menu-portal .button:first-child {
 body > .chat-more-menu-portal .button:last-child {
   border-radius: 0 0 14px 14px !important;
 }
+
+/* Refine ellipsis connector into a short centered neck. */
+body > .chat-more-menu-portal::before {
+  right: 11px !important;
+  width: 22px !important;
+  height: 6px !important;
+  border-radius: 6px 6px 0 0 !important;
+}
