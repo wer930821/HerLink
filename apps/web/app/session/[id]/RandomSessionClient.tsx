@@ -2192,7 +2192,7 @@ export default function RandomSessionClient() {
 
     return (
       <article key={message.id} id={`chat-msg-${message.id}`} className={`chat-message ${message.is_mine ? "mine" : "theirs"}`}>
-        <div className={`chat-bubble ${message.message_type === "image" ? "image-message" : ""} ${message.risk_level !== "low" ? "risky" : ""}`} role="button" tabIndex={0} aria-label="回覆這則訊息" onClick={() => startReply(message)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); startReply(message); } }}>
+        <div className={`chat-bubble ${message.message_type === "image" ? "image-message" : ""} ${message.risk_level !== "low" ? "risky" : ""}`} role={message.message_type === "image" ? undefined : "button"} tabIndex={message.message_type === "image" ? undefined : 0} aria-label={message.message_type === "image" ? undefined : "回覆這則訊息"} onClick={message.message_type === "image" ? undefined : () => startReply(message)} onKeyDown={message.message_type === "image" ? undefined : (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); startReply(message); } }}>
           {riskLabel ? <div className="chat-risk-badge">{riskLabel}</div> : null}
           {message.reply_to_message_id ? (
             <button
@@ -2221,16 +2221,11 @@ export default function RandomSessionClient() {
             </button>
           ) : null}
           {message.message_type === "image" && message.media_path ? (
-            <div
-              onClick={(event) => event.stopPropagation()}
-              onKeyDown={(event) => event.stopPropagation()}
-            >
-              <ChatImage
-                path={message.media_path}
-                alt={message.is_mine ? "你傳送的圖片" : "對方傳送的圖片"}
-                onOpen={() => setPreviewMessage(message)}
-              />
-            </div>
+            <ChatImage
+              path={message.media_path}
+              alt={message.is_mine ? "你傳送的圖片" : "對方傳送的圖片"}
+              onOpen={() => setPreviewMessage(message)}
+            />
           ) : (
             <div className="chat-message-content">{renderMessageContent(message.content, openExternalLink)}</div>
           )}
