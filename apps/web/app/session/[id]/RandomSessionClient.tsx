@@ -268,7 +268,8 @@ export default function RandomSessionClient() {
   const pendingReplyPreviewRef = useRef<Set<string>>(new Set());
   const easterEggSeenRef = useRef<Set<string>>(new Set());
   const easterEggLastAtRef = useRef<Map<string, number>>(new Map());
-  const easterEggPendingSyncRef = useRef(false);\n  const easterEggPlaybackBusyRef = useRef(false);
+  const easterEggPendingSyncRef = useRef(false);
+  const easterEggPlaybackBusyRef = useRef(false);
   const historicalThousandCheckedRef = useRef<Set<string>>(new Set());
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -1819,7 +1820,8 @@ export default function RandomSessionClient() {
               p_duration_ms: durationMs,
               p_client_version: "web-v3-reliable-eggs",
             });
-            easterEggPlaybackBusyRef.current = false;\n            void syncPendingEasterEgg();
+            easterEggPlaybackBusyRef.current = false;
+            void syncPendingEasterEgg();
           })();
         }, durationMs);
       } finally {
