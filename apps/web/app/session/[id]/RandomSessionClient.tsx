@@ -299,7 +299,6 @@ export default function RandomSessionClient() {
   const [milestoneTestAllowed, setMilestoneTestAllowed] = useState(false);
   const [testMilestone, setTestMilestone] = useState<number | null>(null);
   const [eternalPreviewUnlocked, setEternalPreviewUnlocked] = useState(false);
-  const [milestoneTestOpen, setMilestoneTestOpen] = useState(false);
   const [easterEgg, setEasterEgg] = useState<EasterEggKind | null>(null);
   const [easterEggAllowed, setEasterEggAllowed] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(true);
@@ -2364,10 +2363,17 @@ export default function RandomSessionClient() {
   return (
     <main className={`chat-page ${milestoneTestAllowed && eternalPreviewUnlocked ? "chat-page-eternal-preview" : ""}`}>
       {milestoneTestAllowed ? (
-        <div className="milestone-test-compact">
-          <button className="milestone-test-toggle" type="button" onClick={() => setMilestoneTestOpen((open) => !open)} aria-expanded={milestoneTestOpen}>✦ 彩蛋測試</button>
-          {milestoneTestOpen ? <div className="milestone-test-popover" aria-label="彩蛋里程碑測試">{[1000, 2000, 3000, 5000, 10000].map((milestone) => <button key={milestone} type="button" onClick={() => { playMilestonePreview(milestone); setMilestoneTestOpen(false); }}>{milestone}</button>)}</div> : null}
-        </div>
+        <details className="milestone-test-compact">
+          <summary className="milestone-test-toggle">✦ 彩蛋測試</summary>
+          <div className="milestone-test-popover" aria-label="彩蛋里程碑測試">
+            {[1000, 2000, 3000, 5000, 10000].map((milestone) => (
+              <button key={milestone} type="button" onClick={(event) => {
+                playMilestonePreview(milestone);
+                event.currentTarget.closest("details")?.removeAttribute("open");
+              }}>{milestone}</button>
+            ))}
+          </div>
+        </details>
       ) : null}
       <div className="halloween-chat-decor" aria-hidden="true"><span>💀</span><span>🕯️</span><span>⚰️</span><span className="halloween-corner-web">🕸️</span></div>
       <section className="chat-shell">
