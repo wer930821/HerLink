@@ -1803,7 +1803,7 @@ export default function RandomSessionClient() {
       const now = new Date();
       const hour = now.getHours();
       const day = now.getDay();
-      if (/午安/.test(normalized)) return triggerEasterEgg("afternoon", true);
+      if (/今天也遇見你了|今天又遇見你了|今天也遇見妳了|今天又遇見妳了/.test(normalized)) return triggerEasterEgg("sync", true);\n      if (/午安/.test(normalized)) return triggerEasterEgg("afternoon", true);
       if (/嗨嗨/.test(normalized)) return triggerEasterEgg("heyhey", true);
       if (/你好呀|你好啊/.test(normalized)) return triggerEasterEgg("hello_you", true);
       if (/吃飯了嗎|吃飯沒|吃了嗎/.test(normalized)) return triggerEasterEgg("meal", true);
