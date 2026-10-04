@@ -7410,3 +7410,44 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
     z-index: 1 !important;
   }
 }
+
+
+/* Desktop chat interaction hard reset: decorative pseudo-elements must never capture clicks. */
+@media (min-width: 769px) {
+  .chat-page,
+  .chat-page > .chat-shell,
+  .chat-page .chat-header {
+    isolation: isolate !important;
+  }
+
+  .chat-page .halloween-chat-decor,
+  .chat-page .halloween-chat-decor *,
+  .chat-page .halloween-chat-decor::before,
+  .chat-page .halloween-chat-decor::after,
+  .chat-page > .chat-shell::before,
+  .chat-page > .chat-shell::after,
+  .chat-page .chat-header::before,
+  .chat-page .chat-header::after {
+    pointer-events: none !important;
+  }
+
+  .chat-page .chat-header {
+    z-index: 10000 !important;
+  }
+
+  .chat-page .chat-header-actions,
+  .chat-page .chat-header-next,
+  .chat-page .chat-header-more,
+  .chat-page .chat-more-summary,
+  .chat-page .chat-more-menu,
+  .chat-page .chat-more-menu button {
+    position: relative !important;
+    z-index: 10001 !important;
+    pointer-events: auto !important;
+  }
+
+  .chat-page .chat-more-menu {
+    position: absolute !important;
+    z-index: 10002 !important;
+  }
+}
