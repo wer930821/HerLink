@@ -1745,6 +1745,7 @@ export default function RandomSessionClient() {
     void getRandomChatMessageCount(session.id)
       .then((result) => {
         const count = Number(result.data);
+        if (!result.error && Number.isFinite(count)) setSessionMessageCount(count);
         if (!result.error && Number.isFinite(count) && count >= 1000) {
           triggerEasterEgg("thousand", true);
         }
@@ -1876,6 +1877,7 @@ export default function RandomSessionClient() {
       if (easterEggAllowed) {
         const countResult = await getRandomChatMessageCount(refreshedSession.id).catch(() => ({ data: null, error: null }));
         const messageCount = Number(countResult.data);
+        if (!countResult.error && Number.isFinite(messageCount)) setSessionMessageCount(messageCount);
         if (messageCount === 100) triggerEasterEgg("hundred", true);
         else if (messageCount === 200) triggerEasterEgg("twoHundred", true);
         else if (messageCount === 300) triggerEasterEgg("threeHundred", true);
@@ -2343,7 +2345,7 @@ export default function RandomSessionClient() {
                 {partnerVerified ? <span className="chat-verified">✓</span> : null}
               </div>
               <div className="chat-my-name">你：{myAnonymousName}{isEnded ? " · 聊天已結束" : ""}</div>
-              <div className="chat-message-count" aria-live="polite">目前訊息數：{sessionMessageCount === null ? "讀取中…" : sessionMessageCount.toLocaleString("zh-TW")}</div>
+              <div className="chat-message-count chat-message-count-pill" aria-live="polite"><span aria-hidden="true">✦</span><span>{sessionMessageCount === null ? "訊息統計中" : `已聊 ${sessionMessageCount.toLocaleString("zh-TW")} 則`}</span>{sessionMessageCount !== null && sessionMessageCount >= 1000 ? <span className="chat-message-count-legendary">傳奇</span> : null}</div>
             </div>
           </div>
           <div className="chat-header-actions">
