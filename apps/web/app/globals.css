@@ -7305,31 +7305,42 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
   }
 }
 
-/* Desktop chat: retain the immersive height while preventing an over-wide reading column. */
+/* Desktop chat canonical layout: true edge-to-edge desktop viewport. */
 @media (min-width: 769px) {
-  .chat-page > .chat-shell {
-    width: min(100%, 1280px);
-    max-width: 1280px;
-    margin: 0 auto;
-  }
-}
-
-
-/* Desktop chat final override: full viewport, keep both message sides and send controls visible. */
-@media (min-width: 769px) {
-  .chat-page {
-    left: 0 !important;
-    right: 0 !important;
-    width: 100vw !important;
-    max-width: none !important;
-  }
-  .chat-page > .chat-shell {
-    width: 100vw !important;
+  html:has(.chat-page),
+  body:has(.chat-page) {
+    width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 14px 32px 12px !important;
     overflow: hidden !important;
   }
+
+  .chat-page {
+    position: fixed !important;
+    inset: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .chat-page > .chat-shell {
+    position: absolute !important;
+    inset: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 14px 24px 12px !important;
+    box-sizing: border-box !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+  }
+
   .chat-page .chat-header,
   .chat-page .chat-messages,
   .chat-page .chat-composer,
@@ -7337,190 +7348,44 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
     width: 100% !important;
     max-width: none !important;
     min-width: 0 !important;
+    box-sizing: border-box !important;
   }
-  .chat-page .chat-messages {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
+
   .chat-page .chat-message {
+    display: flex !important;
+    flex-direction: column !important;
     width: 100% !important;
     max-width: 100% !important;
   }
-  .chat-page .chat-message.mine {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-end !important;
-  }
-  .chat-page .chat-message.theirs {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-  }
+
+  .chat-page .chat-message.theirs { align-items: flex-start !important; }
+  .chat-page .chat-message.mine { align-items: flex-end !important; }
+
   .chat-page .chat-message .chat-bubble {
-    max-width: min(56vw, 680px) !important;
+    width: fit-content !important;
+    max-width: min(58%, 720px) !important;
   }
+
   .chat-page .chat-composer-main {
     display: flex !important;
+    overflow: hidden !important;
   }
+
   .chat-page .chat-input {
-    flex: 1 1 0 !important;
-    width: auto !important;
+    flex: 1 1 0% !important;
+    width: 0 !important;
     min-width: 0 !important;
+    max-width: none !important;
   }
+
   .chat-page .chat-media-button,
   .chat-page .chat-send {
     display: inline-flex !important;
     flex: 0 0 auto !important;
     visibility: visible !important;
   }
-}
-
-
-/* Desktop containment hotfix: size the chat to its containing block, never to viewport units. */
-@media (min-width: 769px) {
-  html:has(.chat-page),
-  body:has(.chat-page) {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important;
-  }
-
-  .chat-page {
-    box-sizing: border-box !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    left: 0 !important;
-    right: 0 !important;
-    overflow: hidden !important;
-  }
-
-  .chat-page > .chat-shell {
-    box-sizing: border-box !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-    padding: 14px 32px 12px !important;
-  }
-
-  .chat-page .chat-header,
-  .chat-page .chat-messages,
-  .chat-page .chat-composer,
-  .chat-page .chat-composer-main {
-    box-sizing: border-box !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-  }
-
-  .chat-page .chat-message.mine,
-  .chat-page .chat-message.theirs {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  .chat-page .chat-message.mine {
-    display: flex !important;
-    align-items: flex-end !important;
-  }
-
-  .chat-page .chat-message.theirs {
-    display: flex !important;
-    align-items: flex-start !important;
-  }
-
-  .chat-page .chat-composer-main {
-    overflow: visible !important;
-  }
-
-  .chat-page .chat-input {
-    flex: 1 1 0% !important;
-    width: 0 !important;
-    min-width: 0 !important;
-    max-width: none !important;
-  }
 
   .chat-page .chat-send {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex: 0 0 auto !important;
-    width: auto !important;
-    min-width: 72px !important;
-    visibility: visible !important;
-  }
-}
-
-
-/* Desktop chat polish: widen the stable contained layout without reintroducing viewport overflow. */
-@media (min-width: 769px) {
-  .chat-page > .chat-shell {
-    width: min(94%, 1120px) !important;
-    max-width: 1120px !important;
-    margin-inline: auto !important;
-    padding-left: 28px !important;
-    padding-right: 28px !important;
-  }
-
-  .chat-page .chat-message .chat-bubble {
-    max-width: min(62%, 680px) !important;
-  }
-}
-
-@media (min-width: 1280px) {
-  .chat-page > .chat-shell {
-    width: min(92%, 1240px) !important;
-    max-width: 1240px !important;
-  }
-}
-
-
-/* Desktop chat full-screen final: edge-to-edge while keeping controls inside the viewport. */
-@media (min-width: 769px) {
-  .chat-page {
-    width: 100% !important;
-    max-width: none !important;
-    inset: 0 !important;
-  }
-
-  .chat-page > .chat-shell {
-    width: 100% !important;
-    max-width: none !important;
-    height: 100dvh !important;
-    margin: 0 !important;
-    padding: 14px clamp(18px, 2.5vw, 40px) 12px !important;
-    border-radius: 0 !important;
-  }
-
-  .chat-page .chat-header,
-  .chat-page .chat-messages,
-  .chat-page .chat-composer,
-  .chat-page .chat-composer-main {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-  }
-
-  .chat-page .chat-message.mine {
-    width: 100% !important;
-    align-items: flex-end !important;
-    padding-right: 0 !important;
-  }
-
-  .chat-page .chat-message.theirs {
-    width: 100% !important;
-    align-items: flex-start !important;
-    padding-left: 0 !important;
-  }
-
-  .chat-page .chat-input {
-    flex: 1 1 0% !important;
-    width: 0 !important;
-    min-width: 0 !important;
-  }
-
-  .chat-page .chat-send {
-    flex: 0 0 auto !important;
     min-width: 72px !important;
   }
 }
