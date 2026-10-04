@@ -1825,6 +1825,11 @@ export default function RandomSessionClient() {
   };
 
   useEffect(() => {
+    if (!session?.id) return;
+    try { sessionStorage.setItem("herlink:collection-return", window.location.pathname + window.location.search); } catch {}
+  }, [session?.id]);
+
+  useEffect(() => {
     if (!easterEggAllowed || !myProfile) return;
     try {
       const replay = sessionStorage.getItem("herlink:replay-egg") as EasterEggKind | null;
