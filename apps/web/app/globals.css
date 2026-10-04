@@ -7873,3 +7873,11 @@ body > .chat-more-menu-portal::before {
   height: 6px !important;
   border-radius: 6px 6px 0 0 !important;
 }
+
+/* Extend only the connector neck to meet the ellipsis button lower edge. */
+body > .chat-more-menu-portal::before {
+  right: 11px !important;
+  width: 22px !important;
+  height: 18px !important;
+  border-radius: 7px 7px 0 0 !important;
+}
