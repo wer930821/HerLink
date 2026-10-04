@@ -8455,3 +8455,25 @@ details.milestone-test-compact[open]>.milestone-test-popover{display:grid!import
     gap:10px!important;
   }
 }
+
+
+/* Definitive compact layout for each anonymous contact item. */
+.halloween-contacts-page .anonymous-contact-card{
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-start!important;
+  gap:12px!important;
+  height:auto!important;
+  min-height:0!important;
+  padding:16px!important;
+}
+.halloween-contacts-page .anonymous-contact-card-head,
+.halloween-contacts-page .anonymous-contact-card-actions{
+  flex:0 0 auto!important;
+  min-height:0!important;
+  height:auto!important;
+  margin:0!important;
+}
+.halloween-contacts-page .anonymous-contact-card-actions{
+  margin-top:2px!important;
+}
