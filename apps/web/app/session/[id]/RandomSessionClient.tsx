@@ -2225,7 +2225,7 @@ export default function RandomSessionClient() {
             <ChatImage
               path={message.media_path}
               alt={message.is_mine ? "你傳送的圖片" : "對方傳送的圖片"}
-              onOpen={() => setPreviewMessage(message)}
+              onOpen={() => { setHeaderMenuOpen(false); setSafetyMenuOpen(false); setPreviewMessage(message); }}
             />
           ) : (
             <div className="chat-message-content">{renderMessageContent(message.content, openExternalLink)}</div>
