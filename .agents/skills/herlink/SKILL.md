@@ -21,6 +21,9 @@ description: HerLink 專案長期開發規範。修改 HerLink Web、匿名聊�
 5. 修改後必須確認編譯與部署，Git commit 成功不代表完成。
 6. Vercel build 失敗時讀 build logs、修正並重新部署，直到 Production READY 或明確回報阻塞。
 7. 完成時回報最新 Production commit 與部署狀態。
+8. 修改 TS／TSX／JS／JSON 等原始碼時，禁止把 literal `\\n` 當成實際換行寫進程式碼。自動字串替換或產生多行程式碼時必須使用真正的 newline。
+9. 提交前檢查本次修改區域是否出現意外的 literal `\\n`、`\\r` 或其他跳脫字元殘留；字串內容本身刻意使用 `\\n`（例如提示文字換行）才可保留。
+10. 若 GitHub Actions／TypeScript 報 invalid Unicode escape、Invalid character、Unexpected token 等語法錯誤，優先檢查是否誤把跳脫序列寫成原始碼文字，不要只修報錯單行，需掃描同次修改的所有相同模式。
 
 ## Vercel
 - 專案：`her-link`
