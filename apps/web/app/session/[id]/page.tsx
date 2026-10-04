@@ -416,19 +416,22 @@ export default function RandomSessionPage({ params }: Props) {
         void syncMissedState();
       });
 
+    const activeSessionId = session.id;
+
     async function syncMissedState() {
       const [messagesResult, sessionResult] = await Promise.all([
-        loadRandomMessages(session.id, 200),
-        loadMyRandomSession(session.id),
+        loadRandomMessages(activeSessionId, 200),
+        loadMyRandomSession(activeSessionId),
       ]);
       if (disposed) return;
 
-      if (!messagesResult.error && Array.isArray(messagesResult.data)) {
-        for (const item of messagesResult.data) {
+      const missedMessages = Array.isArray(messagesResult.data) ? messagesResult.data : [];
+      if (!messagesResult.error && missedMessages.length > 0) {
+        for (const item of missedMessages) {
           seenMessageIdsRef.current.add(item.id);
         }
         setMessages((current) =>
-          messagesResult.data.reduce((next, item) => upsertMessage(next, item), current)
+          missedMessages.reduce((next, item) => upsertMessage(next, item), current)
         );
       }
       if (!sessionResult.error && sessionResult.data) {
