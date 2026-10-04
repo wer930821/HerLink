@@ -7282,3 +7282,11 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
     font-size: .9rem !important;
   }
 }
+
+/* Desktop chat: retain the immersive height while preventing an over-wide reading column. */
+@media (min-width: 769px) {
+  .chat-page > .chat-shell {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+}
