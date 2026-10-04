@@ -25,6 +25,7 @@ import {
   findOrJoinRandomMatch,
   getCurrentSession,
   ensureAnonymousBootstrapProfile,
+  ensureMyAdminFixedAnonymousIdentity,
   isSupabaseConfigured,
   leaveRandomQueue,
   leaveRandomSession,
@@ -609,6 +610,14 @@ export default function HomePage() {
       const profileResult = await ensureAnonymousBootstrapProfile(session.user.id);
       if (profileResult.error) {
         throw profileResult.error;
+      }
+
+      // Only an authenticated active admin whose current profile is already
+      // 孤星企鵝 may establish the permanent admin mapping. This never claims
+      // another user's profile by display name.
+      const fixedAdminIdentity = await ensureMyAdminFixedAnonymousIdentity(profileResult.data ?? null);
+      if (fixedAdminIdentity.error) {
+        throw fixedAdminIdentity.error;
       }
 
       const abuseCheck = await registerAnonymousAbuseIdentity();
