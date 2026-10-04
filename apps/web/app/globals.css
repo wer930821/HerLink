@@ -7367,3 +7367,46 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
     min-width: 72px !important;
   }
 }
+
+
+/* Desktop header menu interaction fix: keep the opened menu above chat overlays and clickable. */
+@media (min-width: 769px) {
+  .chat-page .chat-header {
+    position: relative !important;
+    z-index: 100 !important;
+    overflow: visible !important;
+  }
+
+  .chat-page .chat-header-actions,
+  .chat-page .chat-header-more {
+    position: relative !important;
+    z-index: 110 !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+  }
+
+  .chat-page .chat-header-more[open] {
+    z-index: 1000 !important;
+  }
+
+  .chat-page .chat-header-more .chat-more-menu {
+    z-index: 1001 !important;
+    pointer-events: auto !important;
+    overflow: visible !important;
+  }
+
+  .chat-page .chat-header-more .chat-more-menu > * {
+    position: relative !important;
+    z-index: 1002 !important;
+    pointer-events: auto !important;
+  }
+
+  .chat-page .halloween-chat-decor {
+    pointer-events: none !important;
+    z-index: 0 !important;
+  }
+
+  .chat-page .chat-messages {
+    z-index: 1 !important;
+  }
+}
