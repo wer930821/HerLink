@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { SiteFooter } from "./SiteFooter";
-import { SiteHeader } from "./SiteHeader";
 
 export function SiteChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -16,7 +15,6 @@ export function SiteChrome({ children }: { children: ReactNode }) {
 
   return (
     <>
-      {!isChromeHidden ? <SiteHeader /> : null}
       {isHome ? <div className="site-home-viewport">{children}</div> : isMailbox ? <div className="site-mailbox-viewport">{children}</div> : children}
       {!isChromeHidden && !isHome && !isMailbox ? <SiteFooter /> : null}
     </>
