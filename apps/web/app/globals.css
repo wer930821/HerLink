@@ -7127,3 +7127,69 @@ body:has(.chat-page .halloween-chat-decor) .halloween-chat-decor::after {
   align-self:end !important;
   margin:0 0 6px !important;
 }
+
+
+/* Chat layout v3: timestamp directly below each bubble */
+.chat-message {
+  display:flex !important;
+  flex-direction:column !important;
+  width:100% !important;
+  max-width:100% !important;
+  gap:0 !important;
+}
+.chat-message.theirs { align-items:flex-start !important; }
+.chat-message.mine { align-items:flex-end !important; }
+.chat-message .chat-bubble {
+  display:block !important;
+  width:fit-content !important;
+  min-width:64px !important;
+  max-width:min(76vw,520px) !important;
+}
+.chat-message .chat-meta-outside {
+  display:block !important;
+  width:auto !important;
+  margin:5px 8px 0 !important;
+  padding:0 !important;
+  font-size:.72rem !important;
+  line-height:1.1 !important;
+  opacity:.56 !important;
+  white-space:nowrap !important;
+}
+.chat-message.theirs .chat-meta-outside { align-self:flex-start !important; text-align:left !important; }
+.chat-message.mine .chat-meta-outside { align-self:flex-end !important; text-align:right !important; }
+
+/* Test Halloween: ensure decor and aura are visible for 孤星企鵝 when decor exists */
+body:has(.halloween-chat-decor) .halloween-chat-decor {
+  display:block !important;
+  position:absolute !important;
+  inset:0 !important;
+  overflow:hidden !important;
+  pointer-events:none !important;
+  z-index:2 !important;
+}
+body:has(.halloween-chat-decor) .halloween-chat-decor::before {
+  content:"" !important;
+  position:absolute !important;
+  inset:0 !important;
+  background:
+    radial-gradient(ellipse at 15% 78%,rgba(113,61,163,.26),transparent 34%),
+    radial-gradient(ellipse at 86% 18%,rgba(179,68,32,.16),transparent 28%) !important;
+  animation:hauntedFog 7s ease-in-out infinite alternate !important;
+}
+body:has(.halloween-chat-decor) .halloween-chat-decor span {
+  display:block !important;
+  visibility:visible !important;
+  z-index:2 !important;
+}
+body:has(.halloween-chat-decor) .chat-bubble {
+  position:relative !important;
+  z-index:4 !important;
+}
+body:has(.halloween-chat-decor) .chat-message.mine .chat-bubble {
+  box-shadow:0 0 18px rgba(255,82,67,.25),0 0 38px rgba(255,82,67,.10) !important;
+  animation:ownBubbleAura 4.2s ease-in-out infinite !important;
+}
+body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
+  box-shadow:0 0 18px rgba(132,78,194,.24),0 0 38px rgba(132,78,194,.10) !important;
+  animation:otherBubbleAura 4.8s ease-in-out infinite !important;
+}
