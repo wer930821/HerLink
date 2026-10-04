@@ -8369,3 +8369,15 @@ details.milestone-test-compact[open]>.milestone-test-popover{display:grid!import
 
 .home-app-legal-links{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;margin-top:2px}.home-app-legal-links .btn{min-height:28px;padding:2px 5px;font-size:11px}.home-app-legal-links>span{opacity:.35}
 @media(max-width:768px){body:has(.site-home-viewport)>.site-header,.site-header:has(+.site-home-viewport){display:none!important}.site-home-viewport{min-height:100dvh}.site-home-viewport .shell{padding-top:0!important}.site-home-viewport .container{padding-top:0!important}}
+
+
+/* Mobile home: keep mailbox clear of the Halloween pumpkin/web artwork. */
+@media(max-width:520px){
+  .site-home-viewport .home-mailbox-float{
+    top:184px!important;
+    right:14px!important;
+  }
+  .site-home-viewport .home-app-copy{
+    padding-right:0!important;
+  }
+}
