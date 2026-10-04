@@ -8436,3 +8436,22 @@ details.milestone-test-compact[open]>.milestone-test-popover{display:grid!import
   .halloween-contacts-decor .contacts-cat{bottom:18%!important}
   .halloween-contacts-decor .contacts-candle{bottom:2%!important}
 }
+
+
+/* Compact anonymous-contact cards: size to content instead of filling available space. */
+.halloween-contacts-page>.surface .surface{
+  min-height:0!important;
+  height:auto!important;
+}
+.halloween-contacts-page>.surface .surface>.row{
+  min-height:0!important;
+}
+@media(max-width:768px){
+  .halloween-contacts-page>.surface .surface{
+    padding:14px 16px!important;
+    border-radius:18px!important;
+  }
+  .halloween-contacts-page>.surface .stack{
+    gap:10px!important;
+  }
+}
