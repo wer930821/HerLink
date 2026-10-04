@@ -896,13 +896,19 @@ export default function HomePage() {
       </section>
 
       <footer className="home-app-footer">
-        <div className="home-app-footer-left">
-          {onlineCountConnected ? <span>正在出沒 {onlineCount} 人　等人來聊 {waitingCount === null ? "更新中…" : `${waitingCount} 人`}</span> : <span>等人來聊 {waitingCount === null ? "更新中…" : `${waitingCount} 人`}</span>}
+        <div className="home-app-presence">
+          {onlineCountConnected ? (
+            <span className="home-app-presence-item"><span className="home-app-presence-dot" />正在出沒 <strong>{onlineCount}</strong> 人</span>
+          ) : null}
+          <span className="home-app-presence-item"><span className="home-app-wait-dot" />等人來聊 <strong>{waitingCount === null ? "…" : waitingCount}</strong> 人</span>
+        </div>
+        <div className="home-app-footer-links">
           <Button variant="link" type="button" onClick={() => void shareBrowserHandoff()}>
             跨瀏覽器續聊
           </Button>
+          <span className="home-app-footer-sep" aria-hidden="true">·</span>
+          <Button variant="link" onClick={logout} disabled={actionBusy}>登出</Button>
         </div>
-        <Button variant="link" onClick={logout} disabled={actionBusy}>登出</Button>
       </footer>
 
       <Modal
