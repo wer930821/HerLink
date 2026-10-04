@@ -83,30 +83,6 @@ const achievements:Reward[]=[
  {key:"achievement_10eggs",icon:"♜",name:"全圖鑑探索者",desc:"解鎖 10 種不同彩蛋",target:10,xp:180,metric:"distinct_eggs"},
  {key:"achievement_10000",icon:"♛",name:"永恆聊天室",desc:"同一聊天室達到 10,000 則訊息",target:10000,xp:1200,metric:"max_messages",className:"eternal"}
 ];
-const SPECIAL_REPLAY_META:Record<string,{icon:string;title:string;copy:string;scene:string}>={
- meteor:{icon:"☄",title:"流星雨",copy:"許個願吧，這場流星雨只出現幾秒",scene:"meteor"},
- secret:{icon:"◇",title:"秘密基地",copy:"秘密入口已開啟",scene:"secret"},
- destiny:{icon:"∞",title:"命中注定",copy:"兩條軌跡，在這一刻交會",scene:"destiny"},
- telepathy:{icon:"〰",title:"心有靈犀",copy:"你們的頻率正在同步",scene:"telepathy"},
- no_goodbye:{icon:"↶",title:"不想說再見",copy:"把這一刻，再留久一點",scene:"no-goodbye"},
- fourHundred:{icon:"400",title:"四方光門",copy:"第 400 則訊息",scene:"milestone"},
- fiveHundred:{icon:"500",title:"半千煙火",copy:"聊天默契升級",scene:"firework"},
- sixHundred:{icon:"600",title:"六芒星陣",copy:"六重光陣展開",scene:"hex"},
- sevenHundred:{icon:"700",title:"七星降臨",copy:"七星正在降臨",scene:"stars"},
- eightHundred:{icon:"800",title:"無限雙環",copy:"軌跡交疊成無限",scene:"rings"},
- nineHundred:{icon:"900",title:"九重光階",copy:"九重光階逐層點亮",scene:"stairs"},
- thousand:{icon:"♛",title:"LEGENDARY CHAT",copy:"傳說級聊天室",scene:"legendary"},
- fifteenHundred:{icon:"1500",title:"星河航行",copy:"一起穿越星河",scene:"galaxy"},
- twoThousand:{icon:"2000",title:"水晶覺醒",copy:"史詩級聊天室",scene:"crystal"},
- threeThousand:{icon:"3000",title:"銀河漩渦",copy:"靈魂同頻",scene:"vortex"},
- fiveThousand:{icon:"5000",title:"神話之門",copy:"命定聊天室",scene:"mythic"},
- tenThousand:{icon:"10000",title:"ETERNAL CHAT",copy:"永恆聊天室",scene:"eternal-chat"},
- streak7:{icon:"🌈",title:"七日彩虹橋",copy:"連續七天的相遇",scene:"rainbow"},
- threeam:{icon:"03:00",title:"凌晨三點",copy:"世界安靜，只剩這場對話",scene:"threeam"},
- balanced100:{icon:"⚖",title:"完美天秤",copy:"雙方各留下 100 則訊息",scene:"balance"},
- daily200:{icon:"200!",title:"今日爆表",copy:"今天已經聊了 200 則",scene:"daily"},
- meet10:{icon:"⑩",title:"十次輪迴",copy:"第十次，又遇見了",scene:"orbit"}
-};
 const MAX_LEVEL=100;
 const levelTitle=(level:number)=>level>=100?"永恆":level>=80?"傳說":level>=50?"羈絆":level>=30?"默契":level>=10?"熟悉":"初遇";
 const empty:GameState={xp:0,level:1,level_xp:0,next_level_xp:250,today_sent:0,sent_total:0,sessions:0,max_messages:0,distinct_eggs:0,text_eggs:0,egg_kinds:[],claimed:[]};
@@ -146,8 +122,8 @@ export default function CollectionPage(){
   <header className="collection-page-header"><button type="button" onClick={()=>router.back()}>‹</button><div><b>彩蛋圖鑑與任務</b><small>HerLink 收藏室</small></div></header>
   <section className="collection-page-hero"><span>♛</span><div><small>{levelTitle(Math.min(state.level,MAX_LEVEL))} · LEVEL {Math.min(state.level,MAX_LEVEL)}</small><h1>Lv.{Math.min(state.level,MAX_LEVEL)} · {state.xp.toLocaleString()} XP</h1><p>{loading?"正在計算進度…":state.level>=MAX_LEVEL?"已達最高等級 · 永恆":`距離下一級還有 ${Math.max(0,state.next_level_xp-state.level_xp)} XP`}</p><progress value={state.level>=MAX_LEVEL?state.next_level_xp:state.level_xp} max={state.next_level_xp}/></div></section>
   <nav className="collection-page-tabs">{([["collection","圖鑑"],["missions","任務"],["achievements","成就"]] as [Tab,string][]).map(([id,label])=><button key={id} type="button" className={tab===id?"active":""} onClick={()=>setTab(id)}>{label}</button>)}</nav>
-  {tab==="collection"?<section className="collection-page-grid">{eggs.map(([name,rarity,kind])=>{const unlocked=state.egg_kinds.includes(kind);const special=["史詩","傳說","神話"].includes(rarity);return <article key={name} className={`rarity-${rarity} ${unlocked?"unlocked":"locked"}`}><span>{unlocked?"✦":"?"}</span><div><b>{unlocked?name:"尚未解鎖"}</b><small>{rarity}{unlocked?" · 已收集":""}</small>{unlocked&&special?<button type="button" className="collection-play" onClick={()=>{sessionStorage.setItem("herlink:replay-egg",kind);const returnTo=sessionStorage.getItem("herlink:collection-return");if(returnTo)window.location.assign(returnTo);else setPreview(kind)}}>▶ 播放</button>:null}</div></article>})}</section>:null}
-  {preview==="eternal_bond"?<div className="egg-effect collection-eternal-replay"><div className="egg-eternal-bond"><i className="eternal-veil"/><i className="eternal-gate"/><i className="eternal-ring r1"/><i className="eternal-ring r2"/><i className="eternal-ring r3"/><i className="eternal-wing left"/><i className="eternal-wing right"/><i className="eternal-beam"/><i className="eternal-core">♾</i><i className="eternal-stars"/><i className="eternal-shockwave s1"/><i className="eternal-shockwave s2"/><i className="eternal-shockwave s3"/><i className="eternal-crown">♛</i><i className="eternal-runes">✦　◇　∞　◇　✦</i><strong>永恆之約</strong><b>ETERNAL BOND</b><small>兩個陌生的靈魂，在時間裡選擇留下</small></div><button className="collection-eternal-close" type="button" onClick={()=>setPreview(null)}>×</button></div>:preview&&SPECIAL_REPLAY_META[preview]?<div className={`collection-special-replay replay-${SPECIAL_REPLAY_META[preview].scene}`}><div className="replay-sky"/><div className="replay-orbit o1"/><div className="replay-orbit o2"/><div className="replay-burst"/><div className="replay-symbol">{SPECIAL_REPLAY_META[preview].icon}</div><strong>{SPECIAL_REPLAY_META[preview].title}</strong><small>{SPECIAL_REPLAY_META[preview].copy}</small><button type="button" onClick={()=>setPreview(null)}>×</button></div>:null}
+  {tab==="collection"?<section className="collection-page-grid">{eggs.map(([name,rarity,kind])=>{const unlocked=state.egg_kinds.includes(kind);const special=["史詩","傳說","神話"].includes(rarity);return <article key={name} className={`rarity-${rarity} ${unlocked?"unlocked":"locked"}`}><span>{unlocked?"✦":"?"}</span><div><b>{unlocked?name:"尚未解鎖"}</b><small>{rarity}{unlocked?" · 已收集":""}</small>{unlocked&&special?<button type="button" className="collection-play" onClick={()=>{const returnTo=sessionStorage.getItem("herlink:collection-return");if(!returnTo)return;sessionStorage.setItem("herlink:replay-egg",kind);window.location.assign(returnTo)}}>▶ 播放</button>:null}</div></article>})}</section>:null}
+  {preview==="eternal_bond"?<div className="egg-effect collection-eternal-replay"><div className="egg-eternal-bond"><i className="eternal-veil"/><i className="eternal-gate"/><i className="eternal-ring r1"/><i className="eternal-ring r2"/><i className="eternal-ring r3"/><i className="eternal-wing left"/><i className="eternal-wing right"/><i className="eternal-beam"/><i className="eternal-core">♾</i><i className="eternal-stars"/><i className="eternal-shockwave s1"/><i className="eternal-shockwave s2"/><i className="eternal-shockwave s3"/><i className="eternal-crown">♛</i><i className="eternal-runes">✦　◇　∞　◇　✦</i><strong>永恆之約</strong><b>ETERNAL BOND</b><small>兩個陌生的靈魂，在時間裡選擇留下</small></div><button className="collection-eternal-close" type="button" onClick={()=>setPreview(null)}>×</button></div>:null}
   {tab==="missions"?<section className="collection-page-list"><h2>今日與長期任務</h2>{missions.map(card)}<p>進度由實際聊天和彩蛋紀錄計算；測試按鈕不計進度。完成後需手動領取 XP。</p></section>:null}
   {tab==="achievements"?<section className="collection-page-list"><h2>聊天室成就</h2>{achievements.map(card)}</section>:null}
  </main>;
