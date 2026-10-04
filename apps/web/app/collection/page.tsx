@@ -89,7 +89,7 @@ const empty:GameState={xp:0,level:1,level_xp:0,next_level_xp:250,today_sent:0,se
 
 export default function CollectionPage(){
  const router=useRouter(); const [tab,setTab]=useState<Tab>("collection"); const [state,setState]=useState<GameState>(empty); const [loading,setLoading]=useState(true); const [claiming,setClaiming]=useState<string|null>(null); const [isTester,setIsTester]=useState<boolean|null>(null);
- const load=useCallback(async()=>{setLoading(true);const {data}=await supabase.rpc("get_my_collection_game_state");if(data)setState(data as GameState);setLoading(false)},[]);
+ const load=useCallback(async()=>{setLoading(true);const {data,error}=await supabase.rpc("get_my_collection_game_state");if(!error&&data){const next=data as Partial<GameState>;setState({...empty,...next,egg_kinds:Array.isArray(next.egg_kinds)?next.egg_kinds:[],claimed:Array.isArray(next.claimed)?next.claimed:[]})}setLoading(false)},[]);
  useEffect(()=>{void supabase.auth.getUser().then(async({data}:{data:{user:{id:string}|null}})=>{if(!data.user){setIsTester(false);return}const {data:profile}=await supabase.from("profiles").select("anonymous_display_name").eq("id",data.user.id).maybeSingle();setIsTester(profile?.anonymous_display_name==="孤星企鵝")})},[]);
  useEffect(()=>{if(isTester)void load();else if(isTester===false)setLoading(false)},[load,isTester]);
  const claim=async(key:string)=>{setClaiming(key);const {data}=await supabase.rpc("claim_collection_reward",{p_reward_key:key});if((data as any)?.claimed)await load();setClaiming(null)};
