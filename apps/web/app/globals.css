@@ -7615,3 +7615,24 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
   position: fixed;
   z-index: 2147483600;
 }
+
+/* Portaled mobile chat menu: override legacy chat-page scoped interaction rules. */
+body > .chat-more-menu-portal {
+  position: fixed !important;
+  z-index: 2147483600 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  min-width: 174px !important;
+}
+body > .chat-more-menu-portal,
+body > .chat-more-menu-portal * {
+  pointer-events: auto !important;
+}
+body > .chat-more-menu-portal .button {
+  position: relative !important;
+  z-index: 1 !important;
+  width: 100% !important;
+  min-height: 44px !important;
+  touch-action: manipulation !important;
+  cursor: pointer !important;
+}
