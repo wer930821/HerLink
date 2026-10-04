@@ -1814,7 +1814,7 @@ export default function RandomSessionClient() {
   const maybeTriggerEasterEgg = (content: string) => {
     if (!easterEggAllowed) return;
     const collectionTester = myProfile?.anonymous_display_name === "孤星企鵝";
-    const normalized = content.replace(/\\s+/g, "");
+    const normalized = content.replace(/\s+/g, "");
     if (collectionTester) {
       const now = new Date();
       const hour = now.getHours();
