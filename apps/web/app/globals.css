@@ -8253,3 +8253,13 @@ background-size:170px 170px,230px 230px,210px 210px,280px 280px;animation:eterna
 .eternal-chat-badge b{font-size:12px;color:#ffe7a1;letter-spacing:.06em}.eternal-chat-badge small{font-size:10px;color:rgba(255,255,255,.68);letter-spacing:.04em}
 @keyframes eternal-preview-drift{from{transform:translateY(0)}50%{transform:translateY(-8px)}to{transform:translateY(0)}}
 @media (prefers-reduced-motion:reduce){.chat-page-eternal-preview::before{animation:none}}
+
+
+/* Compact private milestone tester + in-header Eternal badge */
+.milestone-test-compact{position:fixed;right:12px;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:70}
+.milestone-test-toggle{min-height:34px;padding:6px 11px;border:1px solid rgba(255,216,121,.32);border-radius:999px;background:rgba(25,20,39,.9);color:#ffe6a3;font:inherit;font-size:11px;font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,.26);backdrop-filter:blur(12px)}
+.milestone-test-popover{position:absolute;right:0;top:42px;display:flex;gap:5px;padding:6px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(18,15,29,.96);box-shadow:0 12px 34px rgba(0,0,0,.34);backdrop-filter:blur(14px)}
+.milestone-test-popover button{min-width:46px;height:32px;padding:0 7px;border:1px solid rgba(255,211,105,.25);border-radius:10px;background:rgba(255,205,91,.08);color:#fff;font:inherit;font-size:10px;font-weight:900}
+.eternal-chat-header-badge{display:inline-flex;align-items:center;flex:0 0 auto;padding:3px 7px;border:1px solid rgba(255,220,126,.45);border-radius:999px;background:linear-gradient(135deg,rgba(74,48,22,.72),rgba(52,35,72,.76));color:#ffe49a;font-size:10px;font-weight:900;letter-spacing:.04em;box-shadow:0 0 14px rgba(255,194,68,.14);white-space:nowrap}
+.chat-page-eternal-preview>.eternal-chat-badge{display:none!important}
+@media(max-width:640px){.milestone-test-compact{right:8px;top:calc(env(safe-area-inset-top,0px) + 7px)}.milestone-test-popover{max-width:calc(100vw - 16px);overflow-x:auto}.milestone-test-popover button{min-width:43px}.eternal-chat-header-badge{font-size:9px;padding:2px 6px}}
