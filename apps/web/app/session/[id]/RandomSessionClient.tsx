@@ -1825,6 +1825,16 @@ export default function RandomSessionClient() {
   };
 
   useEffect(() => {
+    if (!easterEggAllowed || !myProfile) return;
+    try {
+      const replay = sessionStorage.getItem("herlink:replay-egg") as EasterEggKind | null;
+      if (!replay) return;
+      sessionStorage.removeItem("herlink:replay-egg");
+      window.setTimeout(() => triggerEasterEgg(replay, false, true), 120);
+    } catch {}
+  }, [easterEggAllowed, myProfile]);
+
+  useEffect(() => {
     if (!easterEggAllowed || !session?.id || isEnded || historicalThousandCheckedRef.current.has(session.id)) return;
     historicalThousandCheckedRef.current.add(session.id);
 
