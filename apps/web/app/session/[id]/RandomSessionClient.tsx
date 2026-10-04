@@ -268,7 +268,7 @@ export default function RandomSessionClient() {
   const pendingReplyPreviewRef = useRef<Set<string>>(new Set());
   const easterEggSeenRef = useRef<Set<string>>(new Set());
   const easterEggLastAtRef = useRef<Map<string, number>>(new Map());
-  const easterEggPendingSyncRef = useRef(false);
+  const easterEggPendingSyncRef = useRef(false);\n  const easterEggPlaybackBusyRef = useRef(false);
   const historicalThousandCheckedRef = useRef<Set<string>>(new Set());
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -1691,7 +1691,7 @@ export default function RandomSessionClient() {
             if (deliveryResult.error) {
               console.error("[herlink] easter egg display tracking failed", deliveryResult.error);
             } else {
-              const durationMs = kind === "thousand" ? 5400 : 3200;
+              const durationMs = kind === "thousand" ? 7000 : 4600;
               window.setTimeout(() => {
                 void supabase.rpc("complete_chat_easter_egg_delivery", {
                   p_event_id: eventId,
@@ -1735,7 +1735,7 @@ export default function RandomSessionClient() {
         // Celebration effects are optional and must never interrupt chat.
       }
     }
-    window.setTimeout(() => setEasterEgg((current) => (current === kind ? null : current)), kind === "thousand" ? 5400 : 3200);
+    window.setTimeout(() => setEasterEgg((current) => (current === kind ? null : current)), kind === "thousand" ? 7000 : 4600);
   };
 
   useEffect(() => {
@@ -1788,7 +1788,7 @@ export default function RandomSessionClient() {
     let timer: number | null = null;
 
     const syncPendingEasterEgg = async () => {
-      if (disposed || easterEggPendingSyncRef.current || document.visibilityState !== "visible") return;
+      if (disposed || easterEggPendingSyncRef.current || easterEggPlaybackBusyRef.current || document.visibilityState !== "visible") return;
       easterEggPendingSyncRef.current = true;
       try {
         const result = await supabase.rpc("get_pending_chat_easter_egg_events", {
@@ -1819,7 +1819,7 @@ export default function RandomSessionClient() {
               p_duration_ms: durationMs,
               p_client_version: "web-v3-reliable-eggs",
             });
-            void syncPendingEasterEgg();
+            easterEggPlaybackBusyRef.current = false;\n            void syncPendingEasterEgg();
           })();
         }, durationMs);
       } finally {
