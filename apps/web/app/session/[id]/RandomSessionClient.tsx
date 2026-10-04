@@ -2556,7 +2556,7 @@ export default function RandomSessionClient() {
                         {contactBusy ? "處理中…" : anonymousContactLabel}
                       </button>
                       {milestoneTestAllowed ? (
-                        <button className="home-collection-entry chat-collection-menu" type="button" onClick={() => { setHeaderMenuOpen(false); router.push("/collection"); }}><span className="home-collection-entry-icon">♛</span><span><b>彩蛋圖鑑與任務</b><small>收集彩蛋 · 完成任務 · 解鎖成就</small></span><span className="home-collection-entry-arrow">›</span></button>
+                        <button className="home-collection-entry chat-collection-menu" type="button" onClick={() => { setHeaderMenuOpen(false); try { const path=window.location.pathname+window.location.search; sessionStorage.setItem("herlink:collection-return",path); localStorage.setItem("herlink:last-session-path",path); } catch {} router.push("/collection"); }}><span className="home-collection-entry-icon">♛</span><span><b>彩蛋圖鑑與任務</b><small>收集彩蛋 · 完成任務 · 解鎖成就</small></span><span className="home-collection-entry-arrow">›</span></button>
                       ) : null}
                       {milestoneTestAllowed ? <button className="button secondary" type="button" onClick={() => { setHeaderMenuOpen(false); setTestMilestone(null); triggerEasterEgg("eternal_bond", false, true); }}>測試永恆之約特效</button> : null}
                       <button className="button secondary" type="button" onClick={() => { setHeaderMenuOpen(false); void copyBrowserHandoffLink(); }}>跨瀏覽器續聊</button>
