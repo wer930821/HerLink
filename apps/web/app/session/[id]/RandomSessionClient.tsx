@@ -299,6 +299,7 @@ export default function RandomSessionClient() {
   const [milestoneTestAllowed, setMilestoneTestAllowed] = useState(false);
   const [testMilestone, setTestMilestone] = useState<number | null>(null);
   const [eternalPreviewUnlocked, setEternalPreviewUnlocked] = useState(false);
+  const [milestoneTestOpen, setMilestoneTestOpen] = useState(false);
   const [easterEgg, setEasterEgg] = useState<EasterEggKind | null>(null);
   const [easterEggAllowed, setEasterEggAllowed] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(true);
@@ -2362,14 +2363,12 @@ export default function RandomSessionClient() {
 
   return (
     <main className={`chat-page ${milestoneTestAllowed && eternalPreviewUnlocked ? "chat-page-eternal-preview" : ""}`}>
-      {milestoneTestAllowed && eternalPreviewUnlocked ? <div className="eternal-chat-badge" title="10,000 則里程碑測試外觀"><b>♛ 永恆聊天室</b><small>ETERNAL CHAT · 10,000+</small></div> : null}
-      <div className="milestone-test-dock" aria-label="彩蛋里程碑測試" style={{ display: milestoneTestAllowed ? "flex" : "none", gap: "8px", flexWrap: "wrap", padding: "8px 12px", position: "relative", zIndex: 30 }}>
-        {[1000, 2000, 3000, 5000, 10000].map((milestone) => (
-          <button key={milestone} className="button secondary thousand-test-button" type="button" onClick={() => playMilestonePreview(milestone)}>
-            測試 {milestone} 則彩蛋
-          </button>
-        ))}
-      </div>
+      {milestoneTestAllowed ? (
+        <div className="milestone-test-compact">
+          <button className="milestone-test-toggle" type="button" onClick={() => setMilestoneTestOpen((open) => !open)} aria-expanded={milestoneTestOpen}>✦ 彩蛋測試</button>
+          {milestoneTestOpen ? <div className="milestone-test-popover" aria-label="彩蛋里程碑測試">{[1000, 2000, 3000, 5000, 10000].map((milestone) => <button key={milestone} type="button" onClick={() => { playMilestonePreview(milestone); setMilestoneTestOpen(false); }}>{milestone}</button>)}</div> : null}
+        </div>
+      ) : null}
       <div className="halloween-chat-decor" aria-hidden="true"><span>💀</span><span>🕯️</span><span>⚰️</span><span className="halloween-corner-web">🕸️</span></div>
       <section className="chat-shell">
         <header className="chat-header">
@@ -2389,6 +2388,7 @@ export default function RandomSessionClient() {
             <div className="chat-identity">
               <div className="chat-partner-row">
                 <div className="title chat-partner-name">{partnerName}</div>
+                {milestoneTestAllowed && eternalPreviewUnlocked ? <span className="eternal-chat-header-badge" title="永恆聊天室 · 10,000+">♛ 永恆</span> : null}
                 {partnerVerified ? <span className="chat-verified">✓</span> : null}
               </div>
               <div className="chat-my-name">你：{myAnonymousName}{isEnded ? " · 聊天已結束" : ""}</div>
