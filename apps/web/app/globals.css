@@ -7056,3 +7056,20 @@ body:has(.chat-page .halloween-chat-decor) .chat-message-other {
 .chat-message.theirs > .chat-meta-outside { grid-column: 2 !important; text-align:left !important; }
 .chat-message.mine > .chat-meta-outside { grid-column: 1 !important; text-align:right !important; }
 .chat-message.mine > .chat-message-bubble { grid-column: 2 !important; }
+
+
+/* Chat reply affordance: subtle text instead of arrow */
+.chat-reply-button {
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  padding: 2px 3px !important;
+  border: 0 !important;
+  background: transparent !important;
+  font-size: .68rem !important;
+  line-height: 1 !important;
+  opacity: .48 !important;
+  border-radius: 4px !important;
+}
+.chat-reply-button:hover,
+.chat-reply-button:focus-visible { opacity:.78 !important; }
