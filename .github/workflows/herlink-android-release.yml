@@ -1,17 +1,19 @@
-name: HerLink Android Release\n# release trigger 2026-10-04
+name: HerLink Android Release
 
 on:
   workflow_dispatch:
   push:
-    branches: [master]
+    branches:
+      - master
     paths:
-      - ".github/workflows/**"\n      - "app/**"
+      - ".github/herlink-android-build-trigger"
+      - ".github/workflows/herlink-android-release.yml"
+      - "app/**"
       - "lib/**"
       - "assets/**"
       - "package.json"
       - "package-lock.json"
       - "app.json"
-      - ".github/workflows/herlink-android-release.yml"
 
 permissions:
   contents: read
