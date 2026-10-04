@@ -7610,3 +7610,8 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
 }
 
 /* deployment sync: chat menu stacking fix */
+
+.chat-more-menu-portal {
+  position: fixed;
+  z-index: 2147483600;
+}
