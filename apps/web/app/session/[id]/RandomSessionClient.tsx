@@ -304,6 +304,12 @@ export default function RandomSessionClient() {
   const [assistantError, setAssistantError] = useState<string | null>(null);
   const [nextConfirmOpen, setNextConfirmOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
@@ -2100,16 +2106,6 @@ export default function RandomSessionClient() {
             {contactBusy ? "處理中…" : "同意"}
           </Button>
         </div>
-      </section>
-    ) : contactState?.status === "active" ? (
-      <section className="notice" style={{ margin: "12px 16px" }}>
-        <strong>你們已成為匿名聯絡人</strong>
-      </section>
-    ) : contactState?.my_approved && !contactState.partner_approved ? (
-      <section className="notice contact-request-status" style={{ margin: "12px 16px" }}>
-        <strong className="contact-request-status__title">已送出匿名聯絡邀請</strong>
-        <div className="muted small contact-request-status__description">等對方也同意後才會保留聯絡。</div>
-        <div className="muted small contact-request-status__waiting">等待 {partnerName} 同意。</div>
       </section>
     ) : null;
 
