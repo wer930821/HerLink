@@ -50,7 +50,15 @@ function AdminApp() {
   const lastMailboxUnreadRef = useRef<number | null>(null);
   const [mailboxAlert, setMailboxAlert] = useState<{ count: number; subject?: string } | null>(null);
   const adminPushTokenRef = useRef<string | null>(null);
-  const pendingMailboxOpenRef = useRef(false);\n  const webReadyRef = useRef(false);\n\n  const sendAdminPushTokenToWeb = (token: string) => {\n    if (!webReadyRef.current) return;\n    webRef.current?.injectJavaScript(\n      `window.dispatchEvent(new CustomEvent("herlink-admin-push-token",{detail:${JSON.stringify({ token })}})); true;`\n    );\n  };
+  const pendingMailboxOpenRef = useRef(false);
+  const webReadyRef = useRef(false);
+
+  const sendAdminPushTokenToWeb = (token: string) => {
+    if (!webReadyRef.current) return;
+    webRef.current?.injectJavaScript(
+      `window.dispatchEvent(new CustomEvent("herlink-admin-push-token",{detail:${JSON.stringify({ token })}})); true;`
+    );
+  };
 
   useEffect(() => {
     if (Platform.OS !== "android") return;
@@ -73,7 +81,10 @@ function AdminApp() {
         const projectId = Constants.expoConfig?.extra?.eas?.projectId;
         if (!projectId) return;
         const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-        if (mounted) {\n          adminPushTokenRef.current = token;\n          sendAdminPushTokenToWeb(token);\n        }
+        if (mounted) {
+          adminPushTokenRef.current = token;
+          sendAdminPushTokenToWeb(token);
+        }
       } catch {
         // Push registration failure must not block the admin app.
       }
