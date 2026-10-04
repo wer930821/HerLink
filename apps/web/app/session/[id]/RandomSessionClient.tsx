@@ -2495,7 +2495,7 @@ export default function RandomSessionClient() {
                         {contactBusy ? "處理中…" : anonymousContactLabel}
                       </button>
                       {milestoneTestAllowed ? (
-                        <button className="home-collection-entry chat-collection-menu" type="button" onClick={() => { setHeaderMenuOpen(false); router.push("/collection"); }}><span className="home-collection-entry-icon">♛</span><span>彩蛋圖鑑與任務</span><span className="home-collection-entry-arrow">›</span></button>
+                        <button className="home-collection-entry chat-collection-menu" type="button" onClick={() => { setHeaderMenuOpen(false); router.push("/collection"); }}><span className="home-collection-entry-icon">♛</span><span><b>彩蛋圖鑑與任務</b><small>收集彩蛋 · 完成任務 · 解鎖成就</small></span><span className="home-collection-entry-arrow">›</span></button>
                       ) : null}
                       <button className="button secondary" type="button" onClick={() => { setHeaderMenuOpen(false); void copyBrowserHandoffLink(); }}>跨瀏覽器續聊</button>
                       <button className="button secondary chat-safety" type="button" onClick={() => { setHeaderMenuOpen(false); setSafetyMenuOpen(true); }}>安全</button>
