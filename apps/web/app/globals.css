@@ -6977,3 +6977,24 @@ body:has(.chat-page .halloween-chat-decor) .chat-message-other {
 @keyframes candleFlicker { 0%,100%{filter:drop-shadow(0 0 5px rgba(255,167,65,.3));transform:scale(1)} 45%{filter:drop-shadow(0 0 20px rgba(255,143,42,.75));transform:scale(1.05)} 55%{filter:drop-shadow(0 0 7px rgba(255,143,42,.35));transform:scale(.98)} }
 @keyframes coffinFloat { 0%,100%{transform:translateY(0) rotate(4deg)} 50%{transform:translateY(-8px) rotate(-3deg)} }
 @keyframes graveMist { 0%,100%{filter:blur(0);transform:translateX(0);opacity:.26} 50%{filter:blur(.4px);transform:translateX(-8px);opacity:.42} }
+
+
+/* Chat timestamps outside message bubbles */
+.chat-message .chat-message-footer {
+  justify-content: flex-end !important;
+  min-height: 18px;
+}
+.chat-message .chat-meta-outside {
+  display: block;
+  margin-top: 6px;
+  padding: 0 8px;
+  font-size: .78rem;
+  opacity: .62;
+  line-height: 1.2;
+}
+.chat-message.mine .chat-meta-outside {
+  text-align: right;
+}
+.chat-message.theirs .chat-meta-outside {
+  text-align: left;
+}
