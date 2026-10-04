@@ -8588,3 +8588,29 @@ body:has(.collection-page) .shell {
     margin-right: auto;
   }
 }
+
+
+/* Collection page: remove the remaining top outer layer/gutter */
+body:has(.collection-page),
+.site-collection-viewport,
+.site-collection-viewport > .shell,
+.site-collection-viewport > .shell > .container {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+.site-collection-viewport {
+  min-height: 100dvh !important;
+  background: radial-gradient(circle at 50% 0,rgba(111,54,145,.22),transparent 35%),linear-gradient(180deg,#130d1d,#0b0810 72%) !important;
+}
+@media (max-width: 768px) {
+  body:has(.collection-page) > .site-header,
+  body:has(.collection-page) .site-header {
+    display: none !important;
+  }
+  .site-collection-viewport .collection-page {
+    padding-top: max(14px, env(safe-area-inset-top)) !important;
+  }
+}
