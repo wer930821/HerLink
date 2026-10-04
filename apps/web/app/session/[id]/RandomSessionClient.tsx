@@ -2471,7 +2471,7 @@ export default function RandomSessionClient() {
           </section>
         ) : null}
 
-        {notice ? <div className="notice">{notice}</div> : null}
+        {notice ? <div className="notice chat-status-notice">{notice}</div> : null}
         {session ? <SessionSafetyWarning key={session.id} sessionId={session.id} warning={messageWarning}
           highRiskAt={messages.reduce((latest, message) =>
             (message.risk_level === "high" || message.risk_level === "critical") && message.created_at > latest
