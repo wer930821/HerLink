@@ -152,6 +152,7 @@ function AdminApp() {
   };
 
   const reload = () => {
+    webReadyRef.current = false;
     setFailed(false);
     setLoading(true);
     setWebReady(false);
@@ -159,6 +160,7 @@ function AdminApp() {
   };
 
   const goHome = () => {
+    webReadyRef.current = false;
     setFailed(false);
     setLoading(true);
     setWebReady(false);
@@ -295,12 +297,14 @@ function AdminApp() {
           onNavigationStateChange={handleNavigation}
           onMessage={handleWebMessage}
           onLoadStart={() => {
+            webReadyRef.current = false;
             // 只在 App 第一次開啟或手動重新整理時顯示全頁載入。
             // 後台內頁導覽不再重新蓋上「正在載入後台」。
             if (!webReady) setLoading(true);
             setFailed(false);
           }}
           onLoadEnd={() => {
+            webReadyRef.current = true;
             setLoading(false);
             setWebReady(true);
             const token = adminPushTokenRef.current;
