@@ -1998,28 +1998,6 @@ select {
   object-fit: contain;
 }
 
-/* Desktop chat: true full-width layout with balanced gutters. */
-@media (min-width: 769px) {
-  .chat-page > .chat-shell {
-    width: 100vw;
-    max-width: none;
-    margin: 0;
-    padding: 16px clamp(28px, 5vw, 72px) 12px;
-  }
-
-  .chat-page .chat-header,
-  .chat-page .chat-actions,
-  .chat-page .chat-messages,
-  .chat-page .chat-composer {
-    width: 100%;
-    max-width: none;
-  }
-
-  .chat-page .chat-bubble {
-    max-width: min(58%, 720px);
-  }
-}
-
 @media (max-width: 768px) {
   .chat-page {
     width: 100vw;
