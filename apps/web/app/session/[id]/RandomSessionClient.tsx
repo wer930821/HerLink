@@ -2106,9 +2106,10 @@ export default function RandomSessionClient() {
         <strong>你們已成為匿名聯絡人</strong>
       </section>
     ) : contactState?.my_approved && !contactState.partner_approved ? (
-      <section className="notice" style={{ margin: "12px 16px" }}>
-        <strong>已送出匿名聯絡邀請</strong>
-        <div className="muted small" style={{ marginTop: 6 }}>等待 {partnerName} 同意。</div>
+      <section className="notice contact-request-status" style={{ margin: "12px 16px" }}>
+        <strong className="contact-request-status__title">已送出匿名聯絡邀請</strong>
+        <div className="muted small contact-request-status__description">等對方也同意後才會保留聯絡。</div>
+        <div className="muted small contact-request-status__waiting">等待 {partnerName} 同意。</div>
       </section>
     ) : null;
 
