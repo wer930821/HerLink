@@ -8395,3 +8395,44 @@ details.milestone-test-compact[open]>.milestone-test-popover{display:grid!import
     padding-top:0!important;
   }
 }
+
+
+/* Contacts page after global header removal: use the full viewport without legacy header gap. */
+@media(max-width:768px){
+  body:has(.halloween-contacts-page) .shell{
+    height:auto!important;
+    min-height:100dvh!important;
+    overflow:visible!important;
+    padding-top:0!important;
+    padding-bottom:18px!important;
+  }
+  body:has(.halloween-contacts-page) .shell>.container{
+    height:auto!important;
+    min-height:0!important;
+    overflow:visible!important;
+  }
+  .halloween-contacts-page{
+    height:auto!important;
+    min-height:calc(100dvh - 18px)!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  .halloween-contacts-page>.hero{
+    padding-top:18px!important;
+    padding-bottom:14px!important;
+  }
+  .halloween-contacts-page>.surface{
+    flex:0 0 auto!important;
+    min-height:0!important;
+    padding-top:16px!important;
+    padding-bottom:16px!important;
+    overflow:visible!important;
+  }
+  .halloween-contacts-page>.surface .surface{
+    min-height:0!important;
+    padding-top:16px!important;
+    padding-bottom:16px!important;
+  }
+  .halloween-contacts-decor .contacts-cat{bottom:18%!important}
+  .halloween-contacts-decor .contacts-candle{bottom:2%!important}
+}
