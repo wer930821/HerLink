@@ -322,6 +322,14 @@ export default function RandomSessionClient() {
   } | null>(null);
   const [mediaUploading, setMediaUploading] = useState(false);
   const [previewMessage, setPreviewMessage] = useState<RandomChatMessageRow | null>(null);
+  useEffect(() => {
+    if (!previewMessage) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [previewMessage]);
   const [replyTarget, setReplyTarget] = useState<RandomChatMessageRow | null>(null);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [authState, setAuthState] = useState<NavigationDiagnosticEvent["authState"]>("loading");
@@ -2730,15 +2738,27 @@ export default function RandomSessionClient() {
         <p>目前這個聊天室會立即結束，送出後無法復原。</p>
       </Modal>
 
-      <Modal
-        open={Boolean(previewMessage)}
-        title="圖片預覽"
-        onClose={() => setPreviewMessage(null)}
-      >
-        {previewMessage?.media_path ? (
-          <ChatImage path={previewMessage.media_path} alt="聊天室圖片" large />
-        ) : null}
-      </Modal>
+      {previewMessage?.media_path ? (
+        <div
+          className="chat-image-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="圖片預覽"
+          onClick={() => setPreviewMessage(null)}
+        >
+          <button
+            type="button"
+            className="chat-image-lightbox-close"
+            aria-label="關閉圖片預覽"
+            onClick={() => setPreviewMessage(null)}
+          >
+            ×
+          </button>
+          <div className="chat-image-lightbox-content" onClick={(event) => event.stopPropagation()}>
+            <ChatImage path={previewMessage.media_path} alt="聊天室圖片" large />
+          </div>
+        </div>
+      ) : null}
       {debugPanel}
     </main>
   );
