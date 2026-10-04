@@ -298,7 +298,8 @@ export default function RandomSessionClient() {
   const [assistantAllowed, setAssistantAllowed] = useState(false);
   const [milestoneTestAllowed, setMilestoneTestAllowed] = useState(false);
   const [testMilestone, setTestMilestone] = useState<number | null>(null);
-  const [eternalPreviewUnlocked, setEternalPreviewUnlocked] = useState(false);\n  const [collectionOpen, setCollectionOpen] = useState(false);
+  const [eternalPreviewUnlocked, setEternalPreviewUnlocked] = useState(false);
+  const [collectionOpen, setCollectionOpen] = useState(false);
   const [easterEgg, setEasterEgg] = useState<EasterEggKind | null>(null);
   const [easterEggAllowed, setEasterEggAllowed] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(true);
