@@ -23,7 +23,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/admin-icon.png",
         "backgroundColor": "#11110f"
-      }
+      },
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-notifications"
