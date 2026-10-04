@@ -2314,21 +2314,6 @@ export default function RandomSessionClient() {
       <div className="halloween-chat-decor" aria-hidden="true"><span>💀</span><span>🕯️</span><span>⚰️</span><span className="halloween-corner-web">🕸️</span></div>
         <h1 className="hero-title">正在載入匿名會話…</h1>
         <p className="hero-copy">請稍候，HerLink 正在確認會話狀態。</p>
-        {milestoneTestAllowed ? (
-          <div className="chat-actions" aria-label="彩蛋里程碑測試">
-            {[1000, 2000, 3000, 5000, 10000].map((milestone) => (
-              <button
-                key={milestone}
-                className="button secondary thousand-test-button"
-                type="button"
-                onClick={() => playMilestonePreview(milestone)}
-              >
-                測試 {milestone} 則彩蛋
-              </button>
-            ))}
-          </div>
-        ) : null}
-
         {notice ? <div className="notice">{notice}</div> : null}
         {debugPanel}
       </main>
@@ -2375,6 +2360,13 @@ export default function RandomSessionClient() {
 
   return (
     <main className="chat-page">
+      <div className="milestone-test-dock" aria-label="彩蛋里程碑測試" style={{ display: milestoneTestAllowed ? "flex" : "none", gap: "8px", flexWrap: "wrap", padding: "8px 12px", position: "relative", zIndex: 30 }}>
+        {[1000, 2000, 3000, 5000, 10000].map((milestone) => (
+          <button key={milestone} className="button secondary thousand-test-button" type="button" onClick={() => playMilestonePreview(milestone)}>
+            測試 {milestone} 則彩蛋
+          </button>
+        ))}
+      </div>
       <div className="halloween-chat-decor" aria-hidden="true"><span>💀</span><span>🕯️</span><span>⚰️</span><span className="halloween-corner-web">🕸️</span></div>
       <section className="chat-shell">
         <header className="chat-header">
