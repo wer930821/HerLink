@@ -49,7 +49,7 @@ export default function MailboxPage(){
    setSubject("");setBody("");clearPhoto();setNotice("已寄到站長信箱。");await load();
    if(data){const {data:t}=await (supabase as any).from("station_mail_threads").select("*").eq("id",data).single();if(t)void open(t as Thread)}
   }catch{
-   if(uploadedPath)await supabase.storage.from(MAIL_BUCKET).remove([uploadedPath]).catch(()=>undefined);
+   if(uploadedPath)void supabase.storage.from(MAIL_BUCKET).remove([uploadedPath]);
    setNotice("寄送失敗，請稍後再試。");
   }finally{setBusy(false)}
  };
