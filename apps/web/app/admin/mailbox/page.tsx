@@ -26,5 +26,16 @@ export default function AdminMailbox(){
 <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>{!trash&&t.unread?<span aria-label="未讀" style={{width:8,height:8,borderRadius:999,background:"#ff7168",flex:"0 0 auto"}}/>:null}<strong style={{fontSize:17,lineHeight:1.35,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.subject}</strong></div>
 <div style={{marginTop:7,fontSize:13,color:"rgba(255,255,255,.58)"}}>{trash&&t.deleted_at?`已移除 · ${new Date(t.deleted_at).toLocaleString("zh-TW",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}`:`${t.status==="replied"?"已回覆":"待處理"} · ${new Date(t.updated_at).toLocaleString("zh-TW",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}`}</div>
 <div onClick={e=>e.stopPropagation()} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)"}}>{trash?<div style={{display:"flex",gap:6}}><button type="button" aria-label="復原" title="復原" onClick={()=>void restore(t)} style={{width:36,height:36,borderRadius:12,border:"1px solid rgba(255,255,255,.12)",background:"rgba(255,255,255,.06)",color:"inherit",cursor:"pointer"}}>↩</button><button type="button" aria-label="永久刪除" title="永久刪除" onClick={()=>setConfirmAction({kind:"destroy",item:t})} style={{width:36,height:36,borderRadius:12,border:"1px solid rgba(239,68,68,.28)",background:"rgba(239,68,68,.08)",color:"#fecaca",cursor:"pointer"}}>×</button></div>:<button type="button" aria-label="移到垃圾桶" title="移到垃圾桶" onClick={()=>setConfirmAction({kind:"trash",item:t})} style={{width:38,height:38,borderRadius:12,border:"1px solid rgba(239,68,68,.24)",background:"rgba(239,68,68,.07)",color:"#fecaca",fontSize:18,cursor:"pointer"}}>⌫</button>}</div>
-</article>)}</div>}</AdminSection>
+</article>)}</div>}
+ {confirmAction?<div role="dialog" aria-modal="true" style={{position:"fixed",inset:0,zIndex:1000,display:"grid",placeItems:"center",padding:20,background:"rgba(0,0,0,.68)"}} onClick={()=>setConfirmAction(null)}>
+  <div onClick={e=>e.stopPropagation()} style={{width:"min(100%,420px)",padding:22,borderRadius:18,border:"1px solid rgba(255,255,255,.12)",background:"#17131f",boxShadow:"0 24px 70px rgba(0,0,0,.45)"}}>
+   <h3 style={{margin:"0 0 10px"}}>{confirmAction.kind==="trash"?"移到垃圾桶？":"永久刪除？"}</h3>
+   <p className="muted" style={{margin:"0 0 18px",lineHeight:1.6}}>{confirmAction.kind==="trash"?"移到垃圾桶後仍可復原。":"永久刪除後無法復原，信件與附件都會刪除。"}</p>
+   <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+    <Button variant="secondary" type="button" onClick={()=>setConfirmAction(null)}>取消</Button>
+    <button type="button" onClick={async()=>{const action=confirmAction;setConfirmAction(null);if(action.kind==="trash")await moveToTrash(action.item);else await destroy(action.item)}} style={{padding:"10px 14px",borderRadius:10,border:"1px solid rgba(239,68,68,.5)",background:"rgba(239,68,68,.16)",color:"#fecaca",fontWeight:800,cursor:"pointer"}}>{confirmAction.kind==="trash"?"移到垃圾桶":"永久刪除"}</button>
+   </div>
+  </div>
+ </div>:null}
+ </AdminSection>
 }
