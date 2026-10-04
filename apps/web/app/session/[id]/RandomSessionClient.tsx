@@ -61,6 +61,17 @@ type RealtimePayload<T> = {
 
 type EasterEggKind = "goodnight" | "morning" | "hello" | "hi" | "penguin" | "sync" | "aurora" | "meteor" | "secret" | "hundred" | "twoHundred" | "threeHundred" | "fourHundred" | "tired" | "offwork" | "food" | "curious" | "surprised" | "cute" | "sleepless" | "tomorrow" | "fiveHundred" | "thousand" | "afternoon" | "heyhey" | "hello_you" | "meal" | "haha" | "hardwork" | "missyou" | "coincidence" | "meet_again" | "secret_word" | "moon" | "stars" | "destiny" | "telepathy" | "no_goodbye" | "fifty" | "sixHundred" | "sevenHundred" | "eightHundred" | "nineHundred" | "fifteenHundred" | "twoThousand" | "threeThousand" | "fiveThousand" | "tenThousand" | "streak3" | "streak7" | "midnight" | "threeam" | "weekend" | "balanced100" | "daily200" | "meet10" | "eternal_bond";
 
+const COLLECTION_EGG_META: Partial<Record<EasterEggKind,{title:string;icon:string;duration:number;tone:number}>> = {
+  afternoon:{title:"午後光窗",icon:"☀",duration:2800,tone:587}, heyhey:{title:"雙重招呼",icon:"嗨",duration:2500,tone:622}, hello_you:{title:"紙飛機問候",icon:"➤",duration:2800,tone:659}, meal:{title:"開飯鐘",icon:"♨",duration:2800,tone:698},
+  haha:{title:"笑聲震波",icon:"哈",duration:2600,tone:740}, hardwork:{title:"充電補給",icon:"▰",duration:2800,tone:784}, missyou:{title:"思念信號",icon:"♡",duration:3600,tone:831}, coincidence:{title:"交錯軌跡",icon:"✣",duration:3500,tone:880},
+  meet_again:{title:"迴圈重逢",icon:"↻",duration:3800,tone:932}, secret_word:{title:"封蠟密信",icon:"✉",duration:3500,tone:988}, moon:{title:"月相輪轉",icon:"☾",duration:3800,tone:1047}, stars:{title:"星座連線",icon:"✦",duration:3800,tone:1109},
+  destiny:{title:"命運紅線",icon:"∞",duration:4600,tone:1175}, telepathy:{title:"腦波同步",icon:"≈",duration:4400,tone:1245}, no_goodbye:{title:"時間倒流",icon:"↶",duration:4500,tone:1319},
+  fifty:{title:"50 氣球",icon:"50",duration:2800,tone:523}, sixHundred:{title:"六芒星陣",icon:"600",duration:4500,tone:659}, sevenHundred:{title:"七星降臨",icon:"700",duration:4600,tone:698}, eightHundred:{title:"無限雙環",icon:"800",duration:4700,tone:740}, nineHundred:{title:"九重光階",icon:"900",duration:4800,tone:784},
+  fifteenHundred:{title:"星河航行",icon:"1500",duration:5200,tone:831}, twoThousand:{title:"水晶覺醒",icon:"2000",duration:5300,tone:880}, threeThousand:{title:"銀河漩渦",icon:"3000",duration:5500,tone:932}, fiveThousand:{title:"神話之門",icon:"5000",duration:6300,tone:988}, tenThousand:{title:"ETERNAL CHAT",icon:"10000",duration:7000,tone:1047},
+  streak3:{title:"三日火苗",icon:"3",duration:3800,tone:554}, streak7:{title:"七日彩虹橋",icon:"7",duration:4800,tone:622}, midnight:{title:"午夜城市",icon:"00:00",duration:4000,tone:466}, threeam:{title:"03:00 靜止時刻",icon:"03:00",duration:4600,tone:415}, weekend:{title:"週末霓虹",icon:"WEEKEND",duration:3900,tone:587},
+  balanced100:{title:"完美天秤",icon:"⚖",duration:4700,tone:698}, daily200:{title:"今日爆表",icon:"200",duration:4600,tone:740}, meet10:{title:"十次輪迴",icon:"10",duration:5500,tone:831}, eternal_bond:{title:"永恆契約",icon:"∞",duration:7000,tone:1109}
+};
+
 type PendingEasterEggEvent = {
   event_id: string;
   egg_kind: EasterEggKind;
@@ -1741,6 +1752,13 @@ export default function RandomSessionClient() {
         }
       })();
     }
+    const effectMeta = COLLECTION_EGG_META[kind];
+    if (effectMeta && myProfile?.anonymous_display_name === "孤星企鵝") {
+      try {
+        const AC = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (AC) { const a=new AC(); const o=a.createOscillator(); const g=a.createGain(); o.frequency.value=effectMeta.tone; g.gain.setValueAtTime(.0001,a.currentTime); g.gain.exponentialRampToValueAtTime(.045,a.currentTime+.02); g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+.32); o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+.34); window.setTimeout(()=>void a.close(),500); }
+      } catch {}
+    }
     if (kind === "thousand") {
       try {
         navigator.vibrate?.([35, 45, 55]);
@@ -1767,7 +1785,7 @@ export default function RandomSessionClient() {
         // Celebration effects are optional and must never interrupt chat.
       }
     }
-    window.setTimeout(() => setEasterEgg((current) => (current === kind ? null : current)), kind === "thousand" ? 7000 : 4600);
+    window.setTimeout(() => setEasterEgg((current) => (current === kind ? null : current)), COLLECTION_EGG_META[kind]?.duration ?? (kind === "thousand" ? 7000 : 4600));
   };
 
   useEffect(() => {
@@ -1803,7 +1821,8 @@ export default function RandomSessionClient() {
       const now = new Date();
       const hour = now.getHours();
       const day = now.getDay();
-      if (/今天也遇見你了|今天又遇見你了|今天也遇見妳了|今天又遇見妳了/.test(normalized)) return triggerEasterEgg("sync", true);\n      if (/午安/.test(normalized)) return triggerEasterEgg("afternoon", true);
+      if (/今天也遇見你了|今天又遇見你了|今天也遇見妳了|今天又遇見妳了/.test(normalized)) return triggerEasterEgg("sync", true);
+      if (/午安/.test(normalized)) return triggerEasterEgg("afternoon", true);
       if (/嗨嗨/.test(normalized)) return triggerEasterEgg("heyhey", true);
       if (/你好呀|你好啊/.test(normalized)) return triggerEasterEgg("hello_you", true);
       if (/吃飯了嗎|吃飯沒|吃了嗎/.test(normalized)) return triggerEasterEgg("meal", true);
@@ -2610,7 +2629,7 @@ export default function RandomSessionClient() {
               {testMilestone === 3000 ? <><i className="milestone-soul-stream soul-left" /><i className="milestone-soul-stream soul-right" /><i className="milestone-soul-wave soul-wave-a" /><i className="milestone-soul-wave soul-wave-b" /></> : null}
               {testMilestone === 5000 ? <><i className="milestone-galaxy" /><i className="milestone-startrail" /><i className="milestone-destined-core" /></> : null}
               {testMilestone === 10000 ? <><i className="milestone-eternal-blackout" /><i className="milestone-eternal-aura" /><i className="milestone-eternal-wing wing-left" /><i className="milestone-eternal-wing wing-right" /><i className="milestone-eternal-core" /><i className="milestone-eternal-pillar" /><i className="milestone-eternal-burst" /><i className="milestone-eternal-jewel jewel-a" /><i className="milestone-eternal-jewel jewel-b" /><i className="milestone-eternal-jewel jewel-c" /><i className="milestone-eternal-orbit orbit-a" /><i className="milestone-eternal-orbit orbit-b" /></> : null}
-            </span><span className="egg-1000-firework f1">✦</span><span className="egg-1000-firework f2">✦</span><span className="egg-1000-firework f3">✧</span><span className="egg-1000-flash" /><span className="egg-1000-rays" /><span className="egg-1000-confetti" aria-hidden="true">{Array.from({ length: 36 }, (_, index) => <i key={index} style={{ "--confetti-index": index } as CSSProperties} />)}</span><span className="egg-1000-particles" aria-hidden="true">{Array.from({ length: 48 }, (_, index) => <i key={index} style={{ "--particle-index": index } as CSSProperties} />)}</span><span className="egg-1000-crown">♛</span><span className="egg-1000-ring ring-outer" /><span className="egg-1000-ring" /><span className="egg-1000-number">{testMilestone ?? 1000}</span><span className="egg-1000-title">{testMilestone ? `第 ${testMilestone} 句訊息！` : "第 1000 句訊息！"}</span><span className="egg-1000-copy">{testMilestone === 2000 ? "看來你們真的很捨不得結束這場對話。" : testMilestone === 3000 ? "有些人聊幾句就散了，你們已經一起走到第 3,000 句。" : testMilestone === 5000 ? "當初隨機遇見的人，現在還在這裡。" : testMilestone === 10000 ? "這已經不是普通的隨機聊天室了。" : "從陌生人開始，你們已經一起留下 1000 句話"}</span><span className="egg-1000-badge">✦ 里程碑解鎖 ✦</span><span className="egg-1000-legendary"><b>{testMilestone === 2000 ? "EPIC CHAT" : testMilestone === 3000 ? "SOUL SYNC" : testMilestone === 5000 ? "DESTINED CHAT" : testMilestone === 10000 ? "ETERNAL CHAT" : "LEGENDARY CHAT"}</b><small>{testMilestone === 2000 ? "史詩級聊天室" : testMilestone === 3000 ? "靈魂同頻" : testMilestone === 5000 ? "命定聊天室" : testMilestone === 10000 ? "永恆聊天室" : "傳說級聊天室"}</small></span></> : easterEgg === "aurora" ? <><span className="egg-aurora egg-aurora-a" /><span className="egg-aurora egg-aurora-b" /><span className="egg-rare-stars">✦　✧　·　✦　·　✧</span><span className="egg-rare-caption">今晚的聊天室，出現了極光</span></> : easterEgg === "meteor" ? <><span className="egg-meteor m1">✦</span><span className="egg-meteor m2">✦</span><span className="egg-meteor m3">✦</span><span className="egg-meteor m4">✦</span><span className="egg-wish">許個願吧<small>這場流星雨只出現幾秒</small></span></> : <><span className="egg-secret-door">✦</span><span className="egg-secret-room"><b>秘密基地已開啟</b><small>只有今晚知道入口在哪裡</small></span><span className="egg-secret-sparkles">· ✦ · ✧ · ✦ ·</span></>}
+            </span><span className="egg-1000-firework f1">✦</span><span className="egg-1000-firework f2">✦</span><span className="egg-1000-firework f3">✧</span><span className="egg-1000-flash" /><span className="egg-1000-rays" /><span className="egg-1000-confetti" aria-hidden="true">{Array.from({ length: 36 }, (_, index) => <i key={index} style={{ "--confetti-index": index } as CSSProperties} />)}</span><span className="egg-1000-particles" aria-hidden="true">{Array.from({ length: 48 }, (_, index) => <i key={index} style={{ "--particle-index": index } as CSSProperties} />)}</span><span className="egg-1000-crown">♛</span><span className="egg-1000-ring ring-outer" /><span className="egg-1000-ring" /><span className="egg-1000-number">{testMilestone ?? 1000}</span><span className="egg-1000-title">{testMilestone ? `第 ${testMilestone} 句訊息！` : "第 1000 句訊息！"}</span><span className="egg-1000-copy">{testMilestone === 2000 ? "看來你們真的很捨不得結束這場對話。" : testMilestone === 3000 ? "有些人聊幾句就散了，你們已經一起走到第 3,000 句。" : testMilestone === 5000 ? "當初隨機遇見的人，現在還在這裡。" : testMilestone === 10000 ? "這已經不是普通的隨機聊天室了。" : "從陌生人開始，你們已經一起留下 1000 句話"}</span><span className="egg-1000-badge">✦ 里程碑解鎖 ✦</span><span className="egg-1000-legendary"><b>{testMilestone === 2000 ? "EPIC CHAT" : testMilestone === 3000 ? "SOUL SYNC" : testMilestone === 5000 ? "DESTINED CHAT" : testMilestone === 10000 ? "ETERNAL CHAT" : "LEGENDARY CHAT"}</b><small>{testMilestone === 2000 ? "史詩級聊天室" : testMilestone === 3000 ? "靈魂同頻" : testMilestone === 5000 ? "命定聊天室" : testMilestone === 10000 ? "永恆聊天室" : "傳說級聊天室"}</small></span></> : easterEgg === "aurora" ? <><span className="egg-aurora egg-aurora-a" /><span className="egg-aurora egg-aurora-b" /><span className="egg-rare-stars">✦　✧　·　✦　·　✧</span><span className="egg-rare-caption">今晚的聊天室，出現了極光</span></> : easterEgg === "meteor" ? <><span className="egg-meteor m1">✦</span><span className="egg-meteor m2">✦</span><span className="egg-meteor m3">✦</span><span className="egg-meteor m4">✦</span><span className="egg-wish">許個願吧<small>這場流星雨只出現幾秒</small></span></> : easterEgg === "secret" ? <><span className="egg-secret-door">✦</span><span className="egg-secret-room"><b>秘密基地已開啟</b><small>只有今晚知道入口在哪裡</small></span><span className="egg-secret-sparkles">· ✦ · ✧ · ✦ ·</span></> : COLLECTION_EGG_META[easterEgg] ? <div className={`egg-unique-scene egg-unique-${easterEgg}`}><i className="egg-unique-a"/><i className="egg-unique-b"/><i className="egg-unique-c"/><strong>{COLLECTION_EGG_META[easterEgg]?.icon}</strong><b>{COLLECTION_EGG_META[easterEgg]?.title}</b></div> : null}
           </div>
         ) : null}
 
