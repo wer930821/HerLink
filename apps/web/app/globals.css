@@ -8068,3 +8068,19 @@ body > .chat-more-menu-portal {
   position: relative;
   z-index: 2;
 }
+
+
+/* Halloween chat decor: keep the corner web visible above the room surface */
+.chat-page > .halloween-chat-decor::after {
+  content: "🕸️" !important;
+  position: fixed !important;
+  top: -12px !important;
+  right: -8px !important;
+  z-index: 4 !important;
+  display: block !important;
+  font-size: 6.5rem !important;
+  line-height: 1 !important;
+  opacity: .42 !important;
+  transform: rotate(8deg) !important;
+  pointer-events: none !important;
+}
