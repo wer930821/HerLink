@@ -19,7 +19,7 @@ const eggs:[string,string,string][]=[
  ["你好呀","普通","hello_you"],
  ["吃飯了嗎","普通","meal"],
  ["下班了","普通","offwork"],
- ["睡不著","普通","insomnia"],
+ ["睡不著","普通","sleepless"],
  ["哈哈哈","普通","haha"],
  ["辛苦了","普通","hardwork"],
  ["想你了","稀有","missyou"],
