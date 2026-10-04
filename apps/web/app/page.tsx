@@ -897,7 +897,7 @@ export default function HomePage() {
 
       <footer className="home-app-footer">
         <div className="home-app-footer-left">
-          {onlineCountConnected ? <span>目前在線 {onlineCount} 人　正在等聊天 {waitingCount === null ? "更新中…" : `${waitingCount} 人`}</span> : <span>正在等聊天 {waitingCount === null ? "更新中…" : `${waitingCount} 人`}</span>}
+          {onlineCountConnected ? <span>正在晃晃 {onlineCount} 人　等一個有緣人 {waitingCount === null ? "更新中…" : `${waitingCount} 人`}</span> : <span>等一個有緣人 {waitingCount === null ? "更新中…" : `${waitingCount} 人`}</span>}
           <Button variant="link" type="button" onClick={() => void shareBrowserHandoff()}>
             跨瀏覽器續聊
           </Button>
