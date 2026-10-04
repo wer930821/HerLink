@@ -8025,3 +8025,28 @@ body > .chat-more-menu-portal {
   transform: none !important;
   white-space: normal !important;
 }
+
+/* Status cards must own a full row before the scrollable message timeline. */
+.chat-shell > .chat-status-stack {
+  width: calc(100% - 32px) !important;
+  align-self: stretch !important;
+  box-sizing: border-box !important;
+}
+.chat-shell > .chat-status-stack + .chat-messages,
+.chat-shell > .chat-status-stack ~ .chat-messages {
+  clear: both !important;
+  position: relative !important;
+  inset: auto !important;
+  margin-top: 0 !important;
+  z-index: 1 !important;
+}
+@media (max-width: 768px) {
+  .chat-shell > .chat-status-stack {
+    flex-shrink: 0 !important;
+    margin: 8px 16px 6px !important;
+  }
+  .chat-shell > .chat-status-stack ~ .chat-messages {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+  }
+}
