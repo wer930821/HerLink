@@ -1955,6 +1955,28 @@ select {
 }
 
 
+/* Desktop web chat: use the available screen width instead of inheriting the site's 720px container. */
+@media (min-width: 769px) {
+  .chat-page > .chat-shell {
+    width: min(100%, 1200px);
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 16px 24px 12px;
+  }
+
+  .chat-page .chat-header,
+  .chat-page .chat-actions,
+  .chat-page .chat-messages,
+  .chat-page .chat-composer {
+    width: 100%;
+    max-width: none;
+  }
+
+  .chat-page .chat-bubble {
+    max-width: min(68%, 680px);
+  }
+}
+
 /* Web chat: fill the entire viewport edge to edge. */
 .chat-page {
   position: fixed;
