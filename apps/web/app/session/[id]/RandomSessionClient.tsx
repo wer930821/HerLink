@@ -2349,19 +2349,19 @@ export default function RandomSessionClient() {
             >
               {nextBusy ? "處理中…" : "下一位"}
             </button>
-            <div className="chat-more chat-header-more">
+            <div className="chat-more chat-header-more" onClick={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
               <button
                 className="ghost chat-more-summary"
                 type="button"
                 aria-label="更多聊天室選項"
                 title="更多"
                 aria-expanded={headerMenuOpen}
-                onClick={() => setHeaderMenuOpen((open) => !open)}
+                onClick={(event) => { event.stopPropagation(); setHeaderMenuOpen((open) => !open); }}
               >
                 •••
               </button>
               {headerMenuOpen ? (
-                <div className="chat-more-menu">
+                <div className="chat-more-menu" onClick={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
                   <button
                     className="button secondary chat-contact"
                     type="button"
