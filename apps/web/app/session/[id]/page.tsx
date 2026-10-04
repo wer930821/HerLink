@@ -2315,56 +2315,6 @@ export default function RandomSessionPage() {
             </div>
           </div>
           <div className="chat-header-actions">
-            {(milestoneTestAllowed || myProfile?.id === "ad9536fe-5ea0-4a1d-96d0-dcdecdafa18c") ? (
-              <div className="chat-milestone-test-group" aria-label="彩蛋測試區">
-                {([
-                  ["100", "hundred"],
-                  ["200", "twoHundred"],
-                  ["300", "threeHundred"],
-                  ["400", "fourHundred"],
-                  ["500", "fiveHundred"],
-                  ["1000", "thousand"],
-                ] as const).map(([label, kind]) => (
-                  <button
-                    key={kind}
-                    className="chat-milestone-test-trigger"
-                    type="button"
-                    onPointerDown={(event) => event.preventDefault()}
-                    onClick={async () => {
-                      triggerEasterEgg(kind, false);
-                      if (!session?.id) return;
-                      const authCheck = await supabase.auth.getUser();
-                      if (authCheck.error || !authCheck.data.user) return;
-                      // Refresh the server-owned session first. This also runs installation recovery
-                      // when the browser auth identity rotated, so the participant binding is
-                      // synchronized before the protected event RPC is attempted.
-                      const syncedSession = await refreshSessionFromServerRef.current?.();
-                      if (!syncedSession?.id) return;
-                      const verifiedAuth = await supabase.auth.getUser();
-                      if (verifiedAuth.error || !verifiedAuth.data.user) return;
-                      const result = await supabase.rpc("record_chat_easter_egg_event", {
-                        p_session_id: syncedSession.id,
-                        p_egg_kind: kind,
-                        p_trigger_type: "milestone",
-                      });
-                       if (result.error) {
-                         console.error("[herlink] milestone test record failed", result.error);
-                        await supabase.rpc("record_chat_easter_egg_failure", {
-                          p_session_id: session.id,
-                          p_egg_kind: kind,
-                          p_trigger_type: "milestone",
-                          p_error_code: result.error.code ?? "RPC_ERROR",
-                          p_error_message: result.error.message ?? "彩蛋測試紀錄失敗",
-                        });
-                      }
-                    }}
-                    title={`播放 ${label} 則彩蛋並寫入一筆測試紀錄，不會新增或修改訊息`}
-                  >
-                    測試 {label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
             {assistantAllowed ? (
               <button
                 className="chat-assistant-trigger"
