@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-type EventType = "new_match" | "new_message" | "verification_result" | "push_test";
+type EventType = "new_match" | "new_message" | "verification_result" | "push_test" | "admin_mail";
 
 interface PushEventRow {
   id: string;
@@ -157,6 +157,11 @@ async function shouldSendEvent(
 ) {
   const profile = await loadRecipientProfile(supabaseAdmin, event.user_id);
 
+  if (event.event_type === "admin_mail") {
+    const { data } = await supabaseAdmin.from("admin_users").select("user_id").eq("user_id", event.user_id).eq("active", true).maybeSingle();
+    return Boolean(data);
+  }
+
   if (event.event_type === "verification_result") {
     return profile.account_status !== "deletion_pending";
   }
@@ -292,6 +297,8 @@ async function processEvent(
     title: event.title,
     body: event.body,
     sound: "default",
+    channelId: event.event_type === "admin_mail" ? "admin-mail" : undefined,
+    priority: event.event_type === "admin_mail" ? "high" : undefined,
     data: {
       eventType: event.event_type,
       matchId: event.match_id,
@@ -377,7 +384,7 @@ Deno.serve(async (req) => {
       body && typeof body === "object" && typeof body.eventType === "string" ? body.eventType : null;
     const limit = Math.max(1, Math.min(50, Math.trunc(requestedLimit)));
     const eventTypeFilter =
-      requestedEventType && ["new_match", "new_message", "verification_result", "push_test"].includes(requestedEventType)
+      requestedEventType && ["new_match", "new_message", "verification_result", "push_test", "admin_mail"].includes(requestedEventType)
         ? requestedEventType
         : null;
 
