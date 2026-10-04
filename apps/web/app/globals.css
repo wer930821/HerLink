@@ -8640,3 +8640,17 @@ body:has(.site-collection-viewport) {
   min-height: 100dvh !important;
   background: transparent !important;
 }
+
+
+/* Collection background is now one fixed layer behind the entire screen */
+.collection-page { position: relative !important; isolation: isolate; background: transparent !important; }
+.collection-page-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 0,rgba(111,54,145,.22),transparent 35%),linear-gradient(180deg,#130d1d 0%,#0b0810 72%);
+}
+.site-collection-viewport,
+.site-collection-viewport .shell,
+.site-collection-viewport .container { background: transparent !important; }
