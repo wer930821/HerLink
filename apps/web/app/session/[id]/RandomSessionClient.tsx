@@ -2528,7 +2528,8 @@ export default function RandomSessionClient() {
       </section>
 
       {headerMenuOpen ? (
-        <div className="chat-header-popover" role="menu" aria-label="聊天室選項">
+        <div className="chat-header-popover-backdrop" onClick={() => setHeaderMenuOpen(false)}>
+          <div className="chat-header-popover" role="menu" aria-label="聊天室選項" onClick={(event) => event.stopPropagation()}>
           <button
             type="button"
             role="menuitem"
@@ -2552,6 +2553,7 @@ export default function RandomSessionClient() {
           >
             {leaveBusy ? "離開中…" : "離開聊天室"}
           </button>
+          </div>
         </div>
       ) : null}
 
