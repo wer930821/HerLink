@@ -294,9 +294,8 @@ function AdminApp() {
             setWebReady(true);
             const token = adminPushTokenRef.current;
             if (token) {
-              const detail = JSON.stringify({ token });
               webRef.current?.injectJavaScript(
-                `window.dispatchEvent(new CustomEvent("herlink-admin-push-token",{detail:${JSON.stringify(detail)}})); true;`
+                `window.dispatchEvent(new CustomEvent("herlink-admin-push-token",{detail:${JSON.stringify({ token })}})); true;`
               );
             }
             if (pendingMailboxOpenRef.current) {
