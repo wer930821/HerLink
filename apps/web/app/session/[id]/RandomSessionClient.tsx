@@ -307,6 +307,26 @@ export default function RandomSessionClient() {
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const headerMoreButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [headerMenuPosition, setHeaderMenuPosition] = useState<{ top: number; right: number } | null>(null);
+
+  useEffect(() => {
+    if (!headerMenuOpen) {
+      setHeaderMenuPosition(null);
+      return;
+    }
+    const updateMenuPosition = () => {
+      const rect = headerMoreButtonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setHeaderMenuPosition({
+        top: rect.bottom + 8,
+        right: Math.max(12, window.innerWidth - rect.right),
+      });
+    };
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    return () => window.removeEventListener("resize", updateMenuPosition);
+  }, [headerMenuOpen]);
   const [safetyMenuOpen, setSafetyMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportFollowupOpen, setReportFollowupOpen] = useState(false);
@@ -2360,41 +2380,26 @@ export default function RandomSessionClient() {
               >
                 •••
               </button>
-              {headerMenuOpen ? (
-                <div className="chat-more-menu" onClick={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
-                  <button
-                    className="button secondary chat-contact"
-                    type="button"
-                    onClick={() => { setHeaderMenuOpen(false); void handleAnonymousContact(); }}
-                    disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}
-                  >
-                    {contactBusy ? "處理中…" : anonymousContactLabel}
-                  </button>
-                  <button
-                    className="button secondary"
-                    type="button"
-                    onClick={() => { setHeaderMenuOpen(false); void copyBrowserHandoffLink(); }}
-                  >
-                    跨瀏覽器續聊
-                  </button>
-                  <button
-                    className="button secondary chat-safety"
-                    type="button"
-                    onClick={() => { setHeaderMenuOpen(false); setSafetyMenuOpen(true); }}
-                  >
-                    安全
-                  </button>
-                  <button
-                    className="button secondary chat-menu-leave"
-                    type="button"
-                    onClick={(event) => { setHeaderMenuOpen(false); void leave(event); }}
-                    disabled={leaveBusy}
-                    title="結束聊天並回到首頁，不會自動重新配對"
-                  >
-                    {leaveBusy ? "離開中…" : "離開聊天室"}
-                  </button>
-                </div>
-              ) : null}
+              {headerMenuOpen && headerMenuPosition && typeof document !== "undefined"
+                ? createPortal(
+                    <div
+                      className="chat-more-menu chat-more-menu-portal"
+                      style={{ top: headerMenuPosition.top, right: headerMenuPosition.right }}
+                      onClick={(event) => event.stopPropagation()}
+                      onPointerDown={(event) => event.stopPropagation()}
+                    >
+                      <button className="button secondary chat-contact" type="button" onClick={() => { setHeaderMenuOpen(false); void handleAnonymousContact(); }} disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}>
+                        {contactBusy ? "處理中…" : anonymousContactLabel}
+                      </button>
+                      <button className="button secondary" type="button" onClick={() => { setHeaderMenuOpen(false); void copyBrowserHandoffLink(); }}>跨瀏覽器續聊</button>
+                      <button className="button secondary chat-safety" type="button" onClick={() => { setHeaderMenuOpen(false); setSafetyMenuOpen(true); }}>安全</button>
+                      <button className="button secondary chat-menu-leave" type="button" onClick={(event) => { setHeaderMenuOpen(false); void leave(event); }} disabled={leaveBusy} title="結束聊天並回到首頁，不會自動重新配對">
+                        {leaveBusy ? "離開中…" : "離開聊天室"}
+                      </button>
+                    </div>,
+                    document.body
+                  )
+                : null}
             </div>
           </div>
         </header>
