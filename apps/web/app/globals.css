@@ -6519,3 +6519,28 @@ body:has(.halloween-chat-decor) .chat-header,
  .halloween-home-decor span:nth-child(1){font-size:3.2rem!important}
  .halloween-home-decor span:nth-child(2){font-size:2.45rem!important}
 }
+
+
+/* Halloween hotfix: decorative layer must never dim or overlay the UI */
+.halloween-home-decor,
+.halloween-chat-decor {
+  z-index: 0 !important;
+  isolation: isolate;
+}
+.halloween-home-decor::before,
+.halloween-chat-decor::before {
+  pointer-events: none !important;
+}
+.site-home-viewport:has(.halloween-home-decor) .home-app-like > :not(.halloween-home-decor),
+body:has(.halloween-chat-decor) main > :not(.halloween-chat-decor) {
+  position: relative;
+  z-index: 2 !important;
+  opacity: 1 !important;
+}
+.halloween-home-decor::before {
+  width: max-content !important;
+  height: auto !important;
+  inset: auto !important;
+  top: 2.5% !important;
+  left: 50% !important;
+}
