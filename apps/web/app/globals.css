@@ -7608,3 +7608,5 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
     width: min(220px, calc(100vw - 24px)) !important;
   }
 }
+
+/* deployment sync: chat menu stacking fix */
