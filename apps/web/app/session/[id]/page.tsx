@@ -304,6 +304,7 @@ export default function RandomSessionPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [safetyMenuOpen, setSafetyMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportFollowupOpen, setReportFollowupOpen] = useState(false);
@@ -2322,9 +2323,18 @@ export default function RandomSessionPage() {
             >
               {nextBusy ? "處理中…" : "下一位"}
             </button>
-            <details className="chat-more chat-header-more">
-              <summary className="ghost chat-more-summary" aria-label="更多聊天室選項" title="更多">•••</summary>
-              <div className="chat-more-menu">
+            <div className="chat-more chat-header-more">
+              <button
+                className="ghost chat-more-summary"
+                type="button"
+                aria-label="更多聊天室選項"
+                title="更多"
+                aria-expanded={headerMenuOpen}
+                onClick={() => setHeaderMenuOpen((open) => !open)}
+              >
+                •••
+              </button>
+              {headerMenuOpen ? <div className="chat-more-menu"> : null}
                 <button
                   className="button secondary chat-contact"
                   type="button"
@@ -2360,8 +2370,8 @@ export default function RandomSessionPage() {
                 >
                   {leaveBusy ? "離開中…" : "離開聊天室"}
                 </button>
-              </div>
-            </details>
+              </div> : null}
+            </div>
           </div>
         </header>
 
