@@ -1,0 +1,84 @@
+name: HerLink Android Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - "app/**"
+      - "lib/**"
+      - "assets/**"
+      - "package.json"
+      - "package-lock.json"
+      - "app.json"
+      - ".github/workflows/herlink-android-release.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: herlink-android-release
+  cancel-in-progress: false
+
+jobs:
+  android-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      EXPO_NO_TELEMETRY: "1"
+      CI: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Expo doctor
+        run: npx expo-doctor || true
+
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --clean
+
+      - name: Build release APK
+        working-directory: android
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.workers.max=2 -Dorg.gradle.daemon=false"
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --stacktrace --no-daemon --max-workers=2
+
+      - name: Collect APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          APK="$(find android/app/build/outputs/apk/release -type f -name '*.apk' | head -n 1)"
+          if [ -z "$APK" ]; then
+            echo "找不到 Release APK"
+            find android/app/build/outputs -maxdepth 6 -type f || true
+            exit 1
+          fi
+          cp "$APK" dist/HerLink-release.apk
+          ls -lh dist/HerLink-release.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HerLink-Android-Release
+          path: dist/HerLink-release.apk
+          if-no-files-found: error
+          retention-days: 30
