@@ -2334,7 +2334,8 @@ export default function RandomSessionPage() {
               >
                 •••
               </button>
-              {headerMenuOpen ? <div className="chat-more-menu"> : null}
+              {headerMenuOpen ? (
+                <div className="chat-more-menu">
                 <button
                   className="button secondary chat-contact"
                   type="button"
@@ -2370,7 +2371,8 @@ export default function RandomSessionPage() {
                 >
                   {leaveBusy ? "離開中…" : "離開聊天室"}
                 </button>
-              </div> : null}
+                </div>
+              ) : null}
             </div>
           </div>
         </header>
