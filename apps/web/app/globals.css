@@ -6998,3 +6998,23 @@ body:has(.chat-page .halloween-chat-decor) .chat-message-other {
 .chat-message.theirs .chat-meta-outside {
   text-align: left;
 }
+
+
+/* Chat timestamp v2: below bubble, not beside it */
+.chat-message {
+  display: flex !important;
+  flex-direction: column !important;
+}
+.chat-message.mine { align-items: flex-end !important; }
+.chat-message.theirs { align-items: flex-start !important; }
+.chat-message .chat-meta-outside {
+  width: auto !important;
+  margin: 7px 8px 0 !important;
+  padding: 0 !important;
+  align-self: auto !important;
+  font-size: .76rem !important;
+  opacity: .58 !important;
+  white-space: nowrap !important;
+}
+.chat-message.mine .chat-meta-outside { text-align: right !important; }
+.chat-message.theirs .chat-meta-outside { text-align: left !important; }
