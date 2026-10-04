@@ -2213,11 +2213,16 @@ export default function RandomSessionClient() {
             </button>
           ) : null}
           {message.message_type === "image" && message.media_path ? (
-            <ChatImage
-              path={message.media_path}
-              alt={message.is_mine ? "你傳送的圖片" : "對方傳送的圖片"}
-              onOpen={() => setPreviewMessage(message)}
-            />
+            <div
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
+              <ChatImage
+                path={message.media_path}
+                alt={message.is_mine ? "你傳送的圖片" : "對方傳送的圖片"}
+                onOpen={() => setPreviewMessage(message)}
+              />
+            </div>
           ) : (
             <div className="chat-message-content">{renderMessageContent(message.content, openExternalLink)}</div>
           )}
