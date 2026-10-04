@@ -17,6 +17,7 @@ import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
 import * as FileSystem from "expo-file-system/legacy";
 import * as IntentLauncher from "expo-intent-launcher";
+import * as Notifications from "expo-notifications";
 import { WebView } from "react-native-webview";
 import type { WebViewNavigation } from "react-native-webview";
 
@@ -48,6 +49,57 @@ function AdminApp() {
   const updatePromptedRef = useRef<number | null>(null);
   const lastMailboxUnreadRef = useRef<number | null>(null);
   const [mailboxAlert, setMailboxAlert] = useState<{ count: number; subject?: string } | null>(null);
+  const adminPushTokenRef = useRef<string | null>(null);
+  const pendingMailboxOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+
+    let mounted = true;
+    const setupNotifications = async () => {
+      try {
+        await Notifications.setNotificationChannelAsync("herlink-admin-mailbox", {
+          name: "站長信箱",
+          importance: Notifications.AndroidImportance.HIGH,
+          sound: "default",
+          vibrationPattern: [0, 250, 180, 250],
+        });
+        const current = await Notifications.getPermissionsAsync();
+        let status = current.status;
+        if (status !== "granted") {
+          status = (await Notifications.requestPermissionsAsync()).status;
+        }
+        if (status !== "granted") return;
+        const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+        if (!projectId) return;
+        const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+        if (mounted) adminPushTokenRef.current = token;
+      } catch {
+        // Push registration failure must not block the admin app.
+      }
+    };
+
+    const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as { event_type?: string; target_url?: string };
+      if (data.event_type === "admin_mail" || data.target_url === "/admin/mailbox") {
+        pendingMailboxOpenRef.current = true;
+        webRef.current?.injectJavaScript('window.location.href = "/admin/mailbox"; true;');
+      }
+    });
+
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      const data = response?.notification.request.content.data as { event_type?: string; target_url?: string } | undefined;
+      if (data?.event_type === "admin_mail" || data?.target_url === "/admin/mailbox") {
+        pendingMailboxOpenRef.current = true;
+      }
+    }).catch(() => undefined);
+    void setupNotifications();
+
+    return () => {
+      mounted = false;
+      responseSub.remove();
+    };
+  }, []);
 
   const installUpdateInsideApp = async (info: UpdateInfo) => {
     if (!info.apkUrl || Platform.OS !== "android") return;
@@ -240,6 +292,17 @@ function AdminApp() {
           onLoadEnd={() => {
             setLoading(false);
             setWebReady(true);
+            const token = adminPushTokenRef.current;
+            if (token) {
+              const detail = JSON.stringify({ token });
+              webRef.current?.injectJavaScript(
+                `window.dispatchEvent(new CustomEvent("herlink-admin-push-token",{detail:${JSON.stringify(detail)}})); true;`
+              );
+            }
+            if (pendingMailboxOpenRef.current) {
+              pendingMailboxOpenRef.current = false;
+              webRef.current?.injectJavaScript('window.location.href = "/admin/mailbox"; true;');
+            }
           }}
           onError={() => {
             setLoading(false);
