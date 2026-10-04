@@ -2290,7 +2290,6 @@ export default function RandomSessionPage() {
 
   return (
     <main className="chat-page">
-      {myProfile?.anonymous_display_name === "孤星企鵝" ? <div className="halloween-chat-decor" aria-hidden="true"><span>🦇</span><span>🎃</span><span>👻</span></div> : null}
       <section className="chat-shell">
         <header className="chat-header">
           <button
