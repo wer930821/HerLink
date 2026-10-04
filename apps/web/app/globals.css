@@ -6544,3 +6544,18 @@ body:has(.halloween-chat-decor) main > :not(.halloween-chat-decor) {
   top: 2.5% !important;
   left: 50% !important;
 }
+
+
+/* Halloween chat hotfix: one visual surface, no duplicate inner panel */
+body:has(.chat-page .halloween-chat-decor) .chat-page > .chat-shell {
+  background: transparent !important;
+}
+.chat-page > .halloween-chat-decor {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+}
+.chat-page > .halloween-chat-decor + .chat-shell {
+  position: relative;
+  z-index: 1;
+}
