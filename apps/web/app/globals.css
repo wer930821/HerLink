@@ -8314,3 +8314,10 @@ details.milestone-test-compact>summary{list-style:none!important;-webkit-user-se
 details.milestone-test-compact>summary::-webkit-details-marker{display:none}
 details.milestone-test-compact:not([open])>.milestone-test-popover{display:none!important}
 details.milestone-test-compact[open]>.milestone-test-popover{display:grid!important}
+
+
+/* Tester now lives in the same interactive header layer as Next / More. */
+.chat-header-actions .milestone-test-in-header{position:relative!important;left:auto!important;right:auto!important;top:auto!important;z-index:10!important;display:block!important;flex:0 0 auto!important}
+.chat-header-actions .milestone-test-in-header .milestone-test-toggle{min-height:32px!important}
+.chat-header-actions .milestone-test-in-header .milestone-test-popover{position:absolute!important;top:38px!important;right:0!important;left:auto!important;z-index:1000!important}
+@media(max-width:640px){.chat-header-actions .milestone-test-in-header .milestone-test-toggle{max-width:92px!important;padding:5px 8px!important;font-size:9px!important}.chat-header-actions .milestone-test-in-header .milestone-test-popover{right:0!important;left:auto!important}}
