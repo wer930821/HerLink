@@ -134,8 +134,8 @@ export default function AnonymousContactsPage() {
               const outgoing = item.status === "pending" && item.my_approved && !item.partner_approved;
 
               return (
-                <Surface key={item.contact_id} elevation="inset">
-                  <div className="row">
+                <Surface key={item.contact_id} elevation="inset" className="anonymous-contact-card">
+                  <div className="row anonymous-contact-card-head">
                     <strong>{item.partner_anonymous_display_name}</strong>
                     {item.partner_verified ? <Badge variant="success">已驗證</Badge> : null}
                     {item.status === "active" ? (
@@ -146,7 +146,7 @@ export default function AnonymousContactsPage() {
                       <Badge>等待對方同意</Badge>
                     ) : null}
                   </div>
-                  <div className="row">
+                  <div className="row anonymous-contact-card-actions">
                     {item.status === "active" ? (
                       <Button onClick={() => void startChat(item)} disabled={busy}>
                         {busy ? "處理中…" : "開始聊天"}
