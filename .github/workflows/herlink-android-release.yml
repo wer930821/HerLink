@@ -5,7 +5,7 @@ on:
   push:
     branches: [master]
     paths:
-      - "app/**"
+      - ".github/workflows/**"\n      - "app/**"
       - "lib/**"
       - "assets/**"
       - "package.json"
