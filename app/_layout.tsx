@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from "../context/auth";
 import { useEffect } from "react";
 import { SplashScreen, useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
-import { addPushTokenRefreshListener, configureNotificationHandler, registerPushNotifications } from "../lib/push";
+import { addPushRegistrationLifecycleListener, configureNotificationHandler } from "../lib/push";
 
 configureNotificationHandler();
 
@@ -36,7 +36,7 @@ function RootLayoutNav() {
       const data = response.notification.request.content.data as Record<string, unknown>;
       if (data?.eventType === "admin_mail" || data?.type === "admin_mail") router.push("/admin");
     });
-    return () => { tokenSub.remove(); responseSub.remove(); };
+    return () => { pushSub.remove(); responseSub.remove(); };
   }, [session?.user?.id, router]);
 
   if (loading) {
