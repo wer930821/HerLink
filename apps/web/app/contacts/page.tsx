@@ -87,6 +87,21 @@ export default function AnonymousContactsPage() {
     }
   };
 
+  const recoverChat = async (item: AnonymousContactRow) => {
+    setBusyId(item.contact_id);
+    setNotice(null);
+    try {
+      const result = await startAnonymousContactSession(item.contact_id);
+      if (result.error) throw result.error;
+      if (!result.data?.session_id) throw new Error("Missing session");
+      router.push(`/session/${result.data.session_id}`);
+    } catch (error) {
+      setNotice(friendlyContactError(error));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const remove = async (item: AnonymousContactRow) => {
     if (!window.confirm(`確定要移除「${item.partner_anonymous_display_name}」嗎？`)) return;
     setBusyId(item.contact_id);
@@ -148,9 +163,14 @@ export default function AnonymousContactsPage() {
                   </div>
                   <div className="row anonymous-contact-card-actions">
                     {item.status === "active" ? (
-                      <Button onClick={() => void startChat(item)} disabled={busy}>
-                        {busy ? "處理中…" : "開始聊天"}
-                      </Button>
+                      <>
+                        <Button onClick={() => void startChat(item)} disabled={busy}>
+                          {busy ? "處理中…" : "開始聊天"}
+                        </Button>
+                        <Button variant="secondary" onClick={() => void recoverChat(item)} disabled={busy}>
+                          {busy ? "處理中…" : "聊天室不見了？"}
+                        </Button>
+                      </>
                     ) : incoming && item.source_session_id ? (
                       <Button onClick={() => void accept(item)} disabled={busy}>
                         {busy ? "處理中…" : "接受匿名聯絡"}
