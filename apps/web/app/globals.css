@@ -7947,3 +7947,31 @@ body > .chat-more-menu-portal {
   line-height: 1.5 !important;
   z-index: auto !important;
 }
+
+/* Keep all transient chat status cards in one vertical flow. */
+.chat-status-stack {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 10px !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 16px !important;
+  margin: 12px 0 !important;
+  transform: none !important;
+  z-index: 2 !important;
+}
+.chat-status-stack > .notice {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+  float: none !important;
+}
+.chat-status-stack .contact-request-status {
+  gap: 4px !important;
+}
