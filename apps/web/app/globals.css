@@ -8477,3 +8477,12 @@ details.milestone-test-compact[open]>.milestone-test-popover{display:grid!import
 .halloween-contacts-page .anonymous-contact-card-actions{
   margin-top:2px!important;
 }
+
+
+/* Rebalance Halloween decorations without moving homepage content */
+@media (max-width: 640px) {
+  .halloween-home-decor span:nth-child(1) { top: 10%; right: 5%; }
+  .halloween-home-decor span:nth-child(2) { top: 33%; left: 1%; }
+  .halloween-home-decor span:nth-child(3) { top: 10%; left: 8%; }
+  .halloween-home-decor::after { top: 4px; right: -12px; }
+}
