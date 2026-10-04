@@ -8233,3 +8233,23 @@ body > .chat-more-menu-portal {
 @keyframes eternal-core{0%,10%{opacity:0;transform:translate(-50%,-50%) scale(.1)}18%{opacity:1;transform:translate(-50%,-50%) scale(1)}32%{opacity:1;transform:translate(-50%,-50%) scale(2)}45%,100%{opacity:0;transform:translate(-50%,-50%) scale(18)}}
 @keyframes eternal-pillar{0%,24%{opacity:0;transform:translateX(-50%) scaleX(.1)}34%{opacity:1;transform:translateX(-50%) scaleX(1)}48%,100%{opacity:0;transform:translateX(-50%) scaleX(10)}}
 @keyframes eternal-burst{0%,27%{opacity:0;transform:translate(-50%,-50%) scale(.1)}38%{opacity:1;transform:translate(-50%,-50%) scale(1)}68%{opacity:.9;transform:translate(-50%,-50%) scale(8)}100%{opacity:0;transform:translate(-50%,-50%) scale(12)}}
+
+
+/* Admin-only Eternal Chat appearance preview. No achievement is persisted yet. */
+.chat-page-eternal-preview{position:relative;background:
+ radial-gradient(circle at 18% 18%,rgba(255,205,93,.09),transparent 26%),
+ radial-gradient(circle at 82% 28%,rgba(126,92,210,.14),transparent 30%),
+ radial-gradient(circle at 50% 100%,rgba(82,54,155,.16),transparent 42%),
+ #090711}
+.chat-page-eternal-preview::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;background-image:
+ radial-gradient(circle at 12% 22%,rgba(255,238,182,.8) 0 1px,transparent 1.6px),
+ radial-gradient(circle at 74% 16%,rgba(218,204,255,.75) 0 1px,transparent 1.7px),
+ radial-gradient(circle at 42% 62%,rgba(255,220,126,.65) 0 1px,transparent 1.5px),
+ radial-gradient(circle at 88% 72%,rgba(206,190,255,.7) 0 1px,transparent 1.5px);
+background-size:170px 170px,230px 230px,210px 210px,280px 280px;animation:eternal-preview-drift 18s linear infinite}
+.chat-page-eternal-preview .chat-shell{position:relative;z-index:1;box-shadow:0 0 0 1px rgba(255,218,126,.12),0 0 50px rgba(111,75,190,.14)}
+.chat-page-eternal-preview .chat-header{background:linear-gradient(90deg,rgba(31,22,48,.96),rgba(49,34,68,.94),rgba(31,22,48,.96));box-shadow:inset 0 -1px rgba(255,221,137,.16),0 10px 35px rgba(72,46,126,.12)}
+.eternal-chat-badge{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;z-index:55;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid rgba(255,221,137,.46);border-radius:999px;background:linear-gradient(135deg,rgba(31,20,45,.94),rgba(78,50,34,.92),rgba(36,24,55,.94));box-shadow:0 0 24px rgba(255,197,75,.2),0 8px 28px rgba(0,0,0,.3);backdrop-filter:blur(12px);white-space:nowrap}
+.eternal-chat-badge b{font-size:12px;color:#ffe7a1;letter-spacing:.06em}.eternal-chat-badge small{font-size:10px;color:rgba(255,255,255,.68);letter-spacing:.04em}
+@keyframes eternal-preview-drift{from{transform:translateY(0)}50%{transform:translateY(-8px)}to{transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.chat-page-eternal-preview::before{animation:none}}
