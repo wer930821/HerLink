@@ -2403,9 +2403,6 @@ export default function RandomSessionClient() {
                 </div>
               </details>
             ) : null}
-            {milestoneTestAllowed ? (
-              <button className="chat-collection-trigger" type="button" onClick={() => setCollectionOpen(true)}>♛ 圖鑑任務</button>
-            ) : null}
             {assistantAllowed ? (
               <button
                 className="chat-assistant-trigger"
@@ -2450,6 +2447,9 @@ export default function RandomSessionClient() {
                       <button className="button secondary chat-contact" type="button" onClick={() => { setHeaderMenuOpen(false); void handleAnonymousContact(); }} disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}>
                         {contactBusy ? "處理中…" : anonymousContactLabel}
                       </button>
+                      {milestoneTestAllowed ? (
+                        <button className="button secondary chat-collection-menu" type="button" onClick={() => { setHeaderMenuOpen(false); setCollectionOpen(true); }}>♛ 彩蛋圖鑑與任務</button>
+                      ) : null}
                       <button className="button secondary" type="button" onClick={() => { setHeaderMenuOpen(false); void copyBrowserHandoffLink(); }}>跨瀏覽器續聊</button>
                       <button className="button secondary chat-safety" type="button" onClick={() => { setHeaderMenuOpen(false); setSafetyMenuOpen(true); }}>安全</button>
                       <button className="button secondary chat-menu-leave" type="button" onClick={(event) => { setHeaderMenuOpen(false); void leave(event); }} disabled={leaveBusy} title="結束聊天並回到首頁，不會自動重新配對">
