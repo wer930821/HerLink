@@ -13,7 +13,7 @@ const MAX_IMAGE_BYTES=5*1024*1024;
 
 function MailAttachment({path}:{path:string}){
  const [url,setUrl]=useState<string|null>(null);
- useEffect(()=>{let active=true;void supabase.storage.from(MAIL_BUCKET).createSignedUrl(path,3600).then((result)=>{if(active)setUrl(result.data?.signedUrl??null)});return()=>{active=false}},[path]);
+ useEffect(()=>{let active=true;void supabase.storage.from(MAIL_BUCKET).createSignedUrl(path,3600).then((result: { data: { signedUrl: string } | null })=>{if(active)setUrl(result.data?.signedUrl??null)});return()=>{active=false}},[path]);
  if(!url)return <div className="muted small">照片載入中…</div>;
  return <a href={url} target="_blank" rel="noreferrer"><img src={url} alt="信件照片附件" style={{display:"block",maxWidth:"min(100%,420px)",maxHeight:420,objectFit:"contain",borderRadius:14,marginTop:10}}/></a>;
 }
