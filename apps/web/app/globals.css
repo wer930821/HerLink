@@ -8084,3 +8084,21 @@ body > .chat-more-menu-portal {
   transform: rotate(8deg) !important;
   pointer-events: none !important;
 }
+
+
+/* Explicit corner web: DOM element avoids pseudo-element stacking loss after chat hydration */
+.chat-page > .halloween-chat-decor > .halloween-corner-web {
+  position: fixed !important;
+  top: -18px !important;
+  right: -10px !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 8 !important;
+  display: block !important;
+  font-size: 6.5rem !important;
+  line-height: 1 !important;
+  opacity: .42 !important;
+  transform: rotate(8deg) !important;
+  animation: none !important;
+  pointer-events: none !important;
+}
