@@ -7193,3 +7193,54 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
   box-shadow:0 0 18px rgba(132,78,194,.24),0 0 38px rgba(132,78,194,.10) !important;
   animation:otherBubbleAura 4.8s ease-in-out infinite !important;
 }
+
+
+/* Desktop homepage recovery: keep the app canvas visible and centered on wide screens */
+@media (min-width: 769px) {
+  body:has(.site-home-viewport) {
+    overflow-y: auto !important;
+  }
+  .site-home-viewport {
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .site-home-viewport .shell,
+  .site-home-viewport .container {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .site-home-viewport .home-app-like {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: min(100%, 1120px) !important;
+    min-height: calc(100dvh - 72px) !important;
+    margin: 0 auto !important;
+    padding: 48px clamp(32px, 6vw, 80px) !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+  .site-home-viewport .home-app-hero {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: min(100%, 620px) !important;
+    margin: auto !important;
+    padding-top: 120px !important;
+  }
+  .site-home-viewport .home-app-footer {
+    width: min(100%, 620px) !important;
+  }
+  .site-home-viewport .halloween-home-decor {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none !important;
+  }
+}
