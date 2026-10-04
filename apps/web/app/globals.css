@@ -8321,3 +8321,8 @@ details.milestone-test-compact[open]>.milestone-test-popover{display:grid!import
 .chat-header-actions .milestone-test-in-header .milestone-test-toggle{min-height:32px!important}
 .chat-header-actions .milestone-test-in-header .milestone-test-popover{position:absolute!important;top:38px!important;right:0!important;left:auto!important;z-index:1000!important}
 @media(max-width:640px){.chat-header-actions .milestone-test-in-header .milestone-test-toggle{max-width:92px!important;padding:5px 8px!important;font-size:9px!important}.chat-header-actions .milestone-test-in-header .milestone-test-popover{right:0!important;left:auto!important}}
+
+
+/* Gold crown capsule for the live message count. */
+.chat-message-count-gold{display:inline-flex!important;align-items:center!important;gap:6px!important;width:max-content!important;max-width:100%!important;margin-top:7px!important;padding:5px 11px!important;border:1px solid rgba(255,218,105,.72)!important;border-radius:999px!important;background:linear-gradient(135deg,rgba(75,48,12,.9),rgba(111,72,15,.72),rgba(54,35,14,.9))!important;color:#ffe59a!important;box-shadow:inset 0 0 0 1px rgba(255,248,200,.07),0 0 10px rgba(255,193,49,.26)!important;text-shadow:0 0 7px rgba(255,215,111,.35)!important;font-weight:900!important}
+.chat-message-count-gold .chat-message-count-crown{font-size:13px!important;color:#ffd968!important;line-height:1!important;filter:drop-shadow(0 0 5px rgba(255,196,49,.45))}
