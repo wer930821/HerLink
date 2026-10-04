@@ -921,12 +921,17 @@ export default function HomePage() {
           <span className="home-app-presence-item"><span className="home-app-wait-dot" />等人來聊 <strong>{waitingCount === null ? "…" : waitingCount}</strong> 人</span>
         </div>
         <div className="home-app-footer-links">
-          <Button variant="link" type="button" onClick={() => void shareBrowserHandoff()}>
-            跨瀏覽器續聊
-          </Button>
+          <Button variant="link" type="button" onClick={() => void shareBrowserHandoff()}>跨瀏覽器續聊</Button>
           <span className="home-app-footer-sep" aria-hidden="true">·</span>
           <Button variant="link" onClick={logout} disabled={actionBusy}>登出</Button>
         </div>
+        <nav className="home-app-legal-links" aria-label="網站資訊">
+          <Button variant="link" href="/safety">安全說明</Button>
+          <span aria-hidden="true">·</span>
+          <Button variant="link" href="/terms">服務條款</Button>
+          <span aria-hidden="true">·</span>
+          <Button variant="link" href="/privacy">隱私權政策</Button>
+        </nav>
       </footer>
 
       <Modal
