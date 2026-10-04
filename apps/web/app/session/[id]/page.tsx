@@ -2204,7 +2204,6 @@ export default function RandomSessionPage() {
             <div className="chat-message-content">{renderMessageContent(message.content, openExternalLink)}</div>
           )}
           <div className="chat-message-footer">
-            <div className="chat-meta">{formatTime(message.created_at)}</div>
             <button
               type="button"
               className="chat-reply-button"
@@ -2219,6 +2218,7 @@ export default function RandomSessionPage() {
             </button>
           </div>
         </div>
+        <div className="chat-meta chat-meta-outside">{formatTime(message.created_at)}</div>
       </article>
     );
   });
