@@ -7073,3 +7073,29 @@ body:has(.chat-page .halloween-chat-decor) .chat-message-other {
 }
 .chat-reply-button:hover,
 .chat-reply-button:focus-visible { opacity:.78 !important; }
+
+
+/* Test-only Halloween visibility + compact reply icon */
+body:has(.chat-page .halloween-chat-decor) .halloween-chat-decor {
+  display:block !important;
+  position:absolute !important;
+  inset:0 !important;
+  z-index:2 !important;
+  pointer-events:none !important;
+  overflow:hidden !important;
+}
+body:has(.chat-page .halloween-chat-decor) .chat-header,
+body:has(.chat-page .halloween-chat-decor) .chat-messages,
+body:has(.chat-page .halloween-chat-decor) .chat-composer {
+  position:relative !important;
+  z-index:3 !important;
+}
+body:has(.chat-page .halloween-chat-decor) .halloween-chat-decor span,
+body:has(.chat-page .halloween-chat-decor) .halloween-chat-decor::after {
+  visibility:visible !important;
+}
+.chat-reply-button {
+  font-size:.9rem !important;
+  opacity:.42 !important;
+  padding:1px 2px !important;
+}
