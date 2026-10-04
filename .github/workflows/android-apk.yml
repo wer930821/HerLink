@@ -65,9 +65,6 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: 設定 Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: 產生 Android 原生專案
         env:
           EXPO_NO_TELEMETRY: "1"
