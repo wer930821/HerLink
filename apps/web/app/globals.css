@@ -6362,3 +6362,38 @@ body:has(.site-mailbox-viewport){
 .home-app-footer-sep {
   opacity: .45;
 }
+
+
+/* Seasonal Halloween accents */
+.halloween-home-decor,
+.halloween-chat-decor {
+  pointer-events: none;
+  user-select: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+.halloween-home-decor span,
+.halloween-chat-decor span {
+  position: absolute;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.32));
+  opacity: .72;
+}
+.halloween-home-decor span:nth-child(1) { top: 12%; right: 8%; font-size: 2rem; transform: rotate(9deg); }
+.halloween-home-decor span:nth-child(2) { top: 31%; left: 3%; font-size: 1.55rem; animation: herlinkGhostFloat 5s ease-in-out infinite; }
+.halloween-home-decor span:nth-child(3) { top: 7%; left: 15%; font-size: 1.15rem; animation: herlinkBatFloat 7s ease-in-out infinite; }
+.halloween-chat-decor span:nth-child(1) { top: 10%; right: 4%; font-size: 1.05rem; animation: herlinkBatFloat 7s ease-in-out infinite; }
+.halloween-chat-decor span:nth-child(2) { bottom: 15%; left: 2%; font-size: 1.35rem; opacity: .48; }
+.halloween-chat-decor span:nth-child(3) { top: 28%; left: 2%; font-size: 1.15rem; opacity: .42; animation: herlinkGhostFloat 5s ease-in-out infinite; }
+.home-app-like,
+.chat-page,
+.session-page { position: relative; }
+.home-app-like > :not(.halloween-home-decor),
+.chat-page > :not(.halloween-chat-decor),
+.session-page > :not(.halloween-chat-decor) { position: relative; z-index: 1; }
+@keyframes herlinkGhostFloat { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-9px) rotate(4deg); } }
+@keyframes herlinkBatFloat { 0%,100% { transform: translate(0,0) rotate(-8deg); } 50% { transform: translate(9px,-7px) rotate(8deg); } }
+@media (prefers-reduced-motion: reduce) {
+ .halloween-home-decor span,.halloween-chat-decor span { animation: none!important; }
+}
