@@ -319,7 +319,7 @@ export default function RandomSessionClient() {
       const rect = headerMoreButtonRef.current?.getBoundingClientRect();
       if (!rect) return;
       setHeaderMenuPosition({
-        top: rect.bottom + 8,
+        top: rect.bottom,
         right: Math.max(12, window.innerWidth - rect.right),
       });
     };
