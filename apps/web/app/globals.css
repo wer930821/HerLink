@@ -6903,3 +6903,40 @@ body:has(.chat-page .halloween-chat-decor) .chat-message-other {
   40% { transform:translate(20px,-18px) rotate(5deg); opacity:.76; }
   70% { transform:translate(7px,8px) rotate(-2deg); opacity:.6; }
 }
+
+
+/* Halloween chat v5: keep pumpkin clear of composer + visible message aura */
+.chat-page .halloween-chat-decor span:nth-child(2) {
+  left: 3% !important;
+  bottom: 118px !important;
+  font-size: 2.35rem !important;
+  z-index: 0 !important;
+}
+body:has(.chat-page .halloween-chat-decor) .chat-message {
+  position: relative;
+  isolation: isolate;
+}
+body:has(.chat-page .halloween-chat-decor) .chat-message-own {
+  border-color: rgba(255,112,96,.42) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,104,82,.10),
+    0 0 18px rgba(255,80,62,.22),
+    0 0 34px rgba(255,80,62,.10) !important;
+  animation: ownBubbleAura 4.2s ease-in-out infinite;
+}
+body:has(.chat-page .halloween-chat-decor) .chat-message-other {
+  border-color: rgba(152,102,210,.34) !important;
+  box-shadow:
+    0 0 0 1px rgba(151,99,211,.08),
+    0 0 18px rgba(130,76,190,.20),
+    0 0 32px rgba(130,76,190,.09) !important;
+  animation: otherBubbleAura 4.8s ease-in-out infinite;
+}
+@keyframes ownBubbleAura {
+  0%,100% { box-shadow:0 0 0 1px rgba(255,104,82,.08),0 0 14px rgba(255,80,62,.16),0 0 28px rgba(255,80,62,.07); }
+  50% { box-shadow:0 0 0 1px rgba(255,104,82,.16),0 0 24px rgba(255,80,62,.34),0 0 42px rgba(255,80,62,.14); }
+}
+@keyframes otherBubbleAura {
+  0%,100% { box-shadow:0 0 0 1px rgba(151,99,211,.06),0 0 13px rgba(130,76,190,.14),0 0 27px rgba(130,76,190,.06); }
+  50% { box-shadow:0 0 0 1px rgba(151,99,211,.14),0 0 23px rgba(130,76,190,.30),0 0 40px rgba(130,76,190,.13); }
+}
