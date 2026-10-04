@@ -8614,3 +8614,29 @@ body:has(.collection-page),
     padding-top: max(14px, env(safe-area-inset-top)) !important;
   }
 }
+
+
+/* Collection: force one continuous background including status/safe-area region */
+html:has(.site-collection-viewport),
+body:has(.site-collection-viewport),
+.site-collection-viewport,
+.site-collection-viewport .shell,
+.site-collection-viewport .container,
+.site-collection-viewport .collection-page {
+  background-color: #130d1d !important;
+  background-image: none !important;
+}
+html:has(.site-collection-viewport),
+body:has(.site-collection-viewport) {
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 100% !important;
+}
+.site-collection-viewport {
+  min-height: 100dvh !important;
+  background: linear-gradient(180deg,#130d1d 0%,#0b0810 72%) !important;
+}
+.site-collection-viewport .collection-page {
+  min-height: 100dvh !important;
+  background: transparent !important;
+}
