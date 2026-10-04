@@ -296,7 +296,8 @@ export default function RandomSessionClient() {
   const [contactState, setContactState] = useState<AnonymousContactStatusRow | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantAllowed, setAssistantAllowed] = useState(false);
-  const [milestoneTestAllowed, setMilestoneTestAllowed] = useState(false);\n  const [testMilestone, setTestMilestone] = useState<number | null>(null);
+  const [milestoneTestAllowed, setMilestoneTestAllowed] = useState(false);
+  const [testMilestone, setTestMilestone] = useState<number | null>(null);
   const [easterEgg, setEasterEgg] = useState<EasterEggKind | null>(null);
   const [easterEggAllowed, setEasterEggAllowed] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(true);
@@ -1161,7 +1162,11 @@ export default function RandomSessionClient() {
         const adminCheck = await isCurrentUserAdmin(authSession.user.id).catch(() => ({ data: false }));
         if (mounted && bootstrapRunId === sessionBootstrapRunRef.current) {
           setAssistantAllowed(Boolean(adminCheck.data));
-          setMilestoneTestAllowed(\n            Boolean(adminCheck.data) ||\n            authSession.user.id === "ad9536fe-5ea0-4a1d-96d0-dcdecdafa18c" ||\n            nextProfile?.anonymous_display_name === "孤星企鵝"\n          );
+          setMilestoneTestAllowed(
+            Boolean(adminCheck.data) ||
+            authSession.user.id === "ad9536fe-5ea0-4a1d-96d0-dcdecdafa18c" ||
+            nextProfile?.anonymous_display_name === "孤星企鵝"
+          );
           setEasterEggAllowed(true);
         }
         if (!nextProfile) {
