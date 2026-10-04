@@ -7839,3 +7839,29 @@ body > .chat-more-menu-portal .button:first-child,
 body > .chat-more-menu-portal .button:last-child {
   border-radius: 0 !important;
 }
+
+/* Connect the dropdown visually to the ellipsis without covering the header. */
+body > .chat-more-menu-portal {
+  position: fixed !important;
+  overflow: visible !important;
+  border-radius: 0 0 14px 14px !important;
+}
+body > .chat-more-menu-portal::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  width: 44px;
+  height: 10px;
+  background: rgba(22, 18, 34, 0.96);
+  border-radius: 10px 10px 0 0;
+  pointer-events: none;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+body > .chat-more-menu-portal .button:first-child {
+  border-radius: 12px 0 0 0 !important;
+}
+body > .chat-more-menu-portal .button:last-child {
+  border-radius: 0 0 14px 14px !important;
+}
