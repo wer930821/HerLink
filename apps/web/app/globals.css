@@ -61,6 +61,16 @@ input {
   margin: 0 auto;
 }
 
+@media (min-width: 521px) {
+  .chat-page > .chat-shell {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+}
+
+.container {
+}
+
 .hero {
   display: grid;
   gap: 14px;
