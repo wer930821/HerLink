@@ -8654,3 +8654,14 @@ body:has(.site-collection-viewport) {
 .site-collection-viewport,
 .site-collection-viewport .shell,
 .site-collection-viewport .container { background: transparent !important; }
+
+
+/* Collection mobile: eliminate the visible top seam by using one solid canvas */
+html:has(.site-collection-viewport),
+body:has(.site-collection-viewport),
+.site-collection-viewport,
+.site-collection-viewport .collection-page,
+.collection-page-bg {
+  background: #100b18 !important;
+  background-image: none !important;
+}
