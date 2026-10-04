@@ -8539,3 +8539,14 @@ details.milestone-test-compact[open]>.milestone-test-popover{display:grid!import
     padding-top: 40px !important;
   }
 }
+
+
+/* Lower station mailbox a little more; mailbox only */
+.mailbox-fullscreen > .surface {
+  padding-top: 56px !important;
+}
+@media (max-width: 720px) {
+  .mailbox-fullscreen > .surface {
+    padding-top: 52px !important;
+  }
+}
