@@ -6836,3 +6836,70 @@ body:has(.chat-page) > * {
     touch-action: pan-y !important;
   }
 }
+
+
+/* Halloween chat v4: distinct haunted-chat effects */
+.chat-page .halloween-chat-decor::before {
+  content: "";
+  position: absolute !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  background:
+    radial-gradient(ellipse at 50% 115%, rgba(119,66,159,.24), transparent 46%),
+    linear-gradient(180deg, rgba(88,28,12,.18), transparent 28%, rgba(25,10,35,.10)) !important;
+  animation: hauntedFog 8s ease-in-out infinite alternate;
+}
+.chat-page .halloween-chat-decor::after {
+  content: "🕸️" !important;
+  top: -22px !important;
+  right: -14px !important;
+  left: auto !important;
+  font-size: 7rem !important;
+  opacity: .26 !important;
+  animation: webBreath 6s ease-in-out infinite;
+}
+.chat-page .halloween-chat-decor span:nth-child(1) {
+  top: 10% !important; right: 7% !important;
+  font-size: 1.6rem !important;
+  animation: chatBatFly 9s ease-in-out infinite !important;
+}
+.chat-page .halloween-chat-decor span:nth-child(2) {
+  left: 4% !important; bottom: 7% !important;
+  font-size: 2.8rem !important;
+  animation: pumpkinFlicker 2.8s ease-in-out infinite !important;
+}
+.chat-page .halloween-chat-decor span:nth-child(3) {
+  left: 3% !important; top: 34% !important;
+  font-size: 2.5rem !important;
+  animation: ghostDrift 7s ease-in-out infinite !important;
+}
+body:has(.chat-page .halloween-chat-decor) .chat-message-own {
+  box-shadow: 0 0 18px rgba(255,91,79,.08) !important;
+}
+body:has(.chat-page .halloween-chat-decor) .chat-message-other {
+  box-shadow: 0 0 16px rgba(135,88,184,.07) !important;
+}
+@keyframes hauntedFog {
+  0% { opacity:.55; transform:translateX(-2%); }
+  100% { opacity:.9; transform:translateX(2%); }
+}
+@keyframes webBreath {
+  0%,100% { transform:scale(1) rotate(2deg); opacity:.20; }
+  50% { transform:scale(1.04) rotate(-1deg); opacity:.34; }
+}
+@keyframes chatBatFly {
+  0%,100% { transform:translate(0,0) rotate(-10deg); }
+  30% { transform:translate(-55px,28px) rotate(12deg); }
+  65% { transform:translate(-110px,-4px) rotate(-5deg); }
+}
+@keyframes pumpkinFlicker {
+  0%,100% { filter:drop-shadow(0 0 5px rgba(255,111,24,.25)); transform:scale(1); }
+  45% { filter:drop-shadow(0 0 18px rgba(255,111,24,.62)); transform:scale(1.04); }
+  52% { filter:drop-shadow(0 0 7px rgba(255,111,24,.3)); transform:scale(.99); }
+}
+@keyframes ghostDrift {
+  0%,100% { transform:translate(0,0) rotate(-4deg); opacity:.5; }
+  40% { transform:translate(20px,-18px) rotate(5deg); opacity:.76; }
+  70% { transform:translate(7px,8px) rotate(-2deg); opacity:.6; }
+}
