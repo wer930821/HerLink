@@ -298,7 +298,7 @@ export default function RandomSessionClient() {
   const [assistantAllowed, setAssistantAllowed] = useState(false);
   const [milestoneTestAllowed, setMilestoneTestAllowed] = useState(false);
   const [testMilestone, setTestMilestone] = useState<number | null>(null);
-  const [eternalPreviewUnlocked, setEternalPreviewUnlocked] = useState(false);
+  const [eternalPreviewUnlocked, setEternalPreviewUnlocked] = useState(false);\n  const [collectionOpen, setCollectionOpen] = useState(false);
   const [easterEgg, setEasterEgg] = useState<EasterEggKind | null>(null);
   const [easterEggAllowed, setEasterEggAllowed] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(true);
@@ -2402,6 +2402,9 @@ export default function RandomSessionClient() {
                 </div>
               </details>
             ) : null}
+            {milestoneTestAllowed ? (
+              <button className="chat-collection-trigger" type="button" onClick={() => setCollectionOpen(true)}>♛ 圖鑑任務</button>
+            ) : null}
             {assistantAllowed ? (
               <button
                 className="chat-assistant-trigger"
@@ -2458,6 +2461,26 @@ export default function RandomSessionClient() {
             </div>
           </div>
         </header>
+
+        {milestoneTestAllowed && collectionOpen ? (
+          <div className="collection-overlay" role="dialog" aria-modal="true" aria-label="彩蛋圖鑑與任務">
+            <section className="collection-panel">
+              <header><div><b>✦ HerLink 彩蛋圖鑑</b><small>私人測試版 · 不會發放正式獎勵</small></div><button type="button" onClick={() => setCollectionOpen(false)}>×</button></header>
+              <div className="collection-tabs"><span className="active">圖鑑</span><span>任務</span><span>成就</span></div>
+              <div className="collection-grid">
+                {[["早安","普通","morning"],["Hi","普通","hi"],["今天也遇見你了","稀有","hello"],["極光","稀有","aurora"],["流星雨","史詩","meteor"],["秘密基地","史詩","secret"],["100 則","稀有","hundred"],["500 則","史詩","fiveHundred"],["1,000 傳說","傳說","thousand"],["10,000 永恆","神話","eternal"]].map(([name, rarity, kind]) => <article key={kind} className={`collection-card rarity-${rarity}`}><i>✦</i><b>{name}</b><small>{rarity}</small></article>)}
+              </div>
+              <div className="collection-missions">
+                <h3>今日任務</h3>
+                <article><div><b>第一次驚喜</b><small>自然觸發任意 1 種文字彩蛋</small></div><strong>0 / 1</strong></article>
+                <article><div><b>聊得正起勁</b><small>同一聊天室自然增加 50 則訊息</small></div><strong>{Math.min(sessionMessageCount ?? 0, 50)} / 50</strong></article>
+                <article><div><b>彩蛋收藏家</b><small>解鎖 3 種不同彩蛋；重複觸發不計</small></div><strong>0 / 3</strong></article>
+                <article className="mission-long"><div><b>永恆之路</b><small>聊天室累積訊息里程碑 · 不要求短時間刷訊息</small></div><strong>{Math.min(sessionMessageCount ?? 0, 10000).toLocaleString("zh-TW")} / 10,000</strong></article>
+                <p>防刷：相同彩蛋重複觸發不重複計分；短時間大量重複訊息不計任務進度；測試按鈕不計入圖鑑與任務。</p>
+              </div>
+            </section>
+          </div>
+        ) : null}
 
         {(contactRequestCard || notice) ? (
           <div className="chat-status-stack">
