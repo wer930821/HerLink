@@ -6637,3 +6637,35 @@ body:has(.chat-page) {
     box-sizing: border-box !important;
   }
 }
+
+
+/* Halloween anonymous contacts */
+.halloween-contacts-page {
+  position: relative;
+  min-height: calc(100dvh - 80px);
+}
+.halloween-contacts-page > :not(.halloween-contacts-decor) {
+  position: relative;
+  z-index: 1;
+}
+.halloween-contacts-decor {
+  position: fixed;
+  inset: 70px 0 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 92% 10%, rgba(255,105,0,.15), transparent 25%),
+    radial-gradient(circle at 4% 68%, rgba(112,55,175,.16), transparent 30%);
+}
+.halloween-contacts-decor span { position:absolute; filter:drop-shadow(0 4px 12px rgba(0,0,0,.32)); }
+.halloween-contacts-decor span:nth-child(1){right:-12px;top:-16px;font-size:7rem;opacity:.27}
+.halloween-contacts-decor span:nth-child(2){left:7%;top:13%;font-size:1.8rem;opacity:.72;animation:herlinkBatSweep 6s ease-in-out infinite}
+.halloween-contacts-decor span:nth-child(3){right:5%;top:44%;font-size:2.4rem;opacity:.64;animation:herlinkGhostFloat 5s ease-in-out infinite}
+.halloween-contacts-decor span:nth-child(4){left:4%;bottom:5%;font-size:2.8rem;opacity:.72;animation:herlinkPumpkinGlow 4s ease-in-out infinite}
+.halloween-contacts-page > .hero,
+.halloween-contacts-page > .surface {
+  background: rgba(20,17,34,.82) !important;
+  border-color: rgba(255,128,35,.16) !important;
+  box-shadow: 0 12px 36px rgba(0,0,0,.16) !important;
+}
