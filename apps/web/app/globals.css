@@ -7018,3 +7018,41 @@ body:has(.chat-page .halloween-chat-decor) .chat-message-other {
 }
 .chat-message.mine .chat-meta-outside { text-align: right !important; }
 .chat-message.theirs .chat-meta-outside { text-align: left !important; }
+
+
+/* Chat message layout: LINE-like bubble + small timestamp beside lower edge */
+.chat-message {
+  display: grid !important;
+  grid-template-columns: auto auto !important;
+  grid-template-rows: auto !important;
+  align-items: end !important;
+  column-gap: 7px !important;
+  width: fit-content !important;
+  max-width: 88% !important;
+}
+.chat-message.theirs {
+  align-self: flex-start !important;
+  justify-self: start !important;
+}
+.chat-message.mine {
+  align-self: flex-end !important;
+  justify-self: end !important;
+}
+.chat-message > .chat-message-bubble {
+  grid-row: 1 !important;
+  margin: 0 !important;
+}
+.chat-message > .chat-meta-outside {
+  grid-row: 1 !important;
+  width: auto !important;
+  margin: 0 0 5px !important;
+  padding: 0 !important;
+  font-size: .72rem !important;
+  line-height: 1 !important;
+  opacity: .56 !important;
+  white-space: nowrap !important;
+}
+.chat-message.theirs > .chat-message-bubble { grid-column: 1 !important; }
+.chat-message.theirs > .chat-meta-outside { grid-column: 2 !important; text-align:left !important; }
+.chat-message.mine > .chat-meta-outside { grid-column: 1 !important; text-align:right !important; }
+.chat-message.mine > .chat-message-bubble { grid-column: 2 !important; }
