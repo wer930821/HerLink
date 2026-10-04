@@ -7304,3 +7304,14 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
     margin-right: auto;
   }
 }
+
+
+/* Keep desktop chat decorations with the centered conversation lane. */
+@media (min-width: 769px) {
+  .chat-page > .halloween-chat-decor {
+    width: min(100%, 920px) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%);
+  }
+}
