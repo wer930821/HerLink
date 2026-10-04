@@ -7530,3 +7530,31 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
 
   .chat-header-popover button.danger { color: #ffb4bd; }
 }
+
+
+/* Keep the compact chat menu out of the message column and below the header. */
+.chat-header-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 19999;
+  background: transparent;
+}
+
+@media (min-width: 769px) {
+  .chat-header-popover {
+    top: 72px !important;
+    right: 24px !important;
+    left: auto !important;
+    width: 220px !important;
+    max-width: calc(100vw - 48px) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .chat-header-popover {
+    top: 64px !important;
+    right: 12px !important;
+    left: auto !important;
+    width: min(220px, calc(100vw - 24px)) !important;
+  }
+}
