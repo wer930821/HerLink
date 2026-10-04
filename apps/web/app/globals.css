@@ -8307,3 +8307,10 @@ background-size:170px 170px,230px 230px,210px 210px,280px 280px;animation:eterna
 .milestone-test-compact{z-index:2147483000!important;isolation:isolate!important}
 .milestone-test-toggle{position:relative!important;z-index:2!important;touch-action:manipulation!important;cursor:pointer!important}
 .milestone-test-popover{z-index:3!important}
+
+
+/* Native details tester: opening no longer depends on React click state. */
+details.milestone-test-compact>summary{list-style:none!important;-webkit-user-select:none;user-select:none}
+details.milestone-test-compact>summary::-webkit-details-marker{display:none}
+details.milestone-test-compact:not([open])>.milestone-test-popover{display:none!important}
+details.milestone-test-compact[open]>.milestone-test-popover{display:grid!important}
