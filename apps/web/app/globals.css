@@ -7890,3 +7890,14 @@ body > .chat-more-menu-portal::before {
   border-radius: 12px 12px 0 0 !important;
   clip-path: polygon(28% 0, 72% 0, 100% 100%, 0 100%) !important;
 }
+
+/* Soften the ellipsis-to-menu connector into a rounded transition. */
+body > .chat-more-menu-portal::before {
+  right: 7px !important;
+  width: 30px !important;
+  height: 18px !important;
+  border-radius: 14px 14px 7px 7px !important;
+  clip-path: none !important;
+  transform: scaleX(0.78) !important;
+  transform-origin: bottom center !important;
+}
