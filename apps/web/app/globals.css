@@ -1998,13 +1998,13 @@ select {
   object-fit: contain;
 }
 
-/* Desktop chat override: keep this after the generic full-screen rules so it wins the cascade. */
+/* Desktop chat: true full-width layout with balanced gutters. */
 @media (min-width: 769px) {
   .chat-page > .chat-shell {
-    width: min(calc(100vw - 48px), 1200px);
-    max-width: 1200px;
-    margin-inline: auto;
-    padding: 16px 24px 12px;
+    width: 100vw;
+    max-width: none;
+    margin: 0;
+    padding: 16px clamp(28px, 5vw, 72px) 12px;
   }
 
   .chat-page .chat-header,
@@ -2016,7 +2016,7 @@ select {
   }
 
   .chat-page .chat-bubble {
-    max-width: min(68%, 680px);
+    max-width: min(58%, 720px);
   }
 }
 
