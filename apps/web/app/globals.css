@@ -7313,3 +7313,64 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
     margin: 0 auto;
   }
 }
+
+
+/* Desktop chat final override: full viewport, keep both message sides and send controls visible. */
+@media (min-width: 769px) {
+  .chat-page {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100vw !important;
+    max-width: none !important;
+  }
+  .chat-page > .chat-shell {
+    width: 100vw !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 14px 32px 12px !important;
+    overflow: hidden !important;
+  }
+  .chat-page .chat-header,
+  .chat-page .chat-messages,
+  .chat-page .chat-composer,
+  .chat-page .chat-composer-main {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+  .chat-page .chat-messages {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  .chat-page .chat-message {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .chat-page .chat-message.mine {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+  }
+  .chat-page .chat-message.theirs {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .chat-page .chat-message .chat-bubble {
+    max-width: min(56vw, 680px) !important;
+  }
+  .chat-page .chat-composer-main {
+    display: flex !important;
+  }
+  .chat-page .chat-input {
+    flex: 1 1 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+  .chat-page .chat-media-button,
+  .chat-page .chat-send {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    visibility: visible !important;
+  }
+}
