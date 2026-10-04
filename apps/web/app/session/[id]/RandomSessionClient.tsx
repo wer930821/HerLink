@@ -2362,19 +2362,6 @@ export default function RandomSessionClient() {
 
   return (
     <main className={`chat-page ${milestoneTestAllowed && eternalPreviewUnlocked ? "chat-page-eternal-preview" : ""}`}>
-      {milestoneTestAllowed ? (
-        <details className="milestone-test-compact">
-          <summary className="milestone-test-toggle">✦ 彩蛋測試</summary>
-          <div className="milestone-test-popover" aria-label="彩蛋里程碑測試">
-            {[1000, 2000, 3000, 5000, 10000].map((milestone) => (
-              <button key={milestone} type="button" onClick={(event) => {
-                playMilestonePreview(milestone);
-                event.currentTarget.closest("details")?.removeAttribute("open");
-              }}>{milestone}</button>
-            ))}
-          </div>
-        </details>
-      ) : null}
       <div className="halloween-chat-decor" aria-hidden="true"><span>💀</span><span>🕯️</span><span>⚰️</span><span className="halloween-corner-web">🕸️</span></div>
       <section className="chat-shell">
         <header className="chat-header">
@@ -2402,6 +2389,19 @@ export default function RandomSessionClient() {
             </div>
           </div>
           <div className="chat-header-actions">
+            {milestoneTestAllowed ? (
+              <details className="milestone-test-compact milestone-test-in-header">
+                <summary className="milestone-test-toggle">✦ 彩蛋測試</summary>
+                <div className="milestone-test-popover" aria-label="彩蛋里程碑測試">
+                  {[1000, 2000, 3000, 5000, 10000].map((milestone) => (
+                    <button key={milestone} type="button" onClick={(event) => {
+                      playMilestonePreview(milestone);
+                      event.currentTarget.closest("details")?.removeAttribute("open");
+                    }}>{milestone}</button>
+                  ))}
+                </div>
+              </details>
+            ) : null}
             {assistantAllowed ? (
               <button
                 className="chat-assistant-trigger"
