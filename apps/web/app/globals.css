@@ -7901,3 +7901,12 @@ body > .chat-more-menu-portal::before {
   transform: scaleX(0.78) !important;
   transform-origin: bottom center !important;
 }
+
+/* Final menu shape: no connector bump; let the menu itself sit cleanly below the ellipsis. */
+body > .chat-more-menu-portal::before {
+  content: none !important;
+  display: none !important;
+}
+body > .chat-more-menu-portal {
+  border-radius: 14px 0 14px 14px !important;
+}
