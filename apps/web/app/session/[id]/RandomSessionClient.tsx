@@ -1826,7 +1826,7 @@ export default function RandomSessionClient() {
 
   useEffect(() => {
     if (!session?.id) return;
-    try { sessionStorage.setItem("herlink:collection-return", window.location.pathname + window.location.search); } catch {}
+    try { const path=window.location.pathname + window.location.search; sessionStorage.setItem("herlink:collection-return", path); localStorage.setItem("herlink:last-session-path", path); } catch {}
   }, [session?.id]);
 
   useEffect(() => {
