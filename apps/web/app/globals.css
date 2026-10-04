@@ -6669,3 +6669,63 @@ body:has(.chat-page) {
   border-color: rgba(255,128,35,.16) !important;
   box-shadow: 0 12px 36px rgba(0,0,0,.16) !important;
 }
+
+
+/* Contacts Halloween v2: one canvas, distinct moonlit scene */
+html:has(.halloween-contacts-page),
+body:has(.halloween-contacts-page) {
+  background:
+    radial-gradient(circle at 84% 16%, rgba(244,221,176,.10), transparent 18%),
+    radial-gradient(circle at 8% 78%, rgba(80,47,125,.20), transparent 34%),
+    linear-gradient(180deg,#100d19 0%,#090811 100%) !important;
+}
+.halloween-contacts-page {
+  min-height: calc(100dvh - 64px) !important;
+  background: transparent !important;
+}
+.halloween-contacts-decor {
+  inset: 64px 0 0 !important;
+  background: none !important;
+}
+.halloween-contacts-decor span { position:absolute; }
+.halloween-contacts-decor .contacts-moon {
+  right: 7%; top: 3%; font-size: 5.2rem; color:#f0d9a4; opacity:.18;
+  filter:drop-shadow(0 0 24px rgba(241,205,133,.35));
+}
+.halloween-contacts-decor .contacts-stars {
+  left: 8%; top: 11%; font-size:1.1rem; letter-spacing:.7rem; color:#d6c2ff; opacity:.42;
+  animation: contactsTwinkle 3.8s ease-in-out infinite;
+}
+.halloween-contacts-decor .contacts-cat {
+  right: 7%; bottom: 8%; font-size:3rem; opacity:.74;
+  animation: contactsCat 5s ease-in-out infinite;
+}
+.halloween-contacts-decor .contacts-candle {
+  left: 6%; bottom: 6%; font-size:2.5rem; opacity:.78;
+  filter:drop-shadow(0 0 14px rgba(255,153,55,.45));
+}
+.halloween-contacts-decor .contacts-bat {
+  left: 13%; top: 29%; font-size:1.55rem; opacity:.55;
+  animation: contactsBat 8s ease-in-out infinite;
+}
+.halloween-contacts-page > .hero,
+.halloween-contacts-page > .surface {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.halloween-contacts-page > .hero {
+  padding: 28px 20px 22px !important;
+  border-bottom: 1px solid rgba(240,217,164,.12) !important;
+}
+.halloween-contacts-page > .surface {
+  margin-top: 4px !important;
+  padding: 26px 20px !important;
+}
+.halloween-contacts-page .hero-title {
+  text-shadow: 0 0 24px rgba(171,130,235,.16);
+}
+@keyframes contactsTwinkle { 0%,100%{opacity:.25;transform:scale(.96)} 50%{opacity:.62;transform:scale(1.04)} }
+@keyframes contactsCat { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-5px) rotate(2deg)} }
+@keyframes contactsBat { 0%,100%{transform:translate(0,0) rotate(-8deg)} 45%{transform:translate(24px,-12px) rotate(10deg)} 75%{transform:translate(9px,5px) rotate(-3deg)} }
