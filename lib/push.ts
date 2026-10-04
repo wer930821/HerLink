@@ -1,4 +1,4 @@
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
 import { getDeviceHash } from "./device";
@@ -6,7 +6,7 @@ import { supabase } from "./supabase";
 
 const ADMIN_CHANNEL_ID = "admin-mail";
 
-export async function registerPushNotifications() {
+let registrationPromise: Promise<string | null> | null = null;\n\nasync function doRegisterPushNotifications() {
   if (Platform.OS === "web") return null;
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync(ADMIN_CHANNEL_ID, {
@@ -46,8 +46,3 @@ export function configureNotificationHandler() {
   });
 }
 
-export function addPushTokenRefreshListener() {
-  return Notifications.addPushTokenListener(() => {
-    void registerPushNotifications().catch(() => undefined);
-  });
-}
