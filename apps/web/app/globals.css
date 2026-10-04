@@ -8665,3 +8665,17 @@ body:has(.site-collection-viewport),
   background: #100b18 !important;
   background-image: none !important;
 }
+
+
+/* Collection top seam: keep the accessibility skip-link completely outside layout/paint when unfocused. */
+body:has(.site-collection-viewport) .collection-skip-link:not(:focus) {
+  display: none !important;
+}
+@media (max-width: 768px) {
+  .site-collection-viewport .collection-page {
+    padding-top: 0 !important;
+  }
+  .site-collection-viewport .collection-page-header {
+    padding-top: 14px !important;
+  }
+}
