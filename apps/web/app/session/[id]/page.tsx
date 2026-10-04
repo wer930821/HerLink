@@ -2330,56 +2330,10 @@ export default function RandomSessionPage() {
                 aria-label="更多聊天室選項"
                 title="更多"
                 aria-expanded={headerMenuOpen}
-                onPointerDown={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setHeaderMenuOpen((open) => !open);
-                }}
+                onClick={() => setHeaderMenuOpen((open) => !open)}
               >
                 •••
               </button>
-              {headerMenuOpen ? (
-                <div
-                  className="chat-more-menu"
-                  onPointerDown={(event) => event.stopPropagation()}
-                >
-                <button
-                  className="button secondary chat-contact"
-                  type="button"
-                  onClick={() => void handleAnonymousContact()}
-                  disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}
-                >
-                  {contactBusy ? "處理中…" : anonymousContactLabel}
-                </button>
-                <button
-                  className="button secondary"
-                  type="button"
-                  onPointerDown={(event) => { event.preventDefault(); event.stopPropagation(); void copyBrowserHandoffLink(); }}
-                >
-                  跨瀏覽器續聊
-                </button>
-                <button className="button secondary chat-safety" type="button" onPointerDown={(event) => { event.preventDefault(); event.stopPropagation(); setSafetyMenuOpen(true); setHeaderMenuOpen(false); }}>
-                  安全
-                </button>
-                <div className="chat-menu-explain">
-                  <strong>下一位</strong>
-                  <span>結束目前聊天並立即重新配對。</span>
-                </div>
-                <div className="chat-menu-explain">
-                  <strong>離開聊天室</strong>
-                  <span>結束聊天並回到首頁，不會自動配對。</span>
-                </div>
-                <button
-                  className="button secondary chat-menu-leave"
-                  type="button"
-                  onPointerDown={(event) => { event.stopPropagation(); void leave(event as unknown as MouseEvent<HTMLButtonElement>); }}
-                  disabled={leaveBusy}
-                  title="結束聊天並回到首頁，不會自動重新配對"
-                >
-                  {leaveBusy ? "離開中…" : "離開聊天室"}
-                </button>
-                </div>
-              ) : null}
             </div>
           </div>
         </header>
@@ -2572,6 +2526,45 @@ export default function RandomSessionPage() {
           </div>
         </form>
       </section>
+
+      <Modal
+        open={headerMenuOpen}
+        title="聊天室選項"
+        onClose={() => setHeaderMenuOpen(false)}
+        actions={
+          <Button variant="ghost" type="button" onClick={() => setHeaderMenuOpen(false)}>
+            關閉
+          </Button>
+        }
+      >
+        <div className="stack">
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={() => { setHeaderMenuOpen(false); void handleAnonymousContact(); }}
+            disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}
+          >
+            {contactBusy ? "處理中…" : anonymousContactLabel}
+          </Button>
+          <Button variant="secondary" type="button" onClick={() => { setHeaderMenuOpen(false); void copyBrowserHandoffLink(); }}>
+            跨瀏覽器續聊
+          </Button>
+          <Button variant="secondary" type="button" onClick={() => { setHeaderMenuOpen(false); setSafetyMenuOpen(true); }}>
+            安全
+          </Button>
+          <Button variant="secondary" type="button" onClick={() => setNextConfirmOpen(true)} disabled={nextBusy}>
+            {nextBusy ? "處理中…" : "下一位"}
+          </Button>
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={(event) => { setHeaderMenuOpen(false); void leave(event); }}
+            disabled={leaveBusy}
+          >
+            {leaveBusy ? "離開中…" : "離開聊天室"}
+          </Button>
+        </div>
+      </Modal>
 
       <Modal
         open={safetyMenuOpen}
