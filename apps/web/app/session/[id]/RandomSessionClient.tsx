@@ -2381,7 +2381,7 @@ export default function RandomSessionClient() {
             <div className="chat-identity">
               <div className="chat-partner-row">
                 <div className="title chat-partner-name">{partnerName}</div>
-                {milestoneTestAllowed && eternalPreviewUnlocked ? <span className="eternal-chat-header-badge" title="永恆聊天室 · 10,000+">♛ 永恆</span> : null}
+                
                 {partnerVerified ? <span className="chat-verified">✓</span> : null}
               </div>
               <div className="chat-my-name">你：{myAnonymousName}{isEnded ? " · 聊天已結束" : ""}</div>
