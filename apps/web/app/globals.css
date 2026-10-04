@@ -7975,3 +7975,53 @@ body > .chat-more-menu-portal {
 .chat-status-stack .contact-request-status {
   gap: 4px !important;
 }
+
+/* Mobile chat status flow: reserve real layout height above messages. */
+.chat-shell > .chat-status-stack {
+  flex: 0 0 auto !important;
+  position: relative !important;
+  inset: auto !important;
+  order: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  width: auto !important;
+  max-width: none !important;
+  margin: 8px 16px 4px !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  z-index: 3 !important;
+}
+.chat-shell > .chat-status-stack > .notice,
+.chat-shell > .chat-status-stack > .contact-request-status {
+  flex: 0 0 auto !important;
+  position: relative !important;
+  inset: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 5px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: fit-content !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 12px 16px !important;
+  box-sizing: border-box !important;
+  line-height: 1.45 !important;
+  overflow: visible !important;
+  transform: none !important;
+}
+.chat-shell > .chat-status-stack > .notice > *,
+.chat-shell > .chat-status-stack > .contact-request-status > * {
+  position: static !important;
+  inset: auto !important;
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  line-height: 1.45 !important;
+  transform: none !important;
+  white-space: normal !important;
+}
