@@ -2241,7 +2241,7 @@ export default function RandomSessionPage() {
   if (loading) {
     return (
       <main className="hero">
-      <div className="halloween-chat-decor" aria-hidden="true"><span>🦇</span><span>🎃</span><span>👻</span></div>
+      {myProfile?.anonymous_display_name === "孤星企鵝" ? <div className="halloween-chat-decor" aria-hidden="true"><span>🦇</span><span>🎃</span><span>👻</span></div> : null}
         <h1 className="hero-title">正在載入匿名會話…</h1>
         <p className="hero-copy">請稍候，HerLink 正在確認會話狀態。</p>
         {notice ? <div className="notice">{notice}</div> : null}
