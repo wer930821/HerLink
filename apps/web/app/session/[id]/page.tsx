@@ -7,6 +7,7 @@ import {
   isAnonymousProfileReady,
   leaveRandomSession,
   loadMyProfile,
+  loadAdminRecoveryRequests,
   loadMyRandomSession,
   loadRandomMessages,
   nextRandomMatch,
@@ -148,6 +149,8 @@ export default function RandomSessionPage({ params }: Props) {
   const [session, setSession] = useState<RandomSessionRow | null>(null);
   const [messages, setMessages] = useState<RandomChatMessageRow[]>([]);
   const [draft, setDraft] = useState("");
+  const [replyTarget, setReplyTarget] = useState<RandomChatMessageRow | null>(null);
+  const [isAdminReplyTester, setIsAdminReplyTester] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sendBusy, setSendBusy] = useState(false);
   const [nextBusy, setNextBusy] = useState(false);
@@ -284,10 +287,12 @@ export default function RandomSessionPage({ params }: Props) {
           return;
         }
 
-        const [profileResult, sessionResult] = await Promise.all([
+        const [profileResult, sessionResult, adminProbe] = await Promise.all([
           loadMyProfile(authSession.user.id),
           loadMyRandomSession(params.id),
+          loadAdminRecoveryRequests(),
         ]);
+        setIsAdminReplyTester(!adminProbe.error);
 
         if (!mounted) return;
 
@@ -456,7 +461,10 @@ export default function RandomSessionPage({ params }: Props) {
   }, [messages.length, session?.status]);
 
   const sendMessage = async () => {
-    const content = draft.trim();
+    const plainContent = draft.trim();
+    const content = replyTarget && isAdminReplyTester
+      ? `↩ 回覆「${replyTarget.content.replace(/\s+/g, " ").slice(0, 80)}${replyTarget.content.length > 80 ? "…" : ""}」\n${plainContent}`
+      : plainContent;
     if (!content || !session || sendBusy || isEnded) {
       return;
     }
@@ -478,6 +486,7 @@ export default function RandomSessionPage({ params }: Props) {
         }
       }
       setDraft("");
+      setReplyTarget(null);
       void checkThousandMilestone(session.id, true);
     } catch (error) {
       setNotice(getFriendlyRandomChatError(error, "訊息傳送失敗，請稍後再試。"));
@@ -612,6 +621,17 @@ export default function RandomSessionPage({ params }: Props) {
 
     return (
       <article key={message.id} className={`chat-message ${message.is_mine ? "mine" : "theirs"}`}>
+        {isAdminReplyTester ? (
+          <button
+            type="button"
+            aria-label="回覆這則訊息"
+            title="回覆這則訊息"
+            onClick={() => setReplyTarget(message)}
+            style={{ alignSelf: "center", border: 0, background: "transparent", cursor: "pointer", padding: "8px", opacity: 0.72, fontSize: "0.85rem" }}
+          >
+            ↩ 回覆
+          </button>
+        ) : null}
         <div className={`chat-bubble ${message.risk_level !== "low" ? "risky" : ""}`}>
           {riskLabel ? <div className="chat-risk-badge">{riskLabel}</div> : null}
           <div className="chat-message-content">{renderMessageContent(message.content, openExternalLink)}</div>
@@ -696,6 +716,18 @@ export default function RandomSessionPage({ params }: Props) {
             renderedMessages
           )}
         </div>
+
+        {isAdminReplyTester && replyTarget ? (
+          <div className="notice" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+            <div style={{ minWidth: 0 }}>
+              <strong>正在回覆</strong>
+              <div className="muted small" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {replyTarget.content}
+              </div>
+            </div>
+            <button type="button" className="ghost" onClick={() => setReplyTarget(null)} aria-label="取消回覆">×</button>
+          </div>
+        ) : null}
 
         <form
           className="chat-composer"
