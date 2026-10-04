@@ -267,7 +267,8 @@ export default function RandomSessionClient() {
   const pendingReplyPreviewRef = useRef<Set<string>>(new Set());
   const easterEggSeenRef = useRef<Set<string>>(new Set());
   const easterEggLastAtRef = useRef<Map<string, number>>(new Map());
-  const easterEggPendingSyncRef = useRef(false);\n  const historicalThousandCheckedRef = useRef<Set<string>>(new Set());
+  const easterEggPendingSyncRef = useRef(false);
+  const historicalThousandCheckedRef = useRef<Set<string>>(new Set());
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
   const realtimeClientInstanceIdRef = useRef(
