@@ -7473,3 +7473,54 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
     max-width: 1240px !important;
   }
 }
+
+
+/* Desktop chat full-screen final: edge-to-edge while keeping controls inside the viewport. */
+@media (min-width: 769px) {
+  .chat-page {
+    width: 100% !important;
+    max-width: none !important;
+    inset: 0 !important;
+  }
+
+  .chat-page > .chat-shell {
+    width: 100% !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    padding: 14px clamp(18px, 2.5vw, 40px) 12px !important;
+    border-radius: 0 !important;
+  }
+
+  .chat-page .chat-header,
+  .chat-page .chat-messages,
+  .chat-page .chat-composer,
+  .chat-page .chat-composer-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .chat-page .chat-message.mine {
+    width: 100% !important;
+    align-items: flex-end !important;
+    padding-right: 0 !important;
+  }
+
+  .chat-page .chat-message.theirs {
+    width: 100% !important;
+    align-items: flex-start !important;
+    padding-left: 0 !important;
+  }
+
+  .chat-page .chat-input {
+    flex: 1 1 0% !important;
+    width: 0 !important;
+    min-width: 0 !important;
+  }
+
+  .chat-page .chat-send {
+    flex: 0 0 auto !important;
+    min-width: 72px !important;
+  }
+}
