@@ -7931,3 +7931,19 @@ body > .chat-more-menu-portal {
   transform: none !important;
   white-space: normal !important;
 }
+
+/* Chat notices must stack normally with the anonymous-contact card. */
+.chat-status-notice {
+  position: static !important;
+  inset: auto !important;
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 12px 16px !important;
+  transform: none !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.5 !important;
+  z-index: auto !important;
+}
