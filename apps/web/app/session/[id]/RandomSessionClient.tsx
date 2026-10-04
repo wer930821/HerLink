@@ -298,6 +298,7 @@ export default function RandomSessionClient() {
   const [assistantAllowed, setAssistantAllowed] = useState(false);
   const [milestoneTestAllowed, setMilestoneTestAllowed] = useState(false);
   const [testMilestone, setTestMilestone] = useState<number | null>(null);
+  const [eternalPreviewUnlocked, setEternalPreviewUnlocked] = useState(false);
   const [easterEgg, setEasterEgg] = useState<EasterEggKind | null>(null);
   const [easterEggAllowed, setEasterEggAllowed] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(true);
@@ -1787,6 +1788,7 @@ export default function RandomSessionClient() {
   const playMilestonePreview = (milestone: number) => {
     if (!milestoneTestAllowed) return;
     setTestMilestone(milestone);
+    if (milestone === 10000) setEternalPreviewUnlocked(true);
     triggerEasterEgg("thousand", false, true);
     window.setTimeout(() => setTestMilestone((current) => current === milestone ? null : current), 7000);
   };
@@ -2359,7 +2361,8 @@ export default function RandomSessionClient() {
   }
 
   return (
-    <main className="chat-page">
+    <main className={`chat-page ${milestoneTestAllowed && eternalPreviewUnlocked ? "chat-page-eternal-preview" : ""}`}>
+      {milestoneTestAllowed && eternalPreviewUnlocked ? <div className="eternal-chat-badge" title="10,000 則里程碑測試外觀"><b>♛ 永恆聊天室</b><small>ETERNAL CHAT · 10,000+</small></div> : null}
       <div className="milestone-test-dock" aria-label="彩蛋里程碑測試" style={{ display: milestoneTestAllowed ? "flex" : "none", gap: "8px", flexWrap: "wrap", padding: "8px 12px", position: "relative", zIndex: 30 }}>
         {[1000, 2000, 3000, 5000, 10000].map((milestone) => (
           <button key={milestone} className="button secondary thousand-test-button" type="button" onClick={() => playMilestonePreview(milestone)}>
