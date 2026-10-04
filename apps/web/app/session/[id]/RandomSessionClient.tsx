@@ -1785,6 +1785,12 @@ export default function RandomSessionClient() {
           [1046.5,1318.51,1567.98,2093].forEach((n,i)=>note(n,6.5+i*.32,1.8,"sine",.065));
           [392,523.25,659.25,783.99,1046.5].forEach((n,i)=>note(n,8.4+i*.12,2.8,"sine",.09));
           note(130.81,9.1,2.5,"sine",.14); note(261.63,9.1,2.5,"sine",.09);
+          // Royal fanfare: layered brass-like fifths and octave crowns.
+          [[196,3.45],[293.66,3.45],[392,3.45],[261.63,5.15],[392,5.15],[523.25,5.15],[329.63,7.05],[493.88,7.05],[659.25,7.05]].forEach(([n,t],i)=>note(n,t,2.1,i%2?"sawtooth":"triangle",.055));
+          // Crystal chandelier cascade.
+          [2093,1760,1567.98,1318.51,1174.66,1046.5].forEach((n,i)=>note(n,5.8+i*.22,1.55,"sine",.045));
+          // Final coronation chord.
+          [130.81,196,261.63,329.63,392,523.25,659.25,783.99,1046.5].forEach((n,i)=>note(n,9.25+i*.035,2.35,i<3?"triangle":"sine",i<3?.075:.05));
           window.setTimeout(()=>void audio.close(),12500);
         }
       } catch {}
