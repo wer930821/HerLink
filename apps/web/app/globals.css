@@ -7291,3 +7291,16 @@ body:has(.halloween-chat-decor) .chat-message.theirs .chat-bubble {
     margin: 0 auto;
   }
 }
+
+
+/* Desktop chat: center the actual conversation lane inside the wide canvas. */
+@media (min-width: 769px) {
+  .chat-page > .chat-shell > .chat-header,
+  .chat-page > .chat-shell > .chat-messages,
+  .chat-page > .chat-shell > .chat-typing-indicator,
+  .chat-page > .chat-shell > .chat-composer {
+    width: min(100%, 920px);
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
