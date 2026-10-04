@@ -1947,6 +1947,13 @@ export default function RandomSessionClient() {
         const milestone = milestoneKind[messageCount];
         if (milestone && (collectionTester || ["hundred","twoHundred","threeHundred","fourHundred","fiveHundred","thousand"].includes(milestone))) triggerEasterEgg(milestone, true);
         if (collectionTester && messageCount === 10000) triggerEasterEgg("eternal_bond", true);
+        if (collectionTester) {
+          const evaluated = await supabase.rpc("evaluate_tester_collection_eggs", { p_session_id: refreshedSession.id });
+          if (!evaluated.error && Array.isArray(evaluated.data)) {
+            const newest = evaluated.data.at(-1) as EasterEggKind | undefined;
+            if (newest) triggerEasterEgg(newest, false, true);
+          }
+        }
       }
 
       if (nextMessage) {
