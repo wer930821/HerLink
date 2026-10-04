@@ -1963,7 +1963,6 @@ export default function RandomSessionClient() {
         const milestoneKind: Record<number, EasterEggKind> = {50:"fifty",100:"hundred",200:"twoHundred",300:"threeHundred",400:"fourHundred",500:"fiveHundred",600:"sixHundred",700:"sevenHundred",800:"eightHundred",900:"nineHundred",1000:"thousand",1500:"fifteenHundred",2000:"twoThousand",3000:"threeThousand",5000:"fiveThousand",10000:"tenThousand"};
         const milestone = milestoneKind[messageCount];
         if (milestone && (collectionTester || ["hundred","twoHundred","threeHundred","fourHundred","fiveHundred","thousand"].includes(milestone))) triggerEasterEgg(milestone, true);
-        if (collectionTester && messageCount === 10000) triggerEasterEgg("eternal_bond", true);
         if (collectionTester) {
           const evaluated = await supabase.rpc("evaluate_tester_collection_eggs", { p_session_id: refreshedSession.id });
           if (!evaluated.error && Array.isArray(evaluated.data)) {
