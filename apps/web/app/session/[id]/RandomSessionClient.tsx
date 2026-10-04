@@ -282,7 +282,7 @@ export default function RandomSessionClient() {
   const scrollRafRef = useRef<number | null>(null);
   const [myProfile, setMyProfile] = useState<WebProfile | null>(null);
   const [session, setSession] = useState<RandomSessionRow | null>(null);
-  const [messages, setMessages] = useState<RandomChatMessageRow[]>([]);
+  const [messages, setMessages] = useState<RandomChatMessageRow[]>([]);\n  const [sessionMessageCount, setSessionMessageCount] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [sendBusy, setSendBusy] = useState(false);
@@ -2386,7 +2386,7 @@ export default function RandomSessionClient() {
                       onClick={(event) => event.stopPropagation()}
                       onPointerDown={(event) => event.stopPropagation()}
                     >
-                      <button className="button secondary chat-contact" type="button" onClick={() => { setHeaderMenuOpen(false); void handleAnonymousContact(); }} disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}>
+                      <div className="chat-menu-message-count" aria-live="polite">目前訊息數：{sessionMessageCount === null ? "讀取中…" : sessionMessageCount.toLocaleString("zh-TW")}</div>\n                      <button className="button secondary chat-contact" type="button" onClick={() => { setHeaderMenuOpen(false); void handleAnonymousContact(); }} disabled={contactBusy || contactState?.status === "active" || Boolean(contactState?.my_approved && !contactState.partner_approved)}>
                         {contactBusy ? "處理中…" : anonymousContactLabel}
                       </button>
                       <button className="button secondary" type="button" onClick={() => { setHeaderMenuOpen(false); void copyBrowserHandoffLink(); }}>跨瀏覽器續聊</button>
