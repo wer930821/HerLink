@@ -2211,10 +2211,7 @@ export default function RandomSessionPage() {
               title="回覆"
               onClick={() => startReply(message)}
             >
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M9 17 4 12l5-5" />
-                <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
-              </svg>
+              回覆
             </button>
           </div>
         </div>
@@ -2241,7 +2238,7 @@ export default function RandomSessionPage() {
   if (loading) {
     return (
       <main className="hero">
-      {myProfile?.anonymous_display_name === "孤星企鵝" ? <div className="halloween-chat-decor" aria-hidden="true"><span>💀</span><span>🕯️</span><span>⚰️</span></div> : null}
+      <div className="halloween-chat-decor" aria-hidden="true"><span>💀</span><span>🕯️</span><span>⚰️</span></div>
         <h1 className="hero-title">正在載入匿名會話…</h1>
         <p className="hero-copy">請稍候，HerLink 正在確認會話狀態。</p>
         {notice ? <div className="notice">{notice}</div> : null}
