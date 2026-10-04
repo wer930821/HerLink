@@ -7818,3 +7818,24 @@ body > .chat-more-menu-portal .button:first-child {
 body > .chat-more-menu-portal .button:last-child {
   border-radius: 0 0 12px 12px !important;
 }
+
+/* Solid dropdown surface for readability, flush to ellipsis without an extra frame. */
+body > .chat-more-menu-portal {
+  padding: 0 !important;
+  gap: 0 !important;
+  background: rgba(22, 18, 34, 0.96) !important;
+  border: 0 !important;
+  border-radius: 0 0 14px 14px !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  overflow: hidden !important;
+}
+body > .chat-more-menu-portal .button {
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+body > .chat-more-menu-portal .button:first-child,
+body > .chat-more-menu-portal .button:last-child {
+  border-radius: 0 !important;
+}
