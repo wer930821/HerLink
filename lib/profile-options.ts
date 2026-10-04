@@ -15,3 +15,35 @@ export function normalizeMultiValueInput(value: string) {
 export function normalizeStringArray(values: string[] | null | undefined) {
   return [...new Set((values ?? []).map((item) => normalizeText(item)).filter(Boolean))];
 }
+
+
+/**
+ * Backward-compatible profile helpers used by the anonymous profile flow.
+ * Keep these tolerant of legacy/free-text values so older profiles continue to load.
+ */
+export const identityLabelOptions = ["T", "P", "H", "不分", "其他"] as const;
+
+export function normalizeIdentityLabel(value: string | null | undefined) {
+  return normalizeText(value ?? "");
+}
+
+export function isIdentityLabelOption(value: string | null | undefined) {
+  return normalizeIdentityLabel(value).length > 0;
+}
+
+export function getValidIdentityPreferenceValues(values: string[] | null | undefined) {
+  return normalizeStringArray(values);
+}
+
+export function getIdentityDisplayLabel(value: string | null | undefined) {
+  return normalizeIdentityLabel(value);
+}
+
+export function getRelationshipGoalDisplayLabels(
+  values: string[] | null | undefined,
+  customValue?: string | null
+) {
+  const normalized = normalizeStringArray(values);
+  const custom = normalizeText(customValue ?? "");
+  return custom && !normalized.includes(custom) ? [...normalized, custom] : normalized;
+}
