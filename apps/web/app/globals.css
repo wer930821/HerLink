@@ -7804,3 +7804,17 @@ body > .chat-more-menu-portal {
 body > .chat-more-menu-portal .button {
   background: transparent !important;
 }
+
+/* Final dropdown placement: flush below ellipsis, never cover the header row. */
+body > .chat-more-menu-portal {
+  padding-top: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+}
+body > .chat-more-menu-portal .button:first-child {
+  border-radius: 12px 12px 0 0 !important;
+}
+body > .chat-more-menu-portal .button:last-child {
+  border-radius: 0 0 12px 12px !important;
+}
