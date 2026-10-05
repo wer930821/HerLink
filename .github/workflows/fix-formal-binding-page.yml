@@ -23,11 +23,12 @@ jobs:
           from pathlib import Path
           path = Path('apps/web/app/session/[id]/page.tsx')
           source = path.read_text(encoding='utf-8')
-          repaired = source.replace('\\\\n', '\n')
+          marker = chr(92) + 'n'
+          repaired = source.replace(marker, chr(10))
           if repaired == source:
               raise SystemExit('No accidental literal newline escapes found')
           path.write_text(repaired, encoding='utf-8')
-          print('replaced', source.count('\\\\n'), 'literal newline escapes')
+          print('replaced', source.count(marker), 'literal newline escapes')
           PY
       - name: Commit repair
         run: |
