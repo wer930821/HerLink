@@ -26,6 +26,8 @@ jobs:
         run: npm ci --prefix apps/web
       - name: Phase 1 helper guard contract
         run: node apps/web/lib/account-binding.test.mjs
+      - name: Phase 1 account application UI contract
+        run: node apps/web/lib/account-application-ui.test.mjs
       - name: Typecheck
         run: npm run typecheck --prefix apps/web
       - name: Build
