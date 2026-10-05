@@ -6,16 +6,13 @@ import { getFriendlyAuthErrorMessage } from "../lib/auth-ui";
 import {
   findOrJoinRandomMatch,
   getCurrentSession,
-  getSupabaseDiagnostics,
   isAnonymousProfileReady,
   isSupabaseConfigured,
-  leaveRandomQueue,
   loadMyActiveRandomSession,
   loadMyProfile,
   loadMyRandomQueue,
   signInAnonymously,
   requestRandomIdentityRecovery,
-  signOut,
   type RandomQueueRow,
   type RandomSessionRow,
   type Session,
@@ -48,30 +45,21 @@ export default function HomePage() {
 
   useEffect(() => {
     let mounted = true;
-
     async function bootstrap() {
       setBootstrapping(true);
       try {
         const { data } = await getCurrentSession();
         const session = data.session ?? null;
-
         if (!session) {
-          if (mounted) {
-            setState(emptyBootstrapState);
-          }
+          if (mounted) setState(emptyBootstrapState);
           return;
         }
-
         const [profileResult, queueResult, sessionResult] = await Promise.all([
           loadMyProfile(session.user.id),
           loadMyRandomQueue(session.user.id),
           loadMyActiveRandomSession(),
         ]);
-
-        if (!mounted) {
-          return;
-        }
-
+        if (!mounted) return;
         setState({
           session,
           profile: profileResult.data ?? null,
@@ -84,88 +72,38 @@ export default function HomePage() {
           setMessage("目前無法載入狀態，請重新整理後再試。");
         }
       } finally {
-        if (mounted) {
-          setBootstrapping(false);
-        }
+        if (mounted) setBootstrapping(false);
       }
     }
-
     void bootstrap();
-
     return () => {
       mounted = false;
     };
   }, []);
 
   useEffect(() => {
-    if (bootstrapping) return;
-    if (!state.session) return;
+    if (bootstrapping || !state.session) return;
+    if (!state.profile || !isAnonymousProfileReady(state.profile)) router.replace("/onboarding");
+  }, [bootstrapping, router, state.profile, state.session]);
 
-    if (!state.profile || !isAnonymousProfileReady(state.profile)) {
-      router.replace("/onboarding");
-      return;
-    }
-
-    if (state.activeSession) {
-      router.replace(`/session/${state.activeSession.id}`);
-      return;
-    }
-
-    if (state.queue?.status === "waiting" && !state.queue.matched_session_id) {
-      router.replace("/waiting");
-    }
-  }, [bootstrapping, router, state.activeSession, state.profile, state.queue, state.session]);
-
-  const anonymousSummary = useMemo(() => {
-    if (!state.profile) return null;
-    return {
-      name: state.profile.anonymous_display_name ?? "匿名使用者",
-    };
-  }, [state.profile]);
-
-  if (!isSupabaseConfigured()) {
-    return (
-      <main className="panel">
-        <h1 className="hero-title">HerLink Web V0.1</h1>
-        <p className="hero-copy">缺少 Supabase 設定，請先補上 `NEXT_PUBLIC_SUPABASE_URL` 和 `NEXT_PUBLIC_SUPABASE_ANON_KEY`。</p>
-      </main>
-    );
-  }
-
-  if (bootstrapping) {
-    return (
-      <main className="hero">
-        <h1 className="hero-title">HerLink</h1>
-        <p className="hero-copy">正在檢查登入狀態…</p>
-      </main>
-    );
-  }
+  const anonymousSummary = useMemo(() => ({
+    name: state.profile?.anonymous_display_name ?? "匿名使用者",
+  }), [state.profile]);
+  const isGuxingPenguin = anonymousSummary?.name === "孤星企鵝";
 
   const startAnonymous = async () => {
     if (actionBusy) return;
-
     setActionBusy(true);
     setMessage(null);
-
     try {
-      // 避免使用者連點時重複建立匿名帳號。
       const { data: existingSessionData } = await getCurrentSession();
       if (existingSessionData.session) {
         window.location.assign("/onboarding");
         return;
       }
-
       const { data, error } = await signInAnonymously();
-      if (error) {
-        throw error;
-      }
-
-      if (!data.session) {
-        throw new Error("匿名登入未建立工作階段");
-      }
-
-      // 使用完整頁面導向，確保 Supabase session 已寫入瀏覽器儲存後，
-      // onboarding 頁能立即讀到登入狀態。
+      if (error) throw error;
+      if (!data.session) throw new Error("匿名登入未建立工作階段");
       window.location.assign("/onboarding");
     } catch (error) {
       setMessage(getFriendlyAuthErrorMessage(error, "目前無法建立匿名身份，請稍後再試。"));
@@ -178,11 +116,10 @@ export default function HomePage() {
     setActionBusy(true);
     setMessage(null);
     try {
-      let { data: sessionData } = await getCurrentSession();
-      if (!sessionData.session) {
+      const sessionResult = await getCurrentSession();
+      if (!sessionResult.data.session) {
         const signInResult = await signInAnonymously();
         if (signInResult.error) throw signInResult.error;
-        sessionData = { session: signInResult.data.session };
       }
       const result = await requestRandomIdentityRecovery(recoveryName);
       if (result.error) throw result.error;
@@ -196,73 +133,19 @@ export default function HomePage() {
     }
   };
 
-  if (!state.session) {
-    return (
-      <main className="stack">
-        <section className="hero">
-          <h1 className="hero-title">HerLink</h1>
-          <p className="hero-copy">不用註冊、不用公開真實資料，直接建立匿名身份開始聊天。</p>
-          <div className="row">
-            <button className="button" onClick={startAnonymous} disabled={actionBusy}>
-              {actionBusy ? "處理中…" : "開始匿名聊天"}
-            </button>
-            <button className="ghost" onClick={() => setShowRecovery((value) => !value)} disabled={actionBusy}>
-              找回原本聊天室
-            </button>
-          </div>
-          {showRecovery ? (
-            <div className="panel" style={{ marginTop: 14 }}>
-              <p className="title">找回原本聊天室</p>
-              <p className="hero-copy">輸入您原本使用的匿名名稱，系統會建立 8 碼恢復碼。</p>
-              <input
-                value={recoveryName}
-                onChange={(event) => setRecoveryName(event.target.value)}
-                placeholder="原本的匿名名稱"
-                disabled={actionBusy || Boolean(recoveryCode)}
-                style={{ width: "100%", padding: 12, borderRadius: 12, marginBottom: 10 }}
-              />
-              {!recoveryCode ? (
-                <button className="button" onClick={startRecovery} disabled={actionBusy || !recoveryName.trim()}>
-                  {actionBusy ? "建立恢復碼中…" : "取得恢復碼"}
-                </button>
-              ) : (
-                <div className="notice">
-                  您的恢復碼：<strong style={{ fontSize: 22, letterSpacing: 2 }}>{recoveryCode}</strong>
-                  <div className="small" style={{ marginTop: 8 }}>請把這組 8 碼提供給管理員。核准後，原本保留的聊天室會一起恢復。</div>
-                </div>
-              )}
-            </div>
-          ) : null}
-          {message ? <div className="notice">{message}</div> : null}
-        </section>
-        <section className="panel">
-          <p className="notice">請勿向陌生人匯款、投資或提供銀行資料、信用卡資訊與驗證碼。</p>
-          <div className="link-row">
-            <a className="link" href="#">服務條款</a>
-            <a className="link" href="#">隱私權政策</a>
-            <a className="link" href="#">安全說明</a>
-          </div>
-        </section>
-      </main>
-    );
-  }
-
   const startMatching = async () => {
+    if (actionBusy) return;
     setActionBusy(true);
     setMessage(null);
     try {
       const { data, error } = await findOrJoinRandomMatch();
-      if (error) {
-        throw error;
-      }
-
+      if (error) throw error;
       const result = Array.isArray(data) ? data[0] : data;
       if (result?.status === "matched" && result.session_id) {
-        router.replace(`/session/${result.session_id}`);
+        router.push(`/session/${result.session_id}`);
         return;
       }
-
-      router.replace("/waiting");
+      router.push("/waiting");
     } catch (error) {
       setMessage(getFriendlyAuthErrorMessage(error, "目前無法開始配對，請稍後再試。"));
     } finally {
@@ -270,78 +153,114 @@ export default function HomePage() {
     }
   };
 
-  const leaveQueue = async () => {
-    setActionBusy(true);
-    try {
-      await leaveRandomQueue();
-      setState((prev) => ({ ...prev, queue: null }));
-      setMessage("已離開等待池。");
-    } finally {
-      setActionBusy(false);
-    }
-  };
+  if (!isSupabaseConfigured()) {
+    return <main className="panel"><h1 className="hero-title">HerLink</h1><p className="hero-copy">測試環境尚未設定 Supabase。</p></main>;
+  }
 
-  const logout = async () => {
-    setActionBusy(true);
-    try {
-      await signOut();
-      setState(emptyBootstrapState);
-      router.replace("/");
-    } finally {
-      setActionBusy(false);
-    }
-  };
+  if (bootstrapping) {
+    return <main className="hero"><h1 className="hero-title">HerLink</h1><p className="hero-copy">正在檢查匿名身份…</p></main>;
+  }
+
+  if (!state.session) {
+    return (
+      <main className="stack">
+        <section className="hero">
+          <div className="halloween-banner"><span>🎃</span><strong>HAPPY HALLOWEEN</strong><span>👻</span></div>
+          <h1 className="hero-title">HerLink</h1>
+          <p className="hero-copy">不公開個人檔案，不做交友滑卡，只保留匿名隨機配對與聊天室。</p>
+          <div className="row">
+            <button className="button" onClick={startAnonymous} disabled={actionBusy}>{actionBusy ? "處理中…" : "開始匿名聊天"}</button>
+            <button className="ghost" onClick={() => setShowRecovery((value) => !value)} disabled={actionBusy}>無法進入原本聊天室？</button>
+          </div>
+          {showRecovery ? (
+            <div className="panel">
+              <p className="title">找回原本聊天室</p>
+              <p className="hero-copy">輸入原本匿名名稱，取得新的 8 碼恢復碼。</p>
+              <input className="input" value={recoveryName} onChange={(event) => setRecoveryName(event.target.value)} placeholder="原本的匿名名稱" disabled={actionBusy || Boolean(recoveryCode)} />
+              {!recoveryCode ? <button className="button" onClick={startRecovery} disabled={actionBusy || !recoveryName.trim()}>取得恢復碼</button> : <div className="notice">恢復碼：<strong>{recoveryCode}</strong></div>}
+            </div>
+          ) : null}
+          {message ? <div className="notice">{message}</div> : null}
+        </section>
+        <footer className="halloween-footer">安全說明　服務條款　隱私權政策</footer>
+        <style jsx>{homeStyles}</style>
+      </main>
+    );
+  }
 
   return (
-    <main className="stack">
-      <section className="hero">
-        <div className="row" style={{ justifyContent: "space-between" }}>
+    <main className="halloween-home">
+      <section className="halloween-card">
+        <div className="halloween-banner"><span>🎃</span><strong>HAPPY HALLOWEEN</strong><span>👻</span></div>
+        <div className="home-topline">
           <div>
-            <h1 className="hero-title" style={{ marginBottom: 8 }}>HerLink</h1>
-            <p className="hero-copy">匿名聊天，不需要公開自己。</p>
+            <div className="brand">HerLink</div>
+            <h1>匿名聊天</h1>
+          </div>
+          <div className="top-actions">
+            <button className="crown-button" aria-label="彩蛋圖鑑與任務" title="彩蛋圖鑑與任務" onClick={() => setMessage("彩蛋圖鑑與任務入口已移到小王冠。")}>♛</button>
+            <button className="mail-button" onClick={() => setMessage("信箱入口保留於首頁右上方。")}>信箱</button>
           </div>
         </div>
-        <div className="notice">
-          你目前的匿名身份是 <strong>{anonymousSummary?.name ?? "匿名使用者"}</strong>。
+        <p className="subtitle">不公開個人檔案，不做交友滑卡，只保留匿名隨機配對與聊天室。</p>
+
+        <div className="identity-card">
+          <div><span>你的匿名名稱</span><strong>{anonymousSummary.name}</strong></div>
+          <button onClick={() => router.push("/onboarding")}>更換</button>
         </div>
-        <div className="row">
-          <button className="button" onClick={startMatching} disabled={actionBusy}>
-            {actionBusy ? "處理中…" : "開始隨機配對"}
-          </button>
-          <button className="ghost" onClick={() => router.push("/onboarding")} disabled={actionBusy}>
-            重新設定匿名身份
-          </button>
+
+        <button className="match-button" onClick={startMatching} disabled={actionBusy}>{actionBusy ? "配對中…" : "配對新的人"}</button>
+        <div className="secondary-actions">
+          <button onClick={() => state.activeSession ? router.push(`/session/${state.activeSession.id}`) : setMessage("目前沒有進行中的聊天室。")}>我的聊天</button>
+          <button onClick={() => setMessage("匿名聯絡人入口保留於此位置。")}>匿名聯絡人</button>
         </div>
-        {state.queue?.status === "waiting" ? (
-          <div className="banner">
-            你正在等待配對中。
-            <div style={{ marginTop: 12 }}>
-              <button className="button secondary" onClick={leaveQueue} disabled={actionBusy}>
-                取消等待
-              </button>
-            </div>
+
+        {isGuxingPenguin ? (
+          <div className="guxing-account-actions" data-testid="guxing-account-actions">
+            <button onClick={() => router.push("/signup")}>申請帳號</button>
+            <button className="login" onClick={() => router.push("/login")}>登入既有帳號</button>
           </div>
         ) : null}
-        {message ? <div className="notice">{message}</div> : null}
-      </section>
 
-      <section className="panel">
-        <p className="title">安全提醒</p>
-        <p className="hero-copy">請勿匯款、投資或提供驗證碼。若遇到可疑內容，請直接封鎖、檢舉並離開。</p>
-        <div className="row">
-          <button className="ghost" onClick={logout} disabled={actionBusy}>
-            登出
-          </button>
-          <div className="muted small">
-            目前會話：{state.activeSession ? "已配對" : "未配對"}
-          </div>
+        <div className="presence-row">
+          <span>正在出沒 <strong>{state.activeSession ? "1" : "0"}</strong> 人</span>
+          <span>等人來聊 <strong>{state.queue?.status === "waiting" ? "1" : "0"}</strong> 人</span>
         </div>
+        {message ? <div className="home-message">{message}</div> : null}
       </section>
-
-      <section className="footer">
-        <div>Supabase 連線：{getSupabaseDiagnostics().hasUrl ? "URL 已設定" : "URL 未設定"}</div>
-        <div>匿名金鑰：{getSupabaseDiagnostics().hasAnonKey ? "已設定" : "未設定"}</div>
-      </section>
+      <footer className="halloween-footer">安全說明　服務條款　隱私權政策</footer>
+      <style jsx>{homeStyles}</style>
     </main>
   );
 }
+
+const homeStyles = `
+  .halloween-home { min-height: calc(100dvh - 48px); display: grid; align-content: start; gap: 14px; }
+  .halloween-card { position: relative; overflow: hidden; padding: 22px; border: 1px solid rgba(255,151,74,.25); border-radius: 28px; background: radial-gradient(circle at 90% 8%, rgba(255,111,0,.16), transparent 28%), linear-gradient(160deg,#171221 0%,#100c18 100%); box-shadow: 0 20px 70px rgba(0,0,0,.35); }
+  .halloween-card:before { content: "✦  ☾  ✧  🦇"; position: absolute; right: 18px; top: 72px; color: rgba(255,169,77,.22); font-size: 22px; letter-spacing: 8px; pointer-events: none; }
+  .halloween-banner { display: flex; justify-content: center; align-items: center; gap: 9px; margin-bottom: 18px; color: #ff9c47; font-size: 12px; letter-spacing: .18em; }
+  .home-topline { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .brand { color: #ff9c47; font-weight: 900; letter-spacing: .04em; }
+  h1 { margin: 5px 0 0; font-size: clamp(2rem,8vw,3.1rem); letter-spacing: -.04em; }
+  .subtitle { max-width: 520px; margin: 12px 0 20px; color: #bdb4cc; line-height: 1.65; }
+  .top-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .top-actions button, .identity-card button, .secondary-actions button, .guxing-account-actions button { min-height: 40px; border: 1px solid rgba(255,255,255,.1); border-radius: 999px; background: rgba(255,255,255,.055); color: #f8f3ff; padding: 8px 14px; cursor: pointer; }
+  .crown-button { width: 40px; padding: 0 !important; color: #ffc46b !important; font-size: 20px; }
+  .identity-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 16px; border: 1px solid rgba(255,255,255,.08); border-radius: 20px; background: rgba(255,255,255,.045); }
+  .identity-card div { display: grid; gap: 4px; }
+  .identity-card span { color: #9f96af; font-size: 12px; }
+  .identity-card strong { font-size: 18px; }
+  .match-button { width: 100%; min-height: 54px; margin-top: 14px; border: 0; border-radius: 18px; background: linear-gradient(135deg,#ff7a2f,#ff9b45); color: #241108; font-weight: 900; font-size: 17px; cursor: pointer; }
+  .match-button:disabled { opacity: .65; }
+  .secondary-actions, .guxing-account-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .secondary-actions button { border-radius: 16px; min-height: 48px; font-weight: 700; }
+  .guxing-account-actions { margin-top: 10px; }
+  .guxing-account-actions button { min-height: 44px; font-weight: 800; background: rgba(255,255,255,.08); }
+  .guxing-account-actions .login { border-color: rgba(255,132,48,.45); background: rgba(255,122,47,.16); color: #ffb270; }
+  .presence-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 9px; margin-top: 15px; }
+  .presence-row span { padding: 7px 11px; border-radius: 999px; background: rgba(255,255,255,.045); color: #aaa1ba; font-size: 12px; }
+  .presence-row strong { color: #ffad64; }
+  .home-message { margin-top: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,.04); color: #bdb4cc; font-size: 13px; text-align: center; }
+  .halloween-footer { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); color: #756d83; font-size: 12px; text-align: center; line-height: 1.6; }
+  @media (max-width: 520px) { .halloween-home { min-height: calc(100dvh - 32px); } .halloween-card { padding: 18px 16px; border-radius: 24px; } .home-topline { align-items: center; } .top-actions button { min-height: 36px; } .mail-button { padding-inline: 12px !important; } .crown-button { width: 36px; } .secondary-actions, .guxing-account-actions { gap: 8px; } }
+`;
