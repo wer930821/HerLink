@@ -21,7 +21,13 @@ export default function RecallMessageBridge() {
     let recallStateLoaded = false;
     let testerAllowed = false;
     let testerChecked = false;
+    let openMenu: HTMLElement | null = null;
     const recalledIds = new Set<string>();
+
+    const closeMenu = () => {
+      openMenu?.remove();
+      openMenu = null;
+    };
 
     const detectTester = async () => {
       if (testerChecked) return testerAllowed;
@@ -33,9 +39,67 @@ export default function RecallMessageBridge() {
       return testerAllowed;
     };
 
+    const showActions = (article: HTMLElement, bubble: HTMLElement, rawId: string) => {
+      if (!testerAllowed || recalledIds.has(rawId)) return;
+      closeMenu();
+
+      const isMine = article.classList.contains("mine");
+      const menu = document.createElement("div");
+      menu.dataset.messageActionMenu = "1";
+      menu.setAttribute("role", "menu");
+      menu.style.cssText = "position:fixed;z-index:2147483001;display:flex;gap:8px;padding:8px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(24,18,28,.98);box-shadow:0 12px 36px rgba(0,0,0,.34);";
+
+      const rect = bubble.getBoundingClientRect();
+      const top = Math.min(window.innerHeight - 64, Math.max(8, rect.bottom + 6));
+      const left = Math.min(window.innerWidth - (isMine ? 176 : 92), Math.max(8, rect.left));
+      menu.style.top = `${top}px`;
+      menu.style.left = `${left}px`;
+
+      const reply = document.createElement("button");
+      reply.type = "button";
+      reply.textContent = "回覆";
+      reply.style.cssText = "border:0;border-radius:999px;padding:8px 14px;background:#34283d;color:#fff;font-weight:800;";
+      reply.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        closeMenu();
+        bubble.click();
+      });
+      menu.appendChild(reply);
+
+      if (isMine) {
+        const recall = document.createElement("button");
+        recall.type = "button";
+        recall.textContent = "收回訊息";
+        recall.style.cssText = "border:1px solid #ff8ab2;border-radius:999px;padding:8px 14px;background:transparent;color:#ffb1cb;font-weight:800;";
+        recall.addEventListener("click", async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (recall.disabled || !window.confirm("確定要收回這則訊息嗎？")) return;
+          recall.disabled = true;
+          recall.textContent = "收回中…";
+          const { error } = await supabase.rpc("recall_random_message", { p_message_id: rawId });
+          if (error) {
+            recall.disabled = false;
+            recall.textContent = "收回訊息";
+            window.alert("目前無法收回訊息，請稍後再試。");
+            return;
+          }
+          recalledIds.add(rawId);
+          closeMenu();
+          enhance();
+          window.dispatchEvent(new Event("focus"));
+        });
+        menu.appendChild(recall);
+      }
+
+      document.body.appendChild(menu);
+      openMenu = menu;
+    };
+
     const enhance = () => {
       if (disposed || !testerAllowed) return;
-      document.querySelectorAll<HTMLElement>("article.chat-message.mine").forEach((article) => {
+      document.querySelectorAll<HTMLElement>("article.chat-message").forEach((article) => {
         const rawId = article.id.startsWith("chat-msg-") ? article.id.slice(9) : "";
         if (!UUID_RE.test(rawId)) return;
         const bubble = article.querySelector<HTMLElement>(".chat-bubble");
@@ -50,37 +114,18 @@ export default function RecallMessageBridge() {
             bubble.style.opacity = ".62";
             bubble.replaceChildren(document.createTextNode("此訊息已收回"));
           }
-          article.querySelector<HTMLButtonElement>("button[data-message-recall]")?.remove();
           return;
         }
 
-        if (article.querySelector("button[data-message-recall]")) return;
-        const meta = article.querySelector<HTMLElement>(".chat-meta-outside");
-        if (!meta) return;
-
-        const button = document.createElement("button");
-        button.type = "button";
-        button.dataset.messageRecall = "1";
-        button.textContent = "收回";
-        button.setAttribute("aria-label", "收回這則訊息");
-        button.style.cssText = "border:1px solid #e85d8d;border-radius:999px;background:#fff;color:#c93670;font-size:12px;font-weight:800;line-height:1;padding:5px 8px;margin-right:6px;cursor:pointer;";
-        button.addEventListener("click", async (event) => {
+        if (bubble.dataset.messageActions === "1") return;
+        bubble.dataset.messageActions = "1";
+        bubble.setAttribute("aria-label", article.classList.contains("mine") ? "訊息操作：回覆或收回" : "訊息操作：回覆");
+        bubble.addEventListener("click", (event) => {
+          if (!testerAllowed || recalledIds.has(rawId)) return;
           event.preventDefault();
-          event.stopPropagation();
-          if (button.disabled || !window.confirm("確定要收回這則訊息嗎？")) return;
-          button.disabled = true;
-          button.textContent = "收回中…";
-          const { error } = await supabase.rpc("recall_random_message", { p_message_id: rawId });
-          if (error) {
-            button.disabled = false;
-            button.textContent = "收回";
-            window.alert("目前無法收回訊息，請稍後再試。");
-            return;
-          }
-          recalledIds.add(rawId);
-          enhance();
-        });
-        meta.prepend(button);
+          event.stopImmediatePropagation();
+          showActions(article, bubble, rawId);
+        }, true);
       });
     };
 
@@ -110,6 +155,11 @@ export default function RecallMessageBridge() {
       void syncRecallState();
     };
 
+    const closeOnOutside = (event: PointerEvent) => {
+      if (openMenu && !openMenu.contains(event.target as Node)) closeMenu();
+    };
+
+    document.addEventListener("pointerdown", closeOnOutside);
     void tick();
     retryTimer = window.setInterval(() => void tick(), 500);
     observer = new MutationObserver(() => void tick());
@@ -117,6 +167,8 @@ export default function RecallMessageBridge() {
 
     return () => {
       disposed = true;
+      closeMenu();
+      document.removeEventListener("pointerdown", closeOnOutside);
       observer?.disconnect();
       if (retryTimer !== null) window.clearInterval(retryTimer);
     };
