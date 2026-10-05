@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { generateNextAnonymousDisplayName } from "../../../../lib/anonymous";
 import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
+import { ACCOUNT_BINDING_TEST_DISPLAY_NAME, ACCOUNT_BINDING_TEST_USER_ID } from "../../lib/account-binding";
 import { loadMyProfile, saveAnonymousProfile, supabase, type WebProfile } from "../../lib/supabase";
 
 export default function OnboardingPage() {
@@ -25,7 +26,11 @@ export default function OnboardingPage() {
         if (!mounted) return;
         setUserId(session.user.id);
         setProfile(profileResult.data ?? null);
-        if (profileResult.data?.anonymous_display_name) setAnonymousDisplayName(profileResult.data.anonymous_display_name);
+        if (profileResult.data?.anonymous_display_name) {
+          setAnonymousDisplayName(profileResult.data.anonymous_display_name);
+        } else if (ACCOUNT_BINDING_TEST_USER_ID && session.user.id === ACCOUNT_BINDING_TEST_USER_ID) {
+          setAnonymousDisplayName(ACCOUNT_BINDING_TEST_DISPLAY_NAME);
+        }
       } catch {
         if (mounted) setError("目前無法載入匿名設定，請稍後再試。");
       } finally {
