@@ -87,3 +87,77 @@
     font-size: .84rem !important;
   }
 }
+
+/* 站長信箱手機版：覆蓋 globals.css 中歷次互相衝突的 grid/flex 規則。
+   每個欄位回到正常文件流，避免 Safari 上主旨、內容、附件互相遮蓋。 */
+@media (max-width: 720px) {
+  .site-mailbox-viewport .mailbox-compose-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-rows: none !important;
+    gap: 12px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-bottom: 64px !important;
+  }
+
+  .site-mailbox-viewport .mailbox-compose-panel > *,
+  .site-mailbox-viewport .mailbox-compose-panel .field,
+  .site-mailbox-viewport .mailbox-compose-panel .mailbox-category,
+  .site-mailbox-viewport .mailbox-compose-panel .mailbox-photo-field {
+    position: static !important;
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+  }
+
+  .site-mailbox-viewport .mailbox-compose-panel .field:has(input),
+  .site-mailbox-viewport .mailbox-compose-panel .field:has(textarea) {
+    display: grid !important;
+    grid-template-rows: auto auto !important;
+    gap: 6px !important;
+    overflow: visible !important;
+  }
+
+  .site-mailbox-viewport .mailbox-compose-panel .field > label,
+  .site-mailbox-viewport .mailbox-field-label {
+    position: static !important;
+    display: block !important;
+    line-height: 1.3 !important;
+    margin: 0 !important;
+  }
+
+  .site-mailbox-viewport .mailbox-category-grid {
+    margin-top: 6px !important;
+  }
+
+  .site-mailbox-viewport input.mailbox-input {
+    position: static !important;
+    width: 100% !important;
+    height: 48px !important;
+    min-height: 48px !important;
+  }
+
+  .site-mailbox-viewport .mailbox-compose-panel textarea.mailbox-input {
+    position: static !important;
+    width: 100% !important;
+    height: 150px !important;
+    min-height: 110px !important;
+    max-height: 42dvh !important;
+    resize: vertical !important;
+  }
+
+  .site-mailbox-viewport .mailbox-photo-field {
+    display: grid !important;
+    gap: 7px !important;
+  }
+
+  .site-mailbox-viewport .mailbox-compose-panel > .btn {
+    position: sticky !important;
+    bottom: 0 !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-height: 52px !important;
+    z-index: 5 !important;
+  }
+}
