@@ -8815,9 +8815,8 @@ body:has(.site-collection-viewport) .collection-skip-link:not(:focus) {
 @media(max-width:520px){.home-crown-float{top:92px;right:82px;width:32px;height:32px;font-size:17px}}
 @media(prefers-reduced-motion:reduce){.home-crown-float{transition:none}}
 
-.home-account-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin:10px 0 2px}
-.home-account-button{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 14px;border-radius:18px;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 8px 22px rgba(0,0,0,.16);transition:transform .18s ease,filter .18s ease}
-.home-account-button:hover{transform:translateY(-1px);filter:brightness(1.06)}
-.home-account-signup{background:rgba(35,33,58,.88);border:1px solid rgba(255,255,255,.16);color:#fff}
-.home-account-login{background:rgba(35,33,58,.88);border:1px solid rgba(255,255,255,.16);color:#fff}
-@media(max-width:380px){.home-account-button{min-height:48px;padding:0 8px;font-size:13px}}
+.home-account-actions{display:flex;justify-content:center;gap:10px;width:100%;margin:10px 0 2px}
+.home-account-button{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 14px;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.home-account-signup{background:#5e5c62;border:1px solid rgba(255,255,255,.28);color:#fff}
+.home-account-login{background:#f08a2b;border:1px solid rgba(255,210,150,.55);color:#24120c}
+@media(max-width:380px){.home-account-button{padding:0 10px;font-size:12px}}
