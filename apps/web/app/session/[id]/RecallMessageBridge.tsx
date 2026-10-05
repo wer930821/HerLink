@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
-const TESTER_NAME = "孤星企鵝";
 
 type RecallProjection = { id: string; recalled_at?: string | null };
 
@@ -20,23 +19,17 @@ export default function RecallMessageBridge() {
     let retryTimer: number | null = null;
     let recallStateLoaded = false;
     let testerAllowed = false;
+    let testerChecked = false;
     const recalledIds = new Set<string>();
 
     const detectTester = async () => {
-      const renderedName = document.querySelector<HTMLElement>(".chat-my-name")?.textContent ?? "";
-      if (renderedName.includes(TESTER_NAME)) {
-        testerAllowed = true;
-        return true;
+      if (testerChecked) return testerAllowed;
+      const { data, error } = await supabase.rpc("can_test_message_recall", { p_session_id: sessionId });
+      if (disposed) return false;
+      if (!error) {
+        testerChecked = true;
+        testerAllowed = data === true;
       }
-
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user?.id) return false;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("anonymous_display_name")
-        .eq("id", auth.user.id)
-        .maybeSingle();
-      testerAllowed = profile?.anonymous_display_name?.trim() === TESTER_NAME;
       return testerAllowed;
     };
 
