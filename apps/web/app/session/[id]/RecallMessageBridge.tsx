@@ -5,7 +5,10 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
-const RECALL_TESTER_USER_ID = "e2817803-1304-4ef0-b0b8-66f473b12886";
+const RECALL_TESTER_USER_IDS = new Set([
+  "ad9536fe-5ea0-4a1d-96d0-dcdecdafa18c",
+  "e2817803-1304-4ef0-b0b8-66f473b12886",
+]);
 
 type RecallProjection = { id: string; recalled_at?: string | null };
 
@@ -22,7 +25,7 @@ export default function RecallMessageBridge() {
 
     const run = async () => {
       const { data: auth } = await supabase.auth.getUser();
-      if (disposed || auth.user?.id !== RECALL_TESTER_USER_ID) return;
+      if (disposed || !auth.user?.id || !RECALL_TESTER_USER_IDS.has(auth.user.id)) return;
 
       const enhance = () => {
         if (disposed) return;
