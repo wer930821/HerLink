@@ -8,6 +8,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i
 const LONG_PRESS_MS = 420;
 const MOVE_TOLERANCE = 18;
 
+type RpcBooleanResult = { data: boolean | null; error: { message?: string } | null };
+
 function getMessageTarget(target: EventTarget | null) {
   const element = target instanceof Element ? target : null;
   const bubble = element?.closest<HTMLElement>(".chat-bubble") ?? null;
@@ -148,9 +150,11 @@ export default function RecallMessageBridge() {
     document.addEventListener("contextmenu", onContextMenu, true);
     document.addEventListener("click", onClick, true);
 
-    void supabase.rpc("can_test_message_recall", { p_session_id: sessionId }).then(({ data, error }) => {
-      if (!disposed && !error && data === true) allowed = true;
-    });
+    const checkAccess = async () => {
+      const result = await supabase.rpc("can_test_message_recall", { p_session_id: sessionId }) as RpcBooleanResult;
+      if (!disposed && !result.error && result.data === true) allowed = true;
+    };
+    void checkAccess();
 
     return () => {
       disposed = true; clearTimer(); closeMenu();
