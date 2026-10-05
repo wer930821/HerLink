@@ -39,6 +39,27 @@ export default function RandomSessionPage() {
     return () => { alive = false; };
   }, []);
 
+  useEffect(() => {
+    if (!allowed) return;
+    const style = document.createElement("style");
+    style.dataset.lonelyPenguinMessageActions = "1";
+    style.textContent = `
+      article.chat-message .chat-bubble,
+      article.chat-message .chat-bubble * {
+        -webkit-user-select: none !important;
+        user-select: none !important;
+        -webkit-touch-callout: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => style.remove();
+  }, [allowed]);
+
+  const clearSelection = () => {
+    const selection = window.getSelection?.();
+    if (selection && selection.rangeCount > 0) selection.removeAllRanges();
+  };
+
   const clearPress = () => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     timerRef.current = null;
@@ -47,6 +68,7 @@ export default function RandomSessionPage() {
 
   const openMenu = (target: ActionTarget) => {
     if (target.bubble.textContent?.trim() === "此訊息已收回") return;
+    clearSelection();
     const rect = target.bubble.getBoundingClientRect();
     const width = target.mine ? 188 : 94;
     const height = 54;
@@ -58,6 +80,8 @@ export default function RandomSessionPage() {
     if (!allowed) return;
     const target = getActionTarget(event.target);
     if (!target) { setMenu(null); return; }
+    event.preventDefault();
+    clearSelection();
     clearPress();
     startRef.current = { x: event.clientX, y: event.clientY };
     activeRef.current = target;
@@ -95,9 +119,9 @@ export default function RandomSessionPage() {
   };
 
   return (
-    <div style={{ display: "contents" }} onPointerDownCapture={onPointerDownCapture} onPointerMoveCapture={onPointerMoveCapture} onPointerUpCapture={clearPress} onPointerCancelCapture={clearPress} onClickCapture={onClickCapture} onContextMenu={(event) => { if (!allowed) return; const target = getActionTarget(event.target); if (!target) return; event.preventDefault(); openMenu(target); }}>
+    <div style={{ display: "contents" }} onPointerDownCapture={onPointerDownCapture} onPointerMoveCapture={onPointerMoveCapture} onPointerUpCapture={clearPress} onPointerCancelCapture={clearPress} onClickCapture={onClickCapture} onContextMenu={(event) => { if (!allowed) return; const target = getActionTarget(event.target); if (!target) return; event.preventDefault(); clearSelection(); openMenu(target); }}>
       <RandomSessionClient />
-      {menu ? <div data-line-message-menu="1" style={{ position: "fixed", left: menu.left, top: menu.top, zIndex: 2147483647, display: "flex", overflow: "hidden", borderRadius: 14, background: "#29272b", boxShadow: "0 10px 32px rgba(0,0,0,.5)", border: "1px solid rgba(255,255,255,.12)" }} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()}>
+      {menu ? <div data-line-message-menu="1" style={{ position: "fixed", left: menu.left, top: menu.top, zIndex: 2147483647, display: "flex", overflow: "hidden", borderRadius: 14, background: "#29272b", boxShadow: "0 10px 32px rgba(0,0,0,.5)", border: "1px solid rgba(255,255,255,.12)", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()}>
         <button type="button" onClick={reply} style={{ height: 54, minWidth: 94, padding: "0 14px", border: 0, background: "transparent", color: "#fff", fontSize: 15, fontWeight: 800 }}>↩ 回覆</button>
         {menu.mine ? <button type="button" onClick={() => void recall()} style={{ height: 54, minWidth: 94, padding: "0 14px", border: 0, borderLeft: "1px solid rgba(255,255,255,.1)", background: "transparent", color: "#fff", fontSize: 15, fontWeight: 800 }}>收回</button> : null}
       </div> : null}
