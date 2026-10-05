@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
 const FORMAL_USER_ID = "e2817803-1304-4ef0-b0b8-66f473b12886";
@@ -19,7 +19,6 @@ async function loadFormalProfile(userId: string) {
 
 export function FormalAccountBinding() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("entry");
   const [formalSession, setFormalSession] = useState(false);
@@ -34,12 +33,13 @@ export function FormalAccountBinding() {
     if (pathname !== "/") return;
 
     const inspect = async () => {
+      const loginRequested = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("account") === "login";
       const sessionResult = await supabase.auth.getSession();
       const user = sessionResult.data.session?.user;
       if (!user || user.id !== FORMAL_USER_ID) {
         if (!cancelled) {
           setFormalSession(false);
-          setMode(searchParams.get("account") === "login" ? "login" : "entry");
+          setMode(loginRequested ? "login" : "entry");
         }
         return;
       }
@@ -48,13 +48,13 @@ export function FormalAccountBinding() {
       const valid = !profile.error && profile.data?.id === FORMAL_USER_ID && profile.data?.anonymous_display_name === FORMAL_NAME;
       if (!cancelled) {
         setFormalSession(valid);
-        setMode(searchParams.get("account") === "login" ? "login" : valid ? "bind" : "entry");
+        setMode(loginRequested ? "login" : valid ? "bind" : "entry");
       }
     };
 
     void inspect();
     return () => { cancelled = true; };
-  }, [pathname, searchParams]);
+  }, [pathname]);
 
   if (pathname !== "/") return null;
 
