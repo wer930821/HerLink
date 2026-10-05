@@ -4,13 +4,15 @@ on:
   push:
     branches:
       - fix/session-literal-newlines-ci
+  pull_request:
+    branches:
+      - master
 
 permissions:
   contents: write
 
 jobs:
   repair:
-    if: "!contains(github.event.head_commit.message, '[session-newlines-fixed]')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +43,7 @@ jobs:
       - name: Build
         run: npm run build --prefix apps/web
       - name: Commit verified repair
+        if: github.event_name == 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
