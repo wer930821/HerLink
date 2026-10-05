@@ -6,6 +6,7 @@ import { fetchAdminJson, useAdminSession } from "../../lib/admin-client";
 import type { AdminRealtimeDiagnosticRow, AdminSummary } from "../../lib/admin-types";
 import { AdminBadge, AdminEmpty, AdminSection, AdminStat, AdminStatGrid, AdminTable, AdminTableWrap, formatAdminTime, shortId } from "./_components";
 import { Button, Notice } from "../../components/ui";
+import RecoveryPage from "./recovery/page";
 
 type DashboardPayload = AdminSummary & {
   recent_realtime_diagnostics: AdminRealtimeDiagnosticRow[];
@@ -27,9 +28,6 @@ function realtimeEventLabel(value: string) {
 function recoveredRealtimeErrorIds(rows: AdminRealtimeDiagnosticRow[]) {
   const recovered = new Set<string>();
   const successAt = new Map<string, number>();
-
-  // Rows are newest-first. Remember the newest successful/recovered event for
-  // each session; an older error for that session is therefore already healed.
   for (const row of rows) {
     const key = `${row.session_id ?? ""}`;
     const at = new Date(row.created_at).getTime();
@@ -62,14 +60,6 @@ function formatWait(value: number | null | undefined) {
   return `${minutes} 分 ${seconds} 秒`;
 }
 
-function layaStateLabel(value: AdminSummary["laya_service_state"] | undefined) {
-  if (value === "ready") return "正常";
-  if (value === "loading") return "載入中";
-  if (value === "error") return "異常";
-  if (value === "unreachable") return "無法連線";
-  return "—";
-}
-
 function errorSourceLabel(value: string) {
   if (value === "realtime") return "即時連線";
   if (value === "push") return "通知";
@@ -87,18 +77,6 @@ function errorCodeLabel(value: string) {
     UNKNOWN: "未知錯誤",
   };
   return labels[value] ?? "其他錯誤";
-}
-
-function easterEggLabel(value: string) {
-  const labels: Record<string, string> = {
-    goodnight: "晚安", morning: "早安", hello: "安安／哈囉", hi: "Hi／Hello", penguin: "企鵝",
-    sync: "默契", aurora: "想念極光", meteor: "加油流星", secret: "心動秘密",
-    tired: "好累", offwork: "下班", food: "吃飯", curious: "在幹嘛", surprised: "真的假的",
-    cute: "好可愛", sleepless: "睡不著", tomorrow: "明天見",
-    hundred: "100 則", twoHundred: "200 則", threeHundred: "300 則",
-    fourHundred: "400 則", fiveHundred: "500 則", thousand: "1000 則傳說級",
-  };
-  return labels[value] ?? value;
 }
 
 function shortVersion(value: string | null | undefined) {
@@ -130,17 +108,10 @@ export default function AdminDashboardPage() {
     setError(null);
     try {
       const [summary, realtime] = await Promise.all([
-        fetchAdminJson<AdminSummary>(accessToken, "/api/admin/summary", {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }),
-        fetchAdminJson<{ items: AdminRealtimeDiagnosticRow[] }>(accessToken, "/api/admin/realtime?page=1&pageSize=8", {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }),
+        fetchAdminJson<AdminSummary>(accessToken, "/api/admin/summary", { headers: { Authorization: `Bearer ${accessToken}` } }),
+        fetchAdminJson<{ items: AdminRealtimeDiagnosticRow[] }>(accessToken, "/api/admin/realtime?page=1&pageSize=8", { headers: { Authorization: `Bearer ${accessToken}` } }),
       ]);
-      setData({
-        ...summary,
-        recent_realtime_diagnostics: realtime.items ?? [],
-      });
+      setData({ ...summary, recent_realtime_diagnostics: realtime.items ?? [] });
     } catch (err) {
       setError(err instanceof Error ? err.message : "無法載入後台總覽。");
     } finally {
@@ -155,16 +126,11 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (!accessToken || !autoRefreshEnabled) return;
-
     const refreshIfVisible = () => {
-      if (document.visibilityState === "visible") {
-        void load({ silent: true });
-      }
+      if (document.visibilityState === "visible") void load({ silent: true });
     };
-
     const interval = window.setInterval(refreshIfVisible, 30_000);
     document.addEventListener("visibilitychange", refreshIfVisible);
-
     return () => {
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", refreshIfVisible);
@@ -173,56 +139,20 @@ export default function AdminDashboardPage() {
   }, [accessToken, autoRefreshEnabled]);
 
   const overallHealth = useMemo(() => {
-    if (!data) {
-      return { label: "檢查中", tone: "default" as const, reasons: ["正在取得最新健康資料"] };
-    }
-
+    if (!data) return { label: "檢查中", tone: "default" as const, reasons: ["正在取得最新健康資料"] };
     const criticalReasons: string[] = [];
     const warningReasons: string[] = [];
-
-    if (data.laya_service_state === "error") {
-      criticalReasons.push("聊天助手服務回報異常");
-    }
-    if (data.laya_service_state === "unreachable") {
-      criticalReasons.push("無法連線到聊天助手服務");
-    }
-
-    if (data.laya_service_state === "loading") {
-      warningReasons.push("聊天助手模型仍在載入");
-    }
-    if (data.realtime_errors_5m > 0) {
-      warningReasons.push(`目前有 ${data.realtime_errors_5m} 個近期異常連線需要觀察`);
-    }
-    if (
-      data.today_chat_assist_requests >= 3 &&
-      typeof data.today_laya_success_rate === "number" &&
-      data.today_laya_success_rate < 80
-    ) {
-      warningReasons.push(`今日聊天助手成功率為 ${data.today_laya_success_rate.toFixed(1)}%`);
-    }
-    if (typeof data.today_match_success_rate === "number" && data.today_match_success_rate < 50) {
-      warningReasons.push(`今日配對成功率為 ${data.today_match_success_rate.toFixed(1)}%`);
-    }
-    if (typeof data.today_push_success_rate === "number" && data.today_push_success_rate < 95) {
-      warningReasons.push(`今日通知成功率為 ${data.today_push_success_rate.toFixed(1)}%`);
-    }
-    if (typeof data.laya_health_latency_ms === "number" && data.laya_health_latency_ms > 1500) {
-      warningReasons.push(`聊天助手回應延遲偏高（${data.laya_health_latency_ms} ms）`);
-    }
-
-    if (criticalReasons.length > 0) {
-      return { label: "異常", tone: "danger" as const, reasons: criticalReasons };
-    }
-
-    if (warningReasons.length > 0) {
-      return { label: "需注意", tone: "warning" as const, reasons: warningReasons };
-    }
-
-    return {
-      label: "正常",
-      tone: "success" as const,
-      reasons: ["所有核心服務目前正常"],
-    };
+    if (data.laya_service_state === "error") criticalReasons.push("聊天助手服務回報異常");
+    if (data.laya_service_state === "unreachable") criticalReasons.push("無法連線到聊天助手服務");
+    if (data.laya_service_state === "loading") warningReasons.push("聊天助手模型仍在載入");
+    if (data.realtime_errors_5m > 0) warningReasons.push(`目前有 ${data.realtime_errors_5m} 個近期異常連線需要觀察`);
+    if (data.today_chat_assist_requests >= 3 && typeof data.today_laya_success_rate === "number" && data.today_laya_success_rate < 80) warningReasons.push(`今日聊天助手成功率為 ${data.today_laya_success_rate.toFixed(1)}%`);
+    if (typeof data.today_match_success_rate === "number" && data.today_match_success_rate < 50) warningReasons.push(`今日配對成功率為 ${data.today_match_success_rate.toFixed(1)}%`);
+    if (typeof data.today_push_success_rate === "number" && data.today_push_success_rate < 95) warningReasons.push(`今日通知成功率為 ${data.today_push_success_rate.toFixed(1)}%`);
+    if (typeof data.laya_health_latency_ms === "number" && data.laya_health_latency_ms > 1500) warningReasons.push(`聊天助手回應延遲偏高（${data.laya_health_latency_ms} ms）`);
+    if (criticalReasons.length > 0) return { label: "異常", tone: "danger" as const, reasons: criticalReasons };
+    if (warningReasons.length > 0) return { label: "需注意", tone: "warning" as const, reasons: warningReasons };
+    return { label: "正常", tone: "success" as const, reasons: ["所有核心服務目前正常"] };
   }, [data]);
 
   const createAdminInvite = async () => {
@@ -231,15 +161,11 @@ export default function AdminDashboardPage() {
     setInviteCode(null);
     setInviteExpiresAt(null);
     try {
-      const result = await fetchAdminJson<{ inviteCode: string; expiresAt: string }>(
-        accessToken,
-        "/api/admin/invite-code",
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${accessToken}` },
-          body: JSON.stringify({ expiresMinutes: 30, maxAttempts: 5 }),
-        }
-      );
+      const result = await fetchAdminJson<{ inviteCode: string; expiresAt: string }>(accessToken, "/api/admin/invite-code", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ expiresMinutes: 30, maxAttempts: 5 }),
+      });
       setInviteCode(result.inviteCode);
       setInviteExpiresAt(result.expiresAt);
     } catch (err) {
@@ -249,57 +175,16 @@ export default function AdminDashboardPage() {
     }
   };
 
-  if (sessionState === "loading") {
-    return <AdminEmpty>正在載入後台驗證…</AdminEmpty>;
-  }
-
+  if (sessionState === "loading") return <AdminEmpty>正在載入後台驗證…</AdminEmpty>;
   if (sessionState !== "ready") {
-    return (
-      <AdminSection title="需要登入" description="先以 HerLink 帳號登入，再開啟後台。">
-        <AdminEmpty>
-          <p className="muted">請先登入後再使用後台。</p>
-          <Button variant="secondary" href="/login">前往登入</Button>
-        </AdminEmpty>
-      </AdminSection>
-    );
+    return <AdminSection title="需要登入" description="先以 HerLink 帳號登入，再開啟後台。"><AdminEmpty><p className="muted">請先登入後再使用後台。</p><Button variant="secondary" href="/login">前往登入</Button></AdminEmpty></AdminSection>;
   }
 
   return (
     <div className="stack">
-      <AdminSection
-        title="總覽"
-        description="目前在線、等待池、活躍對話與今日安全事件的即時摘要。"
-        action={
-          <div className="row">
-            <Button
-              variant={autoRefreshEnabled ? "secondary" : "ghost"}
-              size="sm"
-              type="button"
-              onClick={() => setAutoRefreshEnabled((enabled) => !enabled)}
-            >
-              {autoRefreshEnabled ? "自動更新：開" : "自動更新：關"}
-            </Button>
-            <Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>
-              {refreshing ? "重新整理中…" : "一鍵重新整理"}
-            </Button>
-          </div>
-        }
-      >
+      <AdminSection title="總覽" description="目前在線、等待池、活躍對話與今日安全事件的即時摘要。" action={<div className="row"><Button variant={autoRefreshEnabled ? "secondary" : "ghost"} size="sm" type="button" onClick={() => setAutoRefreshEnabled((enabled) => !enabled)}>{autoRefreshEnabled ? "自動更新：開" : "自動更新：關"}</Button><Button variant="secondary" size="sm" type="button" onClick={() => void load()} disabled={refreshing}>{refreshing ? "重新整理中…" : "一鍵重新整理"}</Button></div>}>
         {error ? <Notice variant="danger">{error}</Notice> : null}
-        <div style={{ marginBottom: 12 }}>
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <div className="row">
-              <span className="muted small">系統狀態</span>
-              <AdminBadge tone={overallHealth.tone}>{overallHealth.label}</AdminBadge>
-            </div>
-            <span className="muted small">
-              最後更新：{data?.generated_at ? formatAdminTime(data.generated_at) : "—"}
-            </span>
-          </div>
-          <div className="muted small" style={{ marginTop: 8, lineHeight: 1.6 }}>
-            原因：{overallHealth.reasons.join("；")}
-          </div>
-        </div>
+        <div style={{ marginBottom: 12 }}><div className="row" style={{ justifyContent: "space-between" }}><div className="row"><span className="muted small">系統狀態</span><AdminBadge tone={overallHealth.tone}>{overallHealth.label}</AdminBadge></div><span className="muted small">最後更新：{data?.generated_at ? formatAdminTime(data.generated_at) : "—"}</span></div><div className="muted small" style={{ marginTop: 8, lineHeight: 1.6 }}>原因：{overallHealth.reasons.join("；")}</div></div>
         <AdminStatGrid>
           <AdminStat label="目前在線" value={onlineCount === null ? formatCount(data?.live_online_count) : `${onlineCount} 人`} tone={onlineCountConnected ? "success" : "default"} />
           <AdminStat label="目前排隊" value={formatCount(data?.waiting_count)} />
@@ -323,178 +208,38 @@ export default function AdminDashboardPage() {
         </AdminStatGrid>
       </AdminSection>
 
-      <AdminSection
-        title="管理員建立碼"
-        description="建立一次性管理員帳號建立碼。預設 30 分鐘失效，輸錯 5 次後也會失效。"
-        action={
-          <Button variant="secondary" size="sm" type="button" onClick={() => void createAdminInvite()} disabled={inviteBusy}>
-            {inviteBusy ? "產生中…" : "產生建立碼"}
-          </Button>
-        }
-      >
-        {inviteCode ? (
-          <div className="admin-invite-result">
-            <div>
-              <div className="muted small">建立碼只顯示這一次</div>
-              <code className="admin-invite-code">{inviteCode}</code>
-            </div>
-            <div className="muted small">
-              到期時間：{inviteExpiresAt ? formatAdminTime(inviteExpiresAt) : "—"}
-            </div>
-            <Button
-              variant="link"
-              size="sm"
-              type="button"
-              onClick={() => void navigator.clipboard?.writeText(inviteCode)}
-            >
-              複製建立碼
-            </Button>
-          </div>
-        ) : (
-          <div className="muted small">需要新增管理員時再產生，建立碼不可重複使用。</div>
-        )}
+      <RecoveryPage />
+
+      <AdminSection title="管理員建立碼" description="建立一次性管理員帳號建立碼。預設 30 分鐘失效，輸錯 5 次後也會失效。" action={<Button variant="secondary" size="sm" type="button" onClick={() => void createAdminInvite()} disabled={inviteBusy}>{inviteBusy ? "產生中…" : "產生建立碼"}</Button>}>
+        {inviteCode ? <div className="admin-invite-result"><div><div className="muted small">建立碼只顯示這一次</div><code className="admin-invite-code">{inviteCode}</code></div><div className="muted small">到期時間：{inviteExpiresAt ? formatAdminTime(inviteExpiresAt) : "—"}</div><Button variant="link" size="sm" type="button" onClick={() => void navigator.clipboard?.writeText(inviteCode)}>複製建立碼</Button></div> : <div className="muted small">需要新增管理員時再產生，建立碼不可重複使用。</div>}
       </AdminSection>
 
       <AdminSection title="部署資訊" description="確認目前正式環境正在執行哪一個版本，以及這個版本第一次通過健康檢查的時間。">
-        <AdminStatGrid>
-          <AdminStat label="部署版本" value={shortVersion(data?.deployment_version)} />
-          <AdminStat label="部署分支" value={data?.deployment_branch === "main" ? "主要分支" : data?.deployment_branch ? "其他分支" : "—"} />
-          <AdminStat label="部署環境" value={data?.deployment_environment === "production" ? "正式環境" : data?.deployment_environment === "preview" ? "預覽環境" : data?.deployment_environment ? "其他環境" : "—"} />
-          <AdminStat
-            label="最後成功部署時間"
-            value={data?.last_successful_deployment_at ? formatAdminTime(data.last_successful_deployment_at) : "—"}
-            tone={data?.last_successful_deployment_at ? "success" : "default"}
-          />
-        </AdminStatGrid>
-        <div className="muted small" style={{ marginTop: 10, overflowWrap: "anywhere" }}>
-          部署編號：{data?.deployment_id ?? "—"}
-        </div>
+        <AdminStatGrid><AdminStat label="部署版本" value={shortVersion(data?.deployment_version)} /><AdminStat label="部署分支" value={data?.deployment_branch === "main" ? "主要分支" : data?.deployment_branch ? "其他分支" : "—"} /><AdminStat label="部署環境" value={data?.deployment_environment === "production" ? "正式環境" : data?.deployment_environment === "preview" ? "預覽環境" : data?.deployment_environment ? "其他環境" : "—"} /><AdminStat label="最後成功部署時間" value={data?.last_successful_deployment_at ? formatAdminTime(data.last_successful_deployment_at) : "—"} tone={data?.last_successful_deployment_at ? "success" : "default"} /></AdminStatGrid>
+        <div className="muted small" style={{ marginTop: 10, overflowWrap: "anywhere" }}>部署編號：{data?.deployment_id ?? "—"}</div>
       </AdminSection>
 
       <AdminSection title="系統健康狀態" description="快速確認配對、即時連線、通知與聊天助手是否正常；異常連線以受影響裝置去重計算。">
         <AdminStatGrid>
-          <AdminStat
-            label="今日配對成功率"
-            value={formatPercent(data?.today_match_success_rate)}
-            tone={typeof data?.today_match_success_rate === "number" && data.today_match_success_rate < 50 ? "warning" : "success"}
-          />
-          <AdminStat
-            label="今日平均等待時間"
-            value={formatWait(data?.today_avg_wait_seconds)}
-            tone={typeof data?.today_avg_wait_seconds === "number" && data.today_avg_wait_seconds > 120 ? "warning" : "default"}
-          />
-          <AdminStat
-            label="近 1 分鐘異常事件"
-            value={formatCount(data?.realtime_errors_1m)}
-            tone={(data?.realtime_errors_1m ?? 0) > 0 ? "warning" : "success"}
-          />
-          <AdminStat
-            label="目前受影響連線"
-            value={formatCount(data?.realtime_errors_5m)}
-            tone={(data?.realtime_errors_5m ?? 0) > 0 ? "warning" : "success"}
-          />
-          <AdminStat
-            label="近 10 分鐘異常事件"
-            value={formatCount(data?.realtime_errors_10m)}
-            tone={(data?.realtime_errors_10m ?? 0) > 0 ? "warning" : "success"}
-          />
-          <AdminStat
-            label="最近一次異常"
-            value={data?.realtime_last_error_at ? formatAdminTime(data.realtime_last_error_at) : "—"}
-            tone={(data?.realtime_errors_5m ?? 0) > 0 ? "warning" : "success"}
-          />
-          <AdminStat
-            label="近 1 小時異常事件"
-            value={formatCount(data?.realtime_errors_1h)}
-            tone={(data?.realtime_errors_1h ?? 0) > 0 ? "warning" : "success"}
-          />
-          <AdminStat
-            label="今日通知成功率"
-            value={formatPercent(data?.today_push_success_rate)}
-            tone={typeof data?.today_push_success_rate === "number" && data.today_push_success_rate < 95 ? "warning" : "success"}
-          />
+          <AdminStat label="今日配對成功率" value={formatPercent(data?.today_match_success_rate)} tone={typeof data?.today_match_success_rate === "number" && data.today_match_success_rate < 50 ? "warning" : "success"} />
+          <AdminStat label="今日平均等待時間" value={formatWait(data?.today_avg_wait_seconds)} tone={typeof data?.today_avg_wait_seconds === "number" && data.today_avg_wait_seconds > 120 ? "warning" : "default"} />
+          <AdminStat label="近 1 分鐘異常事件" value={formatCount(data?.realtime_errors_1m)} tone={(data?.realtime_errors_1m ?? 0) > 0 ? "warning" : "success"} />
+          <AdminStat label="目前受影響連線" value={formatCount(data?.realtime_errors_5m)} tone={(data?.realtime_errors_5m ?? 0) > 0 ? "warning" : "success"} />
+          <AdminStat label="近 10 分鐘異常事件" value={formatCount(data?.realtime_errors_10m)} tone={(data?.realtime_errors_10m ?? 0) > 0 ? "warning" : "success"} />
+          <AdminStat label="最近一次異常" value={data?.realtime_last_error_at ? formatAdminTime(data.realtime_last_error_at) : "—"} tone={(data?.realtime_errors_5m ?? 0) > 0 ? "warning" : "success"} />
+          <AdminStat label="近 1 小時異常事件" value={formatCount(data?.realtime_errors_1h)} tone={(data?.realtime_errors_1h ?? 0) > 0 ? "warning" : "success"} />
+          <AdminStat label="今日通知成功率" value={formatPercent(data?.today_push_success_rate)} tone={typeof data?.today_push_success_rate === "number" && data.today_push_success_rate < 95 ? "warning" : "success"} />
         </AdminStatGrid>
       </AdminSection>
 
-      <AdminSection title="近 7 天匿名聊天室" description="最近 7×24 小時的實際匿名聊天活動。">
-        <AdminStatGrid>
-          <AdminStat label="使用者數" value={formatCount(data?.seven_day_anonymous_user_count)} />
-          <AdminStat label="訊息數" value={formatCount(data?.seven_day_message_count)} />
-          <AdminStat label="配對場次" value={formatCount(data?.seven_day_session_count)} />
-          <AdminStat label="進入佇列" value={formatCount(data?.seven_day_queue_join_count)} />
-        </AdminStatGrid>
-      </AdminSection>
+      <AdminSection title="近 7 天匿名聊天室" description="最近 7×24 小時的實際匿名聊天活動。"><AdminStatGrid><AdminStat label="使用者數" value={formatCount(data?.seven_day_anonymous_user_count)} /><AdminStat label="訊息數" value={formatCount(data?.seven_day_message_count)} /><AdminStat label="配對場次" value={formatCount(data?.seven_day_session_count)} /><AdminStat label="進入佇列" value={formatCount(data?.seven_day_queue_join_count)} /></AdminStatGrid></AdminSection>
 
       <AdminSection title="最近錯誤摘要" description="彙整最近 24 小時的即時連線、通知與聊天助手備援事件。">
-        {data?.recent_error_summary?.length ? (
-          <AdminTableWrap>
-            <AdminTable label="最近錯誤摘要">
-              <thead>
-                <tr>
-                  <th scope="col">來源</th>
-                  <th scope="col">錯誤</th>
-                  <th scope="col">次數</th>
-                  <th scope="col">最近發生</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.recent_error_summary.map((item, index) => (
-                  <tr key={`${item.source}-${item.error_code}-${index}`}>
-                    <td><AdminBadge tone="warning">{errorSourceLabel(item.source)}</AdminBadge></td>
-                    <td>{errorCodeLabel(item.error_code)}</td>
-                    <td>{formatCount(item.error_count)}</td>
-                    <td>{formatAdminTime(item.last_seen)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </AdminTable>
-          </AdminTableWrap>
-        ) : (
-          <AdminEmpty>最近 24 小時沒有偵測到需要顯示的錯誤。</AdminEmpty>
-        )}
+        {data?.recent_error_summary?.length ? <AdminTableWrap><AdminTable label="最近錯誤摘要"><thead><tr><th scope="col">來源</th><th scope="col">錯誤</th><th scope="col">次數</th><th scope="col">最近發生</th></tr></thead><tbody>{data.recent_error_summary.map((item, index) => <tr key={`${item.source}-${item.error_code}-${index}`}><td><AdminBadge tone="warning">{errorSourceLabel(item.source)}</AdminBadge></td><td>{errorCodeLabel(item.error_code)}</td><td>{formatCount(item.error_count)}</td><td>{formatAdminTime(item.last_seen)}</td></tr>)}</tbody></AdminTable></AdminTableWrap> : <AdminEmpty>最近 24 小時沒有偵測到需要顯示的錯誤。</AdminEmpty>}
       </AdminSection>
 
       <AdminSection title="最近即時診斷" description="僅保留安全事件與連線診斷，不含訊息正文。">
-        {data?.recent_realtime_diagnostics?.length ? (
-          <AdminTableWrap>
-            <AdminTable label="最近即時診斷">
-              <thead>
-                <tr>
-                  <th scope="col">時間</th>
-                  <th scope="col">事件</th>
-                  <th scope="col">場次</th>
-                  <th scope="col">訊息</th>
-                  <th scope="col">安全錯誤碼</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(() => {
-                  const recoveredErrors = recoveredRealtimeErrorIds(data.recent_realtime_diagnostics);
-                  return data.recent_realtime_diagnostics.map((item) => {
-                    const recoveredError = recoveredErrors.has(item.id);
-                    const label = recoveredError ? "短暫中斷・已恢復" : realtimeEventLabel(item.event_type);
-                    const tone = item.event_type === "realtime_subscribe_error"
-                      ? (recoveredError ? "warning" : "danger")
-                      : item.event_type === "message_received_realtime"
-                        ? "accent"
-                        : "default";
-                    return (
-                      <tr key={item.id}>
-                        <td>{formatAdminTime(item.created_at)}</td>
-                        <td><AdminBadge tone={tone}>{label}</AdminBadge></td>
-                        <td>{shortId(item.session_id)}</td>
-                        <td>{item.message_id ? shortId(item.message_id) : "—"}</td>
-                        <td>{recoveredError ? "已自動恢復" : errorCodeLabel(item.safe_error_code ?? "UNKNOWN")}</td>
-                      </tr>
-                    );
-                  });
-                })()}
-              </tbody>
-            </AdminTable>
-          </AdminTableWrap>
-        ) : (
-          <AdminEmpty>目前沒有即時診斷資料。</AdminEmpty>
-        )}
+        {data?.recent_realtime_diagnostics?.length ? <AdminTableWrap><AdminTable label="最近即時診斷"><thead><tr><th scope="col">時間</th><th scope="col">事件</th><th scope="col">場次</th><th scope="col">訊息</th><th scope="col">安全錯誤碼</th></tr></thead><tbody>{(() => { const recoveredErrors = recoveredRealtimeErrorIds(data.recent_realtime_diagnostics); return data.recent_realtime_diagnostics.map((item) => { const recoveredError = recoveredErrors.has(item.id); const label = recoveredError ? "短暫中斷・已恢復" : realtimeEventLabel(item.event_type); const tone = item.event_type === "realtime_subscribe_error" ? (recoveredError ? "warning" : "danger") : item.event_type === "message_received_realtime" ? "accent" : "default"; return <tr key={item.id}><td>{formatAdminTime(item.created_at)}</td><td><AdminBadge tone={tone}>{label}</AdminBadge></td><td>{shortId(item.session_id)}</td><td>{item.message_id ? shortId(item.message_id) : "—"}</td><td>{recoveredError ? "已自動恢復" : errorCodeLabel(item.safe_error_code ?? "UNKNOWN")}</td></tr>; }); })()}</tbody></AdminTable></AdminTableWrap> : <AdminEmpty>目前沒有即時診斷資料。</AdminEmpty>}
       </AdminSection>
     </div>
   );
