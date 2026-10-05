@@ -14,8 +14,16 @@ const RandomSessionClient = dynamic(() => import("./RandomSessionClient"), {
 
 type ActionTarget = { bubble: HTMLElement; article: HTMLElement; messageId: string; mine: boolean };
 
+function asElement(target: EventTarget | null) {
+  return target instanceof Element ? target : null;
+}
+
+function isActionMenuTarget(target: EventTarget | null) {
+  return Boolean(asElement(target)?.closest('[data-line-message-menu="1"]'));
+}
+
 function getActionTarget(target: EventTarget | null): ActionTarget | null {
-  const element = target instanceof Element ? target : null;
+  const element = asElement(target);
   const bubble = element?.closest<HTMLElement>(".chat-bubble") ?? null;
   const article = bubble?.closest<HTMLElement>("article.chat-message") ?? null;
   if (!bubble || !article || !article.id.startsWith("chat-msg-")) return null;
@@ -43,14 +51,7 @@ export default function RandomSessionPage() {
     if (!allowed) return;
     const style = document.createElement("style");
     style.dataset.lonelyPenguinMessageActions = "1";
-    style.textContent = `
-      article.chat-message .chat-bubble,
-      article.chat-message .chat-bubble * {
-        -webkit-user-select: none !important;
-        user-select: none !important;
-        -webkit-touch-callout: none !important;
-      }
-    `;
+    style.textContent = `article.chat-message .chat-bubble, article.chat-message .chat-bubble * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }`;
     document.head.appendChild(style);
     return () => style.remove();
   }, [allowed]);
@@ -77,7 +78,7 @@ export default function RandomSessionPage() {
   };
 
   const onPointerDownCapture = (event: PointerEvent<HTMLDivElement>) => {
-    if (!allowed) return;
+    if (!allowed || isActionMenuTarget(event.target)) return;
     const target = getActionTarget(event.target);
     if (!target) { setMenu(null); return; }
     event.preventDefault();
@@ -89,12 +90,12 @@ export default function RandomSessionPage() {
   };
 
   const onPointerMoveCapture = (event: PointerEvent<HTMLDivElement>) => {
-    if (!allowed || timerRef.current === null) return;
+    if (!allowed || isActionMenuTarget(event.target) || timerRef.current === null) return;
     if (Math.abs(event.clientX - startRef.current.x) > 18 || Math.abs(event.clientY - startRef.current.y) > 18) clearPress();
   };
 
   const onClickCapture = (event: MouseEvent<HTMLDivElement>) => {
-    if (!allowed || bypassClickRef.current || !getActionTarget(event.target)) return;
+    if (!allowed || bypassClickRef.current || isActionMenuTarget(event.target) || !getActionTarget(event.target)) return;
     event.preventDefault();
     event.stopPropagation();
   };
@@ -119,11 +120,11 @@ export default function RandomSessionPage() {
   };
 
   return (
-    <div style={{ display: "contents" }} onPointerDownCapture={onPointerDownCapture} onPointerMoveCapture={onPointerMoveCapture} onPointerUpCapture={clearPress} onPointerCancelCapture={clearPress} onClickCapture={onClickCapture} onContextMenu={(event) => { if (!allowed) return; const target = getActionTarget(event.target); if (!target) return; event.preventDefault(); clearSelection(); openMenu(target); }}>
+    <div style={{ display: "contents" }} onPointerDownCapture={onPointerDownCapture} onPointerMoveCapture={onPointerMoveCapture} onPointerUpCapture={(event) => { if (!isActionMenuTarget(event.target)) clearPress(); }} onPointerCancelCapture={clearPress} onClickCapture={onClickCapture} onContextMenu={(event) => { if (!allowed || isActionMenuTarget(event.target)) return; const target = getActionTarget(event.target); if (!target) return; event.preventDefault(); clearSelection(); openMenu(target); }}>
       <RandomSessionClient />
-      {menu ? <div data-line-message-menu="1" style={{ position: "fixed", left: menu.left, top: menu.top, zIndex: 2147483647, display: "flex", overflow: "hidden", borderRadius: 14, background: "#29272b", boxShadow: "0 10px 32px rgba(0,0,0,.5)", border: "1px solid rgba(255,255,255,.12)", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()}>
-        <button type="button" onClick={reply} style={{ height: 54, minWidth: 94, padding: "0 14px", border: 0, background: "transparent", color: "#fff", fontSize: 15, fontWeight: 800 }}>↩ 回覆</button>
-        {menu.mine ? <button type="button" onClick={() => void recall()} style={{ height: 54, minWidth: 94, padding: "0 14px", border: 0, borderLeft: "1px solid rgba(255,255,255,.1)", background: "transparent", color: "#fff", fontSize: 15, fontWeight: 800 }}>收回</button> : null}
+      {menu ? <div data-line-message-menu="1" style={{ position: "fixed", left: menu.left, top: menu.top, zIndex: 2147483647, display: "flex", overflow: "hidden", borderRadius: 14, background: "#29272b", boxShadow: "0 10px 32px rgba(0,0,0,.5)", border: "1px solid rgba(255,255,255,.12)", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none", pointerEvents: "auto" }}>
+        <button type="button" onClick={reply} style={{ height: 54, minWidth: 94, padding: "0 14px", border: 0, background: "transparent", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", touchAction: "manipulation" }}>↩ 回覆</button>
+        {menu.mine ? <button type="button" onClick={() => void recall()} style={{ height: 54, minWidth: 94, padding: "0 14px", border: 0, borderLeft: "1px solid rgba(255,255,255,.1)", background: "transparent", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", touchAction: "manipulation" }}>收回</button> : null}
       </div> : null}
     </div>
   );
