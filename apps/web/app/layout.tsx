@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from "next";
 import { SiteChrome } from "../components/layout/SiteChrome";
 import { SessionReadTracker } from "../components/chat/SessionReadTracker";
 import { PwaUpdateManager } from "../components/PwaUpdateManager";
+import { MigratedGuxingSessionGuard } from "../components/MigratedGuxingSessionGuard";
 
 export const metadata: Metadata = {
   title: "HerLink 網頁版",
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <PwaUpdateManager />
         <SessionReadTracker />
+        <MigratedGuxingSessionGuard />
         <a className="skip-link" href="#main-content">
           跳到主要內容
         </a>
