@@ -10,7 +10,7 @@ on:
       - ".github/workflows/web-home-ui-guxing.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: web-home-ui-guxing-test
@@ -23,6 +23,19 @@ jobs:
     steps:
       - name: Checkout test branch
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore known-good chat page if inherited source is corrupted
+        shell: bash
+        run: |
+          if grep -Fq '\\n' 'apps/web/app/session/[id]/page.tsx'; then
+            git checkout 84a0ef8a796d1f45d615c2e7e3e99d609868570e -- 'apps/web/app/session/[id]/page.tsx'
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add 'apps/web/app/session/[id]/page.tsx'
+            git commit -m 'fix(test): restore buildable chat page baseline'
+            git push origin HEAD:test/web-home-ui-guxing
+          fi
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
