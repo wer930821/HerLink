@@ -43,7 +43,31 @@ function ContactUnreadBadge() {
   }, [refresh]);
 
   if (count <= 0) return null;
-  return <span className="home-mailbox-unread" aria-label={`${count} 則未讀訊息`}>{count > 99 ? "99+" : count}</span>;
+  return (
+    <span
+      aria-label={`${count} 則未讀訊息`}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minWidth: 20,
+        height: 20,
+        marginLeft: 8,
+        padding: "0 6px",
+        borderRadius: 999,
+        background: "#dc2626",
+        color: "#fff",
+        fontSize: 12,
+        fontWeight: 800,
+        lineHeight: 1,
+        position: "static",
+        transform: "none",
+        flex: "0 0 auto",
+      }}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
 }
 
 export function Button(props: ButtonAsButton | ButtonAsLink) {
