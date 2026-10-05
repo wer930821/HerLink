@@ -18,14 +18,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => null) as {
-      targetUserId?: string;
+      email?: string;
+      password?: string;
       dryRun?: boolean;
     } | null;
-    if (!body?.targetUserId || typeof body.dryRun !== "boolean") {
+    const email = body?.email?.trim().toLowerCase() ?? "";
+    const password = body?.password ?? "";
+    if (!email || password.length < 8 || typeof body?.dryRun !== "boolean") {
       return NextResponse.json({ error: "invalid_request" }, { status: 400 });
-    }
-    if (body.targetUserId === TEST_USER_ID) {
-      return NextResponse.json({ error: "invalid_target" }, { status: 409 });
     }
 
     const url = env("NEXT_PUBLIC_SUPABASE_URL");
@@ -44,7 +44,6 @@ export async function POST(request: NextRequest) {
     const admin = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-
     const { data: profile, error: profileError } = await admin
       .from("profiles")
       .select("anonymous_display_name")
@@ -54,9 +53,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "test_identity_mismatch" }, { status: 403 });
     }
 
+    // Verify ownership of the destination account without replacing the anonymous caller session.
+    const verifier = createClient(url, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: targetAuth, error: targetError } = await verifier.auth.signInWithPassword({ email, password });
+    if (targetError || !targetAuth.user) {
+      return NextResponse.json({ error: "target_credentials_invalid" }, { status: 401 });
+    }
+    const targetUserId = targetAuth.user.id;
+    if (targetUserId === TEST_USER_ID) {
+      return NextResponse.json({ error: "invalid_target" }, { status: 409 });
+    }
+
     const { data, error } = await admin.rpc("admin_merge_anonymous_account", {
       p_source_user_id: TEST_USER_ID,
-      p_target_user_id: body.targetUserId,
+      p_target_user_id: targetUserId,
       p_dry_run: body.dryRun,
     });
 
@@ -67,7 +79,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ ok: true, dryRun: body.dryRun, result: data });
+    return NextResponse.json({ ok: true, dryRun: body.dryRun, targetUserId, result: data });
   } catch {
     return NextResponse.json({ error: "server_configuration_error" }, { status: 500 });
   }
