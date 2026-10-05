@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+const LONG_PRESS_MS = 500;
+const MOVE_TOLERANCE = 12;
 
 type RecallProjection = { id: string; recalled_at?: string | null };
 
@@ -21,7 +23,6 @@ export default function RecallMessageBridge() {
     let testerAllowed = false;
     let testerChecked = false;
     let openMenu: HTMLElement | null = null;
-    let allowNextNativeClick = false;
     const recalledIds = new Set<string>();
 
     const closeMenu = () => {
@@ -43,61 +44,45 @@ export default function RecallMessageBridge() {
       return testerAllowed;
     };
 
-    const showActions = (article: HTMLElement, bubble: HTMLElement, rawId: string) => {
-      if (!testerAllowed || recalledIds.has(rawId)) return;
+    const showRecallMenu = (article: HTMLElement, bubble: HTMLElement, rawId: string) => {
+      if (!testerAllowed || recalledIds.has(rawId) || !article.classList.contains("mine")) return;
       closeMenu();
 
-      const isMine = article.classList.contains("mine");
       const menu = document.createElement("div");
       menu.dataset.messageActionMenu = "1";
       menu.setAttribute("role", "menu");
-      menu.style.cssText = "position:fixed;z-index:2147483001;display:flex;gap:8px;padding:8px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(24,18,28,.98);box-shadow:0 12px 36px rgba(0,0,0,.34);";
+      menu.style.cssText = "position:fixed;z-index:2147483001;display:flex;align-items:center;padding:7px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(34,32,35,.98);box-shadow:0 12px 36px rgba(0,0,0,.42);";
 
       const rect = bubble.getBoundingClientRect();
-      const top = Math.min(window.innerHeight - 64, Math.max(8, rect.bottom + 6));
-      const left = Math.min(window.innerWidth - (isMine ? 210 : 92), Math.max(8, rect.left));
+      const menuWidth = 126;
+      const top = rect.top > 68 ? rect.top - 58 : Math.min(window.innerHeight - 58, rect.bottom + 8);
+      const left = Math.min(window.innerWidth - menuWidth - 8, Math.max(8, rect.right - menuWidth));
       menu.style.top = `${top}px`;
       menu.style.left = `${left}px`;
 
-      const reply = document.createElement("button");
-      reply.type = "button";
-      reply.textContent = "回覆";
-      reply.style.cssText = "border:0;border-radius:999px;padding:8px 14px;background:#34283d;color:#fff;font-weight:800;";
-      reply.addEventListener("click", (event) => {
+      const recall = document.createElement("button");
+      recall.type = "button";
+      recall.textContent = "收回訊息";
+      recall.style.cssText = "width:112px;border:0;border-radius:10px;padding:11px 12px;background:transparent;color:#fff;font-size:15px;font-weight:800;";
+      recall.addEventListener("click", async (event) => {
         event.preventDefault();
         event.stopPropagation();
+        if (recall.disabled || !window.confirm("確定要收回這則訊息嗎？")) return;
+        recall.disabled = true;
+        recall.textContent = "收回中…";
+        const { error } = await supabase.rpc("recall_random_message", { p_message_id: rawId });
+        if (error) {
+          recall.disabled = false;
+          recall.textContent = "收回訊息";
+          window.alert("目前無法收回訊息，請稍後再試。");
+          return;
+        }
+        recalledIds.add(rawId);
         closeMenu();
-        allowNextNativeClick = true;
-        bubble.click();
+        enhance();
+        window.dispatchEvent(new Event("focus"));
       });
-      menu.appendChild(reply);
-
-      if (isMine) {
-        const recall = document.createElement("button");
-        recall.type = "button";
-        recall.textContent = "收回訊息";
-        recall.style.cssText = "border:1px solid #ff8ab2;border-radius:999px;padding:8px 14px;background:transparent;color:#ffb1cb;font-weight:800;";
-        recall.addEventListener("click", async (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          if (recall.disabled || !window.confirm("確定要收回這則訊息嗎？")) return;
-          recall.disabled = true;
-          recall.textContent = "收回中…";
-          const { error } = await supabase.rpc("recall_random_message", { p_message_id: rawId });
-          if (error) {
-            recall.disabled = false;
-            recall.textContent = "收回訊息";
-            window.alert("目前無法收回訊息，請稍後再試。");
-            return;
-          }
-          recalledIds.add(rawId);
-          closeMenu();
-          enhance();
-          window.dispatchEvent(new Event("focus"));
-        });
-        menu.appendChild(recall);
-      }
-
+      menu.appendChild(recall);
       document.body.appendChild(menu);
       openMenu = menu;
     };
@@ -122,18 +107,52 @@ export default function RecallMessageBridge() {
           return;
         }
 
-        if (bubble.dataset.messageActions === "1") return;
-        bubble.dataset.messageActions = "1";
-        bubble.setAttribute("aria-label", article.classList.contains("mine") ? "訊息操作：回覆或收回" : "訊息操作：回覆");
+        if (!article.classList.contains("mine") || bubble.dataset.recallLongPress === "1") return;
+        bubble.dataset.recallLongPress = "1";
+        bubble.style.touchAction = "pan-y";
+        bubble.setAttribute("aria-label", "長按可收回訊息；點一下可回覆");
+
+        let timer: number | null = null;
+        let startX = 0;
+        let startY = 0;
+        let longPressed = false;
+
+        const clearTimer = () => {
+          if (timer !== null) window.clearTimeout(timer);
+          timer = null;
+        };
+
+        bubble.addEventListener("pointerdown", (event) => {
+          if (event.pointerType === "mouse" && event.button !== 0) return;
+          startX = event.clientX;
+          startY = event.clientY;
+          longPressed = false;
+          clearTimer();
+          timer = window.setTimeout(() => {
+            timer = null;
+            longPressed = true;
+            if (navigator.vibrate) navigator.vibrate(25);
+            showRecallMenu(article, bubble, rawId);
+          }, LONG_PRESS_MS);
+        });
+
+        bubble.addEventListener("pointermove", (event) => {
+          if (Math.abs(event.clientX - startX) > MOVE_TOLERANCE || Math.abs(event.clientY - startY) > MOVE_TOLERANCE) clearTimer();
+        });
+        bubble.addEventListener("pointerup", clearTimer);
+        bubble.addEventListener("pointercancel", clearTimer);
+        bubble.addEventListener("pointerleave", clearTimer);
+        bubble.addEventListener("contextmenu", (event) => {
+          event.preventDefault();
+          clearTimer();
+          longPressed = true;
+          showRecallMenu(article, bubble, rawId);
+        });
         bubble.addEventListener("click", (event) => {
-          if (allowNextNativeClick) {
-            allowNextNativeClick = false;
-            return;
-          }
-          if (!testerAllowed || recalledIds.has(rawId)) return;
+          if (!longPressed) return;
           event.preventDefault();
           event.stopImmediatePropagation();
-          showActions(article, bubble, rawId);
+          longPressed = false;
         }, true);
       });
     };
