@@ -13,6 +13,13 @@ const RandomSessionClient = dynamic(() => import("./RandomSessionClient"), {
   ),
 });
 
+const RecallMessageBridge = dynamic(() => import("./RecallMessageBridge"), { ssr: false });
+
 export default function RandomSessionPage() {
-  return <RandomSessionClient />;
+  return (
+    <>
+      <RandomSessionClient />
+      <RecallMessageBridge />
+    </>
+  );
 }
