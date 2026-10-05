@@ -218,6 +218,10 @@ export type AnonymousContactRow = AnonymousContactStatusRow & {
   partner_verified: boolean;
   created_at: string;
   activated_at: string | null;
+  current_session_id: string | null;
+  last_message_preview: string | null;
+  last_message_at: string | null;
+  unread_count: number;
 };
 
 export type AnonymousContactSessionRow = {
@@ -778,6 +782,10 @@ export async function listMyAnonymousContacts() {
     data: AnonymousContactRow[] | null;
     error: { message?: string } | null;
   }>;
+}
+
+export async function markRandomSessionRead(sessionId: string) {
+  return supabase.rpc("mark_random_session_read", { p_session_id: sessionId }) as Promise<{ data: boolean | null; error: { message?: string } | null }>;
 }
 
 export async function removeAnonymousContact(contactId: string) {
