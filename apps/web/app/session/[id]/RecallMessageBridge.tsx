@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
-const TESTER_LABEL = "你：孤星企鵝";
+const TESTER_NAME = "孤星企鵝";
 
 type RecallProjection = { id: string; recalled_at?: string | null };
 
@@ -19,14 +19,29 @@ export default function RecallMessageBridge() {
     let observer: MutationObserver | null = null;
     let retryTimer: number | null = null;
     let recallStateLoaded = false;
+    let testerAllowed = false;
     const recalledIds = new Set<string>();
 
-    const isTesterPage = () =>
-      Array.from(document.querySelectorAll<HTMLElement>(".chat-my-name"))
-        .some((node) => (node.textContent ?? "").trim().startsWith(TESTER_LABEL));
+    const detectTester = async () => {
+      const renderedName = document.querySelector<HTMLElement>(".chat-my-name")?.textContent ?? "";
+      if (renderedName.includes(TESTER_NAME)) {
+        testerAllowed = true;
+        return true;
+      }
+
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user?.id) return false;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("anonymous_display_name")
+        .eq("id", auth.user.id)
+        .maybeSingle();
+      testerAllowed = profile?.anonymous_display_name?.trim() === TESTER_NAME;
+      return testerAllowed;
+    };
 
     const enhance = () => {
-      if (disposed || !isTesterPage()) return;
+      if (disposed || !testerAllowed) return;
       document.querySelectorAll<HTMLElement>("article.chat-message.mine").forEach((article) => {
         const rawId = article.id.startsWith("chat-msg-") ? article.id.slice(9) : "";
         if (!UUID_RE.test(rawId)) return;
@@ -77,7 +92,7 @@ export default function RecallMessageBridge() {
     };
 
     const syncRecallState = async () => {
-      if (recallStateLoaded || !isTesterPage()) return;
+      if (recallStateLoaded || !testerAllowed) return;
       recallStateLoaded = true;
       const { data, error } = await supabase.rpc("list_random_messages_v2", {
         p_session_id: sessionId,
@@ -96,14 +111,15 @@ export default function RecallMessageBridge() {
       enhance();
     };
 
-    const tick = () => {
+    const tick = async () => {
+      if (!testerAllowed) await detectTester();
       enhance();
       void syncRecallState();
     };
 
-    tick();
-    retryTimer = window.setInterval(tick, 500);
-    observer = new MutationObserver(tick);
+    void tick();
+    retryTimer = window.setInterval(() => void tick(), 500);
+    observer = new MutationObserver(() => void tick());
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
