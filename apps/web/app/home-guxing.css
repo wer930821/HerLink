@@ -1,13 +1,13 @@
 /* 孤星企鵝限定首頁控制項：只調整已由 React 身分條件渲染的元素。 */
 .home-crown-float {
   position: absolute !important;
-  top: 42% !important;
-  right: 104px !important;
+  top: 122px !important;
+  right: 132px !important;
   z-index: 12 !important;
-  width: 46px !important;
-  height: 46px !important;
-  min-width: 46px !important;
-  min-height: 46px !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
   display: grid !important;
   place-items: center !important;
   padding: 0 !important;
@@ -16,7 +16,7 @@
   background: rgba(48, 30, 29, .86) !important;
   color: #ffd66b !important;
   box-shadow: 0 8px 22px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.07) !important;
-  font-size: 22px !important;
+  font-size: 20px !important;
   line-height: 1 !important;
   cursor: pointer !important;
   backdrop-filter: blur(14px) !important;
@@ -66,13 +66,13 @@
 
 @media (max-width: 520px) {
   .home-crown-float {
-    top: 40.5% !important;
-    right: 102px !important;
-    width: 42px !important;
-    height: 42px !important;
-    min-width: 42px !important;
-    min-height: 42px !important;
-    font-size: 20px !important;
+    top: 184px !important;
+    right: 118px !important;
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+    font-size: 18px !important;
   }
 
   .home-account-actions {
