@@ -1,0 +1,40 @@
+name: Fix chat renderer signature
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/fix-chat-render.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - name: Apply exact safe fix
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('apps/web/app/session/[id]/page.tsx')
+          s = p.read_text()
+          old = '  onOpenExternalLink: (url: string) => void\n): ReactNode[] {'
+          new = '  onOpenExternalLink: (url: string) => void,\n  onPreviewImage: (url: string) => void\n): ReactNode[] {'
+          if old not in s:
+              raise SystemExit('Expected renderer signature not found; refusing to modify file')
+          if s.count(old) != 1:
+              raise SystemExit('Renderer signature is not unique; refusing to modify file')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'apps/web/app/session/[id]/page.tsx'
+          git diff --cached --check
+          git commit -m 'fix(web): restore image preview renderer callback'
+          git push origin HEAD:master
