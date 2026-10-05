@@ -78,11 +78,17 @@ export default function RandomSessionPage() {
 
   const recall = async () => {
     if (!menu?.mine) return;
-    const messageId = menu.messageId;
+    const target = menu;
     setMenu(null);
-    const result = await supabase.rpc("recall_random_message", { p_message_id: messageId });
+    const result = await supabase.rpc("recall_random_message", { p_message_id: target.messageId });
     if (result.error) { window.alert(`目前無法收回訊息：${result.error.message || "請稍後再試"}`); return; }
-    window.location.reload();
+    const content = target.bubble.querySelector<HTMLElement>(".chat-message-content");
+    if (content) {
+      content.textContent = "此訊息已收回";
+      content.style.opacity = ".62";
+      content.style.fontStyle = "italic";
+    }
+    target.bubble.dataset.recalled = "true";
   };
 
   return (
