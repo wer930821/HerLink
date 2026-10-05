@@ -45,17 +45,35 @@ export default function RandomSessionPage() {
     style.dataset.lonelyPenguinMessageActions = "1";
     style.textContent = `
       article.chat-message .chat-bubble, article.chat-message .chat-bubble * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
-      article.chat-message:has(.chat-message-content:empty) { display: none !important; }
     `;
     document.head.appendChild(style);
-    return () => style.remove();
+
+    const hideRecalledMessages = () => {
+      for (const article of Array.from(document.querySelectorAll<HTMLElement>("article.chat-message"))) {
+        const messageContent = article.querySelector<HTMLElement>(".chat-message-content");
+        if (!messageContent) continue;
+        const text = messageContent.textContent?.trim() ?? "";
+        if (!text || text === "此訊息已收回") {
+          article.style.setProperty("display", "none", "important");
+        }
+      }
+    };
+
+    hideRecalledMessages();
+    const observer = new MutationObserver(hideRecalledMessages);
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+    return () => {
+      observer.disconnect();
+      style.remove();
+    };
   }, [allowed]);
 
   useEffect(() => {
     if (!allowed || hiddenMessageIds.size === 0) return;
     for (const messageId of hiddenMessageIds) {
       const article = document.getElementById(`chat-msg-${messageId}`);
-      if (article) article.style.display = "none";
+      if (article) article.style.setProperty("display", "none", "important");
     }
   }, [allowed, hiddenMessageIds]);
 
@@ -92,7 +110,7 @@ export default function RandomSessionPage() {
     setMenu(null);
     const result = await supabase.rpc("recall_random_message", { p_message_id: target.messageId });
     if (result.error) { window.alert(`目前無法收回訊息：${result.error.message || "請稍後再試"}`); return; }
-    target.article.style.display = "none";
+    target.article.style.setProperty("display", "none", "important");
     setHiddenMessageIds((current) => {
       const next = new Set(current);
       next.add(target.messageId);
