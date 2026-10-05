@@ -27,6 +27,7 @@ function getActionTarget(target: EventTarget | null): ActionTarget | null {
 export default function RandomSessionPage() {
   const [allowed, setAllowed] = useState(false);
   const [menu, setMenu] = useState<(ActionTarget & { left: number; top: number }) | null>(null);
+  const [hiddenMessageIds, setHiddenMessageIds] = useState<Set<string>>(() => new Set());
   const timerRef = useRef<number | null>(null);
   const startRef = useRef({ x: 0, y: 0 });
   const activeRef = useRef<ActionTarget | null>(null);
@@ -42,17 +43,23 @@ export default function RandomSessionPage() {
     if (!allowed) return;
     const style = document.createElement("style");
     style.dataset.lonelyPenguinMessageActions = "1";
-    style.textContent = `
-      article.chat-message .chat-bubble, article.chat-message .chat-bubble * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
-      article.chat-message .chat-message-content:empty::before { content: "此訊息已收回"; opacity: .62; font-style: italic; }
-    `;
+    style.textContent = `article.chat-message .chat-bubble, article.chat-message .chat-bubble * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }`;
     document.head.appendChild(style);
     return () => style.remove();
   }, [allowed]);
 
+  useEffect(() => {
+    if (!allowed || hiddenMessageIds.size === 0) return;
+    for (const messageId of hiddenMessageIds) {
+      const article = document.getElementById(`chat-msg-${messageId}`);
+      if (article) article.style.display = "none";
+    }
+  }, [allowed, hiddenMessageIds]);
+
   const clearSelection = () => { const selection = window.getSelection?.(); if (selection && selection.rangeCount > 0) selection.removeAllRanges(); };
   const clearPress = () => { if (timerRef.current !== null) window.clearTimeout(timerRef.current); timerRef.current = null; activeRef.current = null; };
   const openMenu = (target: ActionTarget) => {
+    if (hiddenMessageIds.has(target.messageId)) return;
     const messageContent = target.bubble.querySelector<HTMLElement>(".chat-message-content");
     const visibleText = messageContent?.textContent?.trim() ?? target.bubble.textContent?.trim() ?? "";
     if (!visibleText || visibleText === "此訊息已收回") return;
@@ -82,13 +89,12 @@ export default function RandomSessionPage() {
     setMenu(null);
     const result = await supabase.rpc("recall_random_message", { p_message_id: target.messageId });
     if (result.error) { window.alert(`目前無法收回訊息：${result.error.message || "請稍後再試"}`); return; }
-    const content = target.bubble.querySelector<HTMLElement>(".chat-message-content");
-    if (content) {
-      content.textContent = "此訊息已收回";
-      content.style.opacity = ".62";
-      content.style.fontStyle = "italic";
-    }
-    target.bubble.dataset.recalled = "true";
+    target.article.style.display = "none";
+    setHiddenMessageIds((current) => {
+      const next = new Set(current);
+      next.add(target.messageId);
+      return next;
+    });
   };
 
   return (
