@@ -2,7 +2,6 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { SiteChrome } from "../components/layout/SiteChrome";
 import { SessionReadTracker } from "../components/chat/SessionReadTracker";
-import { FormalAccountBinding } from "./formal-account-binding";
 
 export const metadata: Metadata = {
   title: "HerLink 網頁版",
@@ -34,7 +33,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </div>
           </div>
         </SiteChrome>
-        <FormalAccountBinding />
       </body>
     </html>
   );
