@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { SiteChrome } from "../components/layout/SiteChrome";
+import { SessionReadTracker } from "../components/chat/SessionReadTracker";
 
 export const metadata: Metadata = {
   title: "HerLink 網頁版",
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="zh-Hant">
       <body>
+        <SessionReadTracker />
         <a className="skip-link" href="#main-content">
           跳到主要內容
         </a>
