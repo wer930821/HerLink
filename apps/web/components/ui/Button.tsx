@@ -28,15 +28,36 @@ function ContactUnreadBadge() {
 
   useEffect(() => {
     void refresh();
+
+    // One channel covers both new messages and read-state updates so the home
+    // badge clears immediately after a visible chat is marked as read.
     const channel = supabase
       .channel("contacts-entry-unread")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "random_chat_messages" }, () => void refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "random_chat_session_reads" }, () => void refresh())
       .subscribe();
-    const onVisible = () => { if (document.visibilityState === "visible") void refresh(); };
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    const onFocus = () => void refresh();
+    const onPageShow = () => void refresh();
+    const onReadChanged = () => void refresh();
+
     document.addEventListener("visibilitychange", onVisible);
-    const timer = window.setInterval(() => void refresh(), 30000);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("herlink:read-state-changed", onReadChanged);
+
+    // Keep a short polling fallback for browsers where Realtime publication or
+    // background lifecycle events are delayed.
+    const timer = window.setInterval(() => void refresh(), 5000);
+
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("herlink:read-state-changed", onReadChanged);
       window.clearInterval(timer);
       void supabase.removeChannel(channel);
     };
