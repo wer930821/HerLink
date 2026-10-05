@@ -42,7 +42,10 @@ export default function RandomSessionPage() {
     if (!allowed) return;
     const style = document.createElement("style");
     style.dataset.lonelyPenguinMessageActions = "1";
-    style.textContent = `article.chat-message .chat-bubble, article.chat-message .chat-bubble * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }`;
+    style.textContent = `
+      article.chat-message .chat-bubble, article.chat-message .chat-bubble * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
+      article.chat-message .chat-message-content:empty::before { content: "此訊息已收回"; opacity: .62; font-style: italic; }
+    `;
     document.head.appendChild(style);
     return () => style.remove();
   }, [allowed]);
@@ -50,7 +53,9 @@ export default function RandomSessionPage() {
   const clearSelection = () => { const selection = window.getSelection?.(); if (selection && selection.rangeCount > 0) selection.removeAllRanges(); };
   const clearPress = () => { if (timerRef.current !== null) window.clearTimeout(timerRef.current); timerRef.current = null; activeRef.current = null; };
   const openMenu = (target: ActionTarget) => {
-    if (target.bubble.textContent?.trim() === "此訊息已收回") return;
+    const messageContent = target.bubble.querySelector<HTMLElement>(".chat-message-content");
+    const visibleText = messageContent?.textContent?.trim() ?? target.bubble.textContent?.trim() ?? "";
+    if (!visibleText || visibleText === "此訊息已收回") return;
     clearSelection();
     const rect = target.bubble.getBoundingClientRect();
     const width = target.mine ? 188 : 94;
@@ -77,7 +82,6 @@ export default function RandomSessionPage() {
     setMenu(null);
     const result = await supabase.rpc("recall_random_message", { p_message_id: messageId });
     if (result.error) { window.alert(`目前無法收回訊息：${result.error.message || "請稍後再試"}`); return; }
-    // Do not mutate React-owned DOM. Re-fetch the canonical server-rendered message state instead.
     window.location.reload();
   };
 
