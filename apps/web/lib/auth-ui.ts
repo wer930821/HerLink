@@ -14,6 +14,10 @@ export function getFriendlyAuthErrorMessage(error: unknown, fallback: string) {
   const message = normalize(authError?.message);
   const status = typeof authError?.status === "number" ? authError.status : null;
 
+  if (message.includes("profiles_anonymous_display_name_normalized_unique")) {
+    return "這個匿名名稱已被使用，請換一個";
+  }
+
   if (status === 429 || message.includes("rate limit")) {
     if (message.includes("email")) {
       return "信箱驗證信寄送太頻繁，請稍後再試。";
