@@ -7,5 +7,10 @@ export const viewport: Viewport = {
 };
 
 export default function CollectionLayout({ children }: { children: ReactNode }) {
-  return children;
+  return (
+    <>
+      <style>{`.collection-play { display: none !important; }`}</style>
+      {children}
+    </>
+  );
 }
