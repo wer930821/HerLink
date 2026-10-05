@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { generateNextAnonymousDisplayName } from "../../../../lib/anonymous";
 import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
-import { ACCOUNT_BINDING_TEST_DISPLAY_NAME, ACCOUNT_BINDING_TEST_USER_ID } from "../../lib/account-binding";
+import { ACCOUNT_BINDING_TEST_DISPLAY_NAME } from "../../lib/account-binding";
 import { loadMyProfile, saveAnonymousProfile, supabase, type WebProfile } from "../../lib/supabase";
 
 export default function OnboardingPage() {
@@ -28,7 +28,7 @@ export default function OnboardingPage() {
         setProfile(profileResult.data ?? null);
         if (profileResult.data?.anonymous_display_name) {
           setAnonymousDisplayName(profileResult.data.anonymous_display_name);
-        } else if (ACCOUNT_BINDING_TEST_USER_ID && session.user.id === ACCOUNT_BINDING_TEST_USER_ID) {
+        } else if (session.user.is_anonymous && session.user.id !== "e2817803-1304-4ef0-b0b8-66f473b12886") {
           setAnonymousDisplayName(ACCOUNT_BINDING_TEST_DISPLAY_NAME);
         }
       } catch {
