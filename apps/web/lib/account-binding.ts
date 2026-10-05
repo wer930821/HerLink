@@ -2,7 +2,7 @@ import type { Session } from "@supabase/supabase-js";
 import { loadMyProfile, supabase, type WebProfile } from "./supabase";
 
 export const ACCOUNT_BINDING_PRODUCTION_USER_ID = "e2817803-1304-4ef0-b0b8-66f473b12886";
-export const ACCOUNT_BINDING_TEST_DISPLAY_NAME = "孤星企鵝_測試";
+export const ACCOUNT_BINDING_TEST_DISPLAY_NAME = "孤星測";
 export const ACCOUNT_BINDING_SAFE_FAILURE = "帳號尚未完成綁定，你目前的匿名聊天室沒有受到影響。";
 
 export function isAnonymousSession(session: Session | null | undefined) {
