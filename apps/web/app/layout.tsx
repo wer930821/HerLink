@@ -3,6 +3,7 @@ import "./home-guxing.css";
 import type { Metadata, Viewport } from "next";
 import { SiteChrome } from "../components/layout/SiteChrome";
 import { SessionReadTracker } from "../components/chat/SessionReadTracker";
+import { PwaUpdateManager } from "../components/PwaUpdateManager";
 
 export const metadata: Metadata = {
   title: "HerLink 網頁版",
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="zh-Hant">
       <body>
+        <PwaUpdateManager />
         <SessionReadTracker />
         <a className="skip-link" href="#main-content">
           跳到主要內容
