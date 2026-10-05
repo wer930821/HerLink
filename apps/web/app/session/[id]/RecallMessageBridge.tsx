@@ -124,7 +124,7 @@ export default function RecallMessageBridge() {
         if (!bubble || bubble.dataset.lineActions === "1") return;
         bubble.dataset.lineActions = "1";
         bubble.style.touchAction = "pan-y";
-        bubble.style.webkitTouchCallout = "none";
+        bubble.style.setProperty("-webkit-touch-callout", "none");
         bubble.style.userSelect = "none";
         bubble.setAttribute("aria-label", "長按開啟訊息選單");
 
