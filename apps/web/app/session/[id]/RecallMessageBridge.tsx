@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
-const LONELY_PENGUIN_ID = "e2817803-1304-4ef0-b0b8-66f473b12886";
 
 type RecallProjection = { id: string; recalled_at?: string | null };
 
@@ -22,6 +21,7 @@ export default function RecallMessageBridge() {
     let testerAllowed = false;
     let testerChecked = false;
     let openMenu: HTMLElement | null = null;
+    let allowNextNativeClick = false;
     const recalledIds = new Set<string>();
 
     const closeMenu = () => {
@@ -31,11 +31,15 @@ export default function RecallMessageBridge() {
 
     const detectTester = async () => {
       if (testerChecked) return testerAllowed;
-      const { data: authData, error: authError } = await supabase.auth.getSession();
-      if (disposed || authError) return false;
-      const userId = authData.session?.user?.id ?? "";
-      testerChecked = Boolean(userId);
-      testerAllowed = userId === LONELY_PENGUIN_ID;
+      const { data, error } = await supabase.rpc("can_test_message_recall", { p_session_id: sessionId });
+      if (disposed) return false;
+      if (error) {
+        testerChecked = false;
+        testerAllowed = false;
+        return false;
+      }
+      testerChecked = true;
+      testerAllowed = data === true;
       return testerAllowed;
     };
 
@@ -51,7 +55,7 @@ export default function RecallMessageBridge() {
 
       const rect = bubble.getBoundingClientRect();
       const top = Math.min(window.innerHeight - 64, Math.max(8, rect.bottom + 6));
-      const left = Math.min(window.innerWidth - (isMine ? 176 : 92), Math.max(8, rect.left));
+      const left = Math.min(window.innerWidth - (isMine ? 210 : 92), Math.max(8, rect.left));
       menu.style.top = `${top}px`;
       menu.style.left = `${left}px`;
 
@@ -63,6 +67,7 @@ export default function RecallMessageBridge() {
         event.preventDefault();
         event.stopPropagation();
         closeMenu();
+        allowNextNativeClick = true;
         bubble.click();
       });
       menu.appendChild(reply);
@@ -121,6 +126,10 @@ export default function RecallMessageBridge() {
         bubble.dataset.messageActions = "1";
         bubble.setAttribute("aria-label", article.classList.contains("mine") ? "訊息操作：回覆或收回" : "訊息操作：回覆");
         bubble.addEventListener("click", (event) => {
+          if (allowNextNativeClick) {
+            allowNextNativeClick = false;
+            return;
+          }
           if (!testerAllowed || recalledIds.has(rawId)) return;
           event.preventDefault();
           event.stopImmediatePropagation();
@@ -150,7 +159,7 @@ export default function RecallMessageBridge() {
     };
 
     const tick = async () => {
-      if (!testerAllowed) await detectTester();
+      if (!testerChecked) await detectTester();
       enhance();
       void syncRecallState();
     };
