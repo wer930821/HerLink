@@ -53,4 +53,7 @@ jobs:
       - name: Typecheck
         run: npm run typecheck --prefix apps/web
       - name: Build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-key
         run: npm run build --prefix apps/web
