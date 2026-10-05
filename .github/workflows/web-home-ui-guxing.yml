@@ -1,0 +1,42 @@
+name: Web Home UI Guxing Test
+
+on:
+  push:
+    branches:
+      - test/web-home-ui-guxing
+    paths:
+      - "apps/web/**"
+      - "work/web-home-ui-guxing.test.mjs"
+      - ".github/workflows/web-home-ui-guxing.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-home-ui-guxing-test
+  cancel-in-progress: true
+
+jobs:
+  verify-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout test branch
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Contract test
+        run: node work/web-home-ui-guxing.test.mjs
+      - name: Install Web dependencies
+        run: npm ci --prefix apps/web
+      - name: Typecheck Web
+        run: npm run typecheck --prefix apps/web
+      - name: Build Web
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
+        run: npm run build --prefix apps/web
