@@ -24,7 +24,6 @@ export default function RecallMessageBridge() {
 
   useEffect(() => {
     if (!sessionId || !UUID_RE.test(sessionId)) return;
-
     let disposed = false;
     let allowed = false;
     let menu: HTMLElement | null = null;
@@ -32,17 +31,10 @@ export default function RecallMessageBridge() {
     let startX = 0;
     let startY = 0;
     let active: ReturnType<typeof getMessageTarget> = null;
-    let suppressClick = false;
+    let longPressed = false;
 
-    const clearTimer = () => {
-      if (timer) window.clearTimeout(timer);
-      timer = 0;
-    };
-
-    const closeMenu = () => {
-      menu?.remove();
-      menu = null;
-    };
+    const clearTimer = () => { if (timer) window.clearTimeout(timer); timer = 0; };
+    const closeMenu = () => { menu?.remove(); menu = null; };
 
     const showMenu = (target: NonNullable<ReturnType<typeof getMessageTarget>>) => {
       if (!allowed || disposed) return;
@@ -68,11 +60,11 @@ export default function RecallMessageBridge() {
 
       const reply = makeButton("↩ 回覆");
       reply.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
+        event.preventDefault(); event.stopPropagation();
         closeMenu();
-        suppressClick = false;
+        allowed = false;
         bubble.click();
+        allowed = true;
       });
       node.appendChild(reply);
 
@@ -80,15 +72,13 @@ export default function RecallMessageBridge() {
         const recall = makeButton("收回");
         recall.style.borderLeft = "1px solid rgba(255,255,255,.1)";
         recall.addEventListener("click", async (event) => {
-          event.preventDefault();
-          event.stopPropagation();
+          event.preventDefault(); event.stopPropagation();
           if (recall.disabled || !window.confirm("確定要收回這則訊息嗎？")) return;
           recall.disabled = true;
           recall.textContent = "收回中…";
           const { error } = await supabase.rpc("recall_random_message", { p_message_id: messageId });
           if (error) {
-            recall.disabled = false;
-            recall.textContent = "收回";
+            recall.disabled = false; recall.textContent = "收回";
             window.alert("目前無法收回訊息，請稍後再試。");
             return;
           }
@@ -100,22 +90,17 @@ export default function RecallMessageBridge() {
         });
         node.appendChild(recall);
       }
-
       document.body.appendChild(node);
       menu = node;
     };
 
     const begin = (x: number, y: number, target: ReturnType<typeof getMessageTarget>) => {
       if (!allowed || !target) return;
-      clearTimer();
-      active = target;
-      startX = x;
-      startY = y;
-      suppressClick = false;
+      clearTimer(); active = target; startX = x; startY = y; longPressed = false;
       timer = window.setTimeout(() => {
         timer = 0;
         if (!active) return;
-        suppressClick = true;
+        longPressed = true;
         navigator.vibrate?.(20);
         showMenu(active);
       }, LONG_PRESS_MS);
@@ -138,22 +123,18 @@ export default function RecallMessageBridge() {
       const touch = event.touches[0];
       if (touch && (Math.abs(touch.clientX - startX) > MOVE_TOLERANCE || Math.abs(touch.clientY - startY) > MOVE_TOLERANCE)) clearTimer();
     };
-    const onEnd = () => {
-      clearTimer();
-      active = null;
-    };
+    const onEnd = () => { clearTimer(); active = null; };
     const onContextMenu = (event: MouseEvent) => {
       const target = getMessageTarget(event.target);
       if (!allowed || !target) return;
-      event.preventDefault();
-      suppressClick = true;
-      showMenu(target);
+      event.preventDefault(); event.stopImmediatePropagation();
+      longPressed = true; showMenu(target);
     };
     const onClick = (event: MouseEvent) => {
-      if (!suppressClick || !getMessageTarget(event.target)) return;
+      if (!allowed || !getMessageTarget(event.target)) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      suppressClick = false;
+      if (longPressed) longPressed = false;
     };
 
     document.addEventListener("pointerdown", onPointerDown, true);
@@ -172,9 +153,7 @@ export default function RecallMessageBridge() {
     });
 
     return () => {
-      disposed = true;
-      clearTimer();
-      closeMenu();
+      disposed = true; clearTimer(); closeMenu();
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("pointermove", onPointerMove, true);
       document.removeEventListener("pointerup", onEnd, true);
