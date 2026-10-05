@@ -6,6 +6,7 @@ import { supabase } from "../../../lib/supabase";
 
 const LONELY_PENGUIN_ID = "e2817803-1304-4ef0-b0b8-66f473b12886";
 const LONG_PRESS_MS = 420;
+const RECALL_HINT_MS = 1000;
 
 const RandomSessionClient = dynamic(() => import("./RandomSessionClient"), {
   ssr: false,
@@ -45,15 +46,19 @@ export default function RandomSessionPage() {
     style.dataset.lonelyPenguinMessageActions = "1";
     style.textContent = `
       article.chat-message .chat-bubble, article.chat-message .chat-bubble * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
+      article.chat-message[data-recall-preview="1"] .chat-bubble { opacity: .72; transition: opacity .28s ease, transform .28s ease; }
+      article.chat-message[data-recall-preview="1"] .chat-message-content { font-size: 13px !important; font-style: italic; opacity: .82; }
+      article.chat-message[data-recall-fading="1"] .chat-bubble { opacity: 0; transform: scale(.96); }
     `;
     document.head.appendChild(style);
 
     const hideRecalledMessages = () => {
       for (const article of Array.from(document.querySelectorAll<HTMLElement>("article.chat-message"))) {
+        if (article.dataset.recallPreview === "1") continue;
         const messageContent = article.querySelector<HTMLElement>(".chat-message-content");
         if (!messageContent) continue;
         const text = messageContent.textContent?.trim() ?? "";
-        if (!text || text === "此訊息已收回") {
+        if (!text || text === "此訊息已收回" || text === "已收回") {
           article.style.setProperty("display", "none", "important");
         }
       }
@@ -83,7 +88,7 @@ export default function RandomSessionPage() {
     if (hiddenMessageIds.has(target.messageId)) return;
     const messageContent = target.bubble.querySelector<HTMLElement>(".chat-message-content");
     const visibleText = messageContent?.textContent?.trim() ?? target.bubble.textContent?.trim() ?? "";
-    if (!visibleText || visibleText === "此訊息已收回") return;
+    if (!visibleText || visibleText === "此訊息已收回" || visibleText === "已收回") return;
     clearSelection();
     const rect = target.bubble.getBoundingClientRect();
     const width = target.mine ? 188 : 94;
@@ -110,12 +115,24 @@ export default function RandomSessionPage() {
     setMenu(null);
     const result = await supabase.rpc("recall_random_message", { p_message_id: target.messageId });
     if (result.error) { window.alert(`目前無法收回訊息：${result.error.message || "請稍後再試"}`); return; }
-    target.article.style.setProperty("display", "none", "important");
-    setHiddenMessageIds((current) => {
-      const next = new Set(current);
-      next.add(target.messageId);
-      return next;
-    });
+
+    const messageContent = target.article.querySelector<HTMLElement>(".chat-message-content");
+    target.article.dataset.recallPreview = "1";
+    if (messageContent) messageContent.textContent = "已收回";
+
+    window.setTimeout(() => {
+      target.article.dataset.recallFading = "1";
+      window.setTimeout(() => {
+        target.article.style.setProperty("display", "none", "important");
+        delete target.article.dataset.recallPreview;
+        delete target.article.dataset.recallFading;
+        setHiddenMessageIds((current) => {
+          const next = new Set(current);
+          next.add(target.messageId);
+          return next;
+        });
+      }, 280);
+    }, RECALL_HINT_MS);
   };
 
   return (
