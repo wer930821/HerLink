@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../lib/auth-ui";
 import { ACCOUNT_BINDING_PRODUCTION_USER_ID, canTestAccountBinding, saveAnonymousAccount } from "../lib/account-binding";
-import { getCurrentSession, loadMyProfile, signIn, signOut, type Session, type WebProfile } from "../lib/supabase";
+import { getCurrentSession, loadMyProfile, signOut, supabase, type Session, type WebProfile } from "../lib/supabase";
 
 export function AccountApplicationTest() {
   const pathname = usePathname();
@@ -88,7 +88,7 @@ export function AccountApplicationTest() {
         const out = await signOut();
         if (out.error) throw out.error;
       }
-      const login = await signIn(accountEmail.trim(), accountPassword);
+      const login = await supabase.auth.signInWithPassword({ email: accountEmail.trim(), password: accountPassword });
       if (login.error || !login.data.user) throw login.error ?? new Error("登入失敗");
       if (login.data.user.id === ACCOUNT_BINDING_PRODUCTION_USER_ID) {
         await signOut();
