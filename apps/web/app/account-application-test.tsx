@@ -1,10 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { ACCOUNT_BINDING_PRODUCTION_USER_ID, canTestAccountBinding, saveAnonymousAccount } from "../lib/account-binding";
 import { getCurrentSession, loadMyProfile, type Session, type WebProfile } from "../lib/supabase";
 
 export function AccountApplicationTest() {
+  const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<WebProfile | null>(null);
   const [isPreviewHost, setIsPreviewHost] = useState(false);
@@ -22,14 +24,15 @@ export function AccountApplicationTest() {
     void (async () => {
       const { data } = await getCurrentSession();
       const currentSession = data.session ?? null;
-      if (!mounted || !currentSession) return;
-      const result = await loadMyProfile(currentSession.user.id);
       if (!mounted) return;
       setSession(currentSession);
+      if (!currentSession) { setProfile(null); return; }
+      const result = await loadMyProfile(currentSession.user.id);
+      if (!mounted) return;
       setProfile(result.data ?? null);
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [pathname]);
 
   const previewAnonymous = Boolean(
     isPreviewHost &&
