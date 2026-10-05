@@ -36,6 +36,7 @@ export default function SignUpScreen() {
         value={password}
         secureTextEntry
         placeholder="密碼"
+        autoCapitalize="none"
       />
       <Button
         title={loading ? "註冊中..." : "註冊"}
@@ -77,3 +78,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
