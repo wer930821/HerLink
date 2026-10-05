@@ -898,6 +898,13 @@ export default function HomePage() {
           <Button variant="secondary" size="lg" href="/contacts">匿名聯絡人</Button>
         </div>
 
+        {anonymousSummary?.name === "孤星企鵝" ? (
+          <div className="home-account-actions">
+            <a href="/signup" className="home-account-button home-account-signup">申請帳號</a>
+            <a href="/login" className="home-account-button home-account-login">登入既有帳號</a>
+          </div>
+        ) : null}
+
         {state.queue?.status === "waiting" ? (
           <div className="home-app-status">
             <span>正在等待配對中</span>
