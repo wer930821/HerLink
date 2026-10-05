@@ -1,7 +1,9 @@
 name: Verify formal account binding
 on:
   push:
-    branches: [feat/formal-guxing-binding-main-v2]
+    branches:
+      - feat/formal-guxing-binding-main-v2
+      - feat/formal-guxing-binding-main-v3
 permissions:
   contents: read
 jobs:
