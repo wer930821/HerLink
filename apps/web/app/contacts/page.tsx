@@ -110,6 +110,23 @@ export default function AnonymousContactsPage() {
     }
   };
 
+  const openPendingMessage = async (item: AnonymousContactRow) => {
+    const sessionId = item.current_session_id ?? item.source_session_id;
+    if (!sessionId) {
+      setNotice("找不到原聊天室，請重新整理後再試。");
+      return;
+    }
+    setBusyId(item.contact_id);
+    setNotice(null);
+    try {
+      await markRandomSessionRead(sessionId);
+      router.push(`/session/${sessionId}`);
+    } catch (error) {
+      setNotice(friendlyContactError(error));
+      setBusyId(null);
+    }
+  };
+
   const recoverChat = async (item: AnonymousContactRow) => {
     setBusyId(item.contact_id);
     setNotice(null);
@@ -171,6 +188,7 @@ export default function AnonymousContactsPage() {
               const busy = busyId === item.contact_id;
               const incoming = item.status === "pending" && item.partner_approved && !item.my_approved;
               const outgoing = item.status === "pending" && item.my_approved && !item.partner_approved;
+              const hasPendingReply = item.status === "pending" && item.unread_count > 0 && Boolean(item.current_session_id ?? item.source_session_id);
 
               return (
                 <Surface key={item.contact_id} elevation="inset" className="anonymous-contact-card">
@@ -197,6 +215,10 @@ export default function AnonymousContactsPage() {
                           {busy ? "處理中…" : "聊天室不見了？"}
                         </Button>
                       </>
+                    ) : hasPendingReply ? (
+                      <Button onClick={() => void openPendingMessage(item)} disabled={busy}>
+                        {busy ? "處理中…" : "查看新訊息"}
+                      </Button>
                     ) : incoming && item.source_session_id ? (
                       <Button onClick={() => void accept(item)} disabled={busy}>
                         {busy ? "處理中…" : "接受匿名聯絡"}
