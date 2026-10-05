@@ -2,10 +2,10 @@
 
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
-import { loadMyProfile, supabase } from "../../../lib/supabase";
+import { supabase } from "../../../lib/supabase";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
-const RECALL_TESTER_NAME = "孤星企鵝";
+const RECALL_TESTER_USER_ID = "ad9536fe-5ea0-4a1d-96d0-dcdecdafa18c";
 
 type RecallProjection = { id: string; recalled_at?: string | null };
 
@@ -22,13 +22,11 @@ export default function RecallMessageBridge() {
 
     const run = async () => {
       const { data: auth } = await supabase.auth.getUser();
-      if (disposed || !auth.user) return;
-      const { data: profile } = await loadMyProfile(auth.user.id);
-      if (disposed || profile?.anonymous_display_name?.trim() !== RECALL_TESTER_NAME) return;
+      if (disposed || auth.user?.id !== RECALL_TESTER_USER_ID) return;
 
       const enhance = () => {
         if (disposed) return;
-        document.querySelectorAll<HTMLElement>("article.chat-message").forEach((article) => {
+        document.querySelectorAll<HTMLElement>("article.chat-message.mine").forEach((article) => {
           const rawId = article.id.startsWith("chat-msg-") ? article.id.slice(9) : "";
           if (!UUID_RE.test(rawId)) return;
           const bubble = article.querySelector<HTMLElement>(".chat-bubble");
@@ -47,7 +45,7 @@ export default function RecallMessageBridge() {
             return;
           }
 
-          if (!article.classList.contains("mine") || article.querySelector("button[data-message-recall]")) return;
+          if (article.querySelector("button[data-message-recall]")) return;
           const meta = article.querySelector<HTMLElement>(".chat-meta-outside");
           if (!meta) return;
 
@@ -56,7 +54,7 @@ export default function RecallMessageBridge() {
           button.dataset.messageRecall = "1";
           button.textContent = "收回";
           button.setAttribute("aria-label", "收回這則訊息");
-          button.style.cssText = "border:1px solid currentColor;border-radius:999px;background:transparent;color:inherit;opacity:.82;font-size:12px;font-weight:700;line-height:1;padding:4px 7px;margin-right:6px;cursor:pointer;";
+          button.style.cssText = "border:1px solid #e85d8d;border-radius:999px;background:#fff;color:#c93670;font-size:12px;font-weight:800;line-height:1;padding:5px 8px;margin-right:6px;cursor:pointer;";
           button.addEventListener("click", async (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -77,10 +75,8 @@ export default function RecallMessageBridge() {
         });
       };
 
-      // The recall control must not depend on the recall-state RPC succeeding.
-      // This keeps the tester UI available without touching normal message loading.
       enhance();
-      retryTimer = window.setInterval(enhance, 1000);
+      retryTimer = window.setInterval(enhance, 750);
       observer = new MutationObserver(enhance);
       observer.observe(document.body, { childList: true, subtree: true });
 
