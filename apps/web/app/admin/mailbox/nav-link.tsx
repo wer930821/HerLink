@@ -1,10 +1,11 @@
 "use client";
 import { useCallback,useEffect,useState } from "react";
 import { supabase } from "../../../lib/supabase";
-import { useAdminSession } from "../../../lib/admin-client";
+import { getCurrentSession } from "../../../lib/supabase";
 
 export function AdminMailboxNavLink(){
- const {session}=useAdminSession(); const [count,setCount]=useState(0);
+ const [session,setSession]=useState<Awaited<ReturnType<typeof getCurrentSession>>["data"]["session"]>(null); const [count,setCount]=useState(0);
+ useEffect(()=>{let mounted=true;void getCurrentSession().then(({data})=>{if(mounted)setSession(data.session)});const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,nextSession)=>setSession(nextSession));return()=>{mounted=false;subscription.unsubscribe()}},[]);
  const refresh=useCallback(async()=>{if(!session){setCount(0);return;}const {data}=await (supabase as any).rpc("station_mail_admin_unread_count");setCount(Number(data??0)); try { (window as any).ReactNativeWebView?.postMessage(JSON.stringify({type:"mailbox-unread",count:Number(data??0)})); } catch {}},[session]);
  useEffect(()=>{if(!session)return;void refresh();
   const onNativePushToken=async(event:Event)=>{
