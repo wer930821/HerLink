@@ -102,7 +102,8 @@ function getFriendlyRandomChatError(error: unknown, fallback: string) {
 
 function renderMessageContent(
   content: string,
-  onOpenExternalLink: (url: string) => void
+  onOpenExternalLink: (url: string) => void,
+  onPreviewImage: (url: string) => void
 ): ReactNode[] {
   const nodes: ReactNode[] = [];
   let lastIndex = 0;
