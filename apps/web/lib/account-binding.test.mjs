@@ -8,7 +8,7 @@ assert.ok(source.includes('ACCOUNT_BINDING_TEST_DISPLAY_NAME = "孤星企鵝_測
 assert.ok(source.includes("session?.user?.is_anonymous === true"), "必須先確認目前仍是匿名 Supabase 使用者");
 assert.ok(source.includes("session?.user?.id !== ACCOUNT_BINDING_PRODUCTION_USER_ID"), "正式孤星企鵝 UUID 永遠不可進入測試流程");
 assert.ok(source.includes("profile?.id === session?.user?.id"), "profile 必須屬於目前匿名 session");
-assert.ok(source.includes("profile?.anonymous_display_name === ACCOUNT_BINDING_TEST_DISPLAY_NAME"), "只有孤星企鵝_測試名稱可進入 Preview 帳號申請流程");
+assert.ok(source.includes('profile?.anonymous_display_name?.startsWith(`${ACCOUNT_BINDING_TEST_DISPLAY_NAME}_`)'), "只有孤星企鵝_測試_唯一碼名稱可進入 Preview 帳號申請流程");
 assert.ok(!source.includes("session?.user?.id === ACCOUNT_BINDING_TEST_USER_ID"), "Preview 不可綁死單一匿名 UUID");
 assert.ok(source.includes("updateUser({ email: email.trim(), password })"), "Email 與密碼必須同一次原地升級");
 assert.ok(source.includes("update.data.user.id !== userId"), "升級後必須核對 UUID");
