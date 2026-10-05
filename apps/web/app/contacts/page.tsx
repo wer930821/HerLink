@@ -61,6 +61,35 @@ export default function AnonymousContactsPage() {
   }, [load]);
 
   useEffect(() => {
+    // The chat page intentionally locks the document viewport. If a user reaches
+    // contacts through client navigation, make this document a normal scroll page again.
+    const html = document.documentElement;
+    const body = document.body;
+    const previous = {
+      htmlOverflow: html.style.overflow,
+      htmlHeight: html.style.height,
+      bodyOverflow: body.style.overflow,
+      bodyHeight: body.style.height,
+      bodyPosition: body.style.position,
+      bodyTouchAction: body.style.touchAction,
+    };
+    html.style.overflow = "auto";
+    html.style.height = "auto";
+    body.style.overflow = "auto";
+    body.style.height = "auto";
+    body.style.position = "static";
+    body.style.touchAction = "pan-y";
+    return () => {
+      html.style.overflow = previous.htmlOverflow;
+      html.style.height = previous.htmlHeight;
+      body.style.overflow = previous.bodyOverflow;
+      body.style.height = previous.bodyHeight;
+      body.style.position = previous.bodyPosition;
+      body.style.touchAction = previous.bodyTouchAction;
+    };
+  }, []);
+
+  useEffect(() => {
     const channel = supabase.channel("anonymous-contacts-inbox")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "random_chat_messages" }, (payload: { new: { sender_id?: string } }) => {
         void load(true);
@@ -110,7 +139,7 @@ export default function AnonymousContactsPage() {
     }
   };
 
-  const openPendingMessage = async (item: AnonymousContactRow) => {
+  const openPendingMessage = (item: AnonymousContactRow) => {
     const sessionId = item.current_session_id ?? item.source_session_id;
     if (!sessionId) {
       setNotice("找不到原聊天室，請重新整理後再試。");
@@ -118,13 +147,10 @@ export default function AnonymousContactsPage() {
     }
     setBusyId(item.contact_id);
     setNotice(null);
-    try {
-      await markRandomSessionRead(sessionId);
-      router.push(`/session/${sessionId}`);
-    } catch (error) {
-      setNotice(friendlyContactError(error));
-      setBusyId(null);
-    }
+    // Navigation must not depend on the read-receipt RPC. Marking read is best-effort;
+    // the session page can still open even if that network request is slow or fails.
+    router.push(`/session/${sessionId}`);
+    void markRandomSessionRead(sessionId);
   };
 
   const recoverChat = async (item: AnonymousContactRow) => {
@@ -216,7 +242,7 @@ export default function AnonymousContactsPage() {
                         </Button>
                       </>
                     ) : hasPendingReply ? (
-                      <Button onClick={() => void openPendingMessage(item)} disabled={busy}>
+                      <Button onClick={() => openPendingMessage(item)} disabled={busy}>
                         {busy ? "處理中…" : "查看新訊息"}
                       </Button>
                     ) : incoming && item.source_session_id ? (
@@ -232,6 +258,39 @@ export default function AnonymousContactsPage() {
           </div>
         )}
       </Surface>
+
+      <style jsx global>{`
+        .halloween-contacts-decor,
+        .halloween-contacts-decor * {
+          pointer-events: none !important;
+        }
+        body:has(.halloween-contacts-page) {
+          overflow-x: hidden !important;
+          overflow-y: auto !important;
+          height: auto !important;
+          min-height: 100dvh !important;
+          touch-action: pan-y !important;
+          -webkit-overflow-scrolling: touch;
+        }
+        body:has(.halloween-contacts-page) .shell,
+        body:has(.halloween-contacts-page) .container,
+        .halloween-contacts-page {
+          height: auto !important;
+          max-height: none !important;
+          overflow: visible !important;
+          touch-action: pan-y !important;
+        }
+        .halloween-contacts-page .anonymous-contact-card,
+        .halloween-contacts-page .anonymous-contact-card-actions,
+        .halloween-contacts-page .button {
+          position: relative;
+          pointer-events: auto !important;
+        }
+        .halloween-contacts-page .anonymous-contact-card-actions,
+        .halloween-contacts-page .button {
+          z-index: 5;
+        }
+      `}</style>
     </main>
   );
 }
