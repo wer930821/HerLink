@@ -2,7 +2,7 @@
 .home-crown-float {
   position: absolute !important;
   top: 122px !important;
-  right: 200px !important;
+  right: 180px !important;
   z-index: 12 !important;
   width: 42px !important;
   height: 42px !important;
@@ -65,10 +65,10 @@
 }
 
 @media (max-width: 520px) {
-  /* 手機版王冠明顯往左移，與信箱保留大間距。 */
+  /* 手機版從過度左移的位置往右收回 20px。 */
   .home-crown-float {
     top: 180px !important;
-    right: 200px !important;
+    right: 180px !important;
     width: 36px !important;
     height: 36px !important;
     min-width: 36px !important;
