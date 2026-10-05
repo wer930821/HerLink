@@ -30,24 +30,27 @@ jobs:
           path = Path('apps/web/app/session/[id]/page.tsx')
           text = path.read_text()
           before = text.count(r'\n')
-          if before == 0:
-              raise SystemExit('No literal newline escapes found')
-          text = text.replace(r'\n', '\n')
-          path.write_text(text)
+          if before:
+              text = text.replace(r'\n', '\n')
+              path.write_text(text)
           print(f'replaced {before} literal newline escapes')
           PY
+      - name: Persist repair
+        if: github.event_name == 'push'
+        run: |
+          if git diff --quiet -- 'apps/web/app/session/[id]/page.tsx'; then
+            echo "No newline repair to commit"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add 'apps/web/app/session/[id]/page.tsx'
+            git diff --cached --check
+            git commit -m "fix(web): restore session source newlines"
+            git push origin HEAD:fix/session-literal-newlines-ci
+          fi
       - name: Install web dependencies
         run: npm ci --prefix apps/web
       - name: Typecheck
         run: npm run typecheck --prefix apps/web
       - name: Build
         run: npm run build --prefix apps/web
-      - name: Commit verified repair
-        if: github.event_name == 'push'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add 'apps/web/app/session/[id]/page.tsx'
-          git diff --cached --check
-          git commit -m "fix(web): restore session source newlines [session-newlines-fixed]"
-          git push origin HEAD:fix/session-literal-newlines-ci
