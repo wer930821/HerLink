@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "../lib/supabase";
 
 const FORMAL_USER_ID = "e2817803-1304-4ef0-b0b8-66f473b12886";
 const FORMAL_NAME = "孤星企鵝";
