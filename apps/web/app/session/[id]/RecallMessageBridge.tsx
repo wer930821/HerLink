@@ -5,6 +5,10 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+const RECALL_TESTER_IDS = new Set([
+  "e2817803-1304-4ef0-b0b8-66f473b12886",
+  "8af65ca7-2771-4f27-a55e-79c8c7279178",
+]);
 
 type RecallProjection = { id: string; recalled_at?: string | null };
 
@@ -24,12 +28,11 @@ export default function RecallMessageBridge() {
 
     const detectTester = async () => {
       if (testerChecked) return testerAllowed;
-      const { data, error } = await supabase.rpc("can_test_message_recall", { p_session_id: sessionId });
-      if (disposed) return false;
-      if (!error) {
-        testerChecked = true;
-        testerAllowed = data === true;
-      }
+      const { data: authData, error: authError } = await supabase.auth.getSession();
+      if (disposed || authError) return false;
+      const userId = authData.session?.user?.id ?? "";
+      testerChecked = Boolean(userId);
+      testerAllowed = RECALL_TESTER_IDS.has(userId);
       return testerAllowed;
     };
 
