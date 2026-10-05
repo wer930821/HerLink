@@ -1,0 +1,1 @@
+Ready for pull-request-only CI checks. No merge and no deployment.
