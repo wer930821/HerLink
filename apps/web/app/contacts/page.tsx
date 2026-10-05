@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   getCurrentSession,
   listMyAnonymousContacts,
+  markRandomSessionRead,
   removeAnonymousContact,
   requestAnonymousContact,
   startAnonymousContactSession,
+  supabase,
   type AnonymousContactRow,
 } from "../../lib/supabase";
 import { Badge, Button, Notice, PageHero, Surface } from "../../components/ui";
@@ -32,10 +34,10 @@ export default function AnonymousContactsPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const userIdRef = useRef<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setNotice(null);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const { data: authData } = await getCurrentSession();
       if (!authData.session) {
@@ -43,19 +45,39 @@ export default function AnonymousContactsPage() {
         return;
       }
 
+      userIdRef.current = authData.session.user.id;
       const result = await listMyAnonymousContacts();
       if (result.error) throw result.error;
       setItems(result.data ?? []);
     } catch {
-      setNotice("無法載入匿名聯絡人，請稍後再試。");
+      if (!silent) setNotice("無法載入匿名聯絡人，請稍後再試。");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [router]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const channel = supabase.channel("anonymous-contacts-inbox")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "random_chat_messages" }, (payload: { new: { sender_id?: string } }) => {
+        void load(true);
+        if (payload.new?.sender_id && payload.new.sender_id !== userIdRef.current && typeof document !== "undefined" && document.visibilityState !== "visible" && typeof Notification !== "undefined" && Notification.permission === "granted") {
+          new Notification("HerLink 有新訊息", { body: "匿名聯絡人傳來新訊息，點開 HerLink 查看。" });
+        }
+      })
+      .subscribe();
+    const timer = window.setInterval(() => void load(true), 30000);
+    return () => { window.clearInterval(timer); void supabase.removeChannel(channel); };
+  }, [load]);
+
+  const enableNotifications = async () => {
+    if (typeof Notification === "undefined") { setNotice("這個瀏覽器不支援通知。"); return; }
+    const permission = await Notification.requestPermission();
+    setNotice(permission === "granted" ? "新訊息通知已開啟。" : "通知未開啟，你仍可在聯絡人列表查看未讀訊息。");
+  };
 
   const accept = async (item: AnonymousContactRow) => {
     if (!item.source_session_id) return;
@@ -79,6 +101,7 @@ export default function AnonymousContactsPage() {
       const result = await startAnonymousContactSession(item.contact_id);
       if (result.error) throw result.error;
       if (!result.data?.session_id) throw new Error("Missing session");
+      await markRandomSessionRead(result.data.session_id);
       router.push(`/session/${result.data.session_id}`);
     } catch (error) {
       setNotice(friendlyContactError(error));
@@ -123,11 +146,12 @@ export default function AnonymousContactsPage() {
       <PageHero
         kicker="HerLink"
         title="匿名聯絡人"
-        description="只有雙方都同意才會保留聯絡；不會公開真實姓名、帳號或其他個人資料。"
+        description="已保留的聯絡人可以各自繼續聊天；切換聊天室不會中斷其他對話。"
       >
         <div className="row">
           <Button variant="secondary" href="/">返回首頁</Button>
           <Button variant="secondary" onClick={() => void load()} disabled={loading}>重新整理</Button>
+          {typeof Notification !== "undefined" && Notification.permission !== "granted" ? <Button variant="secondary" onClick={() => void enableNotifications()}>開啟新訊息通知</Button> : null}
         </div>
       </PageHero>
 
@@ -152,6 +176,7 @@ export default function AnonymousContactsPage() {
                 <Surface key={item.contact_id} elevation="inset" className="anonymous-contact-card">
                   <div className="row anonymous-contact-card-head">
                     <strong>{item.partner_anonymous_display_name}</strong>
+                    {item.unread_count > 0 ? <Badge variant="warning">{item.unread_count > 99 ? "99+" : item.unread_count} 則未讀</Badge> : null}
                     {item.partner_verified ? <Badge variant="success">已驗證</Badge> : null}
                     {item.status === "active" ? (
                       <Badge variant="accent">已互相保留</Badge>
@@ -161,11 +186,12 @@ export default function AnonymousContactsPage() {
                       <Badge>等待對方同意</Badge>
                     ) : null}
                   </div>
+                  {item.last_message_preview ? <div className="muted">{item.last_message_preview}</div> : null}
                   <div className="row anonymous-contact-card-actions">
                     {item.status === "active" ? (
                       <>
                         <Button onClick={() => void startChat(item)} disabled={busy}>
-                          {busy ? "處理中…" : "開始聊天"}
+                          {busy ? "處理中…" : item.unread_count > 0 ? "查看新訊息" : "進入聊天室"}
                         </Button>
                         <Button variant="secondary" onClick={() => void recoverChat(item)} disabled={busy}>
                           {busy ? "處理中…" : "聊天室不見了？"}
