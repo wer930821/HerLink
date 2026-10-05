@@ -1,5 +1,6 @@
 "use client";
 
+// test/web-home-ui-guxing only: Halloween home preview. Do not merge to Production without approval.
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../lib/auth-ui";
