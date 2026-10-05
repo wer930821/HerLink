@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./home-guxing.css";
 import type { Metadata, Viewport } from "next";
 import { SiteChrome } from "../components/layout/SiteChrome";
 import { SessionReadTracker } from "../components/chat/SessionReadTracker";
