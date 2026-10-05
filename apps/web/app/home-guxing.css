@@ -2,7 +2,7 @@
 .home-crown-float {
   position: absolute !important;
   top: 122px !important;
-  right: 132px !important;
+  right: 76px !important;
   z-index: 12 !important;
   width: 42px !important;
   height: 42px !important;
@@ -66,8 +66,8 @@
 
 @media (max-width: 520px) {
   .home-crown-float {
-    top: 184px !important;
-    right: 118px !important;
+    top: 140px !important;
+    right: 70px !important;
     width: 38px !important;
     height: 38px !important;
     min-width: 38px !important;
