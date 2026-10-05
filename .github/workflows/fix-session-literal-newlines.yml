@@ -1,0 +1,50 @@
+name: Repair session literal newlines
+
+on:
+  push:
+    branches:
+      - fix/session-literal-newlines-ci
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: "!contains(github.event.head_commit.message, '[session-newlines-fixed]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/session-literal-newlines-ci
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Replace accidental literal newline escapes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('apps/web/app/session/[id]/page.tsx')
+          text = path.read_text()
+          before = text.count(r'\n')
+          if before == 0:
+              raise SystemExit('No literal newline escapes found')
+          text = text.replace(r'\n', '\n')
+          path.write_text(text)
+          print(f'replaced {before} literal newline escapes')
+          PY
+      - name: Install web dependencies
+        run: npm ci --prefix apps/web
+      - name: Typecheck
+        run: npm run typecheck --prefix apps/web
+      - name: Build
+        run: npm run build --prefix apps/web
+      - name: Commit verified repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'apps/web/app/session/[id]/page.tsx'
+          git diff --cached --check
+          git commit -m "fix(web): restore session source newlines [session-newlines-fixed]"
+          git push origin HEAD:fix/session-literal-newlines-ci
