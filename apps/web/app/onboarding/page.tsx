@@ -4,8 +4,12 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { generateNextAnonymousDisplayName } from "../../../../lib/anonymous";
 import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
-import { ACCOUNT_BINDING_TEST_DISPLAY_NAME } from "../../lib/account-binding";
+import { ACCOUNT_BINDING_PRODUCTION_USER_ID, ACCOUNT_BINDING_TEST_DISPLAY_NAME } from "../../lib/account-binding";
 import { loadMyProfile, saveAnonymousProfile, supabase, type WebProfile } from "../../lib/supabase";
+
+function getPhase1PreviewName(userId: string) {
+  return `${ACCOUNT_BINDING_TEST_DISPLAY_NAME}_${userId.slice(0, 6)}`;
+}
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -28,8 +32,12 @@ export default function OnboardingPage() {
         setProfile(profileResult.data ?? null);
         if (profileResult.data?.anonymous_display_name) {
           setAnonymousDisplayName(profileResult.data.anonymous_display_name);
-        } else if (session.user.is_anonymous && session.user.id !== "e2817803-1304-4ef0-b0b8-66f473b12886") {
-          setAnonymousDisplayName(ACCOUNT_BINDING_TEST_DISPLAY_NAME);
+        } else if (
+          window.location.hostname.endsWith(".vercel.app") &&
+          session.user.is_anonymous &&
+          session.user.id !== ACCOUNT_BINDING_PRODUCTION_USER_ID
+        ) {
+          setAnonymousDisplayName(getPhase1PreviewName(session.user.id));
         }
       } catch {
         if (mounted) setError("目前無法載入匿名設定，請稍後再試。");
