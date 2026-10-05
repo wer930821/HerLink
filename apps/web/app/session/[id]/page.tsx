@@ -169,11 +169,16 @@ export default function RandomSessionPage({ params }: Props) {
   const [reportDescription, setReportDescription] = useState("");
   const [reportBlock, setReportBlock] = useState(true);
   const [thousandEggOpen, setThousandEggOpen] = useState(false);
-  const [thousandEggNonce, setThousandEggNonce] = useState(0);\n  const [testMilestone, setTestMilestone] = useState<number | null>(null);
+  const [thousandEggNonce, setThousandEggNonce] = useState(0);
+  const [testMilestone, setTestMilestone] = useState<number | null>(null);
   const thousandEggTimerRef = useRef<number | null>(null);
   const lastKnownMessageCountRef = useRef<number | null>(null);
 
-  const isEasterEggTester = Boolean(\n    (EASTER_TEST_USER_ID && myProfile?.id === EASTER_TEST_USER_ID) ||\n    myProfile?.anonymous_display_name === "孤星企鵝" ||\n    isAdminReplyTester\n  );
+  const isEasterEggTester = Boolean(
+    (EASTER_TEST_USER_ID && myProfile?.id === EASTER_TEST_USER_ID) ||
+    myProfile?.anonymous_display_name === "孤星企鵝" ||
+    isAdminReplyTester
+  );
 
   const recordEasterEgg = useCallback(async (sessionId: string, triggerType: "milestone" | "test") => {
     if (!myProfile?.id) return;
@@ -188,7 +193,17 @@ export default function RandomSessionPage({ params }: Props) {
     }
   }, [myProfile?.id]);
 
-  const playTestMilestone = useCallback((milestone: number) => {\n    setTestMilestone(milestone);\n    setThousandEggNonce((value) => value + 1);\n    setThousandEggOpen(true);\n    if (thousandEggTimerRef.current) window.clearTimeout(thousandEggTimerRef.current);\n    try { if ("vibrate" in navigator) navigator.vibrate([70, 55, 130]); } catch {}\n    thousandEggTimerRef.current = window.setTimeout(() => { setThousandEggOpen(false); setTestMilestone(null); thousandEggTimerRef.current = null; }, 6800);\n  }, []);\n\n  const playThousandEgg = useCallback(() => {\n    setTestMilestone(null);
+  const playTestMilestone = useCallback((milestone: number) => {
+    setTestMilestone(milestone);
+    setThousandEggNonce((value) => value + 1);
+    setThousandEggOpen(true);
+    if (thousandEggTimerRef.current) window.clearTimeout(thousandEggTimerRef.current);
+    try { if ("vibrate" in navigator) navigator.vibrate([70, 55, 130]); } catch {}
+    thousandEggTimerRef.current = window.setTimeout(() => { setThousandEggOpen(false); setTestMilestone(null); thousandEggTimerRef.current = null; }, 6800);
+  }, []);
+
+  const playThousandEgg = useCallback(() => {
+    setTestMilestone(null);
     if (thousandEggTimerRef.current) window.clearTimeout(thousandEggTimerRef.current);
     setThousandEggNonce((value) => value + 1);
     setThousandEggOpen(true);
