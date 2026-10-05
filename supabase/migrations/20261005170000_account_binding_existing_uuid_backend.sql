@@ -15,5 +15,6 @@
 -- REVOKE ALL ON FUNCTION public.admin_merge_anonymous_account(uuid, uuid, boolean) FROM anon, authenticated;
 -- GRANT EXECUTE ON FUNCTION public.admin_merge_anonymous_account(uuid, uuid, boolean) TO service_role;
 
--- No require_active_admin() call is permitted here. Authorization is performed by
--- the allowlisted server route, and the database RPC remains inaccessible to clients.
+-- Interactive administrator-session authorization is intentionally excluded.
+-- Authorization is performed by the allowlisted server route, and the database RPC
+-- remains inaccessible to public clients.
