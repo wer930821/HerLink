@@ -14,7 +14,7 @@ export function canTestAccountBinding(profile: WebProfile | null | undefined, se
     isAnonymousSession(session) &&
     session?.user?.id !== ACCOUNT_BINDING_PRODUCTION_USER_ID &&
     profile?.id === session?.user?.id &&
-    profile?.anonymous_display_name === ACCOUNT_BINDING_TEST_DISPLAY_NAME
+    Boolean(profile?.anonymous_display_name?.startsWith(`${ACCOUNT_BINDING_TEST_DISPLAY_NAME}_`))
   );
 }
 
@@ -27,7 +27,7 @@ export async function saveAnonymousAccount(email: string, password: string) {
   const userId = current.data.session!.user.id;
   const before = await loadMyProfile(userId);
   if (before.error || !canTestAccountBinding(before.data, current.data.session)) {
-    return { data: null, error: before.error ?? new Error("目前僅開放孤星企鵝_測試身分。") };
+    return { data: null, error: before.error ?? new Error("目前僅開放 Phase 1 Preview 測試身分。") };
   }
 
   const update = await supabase.auth.updateUser({ email: email.trim(), password });
