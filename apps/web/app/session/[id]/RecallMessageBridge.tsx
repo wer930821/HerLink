@@ -5,10 +5,9 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+const LONELY_PENGUIN_ID = "e2817803-1304-4ef0-b0b8-66f473b12886";
 const LONG_PRESS_MS = 420;
 const MOVE_TOLERANCE = 18;
-
-type RpcBooleanResult = { data: boolean | null; error: { message?: string } | null };
 
 function getMessageTarget(target: EventTarget | null) {
   const element = target instanceof Element ? target : null;
@@ -33,7 +32,7 @@ export default function RecallMessageBridge() {
     let startX = 0;
     let startY = 0;
     let active: ReturnType<typeof getMessageTarget> = null;
-    let longPressed = false;
+    let suppressNextClick = false;
 
     const clearTimer = () => { if (timer) window.clearTimeout(timer); timer = 0; };
     const closeMenu = () => { menu?.remove(); menu = null; };
@@ -43,9 +42,11 @@ export default function RecallMessageBridge() {
       closeMenu();
       const { article, bubble, messageId } = target;
       const isMine = article.classList.contains("mine");
+      if (bubble.textContent?.trim() === "此訊息已收回") return;
+
       const node = document.createElement("div");
       node.dataset.lineMessageMenu = "1";
-      node.style.cssText = "position:fixed;z-index:2147483647;display:flex;overflow:hidden;border-radius:14px;background:#29272b;box-shadow:0 10px 32px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);";
+      node.style.cssText = "position:fixed;z-index:2147483647;display:flex;overflow:hidden;border-radius:14px;background:#29272b;box-shadow:0 10px 32px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);touch-action:manipulation;";
       const rect = bubble.getBoundingClientRect();
       const width = isMine ? 188 : 94;
       const height = 54;
@@ -56,17 +57,18 @@ export default function RecallMessageBridge() {
         const button = document.createElement("button");
         button.type = "button";
         button.textContent = label;
-        button.style.cssText = "height:54px;min-width:94px;padding:0 14px;border:0;background:transparent;color:#fff;font-size:15px;font-weight:800;";
+        button.style.cssText = "height:54px;min-width:94px;padding:0 14px;border:0;background:transparent;color:#fff;font-size:15px;font-weight:800;touch-action:manipulation;";
         return button;
       };
 
       const reply = makeButton("↩ 回覆");
       reply.addEventListener("click", (event) => {
-        event.preventDefault(); event.stopPropagation();
+        event.preventDefault();
+        event.stopPropagation();
         closeMenu();
         allowed = false;
         bubble.click();
-        allowed = true;
+        queueMicrotask(() => { allowed = true; });
       });
       node.appendChild(reply);
 
@@ -74,14 +76,16 @@ export default function RecallMessageBridge() {
         const recall = makeButton("收回");
         recall.style.borderLeft = "1px solid rgba(255,255,255,.1)";
         recall.addEventListener("click", async (event) => {
-          event.preventDefault(); event.stopPropagation();
+          event.preventDefault();
+          event.stopPropagation();
           if (recall.disabled || !window.confirm("確定要收回這則訊息嗎？")) return;
           recall.disabled = true;
           recall.textContent = "收回中…";
           const { error } = await supabase.rpc("recall_random_message", { p_message_id: messageId });
           if (error) {
-            recall.disabled = false; recall.textContent = "收回";
-            window.alert("目前無法收回訊息，請稍後再試。");
+            recall.disabled = false;
+            recall.textContent = "收回";
+            window.alert(`目前無法收回訊息：${error.message || "請稍後再試"}`);
             return;
           }
           closeMenu();
@@ -98,11 +102,14 @@ export default function RecallMessageBridge() {
 
     const begin = (x: number, y: number, target: ReturnType<typeof getMessageTarget>) => {
       if (!allowed || !target) return;
-      clearTimer(); active = target; startX = x; startY = y; longPressed = false;
+      clearTimer();
+      active = target;
+      startX = x;
+      startY = y;
       timer = window.setTimeout(() => {
         timer = 0;
         if (!active) return;
-        longPressed = true;
+        suppressNextClick = true;
         navigator.vibrate?.(20);
         showMenu(active);
       }, LONG_PRESS_MS);
@@ -118,6 +125,7 @@ export default function RecallMessageBridge() {
       if (Math.abs(event.clientX - startX) > MOVE_TOLERANCE || Math.abs(event.clientY - startY) > MOVE_TOLERANCE) clearTimer();
     };
     const onTouchStart = (event: TouchEvent) => {
+      if (menu && !menu.contains(event.target as Node)) closeMenu();
       const touch = event.touches[0];
       if (touch) begin(touch.clientX, touch.clientY, getMessageTarget(event.target));
     };
@@ -129,14 +137,17 @@ export default function RecallMessageBridge() {
     const onContextMenu = (event: MouseEvent) => {
       const target = getMessageTarget(event.target);
       if (!allowed || !target) return;
-      event.preventDefault(); event.stopImmediatePropagation();
-      longPressed = true; showMenu(target);
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      suppressNextClick = true;
+      showMenu(target);
     };
     const onClick = (event: MouseEvent) => {
       if (!allowed || !getMessageTarget(event.target)) return;
       event.preventDefault();
+      event.stopPropagation();
       event.stopImmediatePropagation();
-      if (longPressed) longPressed = false;
+      suppressNextClick = false;
     };
 
     document.addEventListener("pointerdown", onPointerDown, true);
@@ -151,13 +162,21 @@ export default function RecallMessageBridge() {
     document.addEventListener("click", onClick, true);
 
     const checkAccess = async () => {
-      const result = await supabase.rpc("can_test_message_recall", { p_session_id: sessionId }) as RpcBooleanResult;
-      if (!disposed && !result.error && result.data === true) allowed = true;
+      const { data: authData } = await supabase.auth.getUser();
+      if (disposed) return;
+      allowed = authData.user?.id === LONELY_PENGUIN_ID;
+      if (!allowed) return;
+      const { data, error } = await supabase.rpc("can_test_message_recall", { p_session_id: sessionId });
+      if (!disposed && (error || data !== true)) {
+        console.warn("[message-actions] recall capability check failed", error?.message ?? "not allowed for session");
+      }
     };
     void checkAccess();
 
     return () => {
-      disposed = true; clearTimer(); closeMenu();
+      disposed = true;
+      clearTimer();
+      closeMenu();
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("pointermove", onPointerMove, true);
       document.removeEventListener("pointerup", onEnd, true);
