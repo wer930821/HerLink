@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import RecallMessageBridge from "./RecallMessageBridge";
 
 const RandomSessionClient = dynamic(() => import("./RandomSessionClient"), {
   ssr: false,
@@ -15,10 +14,5 @@ const RandomSessionClient = dynamic(() => import("./RandomSessionClient"), {
 });
 
 export default function RandomSessionPage() {
-  return (
-    <>
-      <RandomSessionClient />
-      <RecallMessageBridge />
-    </>
-  );
+  return <RandomSessionClient />;
 }
