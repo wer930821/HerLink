@@ -43,7 +43,10 @@ export default function RandomSessionPage() {
     if (!allowed) return;
     const style = document.createElement("style");
     style.dataset.lonelyPenguinMessageActions = "1";
-    style.textContent = `article.chat-message .chat-bubble, article.chat-message .chat-bubble * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }`;
+    style.textContent = `
+      article.chat-message .chat-bubble, article.chat-message .chat-bubble * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
+      article.chat-message:has(.chat-message-content:empty) { display: none !important; }
+    `;
     document.head.appendChild(style);
     return () => style.remove();
   }, [allowed]);
