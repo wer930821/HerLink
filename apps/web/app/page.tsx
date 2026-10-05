@@ -869,6 +869,8 @@ export default function HomePage() {
           </div>
         </div>
 
+        {anonymousSummary?.name === "孤星企鵝" ? <button type="button" className="home-crown-float" aria-label="彩蛋圖鑑與任務" title="彩蛋圖鑑與任務" onClick={() => router.push("/collection")}>♛</button> : null}
+
         <button type="button" className="home-mailbox-float" aria-label="信箱" onPointerDown={(event)=>event.currentTarget.blur()} onClick={()=>router.push("/mailbox")}><span className="home-mailbox-icon" aria-hidden="true">✉</span><span>信箱</span>{mailUnreadCount>0?<span className="home-mailbox-unread" aria-label={`${mailUnreadCount} 封未讀`}>{mailUnreadCount>99?"99+":mailUnreadCount}</span>:null}</button>
 
         <div className="halloween-home-decor" aria-hidden="true"><span>🎃</span><span>👻</span><span>🦇</span></div>
@@ -886,13 +888,7 @@ export default function HomePage() {
           </Button>
         </div>
 
-        {anonymousSummary?.name === "孤星企鵝" ? (
-          <button type="button" className="home-collection-entry" onClick={() => router.push("/collection")}>
-            <span className="home-collection-entry-icon">♛</span>
-            <span><b>彩蛋圖鑑與任務</b><small>收集彩蛋 · 完成任務 · 解鎖成就</small></span>
-            <span className="home-collection-entry-arrow">›</span>
-          </button>
-        ) : null}
+
 
         <div className="home-app-actions">
           <Button size="lg" onClick={startMatching} disabled={actionBusy || MAINTENANCE_MODE}>
