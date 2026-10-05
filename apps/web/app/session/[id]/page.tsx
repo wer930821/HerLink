@@ -14,14 +14,8 @@ const RandomSessionClient = dynamic(() => import("./RandomSessionClient"), {
 
 type ActionTarget = { bubble: HTMLElement; article: HTMLElement; messageId: string; mine: boolean };
 
-function asElement(target: EventTarget | null) {
-  return target instanceof Element ? target : null;
-}
-
-function isActionMenuTarget(target: EventTarget | null) {
-  return Boolean(asElement(target)?.closest('[data-line-message-menu="1"]'));
-}
-
+function asElement(target: EventTarget | null) { return target instanceof Element ? target : null; }
+function isActionMenuTarget(target: EventTarget | null) { return Boolean(asElement(target)?.closest('[data-line-message-menu="1"]')); }
 function getActionTarget(target: EventTarget | null): ActionTarget | null {
   const element = asElement(target);
   const bubble = element?.closest<HTMLElement>(".chat-bubble") ?? null;
@@ -40,10 +34,7 @@ export default function RandomSessionPage() {
 
   useEffect(() => {
     let alive = true;
-    void (async () => {
-      const result = await supabase.auth.getUser();
-      if (alive) setAllowed(result.data.user?.id === LONELY_PENGUIN_ID);
-    })();
+    void (async () => { const result = await supabase.auth.getUser(); if (alive) setAllowed(result.data.user?.id === LONELY_PENGUIN_ID); })();
     return () => { alive = false; };
   }, []);
 
@@ -56,17 +47,8 @@ export default function RandomSessionPage() {
     return () => style.remove();
   }, [allowed]);
 
-  const clearSelection = () => {
-    const selection = window.getSelection?.();
-    if (selection && selection.rangeCount > 0) selection.removeAllRanges();
-  };
-
-  const clearPress = () => {
-    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-    timerRef.current = null;
-    activeRef.current = null;
-  };
-
+  const clearSelection = () => { const selection = window.getSelection?.(); if (selection && selection.rangeCount > 0) selection.removeAllRanges(); };
+  const clearPress = () => { if (timerRef.current !== null) window.clearTimeout(timerRef.current); timerRef.current = null; activeRef.current = null; };
   const openMenu = (target: ActionTarget) => {
     if (target.bubble.textContent?.trim() === "此訊息已收回") return;
     clearSelection();
@@ -81,42 +63,22 @@ export default function RandomSessionPage() {
     if (!allowed || isActionMenuTarget(event.target)) return;
     const target = getActionTarget(event.target);
     if (!target) { setMenu(null); return; }
-    event.preventDefault();
-    clearSelection();
-    clearPress();
-    startRef.current = { x: event.clientX, y: event.clientY };
-    activeRef.current = target;
+    event.preventDefault(); clearSelection(); clearPress();
+    startRef.current = { x: event.clientX, y: event.clientY }; activeRef.current = target;
     timerRef.current = window.setTimeout(() => { timerRef.current = null; if (activeRef.current) openMenu(activeRef.current); }, LONG_PRESS_MS);
   };
-
-  const onPointerMoveCapture = (event: PointerEvent<HTMLDivElement>) => {
-    if (!allowed || isActionMenuTarget(event.target) || timerRef.current === null) return;
-    if (Math.abs(event.clientX - startRef.current.x) > 18 || Math.abs(event.clientY - startRef.current.y) > 18) clearPress();
-  };
-
-  const onClickCapture = (event: MouseEvent<HTMLDivElement>) => {
-    if (!allowed || bypassClickRef.current || isActionMenuTarget(event.target) || !getActionTarget(event.target)) return;
-    event.preventDefault();
-    event.stopPropagation();
-  };
-
-  const reply = () => {
-    if (!menu) return;
-    const bubble = menu.bubble;
-    setMenu(null);
-    bypassClickRef.current = true;
-    bubble.click();
-    queueMicrotask(() => { bypassClickRef.current = false; });
-  };
+  const onPointerMoveCapture = (event: PointerEvent<HTMLDivElement>) => { if (!allowed || isActionMenuTarget(event.target) || timerRef.current === null) return; if (Math.abs(event.clientX - startRef.current.x) > 18 || Math.abs(event.clientY - startRef.current.y) > 18) clearPress(); };
+  const onClickCapture = (event: MouseEvent<HTMLDivElement>) => { if (!allowed || bypassClickRef.current || isActionMenuTarget(event.target) || !getActionTarget(event.target)) return; event.preventDefault(); event.stopPropagation(); };
+  const reply = () => { if (!menu) return; const bubble = menu.bubble; setMenu(null); bypassClickRef.current = true; bubble.click(); queueMicrotask(() => { bypassClickRef.current = false; }); };
 
   const recall = async () => {
     if (!menu?.mine) return;
-    const target = menu;
-    const result = await supabase.rpc("recall_random_message", { p_message_id: target.messageId });
-    if (result.error) { window.alert(`目前無法收回訊息：${result.error.message || "請稍後再試"}`); return; }
-    target.bubble.replaceChildren(document.createTextNode("此訊息已收回"));
-    target.bubble.style.opacity = ".62";
+    const messageId = menu.messageId;
     setMenu(null);
+    const result = await supabase.rpc("recall_random_message", { p_message_id: messageId });
+    if (result.error) { window.alert(`目前無法收回訊息：${result.error.message || "請稍後再試"}`); return; }
+    // Do not mutate React-owned DOM. Re-fetch the canonical server-rendered message state instead.
+    window.location.reload();
   };
 
   return (
