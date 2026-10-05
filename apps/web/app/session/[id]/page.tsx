@@ -1,7 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import RecallMessageBridge from "./RecallMessageBridge";
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
+import { supabase } from "../../../lib/supabase";
+
+const LONELY_PENGUIN_ID = "e2817803-1304-4ef0-b0b8-66f473b12886";
+const LONG_PRESS_MS = 420;
 
 const RandomSessionClient = dynamic(() => import("./RandomSessionClient"), {
   ssr: false,
@@ -14,11 +18,143 @@ const RandomSessionClient = dynamic(() => import("./RandomSessionClient"), {
   ),
 });
 
+type ActionTarget = {
+  bubble: HTMLElement;
+  article: HTMLElement;
+  messageId: string;
+  mine: boolean;
+};
+
+function getActionTarget(target: EventTarget | null): ActionTarget | null {
+  const element = target instanceof Element ? target : null;
+  const bubble = element?.closest<HTMLElement>(".chat-bubble") ?? null;
+  const article = bubble?.closest<HTMLElement>("article.chat-message") ?? null;
+  if (!bubble || !article || !article.id.startsWith("chat-msg-")) return null;
+  return {
+    bubble,
+    article,
+    messageId: article.id.slice("chat-msg-".length),
+    mine: article.classList.contains("mine"),
+  };
+}
+
 export default function RandomSessionPage() {
+  const [allowed, setAllowed] = useState(false);
+  const [menu, setMenu] = useState<(ActionTarget & { left: number; top: number }) | null>(null);
+  const timerRef = useRef<number | null>(null);
+  const startRef = useRef({ x: 0, y: 0 });
+  const activeRef = useRef<ActionTarget | null>(null);
+  const bypassClickRef = useRef(false);
+
+  useEffect(() => {
+    let alive = true;
+    void supabase.auth.getUser().then(({ data }) => {
+      if (alive) setAllowed(data.user?.id === LONELY_PENGUIN_ID);
+    });
+    return () => { alive = false; };
+  }, []);
+
+  const clearPress = () => {
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    timerRef.current = null;
+    activeRef.current = null;
+  };
+
+  const openMenu = (target: ActionTarget) => {
+    if (target.bubble.textContent?.trim() === "此訊息已收回") return;
+    const rect = target.bubble.getBoundingClientRect();
+    const width = target.mine ? 188 : 94;
+    const height = 54;
+    setMenu({
+      ...target,
+      left: Math.max(8, Math.min(window.innerWidth - width - 8, target.mine ? rect.right - width : rect.left)),
+      top: rect.top > height + 12 ? rect.top - height - 7 : Math.min(window.innerHeight - height - 8, rect.bottom + 7),
+    });
+    navigator.vibrate?.(20);
+  };
+
+  const onPointerDownCapture = (event: PointerEvent<HTMLDivElement>) => {
+    if (!allowed) return;
+    const target = getActionTarget(event.target);
+    if (!target) {
+      setMenu(null);
+      return;
+    }
+    clearPress();
+    startRef.current = { x: event.clientX, y: event.clientY };
+    activeRef.current = target;
+    timerRef.current = window.setTimeout(() => {
+      timerRef.current = null;
+      if (activeRef.current) openMenu(activeRef.current);
+    }, LONG_PRESS_MS);
+  };
+
+  const onPointerMoveCapture = (event: PointerEvent<HTMLDivElement>) => {
+    if (!allowed || timerRef.current === null) return;
+    if (Math.abs(event.clientX - startRef.current.x) > 18 || Math.abs(event.clientY - startRef.current.y) > 18) clearPress();
+  };
+
+  const onClickCapture = (event: MouseEvent<HTMLDivElement>) => {
+    if (!allowed || bypassClickRef.current) return;
+    if (!getActionTarget(event.target)) return;
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const reply = () => {
+    if (!menu) return;
+    const bubble = menu.bubble;
+    setMenu(null);
+    bypassClickRef.current = true;
+    bubble.click();
+    queueMicrotask(() => { bypassClickRef.current = false; });
+  };
+
+  const recall = async () => {
+    if (!menu?.mine) return;
+    const target = menu;
+    const { error } = await supabase.rpc("recall_random_message", { p_message_id: target.messageId });
+    if (error) {
+      window.alert(`目前無法收回訊息：${error.message || "請稍後再試"}`);
+      return;
+    }
+    target.bubble.replaceChildren(document.createTextNode("此訊息已收回"));
+    target.bubble.style.opacity = ".62";
+    setMenu(null);
+  };
+
   return (
-    <>
+    <div
+      style={{ display: "contents" }}
+      onPointerDownCapture={onPointerDownCapture}
+      onPointerMoveCapture={onPointerMoveCapture}
+      onPointerUpCapture={clearPress}
+      onPointerCancelCapture={clearPress}
+      onClickCapture={onClickCapture}
+      onContextMenu={(event) => {
+        if (!allowed) return;
+        const target = getActionTarget(event.target);
+        if (!target) return;
+        event.preventDefault();
+        openMenu(target);
+      }}
+    >
       <RandomSessionClient />
-      <RecallMessageBridge />
-    </>
+      {menu ? (
+        <div
+          data-line-message-menu="1"
+          style={{
+            position: "fixed", left: menu.left, top: menu.top, zIndex: 2147483647,
+            display: "flex", overflow: "hidden", borderRadius: 14, background: "#29272b",
+            boxShadow: "0 10px 32px rgba(0,0,0,.5)", border: "1px solid rgba(255,255,255,.12)",
+          }}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button type="button" onClick={reply} style={{ height: 54, minWidth: 94, padding: "0 14px", border: 0, background: "transparent", color: "#fff", fontSize: 15, fontWeight: 800 }}>↩ 回覆</button>
+          {menu.mine ? <button type="button" onClick={() => void recall()} style={{ height: 54, minWidth: 94, padding: "0 14px", border: 0, borderLeft: "1px solid rgba(255,255,255,.1)", background: "transparent", color: "#fff", fontSize: 15, fontWeight: 800 }}>收回</button> : null}
+        </div>
+      ) : null}
+    </div>
   );
 }
