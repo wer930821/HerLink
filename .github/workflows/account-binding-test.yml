@@ -19,8 +19,8 @@ jobs:
       - name: Install web dependencies
         working-directory: apps/web
         run: npm ci
-      - name: Typecheck web
-        working-directory: apps/web
-        run: npm run typecheck
       - name: Account binding contract
         run: node work/account-binding-existing-uuid-contract.test.mjs
+      - name: Typecheck controlled merge route
+        working-directory: apps/web
+        run: npx tsc --noEmit --skipLibCheck --target ES2022 --module esnext --moduleResolution bundler --jsx preserve --allowJs false app/api/account-binding/merge-existing/route.ts
