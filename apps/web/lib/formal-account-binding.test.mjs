@@ -1,0 +1,3 @@
+import assert from "node:assert/strict"; import fs from "node:fs";
+const component=fs.readFileSync(new URL("../app/formal-account-binding.tsx",import.meta.url),"utf8"); const layout=fs.readFileSync(new URL("../app/layout.tsx",import.meta.url),"utf8");
+assert.match(component,/e2817803-1304-4ef0-b0b8-66f473b12886/); assert.match(component,/孤星企鵝/); assert.doesNotMatch(component,/wer930821@gmail\.com/); assert.match(component,/updateUser\(\{ email:/); assert.match(component,/signInWithPassword/); assert.match(component,/select\("id, anonymous_display_name"\)/); assert.match(component,/已有帳號？登入/); assert.match(component,/申請帳號/); assert.match(component,/setSession/); assert.match(layout,/FormalAccountBinding/); console.log("formal account binding contract OK");
