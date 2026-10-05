@@ -1,0 +1,88 @@
+/* 孤星企鵝限定首頁控制項：只調整已由 React 身分條件渲染的元素。 */
+.home-crown-float {
+  position: absolute !important;
+  top: 42% !important;
+  right: 104px !important;
+  z-index: 12 !important;
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  min-height: 46px !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border: 1px solid rgba(255, 190, 91, .28) !important;
+  border-radius: 999px !important;
+  background: rgba(48, 30, 29, .86) !important;
+  color: #ffd66b !important;
+  box-shadow: 0 8px 22px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.07) !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+.home-account-actions {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  margin: 12px 0 0 !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  z-index: auto !important;
+}
+
+.home-account-button {
+  position: static !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 9px 12px !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  border-radius: 14px !important;
+  font-size: .9rem !important;
+  font-weight: 800 !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 8px 18px rgba(0,0,0,.16) !important;
+}
+
+.home-account-signup {
+  background: rgba(255,255,255,.10) !important;
+  color: var(--color-text) !important;
+}
+
+.home-account-login {
+  background: #ff8b24 !important;
+  color: #24140b !important;
+  border-color: rgba(255,158,67,.36) !important;
+}
+
+@media (max-width: 520px) {
+  .home-crown-float {
+    top: 40.5% !important;
+    right: 102px !important;
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    min-height: 42px !important;
+    font-size: 20px !important;
+  }
+
+  .home-account-actions {
+    margin-top: 10px !important;
+    gap: 8px !important;
+  }
+
+  .home-account-button {
+    min-height: 42px !important;
+    padding-inline: 8px !important;
+    font-size: .84rem !important;
+  }
+}
