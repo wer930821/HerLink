@@ -2,7 +2,7 @@
 .home-crown-float {
   position: absolute !important;
   top: 122px !important;
-  right: 76px !important;
+  right: 92px !important;
   z-index: 12 !important;
   width: 42px !important;
   height: 42px !important;
@@ -65,10 +65,10 @@
 }
 
 @media (max-width: 520px) {
-  /* 依手機正式站的信箱位置對齊：王冠固定在信箱左側，不再落在標題或名稱卡片。 */
+  /* 手機版王冠與信箱保留明顯間距，避免兩個膠囊視覺黏在一起。 */
   .home-crown-float {
     top: 180px !important;
-    right: 70px !important;
+    right: 88px !important;
     width: 36px !important;
     height: 36px !important;
     min-width: 36px !important;
