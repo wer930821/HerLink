@@ -1,0 +1,38 @@
+name: Repair formal binding preview source
+
+on:
+  push:
+    branches:
+      - feat/formal-guxing-account-binding
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/formal-guxing-account-binding
+      - name: Replace accidental literal newline escapes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('apps/web/app/session/[id]/page.tsx')
+          source = path.read_text(encoding='utf-8')
+          repaired = source.replace('\\\\n', '\n')
+          if repaired == source:
+              raise SystemExit('No accidental literal newline escapes found')
+          path.write_text(repaired, encoding='utf-8')
+          print('replaced', source.count('\\\\n'), 'literal newline escapes')
+          PY
+      - name: Commit repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'apps/web/app/session/[id]/page.tsx'
+          git commit -m 'fix(web): repair escaped newlines in chat page'
+          git push origin HEAD:feat/formal-guxing-account-binding
