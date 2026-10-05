@@ -61,8 +61,6 @@ export default function AnonymousContactsPage() {
   }, [load]);
 
   useEffect(() => {
-    // The chat page intentionally locks the document viewport. If a user reaches
-    // contacts through client navigation, make this document a normal scroll page again.
     const html = document.documentElement;
     const body = document.body;
     const previous = {
@@ -140,17 +138,22 @@ export default function AnonymousContactsPage() {
   };
 
   const openPendingMessage = (item: AnonymousContactRow) => {
-    const sessionId = item.current_session_id ?? item.source_session_id;
+    // Pending retained contacts must reopen the original room. A current_session_id
+    // can point at a later/ended room for the same pair, while source_session_id is
+    // the room that created this retained-contact relationship and contains the
+    // unread message shown on this card.
+    const sessionId = item.source_session_id ?? item.current_session_id;
     if (!sessionId) {
       setNotice("找不到原聊天室，請重新整理後再試。");
       return;
     }
     setBusyId(item.contact_id);
     setNotice(null);
-    // Navigation must not depend on the read-receipt RPC. Marking read is best-effort;
-    // the session page can still open even if that network request is slow or fails.
-    router.push(`/session/${sessionId}`);
-    void markRandomSessionRead(sessionId);
+    void markRandomSessionRead(sessionId).catch(() => undefined);
+    // Use a full document navigation here rather than relying on Next's client
+    // router. This also clears any stale chat-page pointer/viewport state left by
+    // a previous client-side transition on mobile browsers.
+    window.location.assign(`/session/${encodeURIComponent(sessionId)}`);
   };
 
   const recoverChat = async (item: AnonymousContactRow) => {
@@ -214,7 +217,7 @@ export default function AnonymousContactsPage() {
               const busy = busyId === item.contact_id;
               const incoming = item.status === "pending" && item.partner_approved && !item.my_approved;
               const outgoing = item.status === "pending" && item.my_approved && !item.partner_approved;
-              const hasPendingReply = item.status === "pending" && item.unread_count > 0 && Boolean(item.current_session_id ?? item.source_session_id);
+              const hasPendingReply = item.status === "pending" && item.unread_count > 0 && Boolean(item.source_session_id ?? item.current_session_id);
 
               return (
                 <Surface key={item.contact_id} elevation="inset" className="anonymous-contact-card">
