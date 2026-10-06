@@ -26,7 +26,6 @@ function getActionTarget(target: EventTarget | null): ActionTarget | null {
 export default function RandomSessionPage() {
   const [allowed, setAllowed] = useState(false);
   const [menu, setMenu] = useState<(ActionTarget & { left: number; top: number }) | null>(null);
-  const [hiddenMessageIds, setHiddenMessageIds] = useState<Set<string>>(() => new Set());
   const timerRef = useRef<number | null>(null);
   const startRef = useRef({ x: 0, y: 0 });
   const activeRef = useRef<ActionTarget | null>(null);
@@ -46,44 +45,14 @@ export default function RandomSessionPage() {
       article.chat-message .chat-bubble, article.chat-message .chat-bubble * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
       article.chat-message[data-recall-preview="1"] .chat-bubble { opacity: .72; transition: opacity .28s ease, transform .28s ease; }
       article.chat-message[data-recall-preview="1"] .chat-message-content { font-size: 13px !important; font-style: italic; opacity: .82; }
-      article.chat-message[data-recall-fading="1"] .chat-bubble { opacity: 0; transform: scale(.96); }
     `;
     document.head.appendChild(style);
-
-    const hideRecalledMessages = () => {
-      for (const article of Array.from(document.querySelectorAll<HTMLElement>("article.chat-message"))) {
-        if (article.dataset.recallPreview === "1") continue;
-        const messageContent = article.querySelector<HTMLElement>(".chat-message-content");
-        if (!messageContent) continue;
-        const text = messageContent.textContent?.trim() ?? "";
-        if (!text || text === "此訊息已收回" || text === "已收回") {
-          article.style.setProperty("display", "none", "important");
-        }
-      }
-    };
-
-    hideRecalledMessages();
-    const observer = new MutationObserver(hideRecalledMessages);
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-
-    return () => {
-      observer.disconnect();
-      style.remove();
-    };
+    return () => { style.remove(); };
   }, [allowed]);
-
-  useEffect(() => {
-    if (!allowed || hiddenMessageIds.size === 0) return;
-    for (const messageId of hiddenMessageIds) {
-      const article = document.getElementById(`chat-msg-${messageId}`);
-      if (article) article.style.setProperty("display", "none", "important");
-    }
-  }, [allowed, hiddenMessageIds]);
 
   const clearSelection = () => { const selection = window.getSelection?.(); if (selection && selection.rangeCount > 0) selection.removeAllRanges(); };
   const clearPress = () => { if (timerRef.current !== null) window.clearTimeout(timerRef.current); timerRef.current = null; activeRef.current = null; };
   const openMenu = (target: ActionTarget) => {
-    if (hiddenMessageIds.has(target.messageId)) return;
     const messageContent = target.bubble.querySelector<HTMLElement>(".chat-message-content");
     const visibleText = messageContent?.textContent?.trim() ?? target.bubble.textContent?.trim() ?? "";
     const hasMedia = Boolean(target.bubble.querySelector("img, video, audio, [data-media]"));
@@ -112,14 +81,25 @@ export default function RandomSessionPage() {
     if (!menu?.mine) return;
     const target = menu;
     setMenu(null);
+
+    // Preserve the exact scroll anchor while the RPC and subsequent Realtime
+    // UPDATE settle. Recalled rows stay rendered as a compact placeholder;
+    // removing the article caused the message list height to collapse and made
+    // mobile Web/WebView appear to jump to another position.
+    const scroller = target.article.closest<HTMLElement>(".chat-messages");
+    const anchorTop = target.article.getBoundingClientRect().top;
     const result = await supabase.rpc("recall_random_message", { p_message_id: target.messageId });
     if (result.error) { window.alert(`目前無法收回訊息：${result.error.message || "請稍後再試"}`); return; }
 
     const messageContent = target.article.querySelector<HTMLElement>(".chat-message-content");
-    // Keep the message slot in the document so the chat scroll position does
-    // not jump when a message is recalled on mobile Web/WebView.
     target.article.dataset.recallPreview = "1";
     if (messageContent) messageContent.textContent = "此訊息已收回";
+
+    window.requestAnimationFrame(() => {
+      if (!scroller || !target.article.isConnected) return;
+      const delta = target.article.getBoundingClientRect().top - anchorTop;
+      if (Math.abs(delta) > 0.5) scroller.scrollTop += delta;
+    });
   };
 
   return (
