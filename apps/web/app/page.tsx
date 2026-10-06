@@ -928,6 +928,7 @@ export default function HomePage() {
           </Button>
           {state.activeSession ? <Button variant="secondary" size="lg" href="/chats">我的聊天</Button> : null}
           <Button variant="secondary" size="lg" href="/contacts">匿名聯絡人</Button>
+          <Button variant="secondary" size="lg" onClick={() => void openPermanentRecoverySettings()} disabled={actionBusy}>永久恢復碼</Button>
         </div>
 
         {anonymousSummary?.name === "孤星企鵝" ? (
@@ -936,10 +937,6 @@ export default function HomePage() {
             <a href="/login" className="home-account-button home-account-login">登入既有帳號</a>
           </div>
         ) : null}
-
-          <Button variant="secondary" size="lg" onClick={() => void openPermanentRecoverySettings()} disabled={!state.session || actionBusy}>
-        永久恢復碼
-      </Button>
 
       <Modal open={permanentRecoveryOpen} title="永久恢復碼" onClose={() => { if (!recoveryBusy) setPermanentRecoveryOpen(false); }}>
         <div className="stack">
