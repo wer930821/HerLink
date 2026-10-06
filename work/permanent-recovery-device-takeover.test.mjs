@@ -6,7 +6,7 @@ const migration = readFileSync(new URL("../supabase/migrations/20261006170000_an
 
 test("identity ownership is represented separately from immutable chat participant ids", () => {
   assert.match(migration, /anonymous_identity_device_state/);
-  assert.match(migration, /anonymous_identity_id UUID NOT NULL REFERENCES public\.profiles\(id\)/);
+  assert.match(migration, /anonymous_identity_id UUID NOT NULL(?: PRIMARY KEY)? REFERENCES public\.profiles\(id\)/);
   assert.match(migration, /active_auth_user_id UUID NOT NULL/);
   assert.match(migration, /generation BIGINT NOT NULL/);
 });
