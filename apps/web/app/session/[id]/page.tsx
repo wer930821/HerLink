@@ -82,12 +82,8 @@ export default function RandomSessionPage() {
     const target = menu;
     setMenu(null);
 
-    // Preserve the exact scroll anchor while the RPC and subsequent Realtime
-    // UPDATE settle. Recalled rows stay rendered as a compact placeholder;
-    // removing the article caused the message list height to collapse and made
-    // mobile Web/WebView appear to jump to another position.
     const scroller = target.article.closest<HTMLElement>(".chat-messages");
-    const anchorTop = target.article.getBoundingClientRect().top;
+    const lockedScrollTop = scroller?.scrollTop ?? 0;
     const result = await supabase.rpc("recall_random_message", { p_message_id: target.messageId });
     if (result.error) { window.alert(`目前無法收回訊息：${result.error.message || "請稍後再試"}`); return; }
 
@@ -95,11 +91,23 @@ export default function RandomSessionPage() {
     target.article.dataset.recallPreview = "1";
     if (messageContent) messageContent.textContent = "此訊息已收回";
 
-    window.requestAnimationFrame(() => {
-      if (!scroller || !target.article.isConnected) return;
-      const delta = target.article.getBoundingClientRect().top - anchorTop;
-      if (Math.abs(delta) > 0.5) scroller.scrollTop += delta;
-    });
+    // RandomSessionClient deliberately re-pins the list for several frames when
+    // ResizeObserver sees a message change. A recall is an UPDATE, not a new
+    // message, so that normal auto-scroll must not move the viewport. Hold the
+    // exact pre-recall position until the realtime UPDATE/resize cycle settles.
+    if (scroller) {
+      let frames = 12;
+      const holdPosition = () => {
+        if (!scroller.isConnected) return;
+        if (Math.abs(scroller.scrollTop - lockedScrollTop) > 0.5) scroller.scrollTop = lockedScrollTop;
+        frames -= 1;
+        if (frames > 0) window.requestAnimationFrame(holdPosition);
+      };
+      window.requestAnimationFrame(holdPosition);
+      window.setTimeout(() => {
+        if (scroller.isConnected && Math.abs(scroller.scrollTop - lockedScrollTop) > 0.5) scroller.scrollTop = lockedScrollTop;
+      }, 250);
+    }
   };
 
   return (
