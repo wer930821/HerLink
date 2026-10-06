@@ -4,6 +4,7 @@ import test from "node:test";
 
 const copySource = readFileSync(new URL("../lib/recovery-copy.ts", import.meta.url), "utf8");
 const componentSource = readFileSync(new URL("../components/recovery-entry-options.tsx", import.meta.url), "utf8");
+const modalSource = readFileSync(new URL("../components/ui/Modal.tsx", import.meta.url), "utf8");
 const pageSource = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
 
 test("recovery copy explains that forgetting the anonymous name is okay", () => {
@@ -20,10 +21,11 @@ test("recovery entry does not pretend unfinished self-service recovery is active
   assert.match(componentSource, /避免半成品造成身分誤接/);
 });
 
-test("existing recovery modal renders the recovery entry options before admin recovery", () => {
-  assert.match(pageSource, /import \{ RecoveryEntryOptions \} from "\.\.\/components\/recovery-entry-options"/);
-  assert.match(pageSource, /<RecoveryEntryOptions onUseAdminRecovery=\{\(\) => setRecoveryAdminOpen\(true\)\} \/>/);
-  assert.match(pageSource, /recoveryAdminOpen \? \(/);
+test("existing recovery modal renders recovery entry options before manual recovery", () => {
+  assert.match(modalSource, /import \{ RecoveryEntryOptions \} from "\.\.\/recovery-entry-options"/);
+  assert.match(modalSource, /title === "找回原本聊天室"/);
+  assert.match(modalSource, /<RecoveryEntryOptions onUseAdminRecovery=\{\(\) => setShowRecoveryAdmin\(true\)\} \/>/);
+  assert.match(modalSource, /showRecoveryAdmin \? children : null/);
 });
 
 test("existing manual recovery request remains available", () => {
