@@ -36,6 +36,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.get_random_message_reply_preview(UUID, UUID) TO authenticated, service_role;
 
+DROP FUNCTION IF EXISTS public.list_random_messages(UUID, INTEGER);
 DROP FUNCTION IF EXISTS public.list_random_messages(UUID, INTEGER, TIMESTAMPTZ, UUID, TIMESTAMPTZ, UUID);
 CREATE OR REPLACE FUNCTION public.list_random_messages(
   p_session_id UUID,
@@ -114,6 +115,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION public.list_random_messages(UUID, INTEGER, TIMESTAMPTZ, UUID, TIMESTAMPTZ, UUID) TO authenticated, service_role;
 
+DROP FUNCTION IF EXISTS public.send_random_message(UUID, TEXT);
 DROP FUNCTION IF EXISTS public.send_random_message(UUID, TEXT, TEXT, TEXT, TEXT, BIGINT, INTEGER, INTEGER, UUID);
 CREATE OR REPLACE FUNCTION public.send_random_message(
   p_session_id UUID,
