@@ -1,0 +1,26 @@
+name: Recovery entry check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/app/page.tsx'
+      - 'apps/web/components/recovery-entry-options.tsx'
+      - 'apps/web/components/ui/Modal.tsx'
+      - 'apps/web/lib/recovery-copy.ts'
+      - 'apps/web/__tests__/recovery-*.test.mjs'
+      - '.github/workflows/recovery-entry-check.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Recovery tests
+        run: node --test __tests__/recovery-entry-copy.test.mjs __tests__/recovery-modal-integration.test.mjs __tests__/recovery-manual-flow-preserved.test.mjs
