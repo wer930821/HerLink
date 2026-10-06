@@ -5,7 +5,6 @@ import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from 
 import { supabase } from "../../../lib/supabase";
 
 const LONG_PRESS_MS = 420;
-const RECALL_HINT_MS = 1000;
 
 const RandomSessionClient = dynamic(() => import("./RandomSessionClient"), {
   ssr: false,
@@ -117,22 +116,10 @@ export default function RandomSessionPage() {
     if (result.error) { window.alert(`目前無法收回訊息：${result.error.message || "請稍後再試"}`); return; }
 
     const messageContent = target.article.querySelector<HTMLElement>(".chat-message-content");
+    // Keep the message slot in the document so the chat scroll position does
+    // not jump when a message is recalled on mobile Web/WebView.
     target.article.dataset.recallPreview = "1";
-    if (messageContent) messageContent.textContent = "已收回";
-
-    window.setTimeout(() => {
-      target.article.dataset.recallFading = "1";
-      window.setTimeout(() => {
-        target.article.style.setProperty("display", "none", "important");
-        delete target.article.dataset.recallPreview;
-        delete target.article.dataset.recallFading;
-        setHiddenMessageIds((current) => {
-          const next = new Set(current);
-          next.add(target.messageId);
-          return next;
-        });
-      }, 280);
-    }, RECALL_HINT_MS);
+    if (messageContent) messageContent.textContent = "此訊息已收回";
   };
 
   return (
