@@ -207,23 +207,28 @@ export default function HomePage() {
               {actionBusy ? "處理中…" : "開始匿名聊天"}
             </button>
             <button className="ghost" onClick={() => setShowRecovery((value) => !value)} disabled={actionBusy}>
-              找回原本聊天室
+              無法進入原本聊天室？
             </button>
           </div>
           {showRecovery ? (
             <div className="panel" style={{ marginTop: 14 }}>
               <p className="title">找回原本聊天室</p>
-              <p className="hero-copy">輸入您原本使用的匿名名稱，系統會建立 8 碼恢復碼。</p>
+              <p className="hero-copy">忘記匿名名稱也沒關係，只要有恢復碼就能找回。</p>
+              <div className="notice" style={{ marginBottom: 12 }}>
+                <strong>我有恢復碼</strong>
+                <div className="small" style={{ marginTop: 8 }}>永久自助恢復功能完成後，可直接輸入恢復碼，不需要記得匿名名稱。</div>
+              </div>
+              <p className="small" style={{ marginBottom: 10 }}>沒有恢復碼？目前仍可使用站長人工恢復。</p>
               <input
                 value={recoveryName}
                 onChange={(event) => setRecoveryName(event.target.value)}
-                placeholder="原本的匿名名稱"
+                placeholder="記得的原匿名名稱（人工恢復用）"
                 disabled={actionBusy || Boolean(recoveryCode)}
                 style={{ width: "100%", padding: 12, borderRadius: 12, marginBottom: 10 }}
               />
               {!recoveryCode ? (
                 <button className="button" onClick={startRecovery} disabled={actionBusy || !recoveryName.trim()}>
-                  {actionBusy ? "建立恢復碼中…" : "取得恢復碼"}
+                  {actionBusy ? "建立恢復碼中…" : "聯絡站長協助找回"}
                 </button>
               ) : (
                 <div className="notice">
