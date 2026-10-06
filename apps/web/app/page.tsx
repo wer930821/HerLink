@@ -104,6 +104,7 @@ export default function HomePage() {
   const [permanentRecoveryStatus, setPermanentRecoveryStatus] = useState<RecoveryCodeStatus | null>(null);
   const [permanentRecoveryCode, setPermanentRecoveryCode] = useState<string | null>(null);
   const [permanentRecoveryError, setPermanentRecoveryError] = useState<string | null>(null);
+  const [permanentRecoveryCopied, setPermanentRecoveryCopied] = useState(false);
   const [debugEnabled, setDebugEnabled] = useState(false);
   const [lastDiagnostic, setLastDiagnostic] = useState<NavigationDiagnosticEvent | null>(null);
   const [activeSessionLookup, setActiveSessionLookup] = useState<ActiveSessionLookup>(initialActiveSessionLookup);
@@ -399,6 +400,7 @@ export default function HomePage() {
   const openPermanentRecoverySettings = async () => {
     setPermanentRecoveryError(null);
     setPermanentRecoveryCode(null);
+    setPermanentRecoveryCopied(false);
     setPermanentRecoveryOpen(true);
     try {
       setPermanentRecoveryStatus(await getPermanentRecoveryStatus());
@@ -420,6 +422,17 @@ export default function HomePage() {
       setPermanentRecoveryError(error instanceof Error ? error.message : "目前無法建立恢復碼。");
     } finally {
       setRecoveryBusy(false);
+    }
+  };
+
+  const copyPermanentRecoveryCode = async () => {
+    if (!permanentRecoveryCode || !navigator.clipboard) return;
+    try {
+      await navigator.clipboard.writeText(permanentRecoveryCode);
+      setPermanentRecoveryCopied(true);
+      window.setTimeout(() => setPermanentRecoveryCopied(false), 1800);
+    } catch {
+      setPermanentRecoveryCopied(false);
     }
   };
 
@@ -947,7 +960,12 @@ export default function HomePage() {
           {permanentRecoveryError ? <Notice variant="danger">{permanentRecoveryError}</Notice> : null}
           {permanentRecoveryCode ? (
             <Notice variant="success" title="請立即保存新的恢復碼">
-              <strong style={{ fontSize: 22, letterSpacing: 2 }}>{permanentRecoveryCode}</strong>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <strong style={{ fontSize: 22, letterSpacing: 2 }}>{permanentRecoveryCode}</strong>
+                <Button variant="secondary" size="sm" type="button" onClick={() => void copyPermanentRecoveryCode()}>
+                  {permanentRecoveryCopied ? "已複製" : "複製恢復碼"}
+                </Button>
+              </div>
               <div className="small">這組恢復碼只會顯示這一次，請勿分享給他人。</div>
             </Notice>
           ) : permanentRecoveryStatus?.hasRecoveryCode ? (
