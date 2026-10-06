@@ -5,6 +5,7 @@ import { Button } from "./ui/Button";
 import { Field } from "./ui/Field";
 import { Notice } from "./ui/Notice";
 import { claimPermanentRecovery, normalizePermanentRecoveryCode, previewPermanentRecovery } from "../lib/permanent-recovery";
+import { ensureAnonymousBootstrapProfile, signInAnonymously } from "../lib/supabase";
 
 type Props = { onBack: () => void; onRecovered?: () => void };
 
@@ -15,16 +16,32 @@ export function PermanentRecoveryFlow({ onBack, onRecovered }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const prepareReplacementPrincipal = async () => {
+    const { data, error: authError } = await signInAnonymously();
+    if (authError) throw new Error(authError.message || "目前無法建立匿名工作階段。");
+    const userId = data.user?.id ?? data.session?.user?.id;
+    if (!userId) throw new Error("目前無法建立匿名工作階段。");
+    const profile = await ensureAnonymousBootstrapProfile(userId);
+    if (profile.error || !profile.data?.anonymous_mode_enabled) {
+      throw new Error(profile.error?.message || "目前無法準備匿名恢復身分。");
+    }
+    return userId;
+  };
+
   const preview = async () => {
     setBusy(true); setError(null);
-    try { const result = await previewPermanentRecovery(code); setDisplayName(result.displayName); }
-    catch (e) { setError(e instanceof Error ? e.message : "找不到這組恢復碼。"); }
+    try {
+      await prepareReplacementPrincipal();
+      const result = await previewPermanentRecovery(code);
+      setDisplayName(result.displayName);
+    } catch (e) { setError(e instanceof Error ? e.message : "找不到這組恢復碼。"); }
     finally { setBusy(false); }
   };
 
   const claim = async () => {
     setBusy(true); setError(null);
     try {
+      await prepareReplacementPrincipal();
       const result = await claimPermanentRecovery(code);
       setDisplayName(result.displayName);
       setNewRecoveryCode(result.newRecoveryCode);
