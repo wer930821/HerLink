@@ -716,29 +716,33 @@ export default function HomePage() {
 
   if (!state.session) {
     return (
-      <main className="stack home-fixed home-premium">
-        <PageHero
-          title="HerLink"
-          description="不用註冊、不用公開真實資料，直接建立匿名身份開始聊天。"
-          actions={
-            <>
-              <Button size="lg" onClick={startAnonymous} disabled={actionBusy}>
-                {actionBusy ? "建立匿名身份中…" : "開始匿名聊天"}
-              </Button>
-              <Button variant="link" onClick={() => setRecoveryOpen(true)} disabled={actionBusy}>
-                無法進入原本聊天室？
-              </Button>
-              <div className="home-account-actions" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 42, width: "100%", textAlign: "center" }}>
-                <Button variant="link" href="/signup" style={{ color: "#ff786f", justifyContent: "center" }}>申請帳號</Button>
-                <Button variant="link" href="/login" style={{ color: "#ff786f", justifyContent: "center" }}>登入既有帳號</Button>
-              </div>
-              {onlineCountConnected ? <Badge variant="success">在線 {onlineCount} 人</Badge> : null}
-              <Badge variant="neutral">排隊 {waitingCount === null ? "更新中…" : `${waitingCount} 人`}</Badge>
-            </>
-          }
-        >
-      {message ? <Notice variant="warning">{message}</Notice> : null}
-        </PageHero>
+      <main className="guest-page">
+        <section className="guest-hero">
+          <div className="guest-orb guest-orb-a" aria-hidden="true" />
+          <div className="guest-orb guest-orb-b" aria-hidden="true" />
+          <div className="guest-brand">HerLink</div>
+          <p className="guest-kicker">匿名 · 私密 · 不留真實資料</p>
+          <h1>找到一個剛好想聊天的人</h1>
+          <p className="guest-description">不用註冊，先用匿名身份開始。想換裝置或找回聊天室，再使用帳號或恢復功能。</p>
+          <div className="guest-primary-action">
+            <Button size="lg" onClick={startAnonymous} disabled={actionBusy}>
+              {actionBusy ? "建立匿名身份中…" : "開始匿名聊天"}
+            </Button>
+          </div>
+          <button type="button" className="guest-recovery-link" onClick={() => setRecoveryOpen(true)} disabled={actionBusy}>
+            無法進入原本聊天室？ <span>找回聊天室</span>
+          </button>
+          <div className="guest-account-actions">
+            <Button variant="link" href="/signup">申請帳號</Button>
+            <span aria-hidden="true" />
+            <Button variant="link" href="/login">登入既有帳號</Button>
+          </div>
+          <div className="guest-status">
+            {onlineCountConnected ? <Badge variant="success">在線 {onlineCount} 人</Badge> : null}
+            <Badge variant="neutral">排隊 {waitingCount === null ? "更新中…" : waitingCount + " 人"}</Badge>
+          </div>
+          {message ? <Notice variant="warning">{message}</Notice> : null}
+        </section>
         <Modal open={recoveryOpen} title="找回原本聊天室" onClose={() => !recoveryBusy && setRecoveryOpen(false)}>
           <div className="stack">
             <p className="muted">輸入原本使用的匿名名稱，取得 8 碼恢復碼後傳給管理員協助恢復。</p>
@@ -774,6 +778,19 @@ export default function HomePage() {
             <Button variant="link" href="/safety">安全說明</Button>
           </div>
         </Surface>
+        <section className="guest-trust">
+          <div className="guest-trust-icon" aria-hidden="true">✦</div>
+          <div>
+            <strong>安全提醒</strong>
+            <p>請勿向陌生人匯款、投資，或提供銀行資料、信用卡資訊與驗證碼。</p>
+          </div>
+        </section>
+        <p className="guest-consent">使用 HerLink 即表示你已年滿 18 歲，並同意服務條款與隱私權政策。</p>
+        <nav className="guest-legal" aria-label="網站資訊">
+          <Button variant="link" href="/terms">服務條款</Button>
+          <Button variant="link" href="/privacy">隱私權政策</Button>
+          <Button variant="link" href="/safety">安全說明</Button>
+        </nav>
         {debugPanel}
       </main>
     );
