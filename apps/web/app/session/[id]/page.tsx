@@ -41,11 +41,7 @@ export default function RandomSessionPage() {
     if (!allowed) return;
     const style = document.createElement("style");
     style.dataset.lonelyPenguinMessageActions = "1";
-    style.textContent = `
-      article.chat-message .chat-bubble, article.chat-message .chat-bubble * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
-      article.chat-message[data-recall-preview="1"] .chat-bubble { opacity: .72; transition: opacity .28s ease, transform .28s ease; }
-      article.chat-message[data-recall-preview="1"] .chat-message-content { font-size: 13px !important; font-style: italic; opacity: .82; }
-    `;
+    style.textContent = `article.chat-message .chat-bubble, article.chat-message .chat-bubble * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }`;
     document.head.appendChild(style);
     return () => { style.remove(); };
   }, [allowed]);
@@ -79,35 +75,22 @@ export default function RandomSessionPage() {
 
   const recall = async () => {
     if (!menu?.mine) return;
-    const target = menu;
+    const messageId = menu.messageId;
     setMenu(null);
 
-    const scroller = target.article.closest<HTMLElement>(".chat-messages");
-    const lockedScrollTop = scroller?.scrollTop ?? 0;
-    const result = await supabase.rpc("recall_random_message", { p_message_id: target.messageId });
-    if (result.error) { window.alert(`目前無法收回訊息：${result.error.message || "請稍後再試"}`); return; }
-
-    const messageContent = target.article.querySelector<HTMLElement>(".chat-message-content");
-    target.article.dataset.recallPreview = "1";
-    if (messageContent) messageContent.textContent = "此訊息已收回";
-
-    // RandomSessionClient deliberately re-pins the list for several frames when
-    // ResizeObserver sees a message change. A recall is an UPDATE, not a new
-    // message, so that normal auto-scroll must not move the viewport. Hold the
-    // exact pre-recall position until the realtime UPDATE/resize cycle settles.
-    if (scroller) {
-      let frames = 12;
-      const holdPosition = () => {
-        if (!scroller.isConnected) return;
-        if (Math.abs(scroller.scrollTop - lockedScrollTop) > 0.5) scroller.scrollTop = lockedScrollTop;
-        frames -= 1;
-        if (frames > 0) window.requestAnimationFrame(holdPosition);
-      };
-      window.requestAnimationFrame(holdPosition);
-      window.setTimeout(() => {
-        if (scroller.isConnected && Math.abs(scroller.scrollTop - lockedScrollTop) > 0.5) scroller.scrollTop = lockedScrollTop;
-      }, 250);
+    const result = await supabase.rpc("recall_random_message", { p_message_id: messageId });
+    if (result.error) {
+      window.alert(`目前無法收回訊息：${result.error.message || "請稍後再試"}`);
+      return;
     }
+
+    // Never mutate a React-owned message node here. RandomSessionClient owns the
+    // message list and will apply the database UPDATE through Realtime. The
+    // custom event makes the sender update immediately while Realtime remains
+    // the cross-browser source of truth.
+    window.dispatchEvent(new CustomEvent("herlink:message-recalled", {
+      detail: { messageId, recalledAt: new Date().toISOString() },
+    }));
   };
 
   return (
