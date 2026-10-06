@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS public.anonymous_recovery_attempts (
 
 CREATE INDEX IF NOT EXISTS anonymous_recovery_attempts_requester_code_time_idx
   ON public.anonymous_recovery_attempts(requester_id, code_hash, attempted_at DESC);
+CREATE INDEX IF NOT EXISTS anonymous_recovery_attempts_requester_time_idx
+  ON public.anonymous_recovery_attempts(requester_id, attempted_at DESC);
 
 ALTER TABLE public.anonymous_recovery_attempts ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.anonymous_recovery_attempts FROM PUBLIC, anon, authenticated;
@@ -17,7 +19,7 @@ GRANT USAGE, SELECT ON SEQUENCE public.anonymous_recovery_attempts_id_seq TO ser
 CREATE OR REPLACE FUNCTION public.check_anonymous_recovery_rate_limit(
   p_requester_id UUID,
   p_code_hash TEXT
-) RETURNS VOID
+) RETURNS TABLE (allowed BOOLEAN, locked_until TIMESTAMPTZ)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
@@ -28,37 +30,43 @@ DECLARE
   v_locked_until TIMESTAMPTZ;
 BEGIN
   IF p_requester_id IS NULL OR NULLIF(btrim(COALESCE(p_code_hash, '')), '') IS NULL THEN
-    RAISE EXCEPTION 'INVALID_RECOVERY_RATE_LIMIT_INPUT';
+    RETURN QUERY SELECT FALSE, v_now + INTERVAL '30 minutes';
+    RETURN;
   END IF;
 
-  PERFORM pg_advisory_xact_lock(hashtextextended('herlink.recovery.rate:' || p_requester_id::text || ':' || p_code_hash, 0));
+  PERFORM pg_advisory_xact_lock(hashtextextended('herlink.recovery.rate:' || p_requester_id::text, 0));
+
+  DELETE FROM public.anonymous_recovery_attempts
+   WHERE attempted_at < v_now - INTERVAL '24 hours';
 
   SELECT max(a.locked_until)
     INTO v_locked_until
     FROM public.anonymous_recovery_attempts a
    WHERE a.requester_id = p_requester_id
-     AND a.code_hash = p_code_hash
      AND a.locked_until > v_now;
 
   IF v_locked_until IS NOT NULL THEN
-    RAISE EXCEPTION 'RECOVERY_RATE_LIMITED';
+    RETURN QUERY SELECT FALSE, v_locked_until;
+    RETURN;
   END IF;
 
   SELECT count(*)
     INTO v_recent_count
     FROM public.anonymous_recovery_attempts a
    WHERE a.requester_id = p_requester_id
-     AND a.code_hash = p_code_hash
      AND a.attempted_at >= v_now - INTERVAL '15 minutes';
 
-  IF v_recent_count >= 5 THEN
+  IF v_recent_count >= 4 THEN
+    v_locked_until := v_now + INTERVAL '30 minutes';
     INSERT INTO public.anonymous_recovery_attempts(requester_id, code_hash, attempted_at, locked_until)
-    VALUES (p_requester_id, p_code_hash, v_now, v_now + INTERVAL '30 minutes');
-    RAISE EXCEPTION 'RECOVERY_RATE_LIMITED';
+    VALUES (p_requester_id, p_code_hash, v_now, v_locked_until);
+    RETURN QUERY SELECT FALSE, v_locked_until;
+    RETURN;
   END IF;
 
   INSERT INTO public.anonymous_recovery_attempts(requester_id, code_hash, attempted_at)
   VALUES (p_requester_id, p_code_hash, v_now);
+  RETURN QUERY SELECT TRUE, NULL::TIMESTAMPTZ;
 END;
 $$;
 
