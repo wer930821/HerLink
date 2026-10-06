@@ -84,13 +84,10 @@ export default function RandomSessionPage() {
       return;
     }
 
-    // Never mutate a React-owned message node here. RandomSessionClient owns the
-    // message list and will apply the database UPDATE through Realtime. The
-    // custom event makes the sender update immediately while Realtime remains
-    // the cross-browser source of truth.
-    window.dispatchEvent(new CustomEvent("herlink:message-recalled", {
-      detail: { messageId, recalledAt: new Date().toISOString() },
-    }));
+    // Do not dispatch a second client-only recall event. The database UPDATE is
+    // the single source of truth and RandomSessionClient already consumes it via
+    // postgres_changes plus its full-state fallback sync. Keeping one update path
+    // avoids duplicate render cycles immediately after a mobile long-press action.
   };
 
   return (
