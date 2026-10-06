@@ -23,7 +23,15 @@ export default function LoginPage(){
      void supabase.auth.getSession().then(({data}:{data:{session:Session|null}})=>{if(data.session?.user.is_anonymous)void supabase.auth.signOut()});
      return;
    }
-   void supabase.auth.getSession().then(({data}:{data:{session:Session|null}})=>{if(data.session?.user.id===GUXING_USER_ID)router.replace("/")});
+   void supabase.auth.getSession().then(async ({data}:{data:{session:Session|null}})=>{
+     if (data.session?.user.id===GUXING_USER_ID && !data.session.user.is_anonymous) {
+       router.replace("/");
+       return;
+     }
+     if (data.session?.user.is_anonymous) {
+       await supabase.auth.signOut();
+     }
+   });
  },[router]);
 
  const onSubmit=async(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();setLoading(true);setError(null);setSuccess(null);try{
