@@ -46,7 +46,6 @@ import {
   supabase,
 } from "../lib/supabase";
 import { Badge, Button, Field, Modal, Notice, PageHero, Surface } from "../components/ui";
-import { createPermanentRecoveryCode, getPermanentRecoveryStatus, rotatePermanentRecoveryCode, type RecoveryCodeStatus } from "../lib/permanent-recovery-code";
 
 type BootstrapState = {
   session: Session | null;
@@ -100,10 +99,6 @@ export default function HomePage() {
   const [recoveryName, setRecoveryName] = useState("");
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
-  const [permanentRecoveryOpen, setPermanentRecoveryOpen] = useState(false);
-  const [permanentRecoveryStatus, setPermanentRecoveryStatus] = useState<RecoveryCodeStatus | null>(null);
-  const [permanentRecoveryCode, setPermanentRecoveryCode] = useState<string | null>(null);
-  const [permanentRecoveryError, setPermanentRecoveryError] = useState<string | null>(null);
   const [debugEnabled, setDebugEnabled] = useState(false);
   const [lastDiagnostic, setLastDiagnostic] = useState<NavigationDiagnosticEvent | null>(null);
   const [activeSessionLookup, setActiveSessionLookup] = useState<ActiveSessionLookup>(initialActiveSessionLookup);
@@ -394,33 +389,6 @@ export default function HomePage() {
     setRenameDraft(name);
     setRenameError(null);
     setRenameNotice(`匿名暱稱已更新為「${name}」`);
-  };
-
-  const openPermanentRecoverySettings = async () => {
-    setPermanentRecoveryError(null);
-    setPermanentRecoveryCode(null);
-    setPermanentRecoveryOpen(true);
-    try {
-      setPermanentRecoveryStatus(await getPermanentRecoveryStatus());
-    } catch (error) {
-      setPermanentRecoveryError(error instanceof Error ? error.message : "目前無法讀取恢復碼狀態。");
-    }
-  };
-
-  const createOrRotatePermanentRecoveryCode = async () => {
-    setRecoveryBusy(true);
-    setPermanentRecoveryError(null);
-    try {
-      const result = permanentRecoveryStatus?.hasRecoveryCode
-        ? await rotatePermanentRecoveryCode()
-        : await createPermanentRecoveryCode();
-      setPermanentRecoveryCode(result.recoveryCode);
-      setPermanentRecoveryStatus({ hasRecoveryCode: true, hint: result.hint, createdAt: result.createdAt ?? null });
-    } catch (error) {
-      setPermanentRecoveryError(error instanceof Error ? error.message : "目前無法建立恢復碼。");
-    } finally {
-      setRecoveryBusy(false);
-    }
   };
 
   const openRenameDialog = () => {
@@ -720,7 +688,7 @@ export default function HomePage() {
             </>
           }
         >
-      {message ? <Notice variant="warning">{message}</Notice> : null}
+          {message ? <Notice variant="warning">{message}</Notice> : null}
         </PageHero>
         <Modal open={recoveryOpen} title="找回原本聊天室" onClose={() => !recoveryBusy && setRecoveryOpen(false)}>
           <div className="stack">
@@ -901,8 +869,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {anonymousSummary?.name === "孤星企鵝" ? <button type="button" className="home-crown-float" aria-label="彩蛋圖鑑與任務" title="彩蛋圖鑑與任務" onClick={() => router.push("/collection")}>♛</button> : null}
-
         <button type="button" className="home-mailbox-float" aria-label="信箱" onPointerDown={(event)=>event.currentTarget.blur()} onClick={()=>router.push("/mailbox")}><span className="home-mailbox-icon" aria-hidden="true">✉</span><span>信箱</span>{mailUnreadCount>0?<span className="home-mailbox-unread" aria-label={`${mailUnreadCount} 封未讀`}>{mailUnreadCount>99?"99+":mailUnreadCount}</span>:null}</button>
 
         <div className="halloween-home-decor" aria-hidden="true"><span>🎃</span><span>👻</span><span>🦇</span></div>
@@ -920,45 +886,13 @@ export default function HomePage() {
           </Button>
         </div>
 
-
-
         <div className="home-app-actions">
           <Button size="lg" onClick={startMatching} disabled={actionBusy || MAINTENANCE_MODE}>
             {actionBusy ? "處理中…" : MAINTENANCE_MODE ? "維護中" : state.activeSession ? "配對新的人" : "開始匿名配對"}
           </Button>
           {state.activeSession ? <Button variant="secondary" size="lg" href="/chats">我的聊天</Button> : null}
           <Button variant="secondary" size="lg" href="/contacts">匿名聯絡人</Button>
-          <Button variant="secondary" size="lg" onClick={() => void openPermanentRecoverySettings()} disabled={actionBusy}>永久恢復碼</Button>
         </div>
-
-        {anonymousSummary?.name === "孤星企鵝" ? (
-          <div className="home-account-actions">
-            <a href="/signup" className="home-account-button home-account-signup">申請帳號</a>
-            <a href="/login" className="home-account-button home-account-login">登入既有帳號</a>
-          </div>
-        ) : null}
-
-      <Modal open={permanentRecoveryOpen} title="永久恢復碼" onClose={() => { if (!recoveryBusy) setPermanentRecoveryOpen(false); }}>
-        <div className="stack">
-          <p className="muted">保存永久恢復碼後，換裝置也能自行接回原本的匿名聊天室。</p>
-          {permanentRecoveryError ? <Notice variant="danger">{permanentRecoveryError}</Notice> : null}
-          {permanentRecoveryCode ? (
-            <Notice variant="success" title="請立即保存新的恢復碼">
-              <strong style={{ fontSize: 22, letterSpacing: 2 }}>{permanentRecoveryCode}</strong>
-              <div className="small">這組恢復碼只會顯示這一次，請勿分享給他人。</div>
-            </Notice>
-          ) : permanentRecoveryStatus?.hasRecoveryCode ? (
-            <Notice variant="info">目前已有永久恢復碼（提示：{permanentRecoveryStatus.hint ?? "••••••"}）。如遺失，請重新產生新碼。</Notice>
-          ) : (
-            <Notice variant="warning">目前尚未設定永久恢復碼。</Notice>
-          )}
-          <div className="modal-actions">
-            <Button variant="secondary" onClick={() => setPermanentRecoveryOpen(false)} disabled={recoveryBusy}>關閉</Button>
-            {!permanentRecoveryCode ? <Button onClick={() => void createOrRotatePermanentRecoveryCode()} disabled={recoveryBusy || !permanentRecoveryStatus}>{recoveryBusy ? "處理中…" : permanentRecoveryStatus?.hasRecoveryCode ? "更換恢復碼" : "建立永久恢復碼"}</Button> : null}
-          </div>
-        </div>
-      </Modal>
-
 
         {state.queue?.status === "waiting" ? (
           <div className="home-app-status">
@@ -979,17 +913,12 @@ export default function HomePage() {
           <span className="home-app-presence-item"><span className="home-app-wait-dot" />等人來聊 <strong>{waitingCount === null ? "…" : waitingCount}</strong> 人</span>
         </div>
         <div className="home-app-footer-links">
-          <Button variant="link" type="button" onClick={() => void shareBrowserHandoff()}>跨瀏覽器續聊</Button>
+          <Button variant="link" type="button" onClick={() => void shareBrowserHandoff()}>
+            跨瀏覽器續聊
+          </Button>
           <span className="home-app-footer-sep" aria-hidden="true">·</span>
           <Button variant="link" onClick={logout} disabled={actionBusy}>登出</Button>
         </div>
-        <nav className="home-app-legal-links" aria-label="網站資訊">
-          <Button variant="link" href="/safety">安全說明</Button>
-          <span aria-hidden="true">·</span>
-          <Button variant="link" href="/terms">服務條款</Button>
-          <span aria-hidden="true">·</span>
-          <Button variant="link" href="/privacy">隱私權政策</Button>
-        </nav>
       </footer>
 
       <Modal
@@ -1038,7 +967,11 @@ export default function HomePage() {
             />
           </Field>
           <div className="modal-actions">
-            <Button type="submit" size="md" disabled={renameBusyAny}>
+            <Button
+              type="submit"
+              size="md"
+              disabled={renameBusyAny || Boolean(validateAnonymousDisplayNameDraft(renameDraft))}
+            >
               {renameBusy ? "儲存中…" : "使用這個名稱"}
             </Button>
             <Button
