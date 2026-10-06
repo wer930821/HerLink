@@ -32,3 +32,11 @@ test("successful claim rotates to a new permanent code in the same transaction",
   assert.match(migration, /INSERT INTO public\.anonymous_recovery_credentials/);
   assert.match(source, /newRecoveryCode/);
 });
+
+
+test("claim returns a traceable safe error when the transaction fails", () => {
+  assert.match(source, /recoveryErrorCode/);
+  assert.match(source, /result\.error\?\.message/);
+  assert.match(source, /recoveryDebugMessage/);
+  assert.doesNotMatch(source, /return reply\(\{error:"Recovery failed\."\},409\)/);
+});
