@@ -41,17 +41,42 @@ END; $$;
 CREATE OR REPLACE FUNCTION public.send_random_message(p_session_id UUID,p_content TEXT)
 RETURNS TABLE(id UUID,session_id UUID,content TEXT,created_at TIMESTAMPTZ,is_mine BOOLEAN,risk_level TEXT,risk_types TEXT[])
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
-DECLARE actor_id UUID:=public.resolve_active_anonymous_chat_identity(); cleaned TEXT:=btrim(COALESCE(p_content,'')); detected_level TEXT:='low'; detected_types TEXT[]:=ARRAY[]::TEXT[]; inserted_id UUID; inserted_at TIMESTAMPTZ;
+DECLARE
+ actor_id UUID:=public.resolve_active_anonymous_chat_identity();
+ cleaned_content TEXT:=btrim(COALESCE(p_content,''));
+ detected_risk_level TEXT:='low';
+ detected_risk_types TEXT[]:=ARRAY[]::TEXT[];
+ repeated_message BOOLEAN:=FALSE;
+ inserted_message_id UUID;
+ inserted_created_at TIMESTAMPTZ;
 BEGIN
  IF auth.uid() IS NULL OR actor_id IS NULL THEN RAISE EXCEPTION 'Authentication required or device revoked.'; END IF;
- IF cleaned='' THEN RAISE EXCEPTION 'Message cannot be blank.'; END IF; IF length(cleaned)>2000 THEN RAISE EXCEPTION 'Message is too long.'; END IF;
- PERFORM public.reconcile_profile_enforcement_status(actor_id); IF NOT public.is_profile_eligible(actor_id) THEN RAISE EXCEPTION 'Your account is not available.'; END IF;
+ IF cleaned_content='' THEN RAISE EXCEPTION 'Message cannot be blank.'; END IF;
+ IF length(cleaned_content)>2000 THEN RAISE EXCEPTION 'Message is too long.'; END IF;
+ PERFORM public.reconcile_profile_enforcement_status(actor_id);
+ IF NOT public.is_profile_eligible(actor_id) THEN RAISE EXCEPTION 'Your account is not available.'; END IF;
  IF NOT public.is_active_random_session_member(p_session_id,'active') THEN RAISE EXCEPTION 'This session is not available.'; END IF;
  PERFORM public.check_random_action_rate_limit('send_random_message',5,INTERVAL '10 seconds',jsonb_build_object('session_id',p_session_id::TEXT));
- SELECT r.risk_level,r.risk_types INTO detected_level,detected_types FROM public.analyze_random_message_risk(cleaned) r LIMIT 1;
- INSERT INTO public.random_chat_messages(session_id,sender_id,content,risk_level,risk_types) VALUES(p_session_id,actor_id,cleaned,COALESCE(detected_level,'low'),COALESCE(detected_types,'{}'::TEXT[])) RETURNING random_chat_messages.id,random_chat_messages.created_at INTO inserted_id,inserted_at;
- IF COALESCE(detected_level,'low')<>'low' THEN INSERT INTO public.fraud_risk_events(user_id,session_id,message_id,risk_level,risk_types) VALUES(actor_id,p_session_id,inserted_id,detected_level,COALESCE(detected_types,'{}'::TEXT[])); END IF;
- RETURN QUERY SELECT inserted_id,p_session_id,cleaned,inserted_at,TRUE,COALESCE(detected_level,'low'),COALESCE(detected_types,'{}'::TEXT[]);
+ SELECT r.risk_level,r.risk_types INTO detected_risk_level,detected_risk_types FROM public.analyze_random_message_risk(cleaned_content) r;
+ SELECT EXISTS(
+   SELECT 1 FROM public.random_chat_messages m
+   WHERE m.session_id=p_session_id AND m.sender_id=actor_id AND m.content=cleaned_content
+     AND m.created_at>=timezone('utc'::text,now())-INTERVAL '30 seconds'
+ ) INTO repeated_message;
+ IF repeated_message THEN
+   detected_risk_types:=array_append(detected_risk_types,'repeated_message');
+   IF detected_risk_level='low' THEN detected_risk_level:='medium'; END IF;
+ END IF;
+ SELECT COALESCE(array_agg(item),ARRAY[]::TEXT[]) INTO detected_risk_types
+ FROM (SELECT DISTINCT item FROM unnest(detected_risk_types) AS item ORDER BY item) deduped_types;
+ INSERT INTO public.random_chat_messages(session_id,sender_id,content,risk_level,risk_types)
+ VALUES(p_session_id,actor_id,cleaned_content,detected_risk_level,detected_risk_types)
+ RETURNING random_chat_messages.id,random_chat_messages.created_at INTO inserted_message_id,inserted_created_at;
+ IF detected_risk_level<>'low' THEN
+   INSERT INTO public.fraud_risk_events(user_id,session_id,message_id,risk_level,risk_types,created_at)
+   VALUES(actor_id,p_session_id,inserted_message_id,detected_risk_level,detected_risk_types,COALESCE(inserted_created_at,timezone('utc'::text,now())));
+ END IF;
+ RETURN QUERY SELECT inserted_message_id,p_session_id,cleaned_content,inserted_created_at,TRUE,detected_risk_level,detected_risk_types;
 END; $$;
 
 CREATE OR REPLACE FUNCTION public.report_random_user(p_session_id UUID,p_category TEXT,p_description TEXT DEFAULT NULL,p_block BOOLEAN DEFAULT FALSE)
