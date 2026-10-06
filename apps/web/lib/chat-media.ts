@@ -22,15 +22,10 @@ export function validateChatImageFile(file: File): ChatImageValidationError | nu
     return { code: "invalid_extension", message: "不支援這個檔案類型。" };
   }
 
-  // Some Android gallery/file pickers return an empty MIME type even for a valid
-  // JPEG/PNG/WebP file. In that case the extension is the best browser-provided
-  // signal we have and the decoded image is validated again before upload.
   if (file.type && !allowedTypes.includes(file.type)) {
     return { code: "invalid_type", message: "只支援 JPEG / PNG / WebP 圖片。" };
   }
 
-  // Camera photos are often larger than the final 5 MB upload limit. Allow a
-  // reasonable source size and resize/re-encode it before it reaches Storage.
   if (file.size > MAX_CHAT_IMAGE_SOURCE_BYTES) {
     return { code: "too_large", message: "圖片檔案過大，請選擇 25MB 以下的圖片。" };
   }
@@ -44,6 +39,15 @@ function loadImage(url: string): Promise<HTMLImageElement> {
     image.onload = () => resolve(image);
     image.onerror = () => reject(new Error("image decode failed"));
     image.src = url;
+  });
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number) {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("image encode failed"));
+    }, type, quality);
   });
 }
 
@@ -66,49 +70,56 @@ export async function prepareChatImage(file: File): Promise<{
   const url = URL.createObjectURL(file);
   try {
     const image = await loadImage(url);
-    const scale = Math.min(1, MAX_CHAT_IMAGE_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight));
-    const width = Math.max(1, Math.round(image.naturalWidth * scale));
-    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const initialScale = Math.min(1, MAX_CHAT_IMAGE_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight));
+    let width = Math.max(1, Math.round(image.naturalWidth * initialScale));
+    let height = Math.max(1, Math.round(image.naturalHeight * initialScale));
 
     const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
     const context = canvas.getContext("2d");
-    if (!context) {
-      throw new Error("canvas unavailable");
-    }
+    if (!context) throw new Error("canvas unavailable");
 
     const extension = getChatImageExtension(file);
-    const outputType =
+    const sourceType =
       file.type === "image/webp" || (!file.type && extension === "webp")
         ? "image/webp"
         : file.type === "image/png" || (!file.type && extension === "png")
           ? "image/png"
           : "image/jpeg";
-    if (outputType === "image/jpeg") {
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, width, height);
-    }
-    context.drawImage(image, 0, 0, width, height);
 
-    let blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, outputType, 0.9));
-    if (!blob) {
-      throw new Error("image encode failed");
-    }
-
-    let finalType = outputType;
-    // PNG screenshots can remain unexpectedly large after resizing. If the
-    // encoded result is still above the Storage limit, fall back to JPEG.
-    if (blob.size > MAX_CHAT_IMAGE_BYTES) {
-      context.globalCompositeOperation = "destination-over";
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, width, height);
-      const jpegBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
-      if (!jpegBlob) {
-        throw new Error("image encode failed");
+    const draw = (nextWidth: number, nextHeight: number, whiteBackground: boolean) => {
+      canvas.width = nextWidth;
+      canvas.height = nextHeight;
+      context.clearRect(0, 0, nextWidth, nextHeight);
+      if (whiteBackground) {
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, nextWidth, nextHeight);
       }
-      blob = jpegBlob;
+      context.drawImage(image, 0, 0, nextWidth, nextHeight);
+    };
+
+    draw(width, height, sourceType === "image/jpeg");
+    let finalType = sourceType;
+    let blob = await canvasToBlob(canvas, sourceType, 0.9);
+
+    // Keep the high-quality 2048px result whenever possible. If it is still
+    // larger than Storage's 5 MB limit, progressively lower JPEG quality and,
+    // only when needed, dimensions until it fits. Users should not have to
+    // manually resize ordinary camera photos before sending them.
+    if (blob.size > MAX_CHAT_IMAGE_BYTES) {
       finalType = "image/jpeg";
+      const qualities = [0.88, 0.84, 0.8, 0.76, 0.72, 0.68, 0.64, 0.6];
+      const dimensionScales = [1, 0.9, 0.8, 0.7, 0.6];
+
+      outer: for (const dimensionScale of dimensionScales) {
+        width = Math.max(1, Math.round(image.naturalWidth * initialScale * dimensionScale));
+        height = Math.max(1, Math.round(image.naturalHeight * initialScale * dimensionScale));
+        draw(width, height, true);
+
+        for (const quality of qualities) {
+          blob = await canvasToBlob(canvas, "image/jpeg", quality);
+          if (blob.size <= MAX_CHAT_IMAGE_BYTES) break outer;
+        }
+      }
     }
 
     if (blob.size > MAX_CHAT_IMAGE_BYTES) {
