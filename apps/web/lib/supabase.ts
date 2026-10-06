@@ -862,6 +862,10 @@ export async function reportRandomUser(
   }>;
 }
 
+export async function recallRandomMessage(messageId: string) {
+  return supabase.rpc("recall_random_message", { p_message_id: messageId });
+}
+
 export async function sendRandomMessage(sessionId: string, content: string, replyToMessageId?: string | null) {
   return supabase.rpc("send_random_message", {
     p_session_id: sessionId,
