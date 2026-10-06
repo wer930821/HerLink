@@ -1505,6 +1505,7 @@ export default function RandomSessionClient() {
               if (!existing) return current;
               return upsertMessage(current, {
                 ...existing,
+                recalled_at: incoming.recalled_at,
                 content: incoming.content,
                 message_type: incoming.message_type ?? existing.message_type,
                 media_path: incoming.media_path,
