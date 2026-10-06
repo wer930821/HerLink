@@ -1,0 +1,37 @@
+name: Fix recalled message render
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-recall-render.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch recalled message rendering
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('apps/web/app/session/[id]/RandomSessionClient.tsx')
+          text = path.read_text()
+          old = '''          {message.message_type === "image" && message.media_path ? (\n            <ChatImage\n              path={message.media_path}\n              alt={message.is_mine ? "你傳送的圖片" : "對方傳送的圖片"}\n              onOpen={() => { setHeaderMenuOpen(false); setSafetyMenuOpen(false); setPreviewMessage(message); }}\n            />\n          ) : (\n            <div className="chat-message-content">{renderMessageContent(message.content, openExternalLink)}</div>\n          )}'''
+          new = '''          {message.recalled_at ? (\n            <div className="chat-message-content">此訊息已收回</div>\n          ) : message.message_type === "image" && message.media_path ? (\n            <ChatImage\n              path={message.media_path}\n              alt={message.is_mine ? "你傳送的圖片" : "對方傳送的圖片"}\n              onOpen={() => { setHeaderMenuOpen(false); setSafetyMenuOpen(false); setPreviewMessage(message); }}\n            />\n          ) : (\n            <div className="chat-message-content">{renderMessageContent(message.content, openExternalLink)}</div>\n          )}'''
+          if old not in text:
+              raise SystemExit('Expected render block not found; refusing unsafe patch')
+          text = text.replace(old, new, 1)
+          path.write_text(text)
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'apps/web/app/session/[id]/RandomSessionClient.tsx'
+          git diff --cached --check
+          git commit -m 'fix(web): render recalled messages explicitly'
+          git push
