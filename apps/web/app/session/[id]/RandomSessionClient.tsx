@@ -1491,7 +1491,26 @@ export default function RandomSessionClient() {
             table: "random_chat_messages",
             filter: `session_id=eq.${session.id}`,
           },
-          () => {
+          (payload: RealtimePayload<RandomChatMessageRealtimeRow>) => {
+            // An UPDATE keeps the message's original cursor, so an incremental
+            // fetch after the latest message cannot return it. Apply the row to
+            // the visible message immediately, then let the normal sync repair
+            // any missed fields/events.
+            const incoming = payload.new;
+            setMessages((current) => {
+              const existing = current.find((item) => item.id === incoming.id);
+              if (!existing) return current;
+              return upsertMessage(current, {
+                ...existing,
+                content: incoming.content,
+                message_type: incoming.message_type ?? existing.message_type,
+                media_path: incoming.media_path,
+                media_mime: incoming.media_mime,
+                media_size: incoming.media_size,
+                media_width: incoming.media_width,
+                media_height: incoming.media_height,
+              });
+            });
             void refreshMessagesFromServerRef.current?.({ forceScroll: false });
           }
         )
