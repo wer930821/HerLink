@@ -521,6 +521,14 @@ export async function ensureMyAdminFixedAnonymousIdentity(profile: WebProfile | 
 }
 
 export async function loadMyProfile(userId: string) {
+  const effective = await supabase.rpc("get_my_effective_profile");
+  if (!effective.error) {
+    const row = Array.isArray(effective.data) ? effective.data[0] ?? null : effective.data ?? null;
+    if (row) {
+      return { data: row as WebProfile, error: null };
+    }
+  }
+
   return (supabase
     .from("profiles")
     .select("id, anonymous_mode_enabled, anonymous_display_name, anonymous_avatar, account_status")
