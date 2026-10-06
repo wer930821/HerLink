@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { RecoveryEntryOptions } from "../recovery-entry-options";
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -22,6 +23,8 @@ export function Modal({ open, title, children, actions, onClose, closeLabel = "�
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
+  const [showRecoveryAdmin, setShowRecoveryAdmin] = useState(false);
+  const isRecoveryDialog = title === "找回原本聊天室";
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -29,6 +32,7 @@ export function Modal({ open, title, children, actions, onClose, closeLabel = "�
 
   useEffect(() => {
     if (!open) {
+      setShowRecoveryAdmin(false);
       return;
     }
 
@@ -111,7 +115,12 @@ export function Modal({ open, title, children, actions, onClose, closeLabel = "�
             </svg>
           </button>
         </div>
-        {children}
+        {isRecoveryDialog ? (
+          <>
+            <RecoveryEntryOptions onUseAdminRecovery={() => setShowRecoveryAdmin(true)} />
+            {showRecoveryAdmin ? children : null}
+          </>
+        ) : children}
         {actions ? <div className="modal-actions">{actions}</div> : null}
       </div>
     </div>,
