@@ -46,6 +46,7 @@ import {
   supabase,
 } from "../lib/supabase";
 import { Badge, Button, Field, Modal, Notice, PageHero, Surface } from "../components/ui";
+import { createPermanentRecoveryCode, getPermanentRecoveryStatus, rotatePermanentRecoveryCode, type RecoveryCodeStatus } from "../lib/permanent-recovery-code";
 
 type BootstrapState = {
   session: Session | null;
@@ -99,6 +100,10 @@ export default function HomePage() {
   const [recoveryName, setRecoveryName] = useState("");
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [permanentRecoveryOpen, setPermanentRecoveryOpen] = useState(false);
+  const [permanentRecoveryStatus, setPermanentRecoveryStatus] = useState<RecoveryCodeStatus | null>(null);
+  const [permanentRecoveryCode, setPermanentRecoveryCode] = useState<string | null>(null);
+  const [permanentRecoveryError, setPermanentRecoveryError] = useState<string | null>(null);
   const [debugEnabled, setDebugEnabled] = useState(false);
   const [lastDiagnostic, setLastDiagnostic] = useState<NavigationDiagnosticEvent | null>(null);
   const [activeSessionLookup, setActiveSessionLookup] = useState<ActiveSessionLookup>(initialActiveSessionLookup);
@@ -389,6 +394,33 @@ export default function HomePage() {
     setRenameDraft(name);
     setRenameError(null);
     setRenameNotice(`匿名暱稱已更新為「${name}」`);
+  };
+
+  const openPermanentRecoverySettings = async () => {
+    setPermanentRecoveryError(null);
+    setPermanentRecoveryCode(null);
+    setPermanentRecoveryOpen(true);
+    try {
+      setPermanentRecoveryStatus(await getPermanentRecoveryStatus());
+    } catch (error) {
+      setPermanentRecoveryError(error instanceof Error ? error.message : "目前無法讀取恢復碼狀態。");
+    }
+  };
+
+  const createOrRotatePermanentRecoveryCode = async () => {
+    setRecoveryBusy(true);
+    setPermanentRecoveryError(null);
+    try {
+      const result = permanentRecoveryStatus?.hasRecoveryCode
+        ? await rotatePermanentRecoveryCode()
+        : await createPermanentRecoveryCode();
+      setPermanentRecoveryCode(result.recoveryCode);
+      setPermanentRecoveryStatus({ hasRecoveryCode: true, hint: result.hint, createdAt: result.createdAt ?? null });
+    } catch (error) {
+      setPermanentRecoveryError(error instanceof Error ? error.message : "目前無法建立恢復碼。");
+    } finally {
+      setRecoveryBusy(false);
+    }
   };
 
   const openRenameDialog = () => {
@@ -688,7 +720,32 @@ export default function HomePage() {
             </>
           }
         >
-          {message ? <Notice variant="warning">{message}</Notice> : null}
+          <Button variant="secondary" size="lg" onClick={() => void openPermanentRecoverySettings()} disabled={!state.session || actionBusy}>
+        永久恢復碼
+      </Button>
+
+      <Modal open={permanentRecoveryOpen} title="永久恢復碼" onClose={() => { if (!recoveryBusy) setPermanentRecoveryOpen(false); }}>
+        <div className="stack">
+          <p className="muted">保存永久恢復碼後，換裝置也能自行接回原本的匿名聊天室。</p>
+          {permanentRecoveryError ? <Notice variant="danger">{permanentRecoveryError}</Notice> : null}
+          {permanentRecoveryCode ? (
+            <Notice variant="success" title="請立即保存新的恢復碼">
+              <strong style={{ fontSize: 22, letterSpacing: 2 }}>{permanentRecoveryCode}</strong>
+              <div className="small">這組恢復碼只會顯示這一次，請勿分享給他人。</div>
+            </Notice>
+          ) : permanentRecoveryStatus?.hasRecoveryCode ? (
+            <Notice variant="info">目前已有永久恢復碼（提示：{permanentRecoveryStatus.hint ?? "••••••"}）。如遺失，請重新產生新碼。</Notice>
+          ) : (
+            <Notice variant="warning">目前尚未設定永久恢復碼。</Notice>
+          )}
+          <div className="modal-actions">
+            <Button variant="secondary" onClick={() => setPermanentRecoveryOpen(false)} disabled={recoveryBusy}>關閉</Button>
+            {!permanentRecoveryCode ? <Button onClick={() => void createOrRotatePermanentRecoveryCode()} disabled={recoveryBusy || !permanentRecoveryStatus}>{recoveryBusy ? "處理中…" : permanentRecoveryStatus?.hasRecoveryCode ? "更換恢復碼" : "建立永久恢復碼"}</Button> : null}
+          </div>
+        </div>
+      </Modal>
+
+      {message ? <Notice variant="warning">{message}</Notice> : null}
         </PageHero>
         <Modal open={recoveryOpen} title="找回原本聊天室" onClose={() => !recoveryBusy && setRecoveryOpen(false)}>
           <div className="stack">
