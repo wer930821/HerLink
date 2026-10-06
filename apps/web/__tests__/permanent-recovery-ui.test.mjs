@@ -19,6 +19,13 @@ test("self-service recovery creates or reuses an anonymous replacement principal
   assert.match(flow, /await\s+ensureAnonymousBootstrapProfile/);
 });
 
+test("replacement principal must be an anonymous auth user before profile bootstrap", () => {
+  assert.match(flow, /is_anonymous/);
+  const anonymousGuard = flow.indexOf("is_anonymous");
+  const bootstrap = flow.indexOf("ensureAnonymousBootstrapProfile(userId)");
+  assert.ok(anonymousGuard !== -1 && bootstrap !== -1 && anonymousGuard < bootstrap);
+});
+
 test("self-service recovery previews identity before claim", () => {
   assert.match(flow, /previewPermanentRecovery/);
   assert.match(flow, /找到匿名身分/);
@@ -26,11 +33,16 @@ test("self-service recovery previews identity before claim", () => {
   assert.match(flow, /舊裝置會立即失效/);
 });
 
-test("successful claim shows the newly rotated permanent recovery code", () => {
+test("successful claim shows the newly rotated permanent recovery code before recovery callback", () => {
   assert.match(flow, /claimPermanentRecovery/);
   assert.match(flow, /newRecoveryCode/);
   assert.match(flow, /新的永久恢復碼/);
   assert.match(flow, /舊恢復碼已失效/);
+  const claimStart = flow.indexOf("const claim = async");
+  const successScreen = flow.indexOf("if (newRecoveryCode)");
+  const claimBody = flow.slice(claimStart, successScreen);
+  assert.doesNotMatch(claimBody, /onRecovered\?\.\(\)/);
+  assert.match(flow.slice(successScreen), /onRecovered\?\.\(\)/);
 });
 
 test("recovery client calls the edge endpoint with bearer auth and normalized eight-character code", () => {
