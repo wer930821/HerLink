@@ -1,0 +1,22 @@
+name: Permanent recovery check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/*anonymous_recovery*'
+      - 'supabase/functions/**/anonymous-recovery*'
+      - 'work/permanent-recovery-*.test.mjs'
+      - 'apps/web/**/recovery*'
+      - '.github/workflows/permanent-recovery-check.yml'
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Permanent recovery contract tests
+        run: node --test work/permanent-recovery-*.test.mjs
