@@ -1480,6 +1480,9 @@ export default function RandomSessionClient() {
           void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
           void refreshSessionFromServerRef.current?.();
         })
+        .on("broadcast", { event: "message-recalled" }, () => {
+          void refreshMessagesFromServerRef.current?.({ forceScroll: false });
+        })
         .on("broadcast", { event: "typing" }, (payload: { payload?: { typing?: unknown } }) => {
           const typing = Boolean(payload?.payload?.typing);
 
