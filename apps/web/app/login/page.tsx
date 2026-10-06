@@ -23,19 +23,12 @@ export default function LoginPage(){
      void supabase.auth.getSession().then(({data}:{data:{session:Session|null}})=>{if(data.session?.user.is_anonymous)void supabase.auth.signOut()});
      return;
    }
-   void supabase.auth.getSession().then(async ({data}:{data:{session:Session|null}})=>{
-     if (data.session?.user.id===GUXING_USER_ID && !data.session.user.is_anonymous) {
-       router.replace("/");
-       return;
-     }
-     if (data.session?.user.is_anonymous) {
-       await supabase.auth.signOut();
-     }
-   });
+   // Keep the account login form open even when the visitor currently has an anonymous session.
  },[router]);
 
  const onSubmit=async(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();setLoading(true);setError(null);setSuccess(null);try{
    if(isAdminLogin&&adminCreateMode){if(password.length<10)throw new Error("管理員密碼至少需要 10 個字元。");if(password!==confirmPassword)throw new Error("兩次輸入的密碼不一致。");const redirectTo=`${window.location.origin}/auth/callback?next=/admin`;const {data,error:signUpError}=await supabase.auth.signUp({email:email.trim(),password,options:{emailRedirectTo:redirectTo}});if(signUpError)throw signUpError;if(data.session)router.replace("/admin");else setSuccess("確認信已寄出，請到 Email 點擊確認連結。確認後會自動取得後台管理員權限。");return}
+   if (!isAdminLogin) await supabase.auth.signOut();
    const {error:authError}=await signIn(email.trim(),password);if(authError)throw authError;
    if(!isAdminLogin){const {data}=await supabase.auth.getSession();if(data.session?.user.id!==GUXING_USER_ID){await supabase.auth.signOut();throw new Error("此登入入口目前僅供孤星企鵝使用。");}}
    window.location.assign(getLoginDestination());
