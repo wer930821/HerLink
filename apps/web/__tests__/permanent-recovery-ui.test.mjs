@@ -58,3 +58,11 @@ test("recovery client calls the edge endpoint with bearer auth and normalized ei
   assert.match(api, /callRecovery<PermanentRecoveryClaim>\("claim", code\)/);
   assert.match(api, /JSON\.stringify\(\{ action, recoveryCode: normalizedCode \}\)/);
 });
+
+
+test("home page exposes permanent recovery settings for an existing anonymous identity", () => {
+  const home = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(home, /永久恢復碼/);
+  assert.match(home, /openPermanentRecoverySettings/);
+  assert.match(home, /建立永久恢復碼/);
+});
