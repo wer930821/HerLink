@@ -8830,3 +8830,13 @@ body:has(.site-collection-viewport) .collection-skip-link:not(:focus) {
   padding-top: max(8px, env(safe-area-inset-top));
   padding-bottom: max(16px, env(safe-area-inset-bottom));
 }
+
+/* Logged-out home: extend the two panels to use the mobile viewport. */
+.home-fixed:not(.home-app-like) > .hero {
+  min-height: 46dvh;
+  align-content: start;
+}
+.home-fixed:not(.home-app-like) > .surface {
+  min-height: 38dvh;
+  align-content: start;
+}
