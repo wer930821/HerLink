@@ -19,8 +19,12 @@ export function PermanentRecoveryFlow({ onBack, onRecovered }: Props) {
   const prepareReplacementPrincipal = async () => {
     const { data, error: authError } = await signInAnonymously();
     if (authError) throw new Error(authError.message || "目前無法建立匿名工作階段。");
-    const userId = data.user?.id ?? data.session?.user?.id;
+    const authUser = data.user ?? data.session?.user;
+    const userId = authUser?.id;
     if (!userId) throw new Error("目前無法建立匿名工作階段。");
+    if (authUser?.is_anonymous !== true) {
+      throw new Error("目前登入的是一般帳號，請使用匿名工作階段進行聊天室恢復。");
+    }
     const profile = await ensureAnonymousBootstrapProfile(userId);
     if (profile.error || !profile.data?.anonymous_mode_enabled) {
       throw new Error(profile.error?.message || "目前無法準備匿名恢復身分。");
@@ -45,9 +49,13 @@ export function PermanentRecoveryFlow({ onBack, onRecovered }: Props) {
       const result = await claimPermanentRecovery(code);
       setDisplayName(result.displayName);
       setNewRecoveryCode(result.newRecoveryCode);
-      onRecovered?.();
     } catch (e) { setError(e instanceof Error ? e.message : "目前無法接回匿名身分。"); }
     finally { setBusy(false); }
+  };
+
+  const finishRecovery = () => {
+    onRecovered?.();
+    window.location.assign("/");
   };
 
   if (newRecoveryCode) return (
@@ -57,7 +65,7 @@ export function PermanentRecoveryFlow({ onBack, onRecovered }: Props) {
         <strong style={{ fontSize: 22, letterSpacing: 2 }}>{newRecoveryCode}</strong>
         <div className="small" style={{ marginTop: 8 }}>請保存這組新碼；舊恢復碼已失效。</div>
       </Notice>
-      <Button onClick={() => window.location.assign("/")}>回到首頁</Button>
+      <Button onClick={finishRecovery}>我已保存，回到首頁</Button>
     </div>
   );
 
