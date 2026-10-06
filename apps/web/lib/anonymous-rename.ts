@@ -161,21 +161,33 @@ export async function renameAnonymousDisplayName(
 export async function randomizeAnonymousDisplayName(
   client?: AnonymousRenameClient
 ): Promise<AnonymousNameResult> {
-  let result: AnonymousNameRpcResponse;
-  try {
-    result = await renameClient(client).rotateMyAnonymousDisplayName();
-  } catch {
-    return { ok: false, ...anonymousRenameError("NETWORK_ERROR") };
+  const rename = renameClient(client);
+
+  // A concurrent rename can still win the unique-name race after the RPC's
+  // candidate check. Retry a few times so users never get stuck on a collision.
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    let result: AnonymousNameRpcResponse;
+    try {
+      result = await rename.rotateMyAnonymousDisplayName();
+    } catch {
+      return { ok: false, ...anonymousRenameError("NETWORK_ERROR") };
+    }
+
+    if (result?.error) {
+      const error = toRenameError(result.error);
+      if (error.code === "NAME_TAKEN" || error.code === "RANDOM_NAME_UNAVAILABLE") {
+        continue;
+      }
+      return { ok: false, ...error };
+    }
+
+    const response = readServerName(result?.data);
+    if (response?.status === "NAME_TAKEN" || !response?.name) {
+      continue;
+    }
+
+    return { ok: true, name: response.name };
   }
 
-  if (result?.error) {
-    return { ok: false, ...toRenameError(result.error) };
-  }
-
-  const response = readServerName(result?.data);
-  if (!response?.name) {
-    return { ok: false, ...anonymousRenameError("NETWORK_ERROR") };
-  }
-
-  return { ok: true, name: response.name };
+  return { ok: false, ...anonymousRenameError("RANDOM_NAME_UNAVAILABLE") };
 }
