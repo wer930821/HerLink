@@ -36,7 +36,11 @@ export default function SignupPage() {
       if (data.session) { router.replace("/"); return; }
       setMessage("申請完成。若收到驗證信，請先完成信箱驗證後再登入。");
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : getFriendlyAuthErrorMessage(err, "申請失敗，請稍後再試。"));
+      const rawMessage = err instanceof Error ? err.message : "";
+      const alreadyRegistered = /already registered|user already exists|email.*registered/i.test(rawMessage);
+      setError(alreadyRegistered
+        ? "這個電子郵件已經註冊過了，請改用登入帳號。"
+        : rawMessage || getFriendlyAuthErrorMessage(err, "申請失敗，請稍後再試。"));
     } finally { setLoading(false); }
   };
 
