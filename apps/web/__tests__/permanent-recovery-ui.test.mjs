@@ -32,6 +32,7 @@ test("recovery client calls the edge endpoint with bearer auth and normalized ei
   assert.match(api, /Bearer/);
   assert.match(api, /replace\(\/\[\\s-\]\+\/g/);
   assert.match(api, /slice\(0,\s*8\)/);
-  assert.match(api, /action:\s*"preview"/);
-  assert.match(api, /action:\s*"claim"/);
+  assert.match(api, /callRecovery<PermanentRecoveryPreview>\("preview", code\)/);
+  assert.match(api, /callRecovery<PermanentRecoveryClaim>\("claim", code\)/);
+  assert.match(api, /JSON\.stringify\(\{ action, recoveryCode: normalizedCode \}\)/);
 });
