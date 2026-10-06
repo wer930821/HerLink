@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { supabase } from "../../../lib/supabase";
 
-const LONELY_PENGUIN_ID = "e2817803-1304-4ef0-b0b8-66f473b12886";
+const LONELY_PENGUIN_ID = "671fac06-8eeb-4b95-830a-8d4e141fda9a";
 const LONG_PRESS_MS = 420;
 const RECALL_HINT_MS = 1000;
 
