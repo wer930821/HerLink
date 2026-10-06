@@ -16,16 +16,19 @@ test("recovery copy exposes recovery-code and admin-help paths", () => {
   assert.match(copySource, /我沒有恢復碼／需要站長協助/);
 });
 
-test("recovery entry does not pretend unfinished self-service recovery is active", () => {
-  assert.match(componentSource, /永久自助恢復功能正在完成中/);
-  assert.match(componentSource, /避免半成品造成身分誤接/);
+test("recovery entry activates self-service code recovery", () => {
+  assert.match(componentSource, /onUseRecoveryCode/);
+  assert.match(componentSource, />我有恢復碼</);
+  assert.match(componentSource, /onUseAdminRecovery/);
 });
 
-test("existing recovery modal renders recovery entry options before manual recovery", () => {
+test("existing recovery modal routes to self-service or manual recovery", () => {
   assert.match(modalSource, /import \{ RecoveryEntryOptions \} from "\.\.\/recovery-entry-options"/);
+  assert.match(modalSource, /import \{ PermanentRecoveryFlow \} from "\.\.\/permanent-recovery-flow"/);
   assert.match(modalSource, /title === "找回原本聊天室"/);
-  assert.match(modalSource, /<RecoveryEntryOptions onUseAdminRecovery=\{\(\) => setShowRecoveryAdmin\(true\)\} \/>/);
-  assert.match(modalSource, /showRecoveryAdmin \? children : null/);
+  assert.match(modalSource, /onUseRecoveryCode=\{\(\) => setRecoveryBranch\("code"\)\}/);
+  assert.match(modalSource, /onUseAdminRecovery=\{\(\) => setRecoveryBranch\("admin"\)\}/);
+  assert.match(modalSource, /recoveryBranch === "admin" \? children : null/);
 });
 
 test("existing manual recovery request remains available", () => {
