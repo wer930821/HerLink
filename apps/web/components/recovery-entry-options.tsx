@@ -1,4 +1,5 @@
-import { Button, Notice } from "./ui";
+import { Button } from "./ui/Button";
+import { Notice } from "./ui/Notice";
 import {
   RECOVERY_ADMIN_PATH_LABEL,
   RECOVERY_CODE_PATH_LABEL,
