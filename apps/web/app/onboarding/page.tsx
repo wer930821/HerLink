@@ -2,70 +2,45 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ANONYMOUS_NAME_OPTIONS, generateNextAnonymousDisplayName } from "../../../../lib/anonymous";
 import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
 import {
   loadMyProfile,
   saveAnonymousProfile,
   supabase,
-  type WebProfile,
 } from "../../lib/supabase";
 
-const RANDOM_NAME_RETRY_LIMIT = 5;
+type NameRpcRow = { status: string; anonymous_display_name: string | null };
 
-function isDuplicateNameError(error: unknown) {
-  const value = error as { code?: string; message?: string; details?: string } | null;
-  const text = `${value?.message ?? ""} ${value?.details ?? ""}`.toLowerCase();
-  return value?.code === "23505" || text.includes("duplicate key") || text.includes("already") || text.includes("已使用");
+function firstRpcRow(data: unknown): NameRpcRow | null {
+  if (Array.isArray(data)) return (data[0] as NameRpcRow | undefined) ?? null;
+  return (data as NameRpcRow | null) ?? null;
 }
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
-  const [profile, setProfile] = useState<WebProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [generatingName, setGeneratingName] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [anonymousDisplayName, setAnonymousDisplayName] = useState<string>("");
-  const [randomName, setRandomName] = useState(false);
+  const [anonymousDisplayName, setAnonymousDisplayName] = useState("");
 
-  const findAvailableRandomName = async (currentName?: string | null) => {
-    const shuffled = [...ANONYMOUS_NAME_OPTIONS].sort(() => Math.random() - 0.5);
-    const normalizedCurrent = (currentName ?? "").trim();
-
-    for (const candidate of shuffled) {
-      if (candidate === normalizedCurrent) continue;
-      const { data, error: lookupError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("anonymous_display_name", candidate)
-        .limit(1);
-      if (lookupError) throw lookupError;
-      if (!data?.length) return candidate;
-    }
-    return null;
-  };
-
-  const generateAvailableName = async (currentName?: string | null) => {
+  const rotateName = async () => {
     setGeneratingName(true);
     setError(null);
     try {
-      const nextName = await findAvailableRandomName(currentName);
-      if (!nextName) {
-        setError("目前隨機暱稱已用完，請自行輸入一個暱稱。");
+      const result = await supabase.rpc("rotate_my_anonymous_display_name");
+      if (result.error) throw result.error;
+      const row = firstRpcRow(result.data);
+      if (!row?.anonymous_display_name) {
+        setError("目前無法產生隨機暱稱，請自行輸入一個暱稱。");
         return null;
       }
-      setAnonymousDisplayName(nextName);
-      setRandomName(true);
-      return nextName;
-    } catch {
-      // If profile lookup is unavailable, keep the button useful and let the DB
-      // uniqueness constraint make the final decision on submit.
-      const fallback = generateNextAnonymousDisplayName(currentName);
-      setAnonymousDisplayName(fallback);
-      setRandomName(true);
-      return fallback;
+      setAnonymousDisplayName(row.anonymous_display_name);
+      return row.anonymous_display_name;
+    } catch (err) {
+      setError(getFriendlyAuthErrorMessage(err, "目前無法產生隨機暱稱，請稍後再試。"));
+      return null;
     } finally {
       setGeneratingName(false);
     }
@@ -83,14 +58,12 @@ export default function OnboardingPage() {
 
         const profileResult = await loadMyProfile(session.user.id);
         if (!mounted) return;
-
         setUserId(session.user.id);
-        setProfile(profileResult.data ?? null);
+
         if (profileResult.data?.anonymous_display_name) {
           setAnonymousDisplayName(profileResult.data.anonymous_display_name);
-          setRandomName(false);
         } else {
-          await generateAvailableName();
+          await rotateName();
         }
       } catch {
         if (mounted) setError("目前無法載入匿名設定，請稍後再試。");
@@ -106,16 +79,6 @@ export default function OnboardingPage() {
 
   const ready = useMemo(() => Boolean(anonymousDisplayName.trim()), [anonymousDisplayName]);
 
-  const saveName = async (name: string) => {
-    if (!userId) return { error: { message: "找不到目前 Web 身分。" } };
-    return saveAnonymousProfile(userId, {
-      anonymous_display_name: name.trim(),
-      anonymous_avatar: "avatar_01",
-      anonymous_mode_enabled: true,
-      onboarding_completed: true,
-    });
-  };
-
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!userId) return;
@@ -129,32 +92,26 @@ export default function OnboardingPage() {
     setSaving(true);
     setError(null);
     try {
-      let nameToSave = enteredName;
-      let result = await saveName(nameToSave);
-
-      if (result.error && randomName && isDuplicateNameError(result.error)) {
-        for (let attempt = 0; attempt < RANDOM_NAME_RETRY_LIMIT; attempt += 1) {
-          const replacement = await findAvailableRandomName(nameToSave);
-          if (!replacement) break;
-          nameToSave = replacement;
-          setAnonymousDisplayName(replacement);
-          result = await saveName(replacement);
-          if (!result.error) break;
-          if (!isDuplicateNameError(result.error)) break;
-        }
+      // The database owns the canonical anonymous name. This RPC performs the
+      // normalized uniqueness check without exposing other users' profiles.
+      const nameResult = await supabase.rpc("set_my_anonymous_display_name", { p_name: enteredName });
+      if (nameResult.error) throw nameResult.error;
+      const row = firstRpcRow(nameResult.data);
+      if (row?.status === "NAME_TAKEN") {
+        setError("該暱稱已使用，請換一個名稱。");
+        return;
       }
 
-      if (result.error) {
-        if (isDuplicateNameError(result.error)) {
-          if (randomName) {
-            setError("目前隨機暱稱較多人使用，請再按一次換一個。");
-          } else {
-            setError("該暱稱已使用，請換一個名稱。");
-          }
-          return;
-        }
-        throw result.error;
-      }
+      const canonicalName = row?.anonymous_display_name?.trim() || enteredName;
+      setAnonymousDisplayName(canonicalName);
+
+      const { error: saveError } = await saveAnonymousProfile(userId, {
+        anonymous_display_name: canonicalName,
+        anonymous_avatar: "avatar_01",
+        anonymous_mode_enabled: true,
+        onboarding_completed: true,
+      });
+      if (saveError) throw saveError;
 
       router.replace("/");
     } catch (err) {
@@ -187,20 +144,19 @@ export default function OnboardingPage() {
             <input
               className="input"
               value={anonymousDisplayName}
-              onChange={(e) => {
-                setAnonymousDisplayName(e.target.value);
-                setRandomName(false);
+              onChange={(event) => {
+                setAnonymousDisplayName(event.target.value);
                 setError(null);
               }}
               placeholder="例如：本人很正常"
-              maxLength={24}
+              maxLength={12}
             />
           </div>
           <button
             className="ghost"
             type="button"
             disabled={generatingName || saving}
-            onClick={() => void generateAvailableName(anonymousDisplayName)}
+            onClick={() => void rotateName()}
           >
             {generatingName ? "產生中…" : "換一個"}
           </button>
