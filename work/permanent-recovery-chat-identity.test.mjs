@@ -12,8 +12,8 @@ test("current auth user resolves to the stable recovered chat identity",()=>{
 
 test("session membership uses resolved identity instead of replacement auth uuid",()=>{
   assert.match(source,/is_active_random_session_member/);
-  assert.match(source,/session_row\.user_a\s*=\s*identity_id/i);
-  assert.match(source,/session_row\.user_b\s*=\s*identity_id/i);
+  assert.match(source,/s\.user_a\s*=\s*identity_id/i);
+  assert.match(source,/s\.user_b\s*=\s*identity_id/i);
 });
 
 test("message listing and sending authorize through the resolved identity",()=>{
