@@ -48,5 +48,22 @@ Deno.serve(async (req) => {
   });
   const row = Array.isArray(result.data) ? result.data[0] : result.data;
   if (result.error || !row) return reply({ error: "Recovery failed." }, 409);
-  return reply({ displayName: row.anonymous_display_name, newRecoveryCode, createdAt: row.created_at });
+
+  const takeover = await admin.rpc("claim_anonymous_identity_device", {
+    p_identity_id: row.anonymous_identity_id,
+    p_new_auth_user_id: user.id,
+  });
+  const device = Array.isArray(takeover.data) ? takeover.data[0] : takeover.data;
+  if (takeover.error || !device) {
+    // Do not report a completed takeover unless the new device was actually activated.
+    return reply({ error: "Recovery device activation failed. Contact administrator." }, 500);
+  }
+
+  return reply({
+    displayName: row.anonymous_display_name,
+    newRecoveryCode,
+    createdAt: row.created_at,
+    identityId: row.anonymous_identity_id,
+    generation: device.generation,
+  });
 });
