@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS public.anonymous_identity_device_state (
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+CREATE UNIQUE INDEX IF NOT EXISTS anonymous_identity_device_state_active_auth_unique
+  ON public.anonymous_identity_device_state(active_auth_user_id);
 ALTER TABLE public.anonymous_identity_device_state ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.anonymous_identity_device_state FROM public, anon, authenticated;
 GRANT ALL ON public.anonymous_identity_device_state TO service_role;
@@ -15,8 +17,10 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
 DECLARE v_state public.anonymous_identity_device_state%ROWTYPE;
 BEGIN
   IF NOT EXISTS(SELECT 1 FROM public.profiles WHERE id=p_identity_id AND anonymous_mode_enabled=true) THEN RAISE EXCEPTION 'ANONYMOUS_IDENTITY_NOT_FOUND'; END IF;
-  IF NOT EXISTS(SELECT 1 FROM auth.users WHERE id=p_new_auth_user_id) THEN RAISE EXCEPTION 'AUTH_USER_NOT_FOUND'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.profiles WHERE id=p_new_auth_user_id AND anonymous_mode_enabled=true) THEN RAISE EXCEPTION 'REPLACEMENT_ANONYMOUS_PROFILE_NOT_FOUND'; END IF;
   PERFORM pg_advisory_xact_lock(hashtextextended(p_identity_id::text,0));
+  PERFORM pg_advisory_xact_lock(hashtextextended(p_new_auth_user_id::text,0));
+  IF EXISTS(SELECT 1 FROM public.anonymous_identity_device_state WHERE active_auth_user_id=p_new_auth_user_id AND anonymous_identity_id<>p_identity_id) THEN RAISE EXCEPTION 'AUTH_USER_ALREADY_BOUND'; END IF;
   SELECT * INTO v_state FROM public.anonymous_identity_device_state WHERE anonymous_identity_id=p_identity_id FOR UPDATE;
   IF v_state.anonymous_identity_id IS NULL THEN
     INSERT INTO public.anonymous_identity_device_state(anonymous_identity_id,active_auth_user_id,generation) VALUES(p_identity_id,p_new_auth_user_id,1) RETURNING * INTO v_state;
@@ -36,10 +40,12 @@ BEGIN
   SELECT * INTO v_credential FROM public.anonymous_recovery_credentials WHERE code_hash=p_code_hash AND used_at IS NULL AND revoked_at IS NULL LIMIT 1 FOR UPDATE;
   IF v_credential.id IS NULL THEN RAISE EXCEPTION 'INVALID_RECOVERY_CODE'; END IF;
   IF v_credential.anonymous_identity_id=p_new_auth_user_id THEN RAISE EXCEPTION 'SAME_IDENTITY'; END IF;
-  IF NOT EXISTS(SELECT 1 FROM auth.users WHERE id=p_new_auth_user_id) THEN RAISE EXCEPTION 'AUTH_USER_NOT_FOUND'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.profiles WHERE id=p_new_auth_user_id AND anonymous_mode_enabled=true) THEN RAISE EXCEPTION 'REPLACEMENT_ANONYMOUS_PROFILE_NOT_FOUND'; END IF;
   SELECT anonymous_display_name INTO v_name FROM public.profiles WHERE id=v_credential.anonymous_identity_id AND anonymous_mode_enabled=true FOR UPDATE;
   IF v_name IS NULL THEN RAISE EXCEPTION 'IDENTITY_NOT_FOUND'; END IF;
   PERFORM pg_advisory_xact_lock(hashtextextended(v_credential.anonymous_identity_id::text,0));
+  PERFORM pg_advisory_xact_lock(hashtextextended(p_new_auth_user_id::text,0));
+  IF EXISTS(SELECT 1 FROM public.anonymous_identity_device_state WHERE active_auth_user_id=p_new_auth_user_id AND anonymous_identity_id<>v_credential.anonymous_identity_id) THEN RAISE EXCEPTION 'AUTH_USER_ALREADY_BOUND'; END IF;
   UPDATE public.anonymous_recovery_credentials SET used_at=v_now,last_used_at=v_now WHERE id=v_credential.id;
   INSERT INTO public.anonymous_recovery_credentials(anonymous_identity_id,code_hash,code_hint,version,rotated_at) VALUES(v_credential.anonymous_identity_id,p_new_code_hash,p_new_code_hint,v_credential.version+1,v_now) RETURNING anonymous_recovery_credentials.created_at INTO v_created;
   SELECT * INTO v_state FROM public.anonymous_identity_device_state WHERE anonymous_identity_id=v_credential.anonymous_identity_id FOR UPDATE;
