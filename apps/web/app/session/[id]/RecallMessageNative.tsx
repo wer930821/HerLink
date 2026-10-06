@@ -64,8 +64,11 @@ export default function RecallMessageNative() {
               const { error } = await supabase.rpc("recall_random_message", { p_message_id: message.id });
               setBusyId(null);
               if (error) { window.alert("目前無法收回訊息，請稍後再試。"); return; }
-              setMessages((current) => current.map((item) => item.id === message.id ? { ...item, recalled_at: new Date().toISOString(), content: "" } : item));
-              window.location.reload();
+              const recalledAt = new Date().toISOString();
+              setMessages((current) => current.map((item) => item.id === message.id ? { ...item, recalled_at: recalledAt, content: "此訊息已收回", message_type: "text" } : item));
+              window.dispatchEvent(new CustomEvent("herlink:message-recalled", {
+                detail: { messageId: message.id, recalledAt },
+              }));
             }} style={{ border: "1px solid #ff8ab2", borderRadius: 999, padding: "5px 9px", background: "transparent", color: "#ffb1cb", fontWeight: 800 }}>
               {busyId === message.id ? "收回中…" : "收回"}
             </button>
