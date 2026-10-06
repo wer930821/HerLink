@@ -1483,6 +1483,18 @@ export default function RandomSessionClient() {
         .on("broadcast", { event: "message-recalled" }, () => {
           void refreshMessagesFromServerRef.current?.({ forceScroll: false });
         })
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "random_chat_messages",
+            filter: `session_id=eq.${session.id}`,
+          },
+          () => {
+            void refreshMessagesFromServerRef.current?.({ forceScroll: false });
+          }
+        )
         .on("broadcast", { event: "typing" }, (payload: { payload?: { typing?: unknown } }) => {
           const typing = Boolean(payload?.payload?.typing);
 
