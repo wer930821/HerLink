@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { RecoveryEntryOptions } from "../recovery-entry-options";
+import { PermanentRecoveryFlow } from "../permanent-recovery-flow";
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -18,12 +19,14 @@ type ModalProps = {
   className?: string;
 };
 
+type RecoveryBranch = "entry" | "code" | "admin";
+
 export function Modal({ open, title, children, actions, onClose, closeLabel = "關閉", tone = "default", className }: ModalProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
-  const [showRecoveryAdmin, setShowRecoveryAdmin] = useState(false);
+  const [recoveryBranch, setRecoveryBranch] = useState<RecoveryBranch>("entry");
   const isRecoveryDialog = title === "找回原本聊天室";
 
   useEffect(() => {
@@ -32,7 +35,7 @@ export function Modal({ open, title, children, actions, onClose, closeLabel = "�
 
   useEffect(() => {
     if (!open) {
-      setShowRecoveryAdmin(false);
+      setRecoveryBranch("entry");
       return;
     }
 
@@ -40,9 +43,7 @@ export function Modal({ open, title, children, actions, onClose, closeLabel = "�
     restoreFocusRef.current = previouslyFocused;
 
     const panel = panelRef.current;
-    if (panel) {
-      panel.focus();
-    }
+    if (panel) panel.focus();
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -53,35 +54,20 @@ export function Modal({ open, title, children, actions, onClose, closeLabel = "�
         onCloseRef.current();
         return;
       }
-
-      if (event.key !== "Tab" || !panel) {
-        return;
-      }
-
-      const focusables = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-        (element) => element.offsetParent !== null
-      );
-      if (focusables.length === 0) {
-        return;
-      }
-
+      if (event.key !== "Tab" || !panel) return;
+      const focusables = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter((element) => element.offsetParent !== null);
+      if (focusables.length === 0) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
       const active = document.activeElement as HTMLElement | null;
-
       if (event.shiftKey) {
-        if (active === first || !panel.contains(active)) {
-          event.preventDefault();
-          last.focus();
-        }
+        if (active === first || !panel.contains(active)) { event.preventDefault(); last.focus(); }
       } else if (active === last || !panel.contains(active)) {
-        event.preventDefault();
-        first.focus();
+        event.preventDefault(); first.focus();
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
-
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
@@ -89,41 +75,39 @@ export function Modal({ open, title, children, actions, onClose, closeLabel = "�
     };
   }, [open]);
 
-  if (!open) {
-    return null;
-  }
+  if (!open) return null;
+
+  const recoveryContent = recoveryBranch === "entry" ? (
+    <RecoveryEntryOptions
+      onUseRecoveryCode={() => setRecoveryBranch("code")}
+      onUseAdminRecovery={() => setRecoveryBranch("admin")}
+    />
+  ) : recoveryBranch === "code" ? (
+    <PermanentRecoveryFlow onBack={() => setRecoveryBranch("entry")} />
+  ) : (
+    <div className="stack">
+      <ButtonBack onClick={() => setRecoveryBranch("entry")} />
+      {recoveryBranch === "admin" ? children : null}
+    </div>
+  );
 
   return createPortal(
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
-      <div
-        className={`modal-card${tone === "danger" ? " modal-danger" : ""}${className ? ` ${className}` : ""}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        tabIndex={-1}
-        ref={panelRef}
-        onClick={(event) => event.stopPropagation()}
-      >
+      <div className={`modal-card${tone === "danger" ? " modal-danger" : ""}${className ? ` ${className}` : ""}`} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={panelRef} onClick={(event) => event.stopPropagation()}>
         <div className="modal-header">
-          <div className="modal-title" id={titleId}>
-            {title}
-          </div>
+          <div className="modal-title" id={titleId}>{title}</div>
           <button type="button" className="modal-close" aria-label={closeLabel} onClick={onClose}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
           </button>
         </div>
-        {isRecoveryDialog ? (
-          <>
-            <RecoveryEntryOptions onUseAdminRecovery={() => setShowRecoveryAdmin(true)} />
-            {showRecoveryAdmin ? children : null}
-          </>
-        ) : children}
+        {isRecoveryDialog ? recoveryContent : children}
         {actions ? <div className="modal-actions">{actions}</div> : null}
       </div>
     </div>,
     document.body
   );
+}
+
+function ButtonBack({ onClick }: { onClick: () => void }) {
+  return <button type="button" className="ghost" onClick={onClick}>返回恢復方式</button>;
 }
