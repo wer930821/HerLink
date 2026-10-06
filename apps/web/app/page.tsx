@@ -683,7 +683,7 @@ export default function HomePage() {
               <Button variant="link" onClick={() => setRecoveryOpen(true)} disabled={actionBusy}>
                 無法進入原本聊天室？
               </Button>
-              <Button variant="link" href="/login" disabled={actionBusy}>
+              <Button variant="link" href="/login">
                 登入既有帳號
               </Button>
               {onlineCountConnected ? <Badge variant="success">在線 {onlineCount} 人</Badge> : null}
