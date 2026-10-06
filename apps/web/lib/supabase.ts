@@ -234,6 +234,7 @@ export type RandomChatMessageRow = {
   session_id: string;
   content: string;
   created_at: string;
+  recalled_at: string | null;
   is_mine: boolean;
   risk_level: "low" | "medium" | "high" | "critical";
   risk_types: string[];
@@ -268,6 +269,7 @@ export type RandomChatMessageRealtimeRow = {
   sender_id: string;
   content: string;
   created_at: string;
+  recalled_at: string | null;
   risk_level: "low" | "medium" | "high" | "critical" | null;
   risk_types: string[] | null;
   message_type: "text" | "image" | null;
