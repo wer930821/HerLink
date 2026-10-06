@@ -5,6 +5,16 @@ import { generateRecoveryCode, hashRecoveryCode, normalizeRecoveryCode, recovery
 const headers = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, content-type", "Content-Type": "application/json", "Cache-Control": "no-store" };
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers });
 
+function recoveryErrorCode(message?: string) {
+  const normalized = (message ?? "").trim();
+  if (/^[A-Z0-9_]+$/.test(normalized)) return normalized;
+  if (/duplicate key value/i.test(normalized)) return "RECOVERY_CONFLICT";
+  if (/violates foreign key constraint/i.test(normalized)) return "RECOVERY_REFERENCE_MISSING";
+  if (/violates unique constraint/i.test(normalized)) return "RECOVERY_CONFLICT";
+  if (/violates check constraint/i.test(normalized)) return "RECOVERY_INVALID_STATE";
+  return "RECOVERY_TRANSACTION_FAILED";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers });
   if (req.method !== "POST") return reply({ error: "Method not allowed." }, 405);
@@ -35,6 +45,9 @@ Deno.serve(async (req) => {
   const newRecoveryCode=generateRecoveryCode(), newHash=await hashRecoveryCode(newRecoveryCode);
   const result=await admin.rpc("claim_anonymous_recovery_and_device",{p_code_hash:codeHash,p_new_auth_user_id:user.id,p_new_code_hash:newHash,p_new_code_hint:recoveryCodeHint(newRecoveryCode)});
   const row=Array.isArray(result.data)?result.data[0]:result.data;
-  if(result.error||!row) return reply({error:"Recovery failed."},409);
+  if(result.error||!row) {
+    const code = recoveryErrorCode(result.error?.message);
+    return reply({error:`恢復失敗：${code}`,recoveryErrorCode:code,recoveryDebugMessage:result.error?.message??"Missing recovery transaction result."},409);
+  }
   return reply({displayName:row.anonymous_display_name,newRecoveryCode,createdAt:row.created_at,identityId:row.anonymous_identity_id,generation:row.generation});
 });
