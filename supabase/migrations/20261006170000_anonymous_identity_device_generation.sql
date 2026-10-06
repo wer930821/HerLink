@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS public.anonymous_identity_device_state (
-  anonymous_identity_id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  anonymous_identity_id UUID NOT NULL PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
   active_auth_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
