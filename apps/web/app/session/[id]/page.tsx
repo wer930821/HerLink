@@ -116,6 +116,21 @@ export default function RandomSessionPage() {
     const result = await supabase.rpc("recall_random_message", { p_message_id: target.messageId });
     if (result.error) { window.alert(`目前無法收回訊息：${result.error.message || "請稍後再試"}`); return; }
 
+    const channel = supabase.channel(`random-chat-${target.article.closest("[data-session-id]")?.getAttribute("data-session-id") || window.location.pathname.split("/").pop()}`);
+    await new Promise<void>((resolve) => {
+      let settled = false;
+      const finish = () => { if (settled) return; settled = true; resolve(); };
+      channel.subscribe((status: string) => {
+        if (status === "SUBSCRIBED") {
+          void channel.send({ type: "broadcast", event: "message-recalled", payload: { message_id: target.messageId } }).finally(finish);
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          finish();
+        }
+      });
+      window.setTimeout(finish, 2500);
+    });
+    void supabase.removeChannel(channel);
+
     const messageContent = target.article.querySelector<HTMLElement>(".chat-message-content");
     target.article.dataset.recallPreview = "1";
     if (messageContent) messageContent.textContent = "已收回";
