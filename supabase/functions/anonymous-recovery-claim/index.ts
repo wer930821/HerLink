@@ -19,6 +19,14 @@ Deno.serve(async (req) => {
   const action=body.action==="claim"?"claim":"preview";
   let codeHash:string;
   try{codeHash=await hashRecoveryCode(normalizeRecoveryCode(body.recoveryCode??""));}catch{return reply({error:"Invalid recovery code."},400);}
+
+  const rateLimit=await admin.rpc("check_anonymous_recovery_rate_limit",{p_requester_id:user.id,p_code_hash:codeHash});
+  if(rateLimit.error){
+    const message=`${rateLimit.error.message??""} ${rateLimit.error.details??""}`;
+    if(message.includes("RECOVERY_RATE_LIMITED")) return reply({error:"嘗試次數過多，請 30 分鐘後再試。"},429);
+    return reply({error:"Recovery unavailable."},503);
+  }
+
   if(action==="preview"){
     const credential=await admin.from("anonymous_recovery_credentials").select("anonymous_identity_id").eq("code_hash",codeHash).is("used_at",null).is("revoked_at",null).maybeSingle();
     if(!credential.data) return reply({error:"Invalid recovery code."},404);
