@@ -12,6 +12,13 @@ test("recovery entry offers permanent code self-service and preserves admin fall
   assert.match(entry, /onUseAdminRecovery/);
 });
 
+test("self-service recovery creates or reuses an anonymous replacement principal before preview", () => {
+  assert.match(flow, /signInAnonymously/);
+  assert.match(flow, /ensureAnonymousBootstrapProfile/);
+  assert.match(flow, /data\.user\?\.id|data\.session\?\.user\?\.id/);
+  assert.match(flow, /await\s+ensureAnonymousBootstrapProfile/);
+});
+
 test("self-service recovery previews identity before claim", () => {
   assert.match(flow, /previewPermanentRecovery/);
   assert.match(flow, /找到匿名身分/);
