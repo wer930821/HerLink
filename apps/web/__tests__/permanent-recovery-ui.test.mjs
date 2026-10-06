@@ -15,7 +15,8 @@ test("recovery entry offers permanent code self-service and preserves admin fall
 test("self-service recovery creates or reuses an anonymous replacement principal before preview", () => {
   assert.match(flow, /signInAnonymously/);
   assert.match(flow, /ensureAnonymousBootstrapProfile/);
-  assert.match(flow, /data\.user\?\.id|data\.session\?\.user\?\.id/);
+  assert.match(flow, /const authUser = data\.user \?\? data\.session\?\.user/);
+  assert.match(flow, /const userId = authUser\?\.id/);
   assert.match(flow, /await\s+ensureAnonymousBootstrapProfile/);
 });
 
@@ -39,10 +40,12 @@ test("successful claim shows the newly rotated permanent recovery code before re
   assert.match(flow, /新的永久恢復碼/);
   assert.match(flow, /舊恢復碼已失效/);
   const claimStart = flow.indexOf("const claim = async");
+  const finishStart = flow.indexOf("const finishRecovery");
   const successScreen = flow.indexOf("if (newRecoveryCode)");
-  const claimBody = flow.slice(claimStart, successScreen);
-  assert.doesNotMatch(claimBody, /onRecovered\?\.\(\)/);
-  assert.match(flow.slice(successScreen), /onRecovered\?\.\(\)/);
+  assert.ok(claimStart !== -1 && finishStart > claimStart && successScreen > finishStart);
+  assert.doesNotMatch(flow.slice(claimStart, finishStart), /onRecovered\?\.\(\)/);
+  assert.match(flow.slice(finishStart, successScreen), /onRecovered\?\.\(\)/);
+  assert.match(flow.slice(successScreen), /onClick=\{finishRecovery\}/);
 });
 
 test("recovery client calls the edge endpoint with bearer auth and normalized eight-character code", () => {
