@@ -2,7 +2,7 @@ export const ALLOWED_CHAT_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"
 export const ALLOWED_CHAT_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"] as const;
 export const MAX_CHAT_IMAGE_BYTES = 5 * 1024 * 1024;
 export const MAX_CHAT_IMAGE_SOURCE_BYTES = 25 * 1024 * 1024;
-export const MAX_CHAT_IMAGE_DIMENSION = 1600;
+export const MAX_CHAT_IMAGE_DIMENSION = 2048;
 
 export type ChatImageValidationError = {
   code: "invalid_type" | "invalid_extension" | "too_large";
@@ -91,7 +91,7 @@ export async function prepareChatImage(file: File): Promise<{
     }
     context.drawImage(image, 0, 0, width, height);
 
-    let blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, outputType, 0.85));
+    let blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, outputType, 0.9));
     if (!blob) {
       throw new Error("image encode failed");
     }
@@ -103,7 +103,7 @@ export async function prepareChatImage(file: File): Promise<{
       context.globalCompositeOperation = "destination-over";
       context.fillStyle = "#ffffff";
       context.fillRect(0, 0, width, height);
-      const jpegBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.8));
+      const jpegBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
       if (!jpegBlob) {
         throw new Error("image encode failed");
       }
