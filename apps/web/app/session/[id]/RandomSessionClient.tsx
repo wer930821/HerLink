@@ -2427,7 +2427,9 @@ export default function RandomSessionClient() {
               </span>
             </button>
           ) : null}
-          {message.message_type === "image" && message.media_path ? (
+          {message.recalled_at ? (
+            <div className="chat-message-content">此訊息已收回</div>
+          ) : message.message_type === "image" && message.media_path ? (
             <ChatImage
               path={message.media_path}
               alt={message.is_mine ? "你傳送的圖片" : "對方傳送的圖片"}
