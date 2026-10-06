@@ -259,7 +259,7 @@ export default function RandomSessionClient() {
   const seenMessageIdsRef = useRef<Set<string>>(new Set());
   const messageSyncInFlightRef = useRef(false);
   const messageSyncQueuedRef = useRef(false);
-  const refreshMessagesFromServerRef = useRef<((options?: { forceScroll?: boolean }) => Promise<void>) | null>(null);
+  const refreshMessagesFromServerRef = useRef<((options?: { forceScroll?: boolean; full?: boolean }) => Promise<void>) | null>(null);
   const refreshSessionFromServerRef = useRef<(() => Promise<RandomSessionRow | null>) | null>(null);
   const sessionRefreshGenerationRef = useRef(0);
   const lastSessionFetchErrorRef = useRef(false);
@@ -836,7 +836,7 @@ export default function RandomSessionClient() {
     });
   };
 
-  refreshMessagesFromServerRef.current = async ({ forceScroll = false } = {}) => {
+  refreshMessagesFromServerRef.current = async ({ forceScroll = false, full = false } = {}) => {
     if (!session?.id || !myProfile?.id) {
       return;
     }
@@ -849,7 +849,7 @@ export default function RandomSessionClient() {
     messageSyncInFlightRef.current = true;
 
     try {
-      const cursor = latestMessageCursorRef.current;
+      const cursor = full ? null : latestMessageCursorRef.current;
       const result = cursor
         ? await loadRandomMessages(session.id, 100, { after: cursor })
         : await loadRandomMessages(session.id, 50);
@@ -1387,13 +1387,16 @@ export default function RandomSessionClient() {
         return;
       }
 
-      void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current });
+      void refreshMessagesFromServerRef.current?.({ forceScroll: stickToBottomRef.current, full: true });
       void refreshSessionFromServerRef.current?.();
     };
 
     const scheduleNext = () => {
       if (disposed) return;
-      const delay = typingChannelReadyRef.current ? 15_000 : 3_000;
+      // Recalled messages are UPDATEs to older rows, so cursor-based syncs
+      // cannot see them. Keep a lightweight full-state sync while the chat is
+      // visible as a fallback when Realtime delivery is delayed or missed.
+      const delay = 3_000;
       timer = window.setTimeout(() => {
         syncNow();
         scheduleNext();
@@ -1511,7 +1514,7 @@ export default function RandomSessionClient() {
                 media_height: incoming.media_height,
               });
             });
-            void refreshMessagesFromServerRef.current?.({ forceScroll: false });
+            void refreshMessagesFromServerRef.current?.({ forceScroll: false, full: true });
           }
         )
         .on("broadcast", { event: "typing" }, (payload: { payload?: { typing?: unknown } }) => {
