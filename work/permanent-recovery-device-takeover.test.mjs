@@ -11,11 +11,21 @@ test("identity ownership is represented separately from immutable chat participa
   assert.match(migration, /generation BIGINT NOT NULL/);
 });
 
+test("one auth principal can own at most one recovered anonymous identity", () => {
+  assert.match(migration, /CREATE UNIQUE INDEX IF NOT EXISTS anonymous_identity_device_state_active_auth_unique/i);
+  assert.match(migration, /ON public\.anonymous_identity_device_state\(active_auth_user_id\)/i);
+});
+
 test("takeover atomically changes the active device owner and increments generation", () => {
   assert.match(migration, /claim_anonymous_identity_device/);
   assert.match(migration, /FOR UPDATE/);
   assert.match(migration, /generation\s*=\s*generation\s*\+\s*1/i);
   assert.match(migration, /active_auth_user_id\s*=\s*p_new_auth_user_id/i);
+});
+
+test("replacement auth principal must have an anonymous-enabled profile", () => {
+  const matches = migration.match(/id\s*=\s*p_new_auth_user_id\s+AND\s+anonymous_mode_enabled\s*=\s*true/gi) ?? [];
+  assert.ok(matches.length >= 2, "both claim functions must validate the replacement anonymous profile");
 });
 
 test("authorization helper rejects stale devices", () => {
