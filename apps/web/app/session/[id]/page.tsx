@@ -88,7 +88,7 @@ export default function RandomSessionPage() {
     if (hiddenMessageIds.has(target.messageId)) return;
     const messageContent = target.bubble.querySelector<HTMLElement>(".chat-message-content");
     const visibleText = messageContent?.textContent?.trim() ?? target.bubble.textContent?.trim() ?? "";
-    if (!visibleText || visibleText === "此訊息已收回" || visibleText === "已收回") return;
+    const hasMedia = Boolean(target.bubble.querySelector("img, video, audio, [data-media]"));\n    if ((!visibleText && !hasMedia) || visibleText === "此訊息已收回" || visibleText === "已收回") return;
     clearSelection();
     const rect = target.bubble.getBoundingClientRect();
     const width = target.mine ? 188 : 94;
