@@ -15,6 +15,46 @@ type MessageRow = {
   recalled_at?: string | null;
 };
 
+function holdChatScrollPosition() {
+  const container = document.querySelector<HTMLElement>(".chat-messages");
+  if (!container) return () => undefined;
+
+  const top = container.scrollTop;
+  const previousOverflowAnchor = container.style.overflowAnchor;
+  container.style.overflowAnchor = "none";
+
+  let frame = 0;
+  let raf = 0;
+  const restore = () => {
+    container.scrollTop = top;
+    frame += 1;
+    if (frame < 12) {
+      raf = window.requestAnimationFrame(restore);
+      return;
+    }
+    container.style.overflowAnchor = previousOverflowAnchor;
+  };
+  raf = window.requestAnimationFrame(restore);
+
+  return () => {
+    window.cancelAnimationFrame(raf);
+    container.scrollTop = top;
+    container.style.overflowAnchor = previousOverflowAnchor;
+  };
+}
+
+function patchVisibleMessage(messageId: string) {
+  const message = document.getElementById(`chat-msg-${messageId}`);
+  if (!message) return;
+
+  const body = message.querySelector<HTMLElement>(".chat-message-content");
+  if (body) body.textContent = "此訊息已收回";
+
+  message.querySelectorAll<HTMLElement>(".chat-image, .chat-media-image, .chat-message-image").forEach((node) => {
+    node.style.display = "none";
+  });
+}
+
 export default function RecallMessageNative() {
   const params = useParams<{ id?: string }>();
   const sessionId = typeof params?.id === "string" ? params.id : "";
@@ -60,15 +100,24 @@ export default function RecallMessageNative() {
           {!message.recalled_at ? (
             <button type="button" disabled={busyId === message.id} onClick={async () => {
               if (!window.confirm("確定要收回這則訊息嗎？")) return;
+              const releaseScroll = holdChatScrollPosition();
               setBusyId(message.id);
               const { error } = await supabase.rpc("recall_random_message", { p_message_id: message.id });
               setBusyId(null);
-              if (error) { window.alert("目前無法收回訊息，請稍後再試。"); return; }
+              if (error) {
+                releaseScroll();
+                window.alert("目前無法收回訊息，請稍後再試。");
+                return;
+              }
+
               const recalledAt = new Date().toISOString();
+              patchVisibleMessage(message.id);
               setMessages((current) => current.map((item) => item.id === message.id ? { ...item, recalled_at: recalledAt, content: "此訊息已收回", message_type: "text" } : item));
               window.dispatchEvent(new CustomEvent("herlink:message-recalled", {
                 detail: { messageId: message.id, recalledAt },
               }));
+
+              window.setTimeout(releaseScroll, 260);
             }} style={{ border: "1px solid #ff8ab2", borderRadius: 999, padding: "5px 9px", background: "transparent", color: "#ffb1cb", fontWeight: 800 }}>
               {busyId === message.id ? "收回中…" : "收回"}
             </button>
