@@ -8824,9 +8824,9 @@ body:has(.site-collection-viewport) .collection-skip-link:not(:focus) {
 
 /* Logged-out home: keep the hero and safety panel balanced in the viewport. */
 .home-fixed:not(.home-app-like) {
-  min-height: 100dvh;
+  min-height: auto;
   height: auto;
-  align-content: center;
-  padding-top: max(24px, env(safe-area-inset-top));
-  padding-bottom: max(28px, env(safe-area-inset-bottom));
+  align-content: start;
+  padding-top: max(8px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
 }
