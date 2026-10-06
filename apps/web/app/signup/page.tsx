@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
-import { signUp, supabase } from "../../lib/supabase";
+import { signUp } from "../../lib/supabase";
 import { Button, Field, Notice } from "../../components/ui";
 
 const TEST_NAME = "孤星企鵝";
@@ -19,19 +19,11 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-    void (async () => {
-      const { data } = await supabase.auth.getSession();
-      const userId = data.session?.user.id;
-      if (!userId) { router.replace("/"); return; }
-      const { data: profile } = await supabase.from("profiles").select("anonymous_display_name").eq("id", userId).maybeSingle();
-      if (!mounted) return;
-      if (profile?.anonymous_display_name !== TEST_NAME) { router.replace("/"); return; }
-      setAllowed(true);
-      setChecking(false);
-    })();
-    return () => { mounted = false; };
-  }, [router]);
+    // The signup entry is public. Do not redirect users back to the home page
+    // before they can even open the account form.
+    setAllowed(true);
+    setChecking(false);
+  }, []);
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
