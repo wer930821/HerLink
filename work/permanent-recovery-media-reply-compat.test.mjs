@@ -41,3 +41,10 @@ test("targeted reply preview uses recovered stable identity", () => {
   assert.match(fn, /reply_message_type/i);
   assert.match(fn, /reply_media_path/i);
 });
+
+test("final media migration removes obsolete two-argument chat RPC overloads", () => {
+  assert.match(source, /DROP FUNCTION IF EXISTS public\.list_random_messages\(UUID,\s*INTEGER\);/i);
+  assert.match(source, /DROP FUNCTION IF EXISTS public\.send_random_message\(UUID,\s*TEXT\);/i);
+  assert.equal((source.match(/CREATE OR REPLACE FUNCTION public\.list_random_messages\(/gi) ?? []).length, 1);
+  assert.equal((source.match(/CREATE OR REPLACE FUNCTION public\.send_random_message\(/gi) ?? []).length, 1);
+});
