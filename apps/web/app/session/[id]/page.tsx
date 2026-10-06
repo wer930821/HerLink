@@ -122,7 +122,7 @@ export default function RandomSessionPage() {
       const finish = () => { if (settled) return; settled = true; resolve(); };
       channel.subscribe((status: string) => {
         if (status === "SUBSCRIBED") {
-          void channel.send({ type: "broadcast", event: "message-recalled", payload: { message_id: target.messageId } }).finally(finish);
+          void channel.send({ type: "broadcast", event: "refresh", payload: { reason: "message-recalled", message_id: target.messageId } }).finally(finish);
         } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           finish();
         }
