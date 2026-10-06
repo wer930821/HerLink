@@ -8821,3 +8821,12 @@ body:has(.site-collection-viewport) .collection-skip-link:not(:focus) {
 .home-account-signup{background:rgba(35,33,58,.88);border:1px solid rgba(255,255,255,.16);color:#fff}
 .home-account-login{background:rgba(35,33,58,.88);border:1px solid rgba(255,255,255,.16);color:#fff}
 @media(max-width:380px){.home-account-button{min-height:48px;padding:0 8px;font-size:13px}}
+
+/* Logged-out home: keep the hero and safety panel balanced in the viewport. */
+.home-fixed:not(.home-app-like) {
+  min-height: 100dvh;
+  height: auto;
+  align-content: center;
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
+}
