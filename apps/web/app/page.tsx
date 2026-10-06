@@ -728,9 +728,9 @@ export default function HomePage() {
               <Button variant="link" onClick={() => setRecoveryOpen(true)} disabled={actionBusy}>
                 無法進入原本聊天室？
               </Button>
-              <div className="home-account-actions">
-                <Button variant="link" href="/signup">申請帳號</Button>
-                <Button variant="link" href="/login">登入既有帳號</Button>
+              <div className="home-account-actions" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 42, width: "100%", textAlign: "center" }}>
+                <Button variant="link" href="/signup" style={{ color: "#ff786f", justifyContent: "center" }}>申請帳號</Button>
+                <Button variant="link" href="/login" style={{ color: "#ff786f", justifyContent: "center" }}>登入既有帳號</Button>
               </div>
               {onlineCountConnected ? <Badge variant="success">在線 {onlineCount} 人</Badge> : null}
               <Badge variant="neutral">排隊 {waitingCount === null ? "更新中…" : `${waitingCount} 人`}</Badge>
