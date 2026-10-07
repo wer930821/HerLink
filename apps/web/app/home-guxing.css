@@ -149,7 +149,7 @@
   }
 }
 
-/* 首頁手機版：王冠與信箱靠右排列，置於匿名名稱卡上方的空白列。 */
+/* 首頁手機版：王冠與信箱靠右，貼近匿名名稱卡上緣的空白列。 */
 @media (max-width: 520px) {
   .site-home-viewport .home-app-copy {
     margin-bottom: 102px !important;
@@ -157,7 +157,7 @@
 
   .site-home-viewport .home-crown-float,
   .site-home-viewport .home-mailbox-float {
-    top: 248px !important;
+    top: 294px !important;
     left: auto !important;
   }
 
