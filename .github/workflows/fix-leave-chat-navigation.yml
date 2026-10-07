@@ -1,0 +1,82 @@
+name: Fix leave chat navigation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-leave-chat-navigation.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix-leave-chat-navigation
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Patch leave flow
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('apps/web/app/session/[id]/RandomSessionClient.tsx')
+          text = path.read_text()
+          old = '''      await leaveRandomSession(session.id);
+      if (typingChannelReadyRef.current && typingChannelRef.current) {
+        await typingChannelRef.current.send({
+          type: "broadcast",
+          event: "refresh",
+          payload: { reason: "session-ended" },
+        }).catch(() => undefined);
+      }
+      goHome("USER_LEFT_SESSION", { serverSessionId: session.id });'''
+          new = '''      const { error } = await leaveRandomSession(session.id);
+      if (error) throw error;
+
+      // Leaving the session is already committed at this point. Do not let a
+      // best-effort realtime broadcast block the user from returning home.
+      if (typingChannelReadyRef.current && typingChannelRef.current) {
+        void typingChannelRef.current.send({
+          type: "broadcast",
+          event: "refresh",
+          payload: { reason: "session-ended" },
+        }).catch(() => undefined);
+      }
+
+      goHome("USER_LEFT_SESSION", { serverSessionId: session.id });
+      // Mobile browsers can occasionally keep the old client route mounted
+      // after router.replace(). Fall back to a hard replace only if still here.
+      window.setTimeout(() => {
+        if (window.location.pathname.startsWith("/session/")) {
+          window.location.replace(withNavigationDebugParam("/"));
+        }
+      }, 300);'''
+          if old not in text:
+              raise SystemExit('Expected leave flow not found; refusing unsafe patch')
+          path.write_text(text.replace(old, new, 1))
+      - name: Verify patch
+        shell: bash
+        run: |
+          grep -F 'const { error } = await leaveRandomSession(session.id);' 'apps/web/app/session/[id]/RandomSessionClient.tsx'
+          grep -F 'void typingChannelRef.current.send({' 'apps/web/app/session/[id]/RandomSessionClient.tsx'
+          grep -F 'window.location.replace(withNavigationDebugParam("/"));' 'apps/web/app/session/[id]/RandomSessionClient.tsx'
+      - name: Commit fix
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'apps/web/app/session/[id]/RandomSessionClient.tsx'
+          git commit -m 'fix(web): return home after leaving chat'
+          git push origin HEAD:main
