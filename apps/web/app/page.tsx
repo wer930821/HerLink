@@ -1036,12 +1036,10 @@ export default function HomePage() {
           <Button variant="secondary" size="lg" onClick={() => void openPermanentRecoverySettings()} disabled={actionBusy}>永久恢復碼</Button>
         </div>
 
-        {anonymousSummary?.name === "孤星企鵝" ? (
-          <div className="home-account-actions">
-            <a href="/signup" className="home-account-button home-account-signup">申請帳號</a>
-            <a href="/login" className="home-account-button home-account-login">登入既有帳號</a>
-          </div>
-        ) : null}
+        <div className="home-account-actions">
+          <a href="/signup" className="home-account-button home-account-signup">申請並綁定帳號</a>
+          <a href="/login" className="home-account-button home-account-login">登入既有帳號</a>
+        </div>
 
       <Modal open={permanentRecoveryOpen} title="永久恢復碼" onClose={() => { if (!recoveryBusy) setPermanentRecoveryOpen(false); }}>
         <div className="stack">
