@@ -1,0 +1,54 @@
+name: Deploy send-push Edge Function
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/functions/send-push/**'
+      - 'supabase/config.toml'
+      - '.github/workflows/deploy-send-push.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-send-push-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify deployment inputs
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo 'SUPABASE_ACCESS_TOKEN is missing'; exit 1; }
+          test -f supabase/functions/send-push/index.ts
+          grep -Fq '[functions.send-push]' supabase/config.toml
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('supabase/config.toml').read_text()
+          block = text.split('[functions.send-push]', 1)[1].split('\n[', 1)[0]
+          if 'verify_jwt = false' not in block:
+              raise SystemExit('Refusing deploy: send-push verify_jwt is not false')
+          print('send-push config verified: verify_jwt=false')
+          PY
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy send-push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy send-push \
+            --project-ref vrwuxjujevhgsjmdjxmc \
+            --no-verify-jwt
