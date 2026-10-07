@@ -13,6 +13,7 @@ export function PermanentRecoveryFlow({ onBack, onRecovered }: Props) {
   const [code, setCode] = useState("");
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [newRecoveryCode, setNewRecoveryCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +54,17 @@ export function PermanentRecoveryFlow({ onBack, onRecovered }: Props) {
     finally { setBusy(false); }
   };
 
+  const copyRecoveryCode = async () => {
+    if (!newRecoveryCode) return;
+    try {
+      await navigator.clipboard.writeText(newRecoveryCode);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setError("複製失敗，請長按恢復碼手動複製。");
+    }
+  };
+
   const finishRecovery = () => {
     onRecovered?.();
     window.location.assign("/");
@@ -62,9 +74,15 @@ export function PermanentRecoveryFlow({ onBack, onRecovered }: Props) {
     <div className="stack">
       <Notice variant="success" title="已接回原本匿名身分">
         <div>新的永久恢復碼</div>
-        <strong style={{ fontSize: 22, letterSpacing: 2 }}>{newRecoveryCode}</strong>
+        <div className="row" style={{ alignItems: "center", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
+          <strong style={{ fontSize: 22, letterSpacing: 2 }}>{newRecoveryCode}</strong>
+          <Button size="sm" variant="secondary" onClick={() => void copyRecoveryCode()} aria-label="複製新的永久恢復碼">
+            {copied ? "已複製" : "複製"}
+          </Button>
+        </div>
         <div className="small" style={{ marginTop: 8 }}>請保存這組新碼；舊恢復碼已失效。</div>
       </Notice>
+      {error ? <Notice variant="danger">{error}</Notice> : null}
       <Button onClick={finishRecovery}>我已保存，回到首頁</Button>
     </div>
   );
