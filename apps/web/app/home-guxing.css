@@ -149,10 +149,10 @@
   }
 }
 
-/* 首頁手機版：主視覺文字與萬聖節裝飾一起下移；王冠與信箱位置不動。 */
+/* 首頁手機版：主視覺文字與萬聖節裝飾再一起下移；王冠與信箱位置不動。 */
 @media (max-width: 520px) {
   .site-home-viewport .home-app-eyebrow {
-    margin-top: 18px !important;
+    margin-top: 34px !important;
   }
 
   .site-home-viewport .home-app-copy {
@@ -174,7 +174,7 @@
   }
 
   .site-home-viewport .halloween-home-decor {
-    transform: translateY(18px) !important;
+    transform: translateY(34px) !important;
   }
 
   .site-home-viewport .halloween-home-decor span:nth-child(2) {
