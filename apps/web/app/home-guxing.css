@@ -149,35 +149,35 @@
   }
 }
 
-/* 首頁手機版：主視覺文字與萬聖節裝飾明顯再下移；王冠與信箱位置不動。 */
+/* 首頁手機版：直接套用實際 hero 節點，避免不存在的 site-home-viewport 讓定位規則失效。 */
 @media (max-width: 520px) {
-  .site-home-viewport .home-app-eyebrow {
+  .home-app-hero .home-app-eyebrow {
     margin-top: 58px !important;
   }
 
-  .site-home-viewport .home-app-copy {
+  .home-app-hero .home-app-copy {
     margin-bottom: 102px !important;
   }
 
-  .site-home-viewport .home-crown-float,
-  .site-home-viewport .home-mailbox-float {
+  .home-app-hero .home-crown-float,
+  .home-app-hero .home-mailbox-float {
     top: 274px !important;
     left: auto !important;
   }
 
-  .site-home-viewport .home-crown-float {
+  .home-app-hero .home-crown-float {
     right: 82px !important;
   }
 
-  .site-home-viewport .home-mailbox-float {
+  .home-app-hero .home-mailbox-float {
     right: 0 !important;
   }
 
-  .site-home-viewport .halloween-home-decor {
+  .home-app-hero .halloween-home-decor {
     transform: translateY(58px) !important;
   }
 
-  .site-home-viewport .halloween-home-decor span:nth-child(2) {
+  .home-app-hero .halloween-home-decor span:nth-child(2) {
     top: 24% !important;
     left: 0 !important;
   }
