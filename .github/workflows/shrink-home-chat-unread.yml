@@ -1,0 +1,68 @@
+name: Shrink home chat unread badge
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/shrink-home-chat-unread.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  shrink-badge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Verify current badge is still large
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('apps/web/app/globals.css')
+          s = p.read_text()
+          block = s[s.index('/* Keep the unread badge visually attached to My Chats. */'):]
+          assert 'min-width: 28px;' in block
+          assert 'height: 28px;' in block
+          assert 'font-size: 16px;' in block
+          print('RED check passed: current badge is 28px / 16px text')
+          PY
+
+      - name: Shrink My Chats unread badge
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('apps/web/app/globals.css')
+          s = p.read_text()
+          marker = '/* Keep the unread badge visually attached to My Chats. */'
+          before, block = s.split(marker, 1)
+          block = block.replace('min-width: 28px;', 'min-width: 20px;', 1)
+          block = block.replace('height: 28px;', 'height: 20px;', 1)
+          block = block.replace('margin-left: 10px;', 'margin-left: 7px;', 1)
+          block = block.replace('padding: 0 7px;', 'padding: 0 5px;', 1)
+          block = block.replace('font-size: 16px;', 'font-size: 12px;', 1)
+          p.write_text(before + marker + block)
+          PY
+
+      - name: Verify compact badge
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('apps/web/app/globals.css').read_text()
+          block = s[s.index('/* Keep the unread badge visually attached to My Chats. */'):]
+          assert 'min-width: 20px;' in block
+          assert 'height: 20px;' in block
+          assert 'font-size: 12px;' in block
+          assert 'min-width: 28px;' not in block
+          print('GREEN check passed: badge is 20px / 12px text')
+          PY
+
+      - name: Commit compact badge
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/web/app/globals.css
+          git commit -m 'fix(web): shrink My Chats unread badge'
+          git push origin main
