@@ -27,14 +27,12 @@ jobs:
           from pathlib import Path
           p = Path('apps/web/app/session/[id]/RandomSessionClient.tsx')
           s = p.read_text()
-          # Product decision: icebreaker UI is already absent; keep backend data only for compatibility.
-          # Chat assistant is retired. Disable both its trigger and panel at the render boundary so it
-          # cannot be exposed to admins, restored identities, or ordinary anonymous users.
           s = s.replace('{assistantAllowed ? (', '{false && assistantAllowed ? (')
           s = s.replace('{assistantAllowed && assistantOpen ? (', '{false && assistantAllowed && assistantOpen ? (')
           p.write_text(s)
 
           t = Path('apps/web/scripts/check-retired-chat-features.mjs')
+          t.parent.mkdir(parents=True, exist_ok=True)
           t.write_text('''import fs from "node:fs";\nconst source = fs.readFileSync(new URL("../app/session/[id]/RandomSessionClient.tsx", import.meta.url), "utf8");\nif (!source.includes("{false && assistantAllowed ? (")) throw new Error("聊天小助手入口仍可能顯示");\nif (!source.includes("{false && assistantAllowed && assistantOpen ? (")) throw new Error("聊天小助手面板仍可能顯示");\nif (source.includes("icebreaker_prompt") || source.includes("icebreaker_question_code")) throw new Error("聊天室前端仍引用破冰題");\nconsole.log("retired chat features are not exposed");\n''')
       - name: Verify retired features
         run: node apps/web/scripts/check-retired-chat-features.mjs
