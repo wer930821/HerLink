@@ -15,9 +15,7 @@ export function getFriendlyAuthErrorMessage(error: unknown, fallback: string) {
   const status = typeof authError?.status === "number" ? authError.status : null;
 
   if (status === 429 || message.includes("rate limit")) {
-    if (message.includes("email")) {
-      return "信箱驗證信寄送太頻繁，請稍後再試。";
-    }
+    if (message.includes("email")) return "信箱驗證信寄送太頻繁，請稍後再試。";
     return "操作太頻繁，請稍後再試。";
   }
 
@@ -26,16 +24,15 @@ export function getFriendlyAuthErrorMessage(error: unknown, fallback: string) {
   }
 
   if (message.includes("user already registered") || message.includes("already exists")) {
-    return "這個信箱已經註冊過了，請改用登入或其他信箱。";
+    return "這個信箱已經綁定其他帳號，請改用登入或其他信箱。目前匿名聊天室不會被變更。";
   }
 
-  if (message.includes("password should be at least")) {
-    return "密碼長度不足，請使用更長的密碼。";
+  if (message.includes("new password should be different") || message.includes("new password cannot be the same") || message.includes("same as the old password")) {
+    return "這組密碼已經設定過，不需要重複設定。請直接登入確認帳號。";
   }
 
-  if (message.includes("signup is disabled")) {
-    return "目前暫時無法註冊，請稍後再試。";
-  }
+  if (message.includes("password should be at least")) return "密碼長度不足，請使用更長的密碼。";
+  if (message.includes("signup is disabled")) return "目前暫時無法註冊，請稍後再試。";
 
   return fallback;
 }
