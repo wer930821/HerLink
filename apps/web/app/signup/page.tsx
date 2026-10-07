@@ -1,11 +1,21 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
-import { supabase } from "../../lib/supabase";
+import { signInAnonymously, supabase } from "../../lib/supabase";
 import { Button, Field, Notice } from "../../components/ui";
+
+async function restoreBindableIdentity() {
+  // signInAnonymously first reuses the current session, then tries HerLink's
+  // anonymous-session backup cookie, and only creates a fresh anonymous user
+  // when neither exists. This lets a user who just signed out still bind the
+  // same browser identity instead of being rejected immediately.
+  const restored = await signInAnonymously();
+  if (restored.error || !restored.data.session) return false;
+  const { data: identityId, error: identityError } = await (supabase as any).rpc("resolve_active_anonymous_chat_identity");
+  return !identityError && typeof identityId === "string" && identityId.length > 0;
+}
 
 export default function SignupPage() {
   const router = useRouter();
@@ -19,15 +29,13 @@ export default function SignupPage() {
 
   useEffect(() => {
     let alive = true;
-    void supabase.auth.getSession().then(async ({ data }: { data: { session: Session | null } }) => {
+    void restoreBindableIdentity().then((ok) => {
       if (!alive) return;
-      const session = data.session;
-      if (!session) { setAllowed(false); setChecking(false); return; }
-      const { data: identityId, error: identityError } = await (supabase as any).rpc("resolve_active_anonymous_chat_identity");
-      if (!alive) return;
-      setAllowed(!identityError && typeof identityId === "string" && identityId.length > 0);
+      setAllowed(ok);
       setChecking(false);
-    }).catch(() => { if (alive) { setAllowed(false); setChecking(false); } });
+    }).catch(() => {
+      if (alive) { setAllowed(false); setChecking(false); }
+    });
     return () => { alive = false; };
   }, []);
 
