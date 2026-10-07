@@ -2135,15 +2135,23 @@ export default function RandomSessionClient() {
       stopTyping();
       clearPartnerTyping();
       clearReply();
-      await leaveRandomSession(session.id);
+      const { error } = await leaveRandomSession(session.id);
+      if (error) throw error;
+
       if (typingChannelReadyRef.current && typingChannelRef.current) {
-        await typingChannelRef.current.send({
+        void typingChannelRef.current.send({
           type: "broadcast",
           event: "refresh",
           payload: { reason: "session-ended" },
         }).catch(() => undefined);
       }
+
       goHome("USER_LEFT_SESSION", { serverSessionId: session.id });
+      window.setTimeout(() => {
+        if (window.location.pathname.startsWith("/session/")) {
+          window.location.replace(withNavigationDebugParam("/"));
+        }
+      }, 300);
     } catch {
       setNotice("目前無法離開聊天室，請稍後再試。");
     } finally {
