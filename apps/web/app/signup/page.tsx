@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
 import { supabase } from "../../lib/supabase";
@@ -18,7 +19,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     let alive = true;
-    void supabase.auth.getSession().then(({ data }) => {
+    void supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
       if (!alive) return;
       const user = data.session?.user;
       setAllowed(Boolean(user?.is_anonymous));
@@ -60,21 +61,14 @@ export default function SignupPage() {
         <p style={{margin:"0 0 30px",color:"#bdb6c7",fontSize:16,lineHeight:1.7}}>為目前的匿名身分建立登入方式。綁定後會保留原本的匿名名稱、聊天室、訊息紀錄與聯絡人。</p>
 
         <form onSubmit={onSubmit} style={{display:"grid",gap:18}}>
-          <Field label="電子郵件" htmlFor="signup-email">
-            <input id="signup-email" className="input" value={email} onChange={e=>setEmail(e.target.value)} type="email" required autoComplete="email" placeholder="輸入電子郵件" style={{minHeight:54,fontSize:17}} />
-          </Field>
-          <Field label="密碼" htmlFor="signup-password" hint="至少 8 個字元">
-            <input id="signup-password" className="input" value={password} onChange={e=>setPassword(e.target.value)} type="password" required minLength={8} autoComplete="new-password" placeholder="設定登入密碼" style={{minHeight:54,fontSize:17}} />
-          </Field>
+          <Field label="電子郵件" htmlFor="signup-email"><input id="signup-email" className="input" value={email} onChange={e=>setEmail(e.target.value)} type="email" required autoComplete="email" placeholder="輸入電子郵件" style={{minHeight:54,fontSize:17}} /></Field>
+          <Field label="密碼" htmlFor="signup-password" hint="至少 8 個字元"><input id="signup-password" className="input" value={password} onChange={e=>setPassword(e.target.value)} type="password" required minLength={8} autoComplete="new-password" placeholder="設定登入密碼" style={{minHeight:54,fontSize:17}} /></Field>
           {error ? <Notice variant="danger">{error}</Notice> : null}
           {message ? <Notice variant="success">{message}</Notice> : null}
           <Button type="submit" size="lg" disabled={loading || !email.trim() || password.length < 8}>{loading ? "申請中…" : "申請帳號"}</Button>
         </form>
 
-        <div style={{marginTop:28,paddingTop:22,borderTop:"1px solid rgba(255,255,255,.09)",display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,color:"#aaa2b3"}}>
-          <span>已經有帳號？</span>
-          <Button variant="link" type="button" onClick={()=>router.push("/login")}>登入帳號</Button>
-        </div>
+        <div style={{marginTop:28,paddingTop:22,borderTop:"1px solid rgba(255,255,255,.09)",display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,color:"#aaa2b3"}}><span>已經有帳號？</span><Button variant="link" type="button" onClick={()=>router.push("/login")}>登入帳號</Button></div>
       </div>
     </main>
   );
