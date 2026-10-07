@@ -149,7 +149,7 @@
   }
 }
 
-/* 首頁手機版：用 transform 做純視覺位移，避免 flex 垂直置中抵銷 margin 位移。 */
+/* 首頁手機版：標題維持目前位置；王冠與信箱移出匿名名稱框，放到框上方。 */
 @media (max-width: 520px) {
   .home-app-hero .home-app-eyebrow,
   .home-app-hero .home-app-title,
@@ -167,7 +167,7 @@
 
   .home-app-hero .home-crown-float,
   .home-app-hero .home-mailbox-float {
-    top: 350px !important;
+    top: 302px !important;
     left: auto !important;
   }
 
