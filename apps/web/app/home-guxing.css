@@ -149,10 +149,16 @@
   }
 }
 
-/* 首頁手機版：直接套用實際 hero 節點，避免不存在的 site-home-viewport 讓定位規則失效。 */
+/* 首頁手機版：用 transform 做純視覺位移，避免 flex 垂直置中抵銷 margin 位移。 */
 @media (max-width: 520px) {
+  .home-app-hero .home-app-eyebrow,
+  .home-app-hero .home-app-title,
+  .home-app-hero .home-app-copy {
+    transform: translateY(72px) !important;
+  }
+
   .home-app-hero .home-app-eyebrow {
-    margin-top: 58px !important;
+    margin-top: 0 !important;
   }
 
   .home-app-hero .home-app-copy {
@@ -161,7 +167,7 @@
 
   .home-app-hero .home-crown-float,
   .home-app-hero .home-mailbox-float {
-    top: 274px !important;
+    top: 350px !important;
     left: auto !important;
   }
 
@@ -174,7 +180,7 @@
   }
 
   .home-app-hero .halloween-home-decor {
-    transform: translateY(58px) !important;
+    transform: translateY(72px) !important;
   }
 
   .home-app-hero .halloween-home-decor span:nth-child(2) {
