@@ -3,7 +3,8 @@
 -- 1. get_my_collection_game_state resolves the stable anonymous identity.
 -- 2. claimed contains persisted reward keys for that stable identity.
 -- 3. xp includes both unlocked-egg XP and claimed reward XP.
--- 4. claim_collection_reward writes against the stable identity and is idempotent.
+-- 4. delivered partner-triggered eggs are included in unlocked egg_kinds.
+-- 5. claim_collection_reward writes against the stable identity and is idempotent.
 
 do $$
 declare
@@ -13,6 +14,9 @@ begin
   select pg_get_functiondef('public.get_my_collection_game_state()'::regprocedure) into state_def;
   if state_def not ilike '%collection_reward_claims%' or state_def not ilike '%claimed%' or state_def not ilike '%sum(xp_awarded)%' then
     raise exception 'get_my_collection_game_state must return persisted claims and include reward XP';
+  end if;
+  if state_def not ilike '%chat_easter_egg_deliveries%' then
+    raise exception 'get_my_collection_game_state must include delivered partner-triggered eggs';
   end if;
 
   select pg_get_functiondef('public.claim_collection_reward(text)'::regprocedure) into claim_def;
