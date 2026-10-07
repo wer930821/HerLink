@@ -36,5 +36,6 @@ assert.match(accountState, /home-account-actions/);
 assert.match(accountState, /已登入/);
 assert.match(accountState, /createPortal/);
 assert.match(accountState, /onAuthStateChange/);
+assert.doesNotMatch(accountState, /<span>\{accountEmail\}<\/span>/);
 
 console.log("public account flow contract OK");
