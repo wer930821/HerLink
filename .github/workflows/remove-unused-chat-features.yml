@@ -1,0 +1,55 @@
+name: Remove unused chat features
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/remove-unused-chat-features.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  remove-unused-chat-features:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Add regression check and remove unused UI
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('apps/web/app/session/[id]/RandomSessionClient.tsx')
+          s = p.read_text()
+          # Product decision: icebreaker UI is already absent; keep backend data only for compatibility.
+          # Chat assistant is retired. Disable both its trigger and panel at the render boundary so it
+          # cannot be exposed to admins, restored identities, or ordinary anonymous users.
+          s = s.replace('{assistantAllowed ? (', '{false && assistantAllowed ? (')
+          s = s.replace('{assistantAllowed && assistantOpen ? (', '{false && assistantAllowed && assistantOpen ? (')
+          p.write_text(s)
+
+          t = Path('apps/web/scripts/check-retired-chat-features.mjs')
+          t.write_text('''import fs from "node:fs";\nconst source = fs.readFileSync(new URL("../app/session/[id]/RandomSessionClient.tsx", import.meta.url), "utf8");\nif (!source.includes("{false && assistantAllowed ? (")) throw new Error("聊天小助手入口仍可能顯示");\nif (!source.includes("{false && assistantAllowed && assistantOpen ? (")) throw new Error("聊天小助手面板仍可能顯示");\nif (source.includes("icebreaker_prompt") || source.includes("icebreaker_question_code")) throw new Error("聊天室前端仍引用破冰題");\nconsole.log("retired chat features are not exposed");\n''')
+      - name: Verify retired features
+        run: node apps/web/scripts/check-retired-chat-features.mjs
+      - name: Install dependencies
+        run: npm ci
+      - name: Build web
+        run: npm --workspace apps/web run build
+      - name: Commit verified change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'apps/web/app/session/[id]/RandomSessionClient.tsx' apps/web/scripts/check-retired-chat-features.mjs
+          if git diff --cached --quiet; then
+            echo 'No changes needed'
+            exit 0
+          fi
+          git commit -m 'fix(web): retire icebreaker and chat assistant UI'
+          git push origin main
