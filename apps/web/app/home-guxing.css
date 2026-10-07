@@ -161,3 +161,28 @@
     z-index: 5 !important;
   }
 }
+
+/* 首頁手機版：王冠／信箱必須有自己的保留區，不可壓到說明文字或匿名名稱卡。 */
+@media (max-width: 520px) {
+  .site-home-viewport .home-app-copy {
+    margin-bottom: 58px !important;
+  }
+
+  .site-home-viewport .home-crown-float,
+  .site-home-viewport .home-mailbox-float {
+    top: 202px !important;
+  }
+
+  .site-home-viewport .home-crown-float {
+    right: 104px !important;
+  }
+
+  .site-home-viewport .home-mailbox-float {
+    right: 0 !important;
+  }
+
+  .site-home-viewport .halloween-home-decor span:nth-child(2) {
+    top: 24% !important;
+    left: 0 !important;
+  }
+}
