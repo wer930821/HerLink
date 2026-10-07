@@ -11,4 +11,5 @@ assert.doesNotMatch(source, /setInterval\(syncPendingEasterEgg,\s*2500\)/);
 assert.match(source, /const CHAT_FALLBACK_POLL_MS = 60_000/);
 assert.doesNotMatch(source, /setInterval\([^\n]*(?:2500|3000|5000|10000)[^\n]*\)/);
 
+// Keep this contract in the normal web CI after the implementation commit.
 console.log("chat polling contract OK");
