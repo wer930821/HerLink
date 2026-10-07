@@ -17,6 +17,10 @@ assert.doesNotMatch(signup, /signInAnonymously/);
 assert.match(signup, /建立 HerLink 帳號後即可登入使用/);
 assert.match(signup, /為目前的匿名身分建立登入方式/);
 assert.match(login, /登入後會接回這個帳號原本的匿名身分/);
+// Existing-account login must preserve the current anonymous session until the server verifies and binds it.
+assert.match(login, /functions\.invoke\("account-bind-existing"/);
+assert.match(login, /setSession\(/);
+assert.doesNotMatch(login, /if \(!isAdminLogin\) await supabase\.auth\.signOut\(\)/);
 // Every signed-in anonymous user must be able to reach account binding from home.
 assert.match(home, /href="\/signup"[^>]*>申請並綁定帳號<\/a>/);
 assert.doesNotMatch(home, /anonymousSummary\?\.name === "孤星企鵝" \? \([\s\S]{0,400}申請並綁定帳號/);
