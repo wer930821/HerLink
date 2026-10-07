@@ -22,19 +22,32 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
-      - name: Add regression check and remove unused UI
+      - name: Remove unused chat UI and add regression check
         shell: python
         run: |
           from pathlib import Path
+          import re
+
           p = Path('apps/web/app/session/[id]/RandomSessionClient.tsx')
           s = p.read_text()
+
+          # Retire the chat-assistant launcher wherever it is rendered.
           s = s.replace('{assistantAllowed ? (', '{false && assistantAllowed ? (')
-          s = s.replace('{assistantAllowed && assistantOpen ? (', '{false && assistantAllowed && assistantOpen ? (')
+
+          # Remove the assistant result panel completely. Keeping it behind
+          # `false &&` still makes TypeScript type-check unreachable JSX.
+          panel = re.compile(
+              r'\n\s*\{assistantAllowed && assistantOpen \? \(.*?\n\s*\) : null\}\n\n(?=\s*\{session \? <SessionSafetyWarning)',
+              re.S,
+          )
+          s, count = panel.subn('\n\n', s, count=1)
+          if count != 1:
+              raise SystemExit('Could not locate chat assistant panel')
           p.write_text(s)
 
           t = Path('apps/web/scripts/check-retired-chat-features.mjs')
           t.parent.mkdir(parents=True, exist_ok=True)
-          t.write_text('''import fs from "node:fs";\nconst source = fs.readFileSync(new URL("../app/session/[id]/RandomSessionClient.tsx", import.meta.url), "utf8");\nif (!source.includes("{false && assistantAllowed ? (")) throw new Error("聊天小助手入口仍可能顯示");\nif (!source.includes("{false && assistantAllowed && assistantOpen ? (")) throw new Error("聊天小助手面板仍可能顯示");\nif (source.includes("icebreaker_prompt") || source.includes("icebreaker_question_code")) throw new Error("聊天室前端仍引用破冰題");\nconsole.log("retired chat features are not exposed");\n''')
+          t.write_text('''import fs from "node:fs";\nconst source = fs.readFileSync(new URL("../app/session/[id]/RandomSessionClient.tsx", import.meta.url), "utf8");\nif (!source.includes("{false && assistantAllowed ? (")) throw new Error("聊天小助手入口仍可能顯示");\nif (source.includes("chat-assist-card")) throw new Error("聊天小助手面板仍存在");\nif (source.includes("icebreaker_prompt") || source.includes("icebreaker_question_code")) throw new Error("聊天室前端仍引用破冰題");\nconsole.log("retired chat features are not exposed");\n''')
       - name: Verify retired features
         run: node apps/web/scripts/check-retired-chat-features.mjs
       - name: Install web dependencies
