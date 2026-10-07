@@ -121,6 +121,7 @@ export default function HomePage() {
   const [renameNotice, setRenameNotice] = useState<string | null>(null);
   const [waitingCount, setWaitingCount] = useState<number | null>(null);
   const [mailUnreadCount, setMailUnreadCount] = useState(0);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const waitingCountRequestRef = useRef(0);
   const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
 
@@ -128,6 +129,12 @@ export default function HomePage() {
     if (!state.session?.user.id) { setMailUnreadCount(0); return; }
     const { data } = await (supabase as any).rpc("station_mail_user_unread_count");
     setMailUnreadCount(Number(data ?? 0));
+  }, [state.session?.user.id]);
+
+  const refreshChatUnread = useCallback(async () => {
+    if (!state.session?.user.id) { setChatUnreadCount(0); return; }
+    const { data, error } = await (supabase as any).rpc("get_my_random_chat_unread_count");
+    if (!error) setChatUnreadCount(Math.max(0, Number(data ?? 0)));
   }, [state.session?.user.id]);
 
   useEffect(() => {
@@ -139,6 +146,23 @@ export default function HomePage() {
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [state.session?.user.id, refreshMailUnread]);
+
+  useEffect(() => {
+    if (!state.session?.user.id) return;
+    void refreshChatUnread();
+    const channel = supabase.channel(`home-chat-unread-${state.session.user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "random_chat_messages" }, () => void refreshChatUnread())
+      .on("postgres_changes", { event: "*", schema: "public", table: "random_chat_session_reads" }, () => void refreshChatUnread())
+      .subscribe();
+    const onVisible = () => { if (document.visibilityState === "visible") void refreshChatUnread(); };
+    window.addEventListener("focus", refreshChatUnread);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", refreshChatUnread);
+      document.removeEventListener("visibilitychange", onVisible);
+      void supabase.removeChannel(channel);
+    };
+  }, [state.session?.user.id, refreshChatUnread]);
 
   const refreshWaitingCount = useCallback(async () => {
     const requestId = ++waitingCountRequestRef.current;
@@ -1007,7 +1031,7 @@ export default function HomePage() {
           <Button size="lg" onClick={startMatching} disabled={actionBusy || MAINTENANCE_MODE}>
             {actionBusy ? "處理中…" : MAINTENANCE_MODE ? "維護中" : state.activeSession ? "配對新的人" : "開始匿名配對"}
           </Button>
-          {state.activeSession ? <Button variant="secondary" size="lg" href="/chats">我的聊天</Button> : null}
+          {state.activeSession ? <Button variant="secondary" size="lg" href="/chats">我的聊天{chatUnreadCount > 0 ? <span className="home-chat-unread" aria-label={`${chatUnreadCount} 則未讀訊息`}>{chatUnreadCount > 99 ? "99+" : chatUnreadCount}</span> : null}</Button> : null}
           <Button variant="secondary" size="lg" href="/contacts">匿名聯絡人</Button>
           <Button variant="secondary" size="lg" onClick={() => void openPermanentRecoverySettings()} disabled={actionBusy}>永久恢復碼</Button>
         </div>
