@@ -149,7 +149,7 @@
   }
 }
 
-/* 首頁手機版：標題維持目前位置；王冠與信箱完全移出匿名名稱框。 */
+/* 首頁手機版：固定單頁、不上下捲；保留目前主視覺位置並壓縮名稱框以下間距。 */
 @media (max-width: 520px) {
   .home-app-hero .home-app-eyebrow,
   .home-app-hero .home-app-title,
@@ -188,25 +188,51 @@
     left: 0 !important;
   }
 
-  /* 手機首頁內容可能高於視窗：允許頁面延伸與捲動，避免最下方字卡被裁掉。 */
   .site-home-viewport {
-    height: auto !important;
+    height: 100dvh !important;
     min-height: 100dvh !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+    overflow: hidden !important;
   }
 
   .home-fixed.home-app-like {
-    height: auto !important;
-    min-height: 100dvh !important;
-    overflow: visible !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
     justify-content: flex-start !important;
-    padding-bottom: calc(40px + env(safe-area-inset-bottom)) !important;
+    gap: 8px !important;
+    padding-top: 8px !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .home-app-identity {
+    margin-top: 14px !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+
+  .home-app-actions {
+    margin-top: 10px !important;
+    gap: 8px !important;
+  }
+
+  .home-app-actions .btn {
+    min-height: 44px !important;
+  }
+
+  .home-account-actions {
+    margin-top: 8px !important;
+  }
+
+  .home-app-status {
+    margin-top: 8px !important;
+    padding-top: 9px !important;
+    padding-bottom: 9px !important;
   }
 
   .home-app-footer {
     flex-shrink: 0 !important;
-    margin-top: 18px !important;
-    padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    margin-top: 4px !important;
+    padding-top: 4px !important;
+    padding-bottom: max(4px, env(safe-area-inset-bottom)) !important;
   }
 }
