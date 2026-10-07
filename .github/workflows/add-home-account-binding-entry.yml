@@ -1,0 +1,42 @@
+name: Add Home Account Binding Entry
+
+on:
+  push:
+    paths:
+      - .github/workflows/add-home-account-binding-entry.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-home:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Add account binding entry for every anonymous user
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('apps/web/app/page.tsx')
+          text = path.read_text()
+          old = '''        {anonymousSummary?.name === "孤星企鵝" ? (\n          <div className="home-account-actions">\n            <a href="/signup" className="home-account-button home-account-signup">申請帳號</a>\n            <a href="/login" className="home-account-button home-account-login">登入既有帳號</a>\n          </div>\n        ) : null}'''
+          new = '''        <div className="home-account-actions">\n          <a href="/signup" className="home-account-button home-account-signup">申請並綁定帳號</a>\n          <a href="/login" className="home-account-button home-account-login">登入既有帳號</a>\n        </div>'''
+          if new in text:
+              print('Account binding entry already present.')
+              raise SystemExit(0)
+          if old not in text:
+              raise SystemExit('Expected account action block not found; refusing unsafe edit.')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Commit change
+        run: |
+          if git diff --quiet -- apps/web/app/page.tsx; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/web/app/page.tsx
+          git commit -m "fix(web): show account binding entry to anonymous users"
+          git push origin HEAD:main
