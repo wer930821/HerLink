@@ -149,7 +149,7 @@
   }
 }
 
-/* 首頁手機版：標題維持目前位置；王冠與信箱移出匿名名稱框，放到框上方。 */
+/* 首頁手機版：標題維持目前位置；王冠與信箱完全移出匿名名稱框。 */
 @media (max-width: 520px) {
   .home-app-hero .home-app-eyebrow,
   .home-app-hero .home-app-title,
@@ -167,7 +167,7 @@
 
   .home-app-hero .home-crown-float,
   .home-app-hero .home-mailbox-float {
-    top: 302px !important;
+    top: 260px !important;
     left: auto !important;
   }
 
