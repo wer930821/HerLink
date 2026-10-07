@@ -1930,8 +1930,11 @@ export default function RandomSessionClient() {
     if (/命中注定/.test(normalized)) return triggerEasterEgg("destiny", true);
     if (/心有靈犀/.test(normalized)) return triggerEasterEgg("telepathy", true);
     if (/不想說再見|捨不得說再見/.test(normalized)) return triggerEasterEgg("no_goodbye", true);
-    if (hour >= 0 && hour < 5) triggerEasterEgg(hour === 3 ? "threeam" : "midnight", true);
-    else if (day === 0 || day === 6) triggerEasterEgg("weekend", true);
+    // Time-based eggs are handled by the server-side collection evaluator so
+    // they unlock once per qualifying period instead of once per sent message.
+    // Triggering them here made every message between 00:00-04:59 replay the
+    // midnight effect (and every 03:xx message replay the 03:00 effect).
+    if (day === 0 || day === 6) triggerEasterEgg("weekend", true);
     if (/睡不著/.test(normalized)) return triggerEasterEgg("sleepless", true);
     if (/想你|想妳|想念|好想|想你了|想妳了/.test(normalized)) return triggerEasterEgg("aurora", true);
     if (/好累|累死|累爆|累慘/.test(normalized)) return triggerEasterEgg("tired", true);
