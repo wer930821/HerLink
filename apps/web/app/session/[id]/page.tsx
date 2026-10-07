@@ -65,12 +65,12 @@ export default function RandomSessionPage() {
     if (!allowed || isActionMenuTarget(event.target)) return;
     const target = getActionTarget(event.target);
     if (!target) { setMenu(null); return; }
-    event.preventDefault(); clearSelection(); clearPress();
+    clearSelection(); clearPress();
     startRef.current = { x: event.clientX, y: event.clientY }; activeRef.current = target;
     timerRef.current = window.setTimeout(() => { timerRef.current = null; if (activeRef.current) openMenu(activeRef.current); }, LONG_PRESS_MS);
   };
   const onPointerMoveCapture = (event: PointerEvent<HTMLDivElement>) => { if (!allowed || isActionMenuTarget(event.target) || timerRef.current === null) return; if (Math.abs(event.clientX - startRef.current.x) > 18 || Math.abs(event.clientY - startRef.current.y) > 18) clearPress(); };
-  const onClickCapture = (event: MouseEvent<HTMLDivElement>) => { if (!allowed || bypassClickRef.current || isActionMenuTarget(event.target) || !getActionTarget(event.target)) return; event.preventDefault(); event.stopPropagation(); };
+  const onClickCapture = (event: MouseEvent<HTMLDivElement>) => { if (!allowed || bypassClickRef.current || isActionMenuTarget(event.target) || !getActionTarget(event.target)) return; setMenu(null); };
   const reply = () => { if (!menu) return; const bubble = menu.bubble; setMenu(null); bypassClickRef.current = true; bubble.click(); queueMicrotask(() => { bypassClickRef.current = false; }); };
 
   const recall = async () => {
