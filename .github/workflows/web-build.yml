@@ -23,5 +23,6 @@ jobs:
           cache: "npm"
           cache-dependency-path: apps/web/package-lock.json
       - run: npm install
+      - run: node lib/public-account-flow.test.mjs
       - run: npm run typecheck
       - run: npm run build
