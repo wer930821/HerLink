@@ -149,18 +149,13 @@
   }
 }
 
-/* 首頁手機版：主視覺文字置中；王冠與信箱仍靠右，位於匿名名稱卡上方。 */
+/* 首頁手機版：保留原本靠左排版，整組主視覺內容往下；王冠與信箱位置不動。 */
 @media (max-width: 520px) {
-  .site-home-viewport .home-app-eyebrow,
-  .site-home-viewport .home-app-title,
-  .site-home-viewport .home-app-copy {
-    width: 100% !important;
-    text-align: center !important;
+  .site-home-viewport .home-app-eyebrow {
+    margin-top: 18px !important;
   }
 
   .site-home-viewport .home-app-copy {
-    margin-left: auto !important;
-    margin-right: auto !important;
     margin-bottom: 102px !important;
   }
 
