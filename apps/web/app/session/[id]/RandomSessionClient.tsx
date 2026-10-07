@@ -1174,12 +1174,7 @@ export default function RandomSessionClient() {
         const adminCheck = await isCurrentUserAdmin(authSession.user.id).catch(() => ({ data: false }));
         if (mounted && bootstrapRunId === sessionBootstrapRunRef.current) {
           setAssistantAllowed(Boolean(adminCheck.data));
-          setMilestoneTestAllowed(
-            Boolean(adminCheck.data) ||
-            authSession.user.id === "ad9536fe-5ea0-4a1d-96d0-dcdecdafa18c" ||
-            authSession.user.id === "e2817803-1304-4ef0-b0b8-66f473b12886" ||
-            nextProfile?.anonymous_display_name === "孤星企鵝"
-          );
+          setMilestoneTestAllowed(nextProfile?.anonymous_display_name === "孤星企鵝");
           setEasterEggAllowed(true);
         }
         if (!nextProfile) {
@@ -1913,31 +1908,28 @@ export default function RandomSessionClient() {
 
   const maybeTriggerEasterEgg = (content: string) => {
     if (!easterEggAllowed) return;
-    const collectionTester = myProfile?.anonymous_display_name === "孤星企鵝";
     const normalized = content.replace(/\s+/g, "");
-    if (collectionTester) {
-      const now = new Date();
-      const hour = now.getHours();
-      const day = now.getDay();
-      if (/今天也遇見你了|今天又遇見你了|今天也遇見妳了|今天又遇見妳了/.test(normalized)) return triggerEasterEgg("sync", true);
-      if (/午安/.test(normalized)) return triggerEasterEgg("afternoon", true);
-      if (/嗨嗨/.test(normalized)) return triggerEasterEgg("heyhey", true);
-      if (/你好呀|你好啊/.test(normalized)) return triggerEasterEgg("hello_you", true);
-      if (/吃飯了嗎|吃飯沒|吃了嗎/.test(normalized)) return triggerEasterEgg("meal", true);
-      if (/哈哈哈|笑死/.test(normalized)) return triggerEasterEgg("haha", true);
-      if (/辛苦了/.test(normalized)) return triggerEasterEgg("hardwork", true);
-      if (/想你了|想妳了|好想你|好想妳/.test(normalized)) return triggerEasterEgg("missyou", true);
-      if (/好巧|這麼巧/.test(normalized)) return triggerEasterEgg("coincidence", true);
-      if (/又遇到你了|又遇到妳了/.test(normalized)) return triggerEasterEgg("meet_again", true);
-      if (/秘密/.test(normalized)) return triggerEasterEgg("secret_word", true);
-      if (/月亮/.test(normalized)) return triggerEasterEgg("moon", true);
-      if (/星星/.test(normalized)) return triggerEasterEgg("stars", true);
-      if (/命中注定/.test(normalized)) return triggerEasterEgg("destiny", true);
-      if (/心有靈犀/.test(normalized)) return triggerEasterEgg("telepathy", true);
-      if (/不想說再見|捨不得說再見/.test(normalized)) return triggerEasterEgg("no_goodbye", true);
-      if (hour >= 0 && hour < 5) triggerEasterEgg(hour === 3 ? "threeam" : "midnight", true);
-      else if (day === 0 || day === 6) triggerEasterEgg("weekend", true);
-    }
+    const now = new Date();
+    const hour = now.getHours();
+    const day = now.getDay();
+    if (/今天也遇見你了|今天又遇見你了|今天也遇見妳了|今天又遇見妳了/.test(normalized)) return triggerEasterEgg("sync", true);
+    if (/午安/.test(normalized)) return triggerEasterEgg("afternoon", true);
+    if (/嗨嗨/.test(normalized)) return triggerEasterEgg("heyhey", true);
+    if (/你好呀|你好啊/.test(normalized)) return triggerEasterEgg("hello_you", true);
+    if (/吃飯了嗎|吃飯沒|吃了嗎/.test(normalized)) return triggerEasterEgg("meal", true);
+    if (/哈哈哈|笑死/.test(normalized)) return triggerEasterEgg("haha", true);
+    if (/辛苦了/.test(normalized)) return triggerEasterEgg("hardwork", true);
+    if (/想你了|想妳了|好想你|好想妳/.test(normalized)) return triggerEasterEgg("missyou", true);
+    if (/好巧|這麼巧/.test(normalized)) return triggerEasterEgg("coincidence", true);
+    if (/又遇到你了|又遇到妳了/.test(normalized)) return triggerEasterEgg("meet_again", true);
+    if (/秘密/.test(normalized)) return triggerEasterEgg("secret_word", true);
+    if (/月亮/.test(normalized)) return triggerEasterEgg("moon", true);
+    if (/星星/.test(normalized)) return triggerEasterEgg("stars", true);
+    if (/命中注定/.test(normalized)) return triggerEasterEgg("destiny", true);
+    if (/心有靈犀/.test(normalized)) return triggerEasterEgg("telepathy", true);
+    if (/不想說再見|捨不得說再見/.test(normalized)) return triggerEasterEgg("no_goodbye", true);
+    if (hour >= 0 && hour < 5) triggerEasterEgg(hour === 3 ? "threeam" : "midnight", true);
+    else if (day === 0 || day === 6) triggerEasterEgg("weekend", true);
     if (/睡不著/.test(normalized)) return triggerEasterEgg("sleepless", true);
     if (/想你|想妳|想念|好想|想你了|想妳了/.test(normalized)) return triggerEasterEgg("aurora", true);
     if (/好累|累死|累爆|累慘/.test(normalized)) return triggerEasterEgg("tired", true);
@@ -2062,7 +2054,7 @@ export default function RandomSessionClient() {
         const collectionTester = myProfile?.anonymous_display_name === "孤星企鵝";
         const milestoneKind: Record<number, EasterEggKind> = {50:"fifty",100:"hundred",200:"twoHundred",300:"threeHundred",400:"fourHundred",500:"fiveHundred",600:"sixHundred",700:"sevenHundred",800:"eightHundred",900:"nineHundred",1000:"thousand",1500:"fifteenHundred",2000:"twoThousand",3000:"threeThousand",5000:"fiveThousand",10000:"tenThousand"};
         const milestone = milestoneKind[messageCount];
-        if (milestone && (collectionTester || ["hundred","twoHundred","threeHundred","fourHundred","fiveHundred","thousand"].includes(milestone))) triggerEasterEgg(milestone, true);
+        if (milestone) triggerEasterEgg(milestone, true);
         if (collectionTester) {
           const evaluated = await supabase.rpc("evaluate_tester_collection_eggs", { p_session_id: refreshedSession.id });
           if (!evaluated.error && Array.isArray(evaluated.data)) {
