@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import { supabase } from "../../../lib/supabase";
 
 const LONG_PRESS_MS = 420;
@@ -55,7 +55,7 @@ export default function RandomSessionPage() {
     if ((!visibleText && !hasMedia) || visibleText === "此訊息已收回" || visibleText === "已收回") return;
     clearSelection();
     const rect = target.bubble.getBoundingClientRect();
-    const width = target.mine ? 188 : 94;
+    const width = target.mine && !hasMedia ? 282 : target.mine ? 188 : 94;
     const height = 54;
     setMenu({ ...target, left: Math.max(8, Math.min(window.innerWidth - width - 8, target.mine ? rect.right - width : rect.left)), top: rect.top > height + 12 ? rect.top - height - 7 : Math.min(window.innerHeight - height - 8, rect.bottom + 7) });
     navigator.vibrate?.(20);
@@ -71,7 +71,34 @@ export default function RandomSessionPage() {
   };
   const onPointerMoveCapture = (event: PointerEvent<HTMLDivElement>) => { if (!allowed || isActionMenuTarget(event.target) || timerRef.current === null) return; if (Math.abs(event.clientX - startRef.current.x) > 18 || Math.abs(event.clientY - startRef.current.y) > 18) clearPress(); };
   const onClickCapture = (event: MouseEvent<HTMLDivElement>) => { if (!allowed || bypassClickRef.current || isActionMenuTarget(event.target) || !getActionTarget(event.target)) return; event.preventDefault(); event.stopPropagation(); };
+  const onKeyDownCapture = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+    const target = event.target;
+    if (!(target instanceof HTMLTextAreaElement) || !target.classList.contains("chat-input")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const start = target.selectionStart ?? target.value.length;
+    const end = target.selectionEnd ?? start;
+    target.setRangeText("\n", start, end, "end");
+    target.dispatchEvent(new Event("input", { bubbles: true }));
+  };
   const reply = () => { if (!menu) return; const bubble = menu.bubble; setMenu(null); bypassClickRef.current = true; bubble.click(); queueMicrotask(() => { bypassClickRef.current = false; }); };
+
+  const edit = async () => {
+    if (!menu?.mine) return;
+    const messageContent = menu.bubble.querySelector<HTMLElement>(".chat-message-content");
+    if (!messageContent || menu.bubble.querySelector("img, video, audio, [data-media]")) return;
+    const original = messageContent.textContent?.trim() ?? "";
+    setMenu(null);
+    const next = window.prompt("編輯訊息", original);
+    if (next === null || next.trim() === original || next.trim().length === 0) return;
+    if (next.trim().length > 2000) {
+      window.alert("訊息請控制在 2000 字以內。");
+      return;
+    }
+    const result = await supabase.rpc("edit_random_message", { p_message_id: menu.messageId, p_content: next });
+    if (result.error) window.alert(`目前無法編輯訊息：${result.error.message || "請稍後再試"}`);
+  };
 
   const recall = async () => {
     if (!menu?.mine) return;
@@ -90,11 +117,14 @@ export default function RandomSessionPage() {
     // avoids duplicate render cycles immediately after a mobile long-press action.
   };
 
+  const menuHasMedia = Boolean(menu?.bubble.querySelector("img, video, audio, [data-media]"));
+
   return (
-    <div style={{ display: "contents" }} onPointerDownCapture={onPointerDownCapture} onPointerMoveCapture={onPointerMoveCapture} onPointerUpCapture={(event) => { if (!isActionMenuTarget(event.target)) clearPress(); }} onPointerCancelCapture={clearPress} onClickCapture={onClickCapture} onContextMenu={(event) => { if (!allowed || isActionMenuTarget(event.target)) return; const target = getActionTarget(event.target); if (!target) return; event.preventDefault(); clearSelection(); openMenu(target); }}>
+    <div style={{ display: "contents" }} onKeyDownCapture={onKeyDownCapture} onPointerDownCapture={onPointerDownCapture} onPointerMoveCapture={onPointerMoveCapture} onPointerUpCapture={(event) => { if (!isActionMenuTarget(event.target)) clearPress(); }} onPointerCancelCapture={clearPress} onClickCapture={onClickCapture} onContextMenu={(event) => { if (!allowed || isActionMenuTarget(event.target)) return; const target = getActionTarget(event.target); if (!target) return; event.preventDefault(); clearSelection(); openMenu(target); }}>
       <RandomSessionClient />
       {menu ? <div data-line-message-menu="1" style={{ position: "fixed", left: menu.left, top: menu.top, zIndex: 2147483647, display: "flex", overflow: "hidden", borderRadius: 14, background: "#29272b", boxShadow: "0 10px 32px rgba(0,0,0,.5)", border: "1px solid rgba(255,255,255,.12)", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none", pointerEvents: "auto" }}>
         <button type="button" onClick={reply} style={{ height: 54, minWidth: 94, padding: "0 14px", border: 0, background: "transparent", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", touchAction: "manipulation" }}>↩ 回覆</button>
+        {menu.mine && !menuHasMedia ? <button type="button" onClick={() => void edit()} style={{ height: 54, minWidth: 94, padding: "0 14px", border: 0, borderLeft: "1px solid rgba(255,255,255,.1)", background: "transparent", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", touchAction: "manipulation" }}>編輯</button> : null}
         {menu.mine ? <button type="button" onClick={() => void recall()} style={{ height: 54, minWidth: 94, padding: "0 14px", border: 0, borderLeft: "1px solid rgba(255,255,255,.1)", background: "transparent", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", touchAction: "manipulation" }}>收回</button> : null}
       </div> : null}
     </div>
