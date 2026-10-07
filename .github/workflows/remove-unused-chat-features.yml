@@ -1,4 +1,4 @@
-name: Remove unused chat features
+name: Home my-chat unread badge
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  remove-unused-chat-features:
+  home-chat-unread:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,34 +22,39 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
-      - name: Remove unused chat UI and add regression check
+      - name: Write regression check and prove RED
         shell: python
         run: |
           from pathlib import Path
-          import re
-
-          p = Path('apps/web/app/session/[id]/RandomSessionClient.tsx')
-          s = p.read_text()
-
-          # Retire the chat-assistant launcher wherever it is rendered.
-          s = s.replace('{assistantAllowed ? (', '{false && assistantAllowed ? (')
-
-          # Remove the assistant result panel completely. Keeping it behind
-          # `false &&` still makes TypeScript type-check unreachable JSX.
-          panel = re.compile(
-              r'\n\s*\{assistantAllowed && assistantOpen \? \(.*?\n\s*\) : null\}\n\n(?=\s*\{session \? <SessionSafetyWarning)',
-              re.S,
-          )
-          s, count = panel.subn('\n\n', s, count=1)
-          if count != 1:
-              raise SystemExit('Could not locate chat assistant panel')
-          p.write_text(s)
-
-          t = Path('apps/web/scripts/check-retired-chat-features.mjs')
+          t = Path('apps/web/scripts/check-home-chat-unread.mjs')
           t.parent.mkdir(parents=True, exist_ok=True)
-          t.write_text('''import fs from "node:fs";\nconst source = fs.readFileSync(new URL("../app/session/[id]/RandomSessionClient.tsx", import.meta.url), "utf8");\nif (!source.includes("{false && assistantAllowed ? (")) throw new Error("聊天小助手入口仍可能顯示");\nif (source.includes("chat-assist-card")) throw new Error("聊天小助手面板仍存在");\nif (source.includes("icebreaker_prompt") || source.includes("icebreaker_question_code")) throw new Error("聊天室前端仍引用破冰題");\nconsole.log("retired chat features are not exposed");\n''')
-      - name: Verify retired features
-        run: node apps/web/scripts/check-retired-chat-features.mjs
+          t.write_text('''import fs from "node:fs";\nconst s=fs.readFileSync(new URL("../app/page.tsx",import.meta.url),"utf8");\nif(!s.includes("get_my_random_chat_unread_count")) throw new Error("missing unread count RPC");\nif(!s.includes("home-chat-unread")) throw new Error("missing My Chats unread badge");\nif(s.includes("contacts-chat-unread")) throw new Error("Contacts must not show unread badge");\nconsole.log("home My Chats unread badge verified");\n''')
+          import subprocess
+          r=subprocess.run(['node',str(t)])
+          if r.returncode == 0:
+            raise SystemExit('RED check unexpectedly passed before implementation')
+      - name: Implement My Chats unread badge
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('apps/web/app/page.tsx')
+          s=p.read_text()
+          s=s.replace('  const [mailUnreadCount, setMailUnreadCount] = useState(0);','  const [mailUnreadCount, setMailUnreadCount] = useState(0);\n  const [chatUnreadCount, setChatUnreadCount] = useState(0);',1)
+          anchor='''  const refreshMailUnread = useCallback(async () => {\n    if (!state.session?.user.id) { setMailUnreadCount(0); return; }\n    const { data } = await (supabase as any).rpc("station_mail_user_unread_count");\n    setMailUnreadCount(Number(data ?? 0));\n  }, [state.session?.user.id]);\n'''
+          addition=anchor+'''\n  const refreshChatUnread = useCallback(async () => {\n    if (!state.session?.user.id) { setChatUnreadCount(0); return; }\n    const { data, error } = await (supabase as any).rpc("get_my_random_chat_unread_count");\n    if (!error) setChatUnreadCount(Math.max(0, Number(data ?? 0)));\n  }, [state.session?.user.id]);\n'''
+          if anchor not in s: raise SystemExit('mail unread anchor not found')
+          s=s.replace(anchor,addition,1)
+          effect='''  useEffect(() => {\n    if (!state.session?.user.id) return;\n    void refreshChatUnread();\n    const channel = supabase.channel(`home-chat-unread-${state.session.user.id}`)\n      .on("postgres_changes", { event: "*", schema: "public", table: "random_chat_messages" }, () => void refreshChatUnread())\n      .on("postgres_changes", { event: "*", schema: "public", table: "random_chat_session_reads" }, () => void refreshChatUnread())\n      .subscribe();\n    const onVisible = () => { if (document.visibilityState === "visible") void refreshChatUnread(); };\n    window.addEventListener("focus", refreshChatUnread);\n    document.addEventListener("visibilitychange", onVisible);\n    return () => {\n      window.removeEventListener("focus", refreshChatUnread);\n      document.removeEventListener("visibilitychange", onVisible);\n      void supabase.removeChannel(channel);\n    };\n  }, [state.session?.user.id, refreshChatUnread]);\n\n'''
+          marker='  const refreshWaitingCount = useCallback(async () => {'
+          if marker not in s: raise SystemExit('waiting count anchor not found')
+          s=s.replace(marker,effect+marker,1)
+          old='''          {state.activeSession ? <Button variant="secondary" size="lg" href="/chats">我的聊天</Button> : null}'''
+          new='''          {state.activeSession ? <Button variant="secondary" size="lg" href="/chats">我的聊天{chatUnreadCount > 0 ? <span className="home-chat-unread" aria-label={`${chatUnreadCount} 則未讀訊息`}>{chatUnreadCount > 99 ? "99+" : chatUnreadCount}</span> : null}</Button> : null}'''
+          if old not in s: raise SystemExit('My Chats button anchor not found')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+      - name: Verify GREEN
+        run: node apps/web/scripts/check-home-chat-unread.mjs
       - name: Install web dependencies
         working-directory: apps/web
         run: npm install
@@ -63,10 +68,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add 'apps/web/app/session/[id]/RandomSessionClient.tsx' apps/web/scripts/check-retired-chat-features.mjs
+          git add 'apps/web/app/page.tsx' apps/web/scripts/check-home-chat-unread.mjs
           if git diff --cached --quiet; then
             echo 'No changes needed'
             exit 0
           fi
-          git commit -m 'fix(web): retire icebreaker and chat assistant UI'
+          git commit -m 'feat(web): show unread count on My Chats'
           git push origin main
