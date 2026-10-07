@@ -1,0 +1,58 @@
+name: Fix permanent recovery stable identity
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-permanent-recovery-stable-identity.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: RED - verify old implementation is auth uid bound
+        shell: bash
+        run: |
+          set -e
+          f=supabase/functions/anonymous-recovery-code/index.ts
+          grep -q 'eq("id", user.id)' "$f"
+          grep -q 'eq("anonymous_identity_id", user.id)' "$f"
+          ! grep -q 'resolve_active_anonymous_chat_identity' "$f"
+      - name: Use stable recovered anonymous identity
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('supabase/functions/anonymous-recovery-code/index.ts')
+          s=p.read_text()
+          old='''  const profileResult = await admin.from("profiles")\n    .select("id, anonymous_mode_enabled, anonymous_display_name")\n    .eq("id", user.id).maybeSingle();\n  if (profileResult.error || !profileResult.data?.id || !profileResult.data.anonymous_mode_enabled) {\n    return json({ error: "目前沒有可設定恢復碼的匿名身分。" }, 403);\n  }\n\n  const activeCredential = async () => await admin.from("anonymous_recovery_credentials")\n    .select("id, code_hint, created_at, version")\n    .eq("anonymous_identity_id", user.id)'''
+          new='''  // Resolve the stable anonymous identity first. After an admin/manual recovery,\n  // auth.uid() can remain the browser credential while chat ownership has moved\n  // to the recovered anonymous identity. Permanent recovery must follow the same\n  // identity primitive as the rest of recovered chat access.\n  const resolvedIdentity = await caller.rpc("resolve_active_anonymous_chat_identity");\n  const anonymousIdentityId = typeof resolvedIdentity.data === "string" && resolvedIdentity.data\n    ? resolvedIdentity.data\n    : user.id;\n  if (resolvedIdentity.error) return json({ error: "目前無法確認匿名身分。" }, 500);\n\n  const profileResult = await admin.from("profiles")\n    .select("id, anonymous_mode_enabled, anonymous_display_name")\n    .eq("id", anonymousIdentityId).maybeSingle();\n  if (profileResult.error || !profileResult.data?.id || !profileResult.data.anonymous_mode_enabled) {\n    return json({ error: "目前沒有可設定恢復碼的匿名身分。" }, 403);\n  }\n\n  const activeCredential = async () => await admin.from("anonymous_recovery_credentials")\n    .select("id, code_hint, created_at, version")\n    .eq("anonymous_identity_id", anonymousIdentityId)'''
+          if old not in s:
+              raise SystemExit('expected old identity block not found')
+          s=s.replace(old,new)
+          s=s.replace('p_identity_id: user.id,','p_identity_id: anonymousIdentityId,')
+          s=s.replace('anonymous_identity_id: user.id,','anonymous_identity_id: anonymousIdentityId,')
+          p.write_text(s)
+      - name: GREEN - verify all recovery operations use stable identity
+        shell: bash
+        run: |
+          set -e
+          f=supabase/functions/anonymous-recovery-code/index.ts
+          grep -q 'resolve_active_anonymous_chat_identity' "$f"
+          grep -q 'eq("id", anonymousIdentityId)' "$f"
+          grep -q 'eq("anonymous_identity_id", anonymousIdentityId)' "$f"
+          grep -q 'p_identity_id: anonymousIdentityId' "$f"
+          grep -q 'anonymous_identity_id: anonymousIdentityId' "$f"
+          ! grep -q 'eq("anonymous_identity_id", user.id)' "$f"
+      - name: Commit fix
+        shell: bash
+        run: |
+          set -e
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add supabase/functions/anonymous-recovery-code/index.ts
+          git commit -m 'fix(recovery): use stable anonymous identity for permanent codes'
+          git push origin HEAD:main
