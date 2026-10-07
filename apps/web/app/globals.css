@@ -8866,3 +8866,23 @@ body:has(.site-collection-viewport) .collection-skip-link:not(:focus) {
 .guest-consent{width:min(100%,620px);margin:0!important;color:#aaa1b8;font-size:13px;line-height:1.65;text-align:center}
 .guest-legal{width:100%;display:flex!important;justify-content:center!important;align-items:center;flex-wrap:nowrap!important;gap:clamp(10px,5vw,34px)!important;margin-top:0}.guest-legal .button{white-space:nowrap;color:#ff887f;font-size:14px;padding:4px 0}
 @media(max-width:380px){.guest-legal{gap:10px!important}.guest-legal .button{font-size:12px}}
+
+
+/* Keep the unread badge visually attached to My Chats. */
+.home-app-actions .home-chat-unread {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 28px;
+  height: 28px;
+  margin-left: 10px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #e52f2f;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+  vertical-align: middle;
+}
