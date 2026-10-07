@@ -1,0 +1,53 @@
+name: Apply Chat Polling Optimization
+
+on:
+  push:
+    branches: [test/reduce-chat-polling]
+    paths:
+      - ".github/workflows/apply-chat-polling-optimization.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: test/reduce-chat-polling
+      - name: Apply realtime-first fallback intervals
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('apps/web/app/session/[id]/RandomSessionClient.tsx')
+          s = p.read_text()
+          anchor = 'const EXTERNAL_URL_PATTERN = /((?:https?:\\/\\/|www\\.)[^\\s<>"\'`]+)/gi;'
+          replacement = anchor + '\nconst CHAT_FALLBACK_POLL_MS = 60_000;\nconst EASTER_EGG_FALLBACK_POLL_MS = 60_000;'
+          if 'const CHAT_FALLBACK_POLL_MS = 60_000;' not in s:
+              if anchor not in s:
+                  raise SystemExit('constant anchor not found')
+              s = s.replace(anchor, replacement, 1)
+          old_chat = 'const delay = 3_000;\n      timer = window.setTimeout(() => {'
+          new_chat = 'const delay = CHAT_FALLBACK_POLL_MS;\n      timer = window.setTimeout(() => {'
+          if old_chat not in s and new_chat not in s:
+              raise SystemExit('chat polling anchor not found')
+          s = s.replace(old_chat, new_chat, 1)
+          old_egg = 'timer = window.setInterval(() => void syncPendingEasterEgg(), 2000);'
+          new_egg = 'timer = window.setInterval(() => void syncPendingEasterEgg(), EASTER_EGG_FALLBACK_POLL_MS);'
+          if old_egg not in s and new_egg not in s:
+              raise SystemExit('egg polling anchor not found')
+          s = s.replace(old_egg, new_egg, 1)
+          p.write_text(s)
+          PY
+      - name: Verify polling contract
+        working-directory: apps/web
+        run: node lib/chat-polling-contract.test.mjs
+      - name: Commit test-branch change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'apps/web/app/session/[id]/RandomSessionClient.tsx'
+          git diff --cached --quiet && exit 0
+          git commit -m "fix(chat): reduce database fallback polling [skip ci]"
+          git push origin HEAD:test/reduce-chat-polling
