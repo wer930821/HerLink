@@ -65,10 +65,7 @@
 }
 
 @media (max-width: 520px) {
-  /* 手機版王冠靠近信箱左側，但保留可辨識間距。 */
   .home-crown-float {
-    top: 180px !important;
-    right: 100px !important;
     width: 36px !important;
     height: 36px !important;
     min-width: 36px !important;
@@ -88,8 +85,7 @@
   }
 }
 
-/* 站長信箱手機版：覆蓋 globals.css 中歷次互相衝突的 grid/flex 規則。
-   每個欄位回到正常文件流，避免 Safari 上主旨、內容、附件互相遮蓋。 */
+/* 站長信箱手機版：覆蓋 globals.css 中歷次互相衝突的 grid/flex 規則。 */
 @media (max-width: 720px) {
   .site-mailbox-viewport .mailbox-compose-panel {
     display: flex !important;
@@ -127,17 +123,13 @@
     margin: 0 !important;
   }
 
-  .site-mailbox-viewport .mailbox-category-grid {
-    margin-top: 6px !important;
-  }
-
+  .site-mailbox-viewport .mailbox-category-grid { margin-top: 6px !important; }
   .site-mailbox-viewport input.mailbox-input {
     position: static !important;
     width: 100% !important;
     height: 48px !important;
     min-height: 48px !important;
   }
-
   .site-mailbox-viewport .mailbox-compose-panel textarea.mailbox-input {
     position: static !important;
     width: 100% !important;
@@ -146,12 +138,7 @@
     max-height: 42dvh !important;
     resize: vertical !important;
   }
-
-  .site-mailbox-viewport .mailbox-photo-field {
-    display: grid !important;
-    gap: 7px !important;
-  }
-
+  .site-mailbox-viewport .mailbox-photo-field { display: grid !important; gap: 7px !important; }
   .site-mailbox-viewport .mailbox-compose-panel > .btn {
     position: sticky !important;
     bottom: 0 !important;
@@ -162,7 +149,7 @@
   }
 }
 
-/* 首頁手機版：王冠／信箱必須有自己的保留區，不可壓到說明文字或匿名名稱卡。 */
+/* 首頁手機版：王冠與信箱以整組置中，不再靠右漂移。 */
 @media (max-width: 520px) {
   .site-home-viewport .home-app-copy {
     margin-bottom: 102px !important;
@@ -171,14 +158,15 @@
   .site-home-viewport .home-crown-float,
   .site-home-viewport .home-mailbox-float {
     top: 248px !important;
+    right: auto !important;
   }
 
   .site-home-viewport .home-crown-float {
-    right: 104px !important;
+    left: calc(50% - 76px) !important;
   }
 
   .site-home-viewport .home-mailbox-float {
-    right: 0 !important;
+    left: calc(50% - 18px) !important;
   }
 
   .site-home-viewport .halloween-home-decor span:nth-child(2) {
