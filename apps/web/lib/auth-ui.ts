@@ -25,8 +25,12 @@ export function getFriendlyAuthErrorMessage(error: unknown, fallback: string) {
     return "帳號或密碼不正確，請再試一次。";
   }
 
-  if (message.includes("user already registered") || message.includes("already exists")) {
-    return "這個信箱已經註冊過了，請改用登入或其他信箱。";
+  if (message.includes("user already registered") || message.includes("already exists") || message.includes("email address is already")) {
+    return "這個信箱已經綁定其他帳號，請改用登入或其他信箱。目前匿名聊天室不會被變更。";
+  }
+
+  if (message.includes("new password should be different") || message.includes("new password cannot be the same") || message.includes("same as the old password")) {
+    return "這組密碼已經設定過，不需要重複設定。請直接登入確認帳號。";
   }
 
   if (message.includes("password should be at least")) {

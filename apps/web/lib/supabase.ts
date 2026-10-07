@@ -150,6 +150,14 @@ export async function signUp(email: string, password: string) {
   return supabase.auth.signUp({ email, password });
 }
 
+export async function beginAnonymousAccountBinding(email: string) {
+  return supabase.auth.updateUser({ email: email.trim() });
+}
+
+export async function finishAnonymousAccountBinding(password: string) {
+  return supabase.auth.updateUser({ password });
+}
+
 export async function signInAnonymously() {
   return supabase.auth.signInAnonymously();
 }
