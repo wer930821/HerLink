@@ -10,4 +10,8 @@ assert.match(signup, /updateUser\(\{\s*email:/);
 assert.doesNotMatch(signup, /await signUp\(/);
 assert.match(signup, /為目前的匿名身分建立登入方式/);
 assert.match(login, /登入後會接回這個帳號原本的匿名身分/);
+// A user may open signup after signing out. The signup page must first restore
+// the existing anonymous session backup instead of rejecting the page.
+assert.match(signup, /signInAnonymously/);
+assert.doesNotMatch(signup, /if \(!session\) \{ setAllowed\(false\)/);
 console.log("public account flow contract OK");
