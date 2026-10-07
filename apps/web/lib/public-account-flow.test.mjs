@@ -4,6 +4,7 @@ import fs from "node:fs";
 const home = fs.readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
 const login = fs.readFileSync(new URL("../app/login/page.tsx", import.meta.url), "utf8");
 const signup = fs.readFileSync(new URL("../app/signup/page.tsx", import.meta.url), "utf8");
+const accountState = fs.readFileSync(new URL("../components/home-account-state.tsx", import.meta.url), "utf8");
 
 assert.doesNotMatch(login, /GUXING_USER_ID|僅供孤星企鵝使用|登入後會回到孤星企鵝/);
 assert.doesNotMatch(signup, /TEST_NAME|孤星企鵝專用測試頁面|正在確認測試身分/);
@@ -29,11 +30,11 @@ assert.doesNotMatch(login, /if \(!isAdminLogin\) await supabase\.auth\.signOut\(
 assert.match(home, /href="\/signup"[^>]*>申請並綁定帳號<\/a>/);
 assert.doesNotMatch(home, /anonymousSummary\?\.name === "孤星企鵝" \? \([\s\S]{0,400}申請並綁定帳號/);
 
-// A permanent account session must look logged in on the homepage instead of
-// continuing to offer signup/login actions like an anonymous session.
-assert.match(home, /const accountEmail = state\.session\?\.user\.email/);
-assert.match(home, /const isPermanentAccount = Boolean\(accountEmail && !state\.session\?\.user\.is_anonymous\)/);
-assert.match(home, /isPermanentAccount \? \([\s\S]{0,500}已登入[\s\S]{0,500}accountEmail/);
-assert.match(home, /!isPermanentAccount[\s\S]{0,500}申請並綁定帳號[\s\S]{0,500}登入既有帳號/);
+assert.match(accountState, /user\.email/);
+assert.match(accountState, /!user\.is_anonymous/);
+assert.match(accountState, /home-account-actions/);
+assert.match(accountState, /已登入/);
+assert.match(accountState, /createPortal/);
+assert.match(accountState, /onAuthStateChange/);
 
 console.log("public account flow contract OK");
