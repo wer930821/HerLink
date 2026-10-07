@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
+const home = fs.readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
 const login = fs.readFileSync(new URL("../app/login/page.tsx", import.meta.url), "utf8");
 const signup = fs.readFileSync(new URL("../app/signup/page.tsx", import.meta.url), "utf8");
 
@@ -16,4 +17,6 @@ assert.doesNotMatch(signup, /signInAnonymously/);
 assert.match(signup, /建立 HerLink 帳號後即可登入使用/);
 assert.match(signup, /為目前的匿名身分建立登入方式/);
 assert.match(login, /登入後會接回這個帳號原本的匿名身分/);
+assert.match(home, /href="\/signup"[^>]*>申請並綁定帳號<\/a>/);
+assert.doesNotMatch(home, /anonymousSummary\?\.name === "孤星企鵝" \? \([\s\S]{0,400}申請並綁定帳號/);
 console.log("public account flow contract OK");
