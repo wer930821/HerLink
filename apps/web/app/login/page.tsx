@@ -26,7 +26,18 @@ export default function LoginPage(){
 
  const onSubmit=async(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();setLoading(true);setError(null);setSuccess(null);try{
    if(isAdminLogin&&adminCreateMode){if(password.length<10)throw new Error("管理員密碼至少需要 10 個字元。");if(password!==confirmPassword)throw new Error("兩次輸入的密碼不一致。");const redirectTo=`${window.location.origin}/auth/callback?next=/admin`;const {data,error:signUpError}=await supabase.auth.signUp({email:email.trim(),password,options:{emailRedirectTo:redirectTo}});if(signUpError)throw signUpError;if(data.session)router.replace("/admin");else setSuccess("確認信已寄出，請到 Email 點擊確認連結。確認後會自動取得後台管理員權限。");return}
-   if (!isAdminLogin) await supabase.auth.signOut();
+   if(!isAdminLogin){
+     const current=await supabase.auth.getSession();
+     if(current.data.session?.user.is_anonymous){
+       const {data,error:bindError}=await supabase.functions.invoke("account-bind-existing",{body:{email:email.trim(),password}});
+       if(bindError) throw bindError;
+       if(!data?.ok||!data?.session?.access_token||!data?.session?.refresh_token) throw new Error(data?.error||"帳號綁定失敗，原匿名身分仍保留，請稍後再試。");
+       const restored=await supabase.auth.setSession({access_token:data.session.access_token,refresh_token:data.session.refresh_token});
+       if(restored.error||!restored.data.session) throw restored.error??new Error("帳號登入失敗，請重新登入。");
+       window.location.assign("/"); return;
+     }
+     if(current.data.session) await supabase.auth.signOut();
+   }
    const {error:authError}=await signIn(email.trim(),password);if(authError)throw authError;
    window.location.assign(getLoginDestination());
  }catch(err){const message=err instanceof Error?err.message:"";setError(message||getFriendlyAuthErrorMessage(err,"登入失敗，請稍後再試。"))}finally{setLoading(false)}};
@@ -35,7 +46,7 @@ export default function LoginPage(){
 
  return <main style={{minHeight:"100dvh",background:"radial-gradient(circle at 50% 0%, #211a38 0, #120e1a 36%, #0d0a12 72%)",color:"#fff",padding:"max(18px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom))"}}><div style={{width:"min(100%,520px)",margin:"0 auto"}}>
    <button type="button" onClick={()=>router.push("/")} style={{border:0,background:"transparent",color:"#d9d1e2",fontSize:16,fontWeight:800,padding:"10px 0 24px",cursor:"pointer"}}>‹ 返回 HerLink</button>
-   <div style={{fontSize:13,fontWeight:900,letterSpacing:2,color:"#9fb3ff",marginBottom:10}}>HERLINK ACCOUNT</div><h1 style={{fontSize:"clamp(30px,8vw,42px)",lineHeight:1.08,margin:"0 0 12px",fontWeight:950}}>登入帳號</h1><p style={{margin:"0 0 30px",color:"#bdb6c7",fontSize:16,lineHeight:1.7}}>登入後會接回這個帳號原本的匿名身分、聊天室與聯絡人。</p>
+   <div style={{fontSize:13,fontWeight:900,letterSpacing:2,color:"#9fb3ff",marginBottom:10}}>HERLINK ACCOUNT</div><h1 style={{fontSize:"clamp(30px,8vw,42px)",lineHeight:1.08,margin:"0 0 12px",fontWeight:950}}>登入帳號</h1><p style={{margin:"0 0 30px",color:"#bdb6c7",fontSize:16,lineHeight:1.7}}>登入後會接回這個帳號原本的匿名身分、聊天室與聯絡人。若目前正在使用匿名身分，登入既有帳號時會安全綁定並保留目前聊天室資料。</p>
    <form onSubmit={onSubmit} style={{display:"grid",gap:18}}><Field label="電子郵件" htmlFor="login-email"><input id="login-email" className="input" value={email} onChange={e=>setEmail(e.target.value)} type="email" required autoComplete="email" placeholder="輸入電子郵件" style={{minHeight:54,fontSize:17}}/></Field><Field label="密碼" htmlFor="login-password"><input id="login-password" className="input" value={password} onChange={e=>setPassword(e.target.value)} type="password" required autoComplete="current-password" placeholder="輸入登入密碼" style={{minHeight:54,fontSize:17}}/></Field>{error?<Notice variant="danger">{error}</Notice>:null}<Button type="submit" size="lg" disabled={loading||!email.trim()||!password}>{loading?"登入中…":"登入帳號"}</Button><Button variant="link" type="button" onClick={()=>router.push("/forgot-password")} disabled={loading}>忘記密碼？</Button></form>
  </div></main>;
 }
