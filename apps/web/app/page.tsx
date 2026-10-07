@@ -811,6 +811,37 @@ export default function HomePage() {
     setActionBusy(true);
     setMessage(null);
     try {
+      const ensureActiveSession = async () => {
+        const current = await getCurrentSession();
+        if (current.error) {
+          throw current.error;
+        }
+
+        if (current.data.session) {
+          return current.data.session;
+        }
+
+        const anonymousSignIn = await signInAnonymously();
+        if (anonymousSignIn.error || !anonymousSignIn.data.session) {
+          throw anonymousSignIn.error ?? new Error("匿名登入未建立工作階段");
+        }
+
+        const profileResult = await ensureAnonymousBootstrapProfile(anonymousSignIn.data.session.user.id);
+        if (profileResult.error) {
+          throw profileResult.error;
+        }
+
+        setState((prev) => ({
+          ...prev,
+          session: anonymousSignIn.data.session ?? prev.session,
+          profile: profileResult.data ?? prev.profile,
+        }));
+
+        return anonymousSignIn.data.session;
+      };
+
+      await ensureActiveSession();
+
       const runAbuseCheck = async (): Promise<AnonymousAbusePrecheckRow | null> => {
         const abuseCheck = await registerAnonymousAbuseIdentity();
         if (abuseCheck.error) {
@@ -824,7 +855,17 @@ export default function HomePage() {
         return null;
       };
 
-      const abuseBlock = await runAbuseCheck();
+      const runWithSessionRetry = async <T,>(operation: () => Promise<T>): Promise<T> => {
+        try {
+          return await operation();
+        } catch (error) {
+          await supabase.auth.refreshSession().catch(() => null);
+          await ensureActiveSession();
+          return operation();
+        }
+      };
+
+      const abuseBlock = await runWithSessionRetry(runAbuseCheck);
       if (abuseBlock) {
         showAbuseBlockMessage(abuseBlock);
         return;
@@ -832,7 +873,13 @@ export default function HomePage() {
 
       // Do not keep showing a stale "0" while matchmaking mutates the queue.
       setWaitingCount(null);
-      const { data, error } = await findOrJoinRandomMatch();
+      const { data, error } = await runWithSessionRetry(async () => {
+        const matchResult = await findOrJoinRandomMatch();
+        if (matchResult.error) {
+          throw matchResult.error;
+        }
+        return matchResult;
+      });
       void refreshWaitingCount();
       if (error) {
         throw error;
