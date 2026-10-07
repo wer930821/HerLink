@@ -1,0 +1,45 @@
+name: Fix chat image rendering
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/fix-chat-image-render.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - name: Render image URLs as images
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('apps/web/app/session/[id]/page.tsx')
+          s=p.read_text()
+          old='''    if (normalizedUrl) {\n      nodes.push(\n        <button\n          key={`${start}-${rawUrl}`}\n          type="button"\n          className="chat-inline-link"\n          onClick={() => onOpenExternalLink(normalizedUrl)}\n        >\n          {rawUrl}\n        </button>\n      );\n    } else {'''
+          new='''    if (normalizedUrl) {\n      if (IMAGE_URL_PATTERN.test(normalizedUrl)) {\n        nodes.push(\n          <button\n            key={`${start}-${rawUrl}`}\n            type="button"\n            className="chat-inline-image-button"\n            onClick={() => onPreviewImage(normalizedUrl)}\n            aria-label="預覽圖片"\n          >\n            <img\n              src={normalizedUrl}\n              alt="聊天圖片"\n              className="chat-inline-image"\n              loading="lazy"\n              referrerPolicy="no-referrer"\n            />\n          </button>\n        );\n      } else {\n        nodes.push(\n          <button\n            key={`${start}-${rawUrl}`}\n            type="button"\n            className="chat-inline-link"\n            onClick={() => onOpenExternalLink(normalizedUrl)}\n          >\n            {rawUrl}\n          </button>\n        );\n      }\n    } else {'''
+          if old not in s:
+            raise SystemExit('Expected renderer block not found; refusing unsafe edit')
+          if s.count(old)!=1:
+            raise SystemExit('Renderer block is not unique; refusing unsafe edit')
+          p.write_text(s.replace(old,new,1))
+          PY
+      - name: Verify TypeScript build
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm run build
+      - name: Commit fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'apps/web/app/session/[id]/page.tsx'
+          git diff --cached --check
+          git commit -m 'fix(web): render chat image URLs inline'
+          git push origin HEAD:master
