@@ -65,13 +65,11 @@ export function HomeAccountState() {
   return createPortal(
     <div className="home-account-logged-in" role="status" aria-live="polite">
       <strong>已登入</strong>
-      <span>{accountEmail}</span>
       <style>{`
         .home-account-actions--logged-in > a { display: none !important; }
         .home-account-actions--logged-in { grid-template-columns: 1fr !important; }
-        .home-account-logged-in { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; min-height: 54px; color: #f4edf8; font-size: 15px; }
+        .home-account-logged-in { width: 100%; display: flex; align-items: center; justify-content: center; min-height: 54px; color: #f4edf8; font-size: 16px; }
         .home-account-logged-in strong { color: #ff9a55; font-size: 16px; }
-        .home-account-logged-in span { overflow-wrap: anywhere; opacity: .9; }
       `}</style>
     </div>,
     target,
