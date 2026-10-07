@@ -82,16 +82,11 @@ export default function RandomSessionPage() {
     target.setRangeText("\n", start, end, "end");
     target.dispatchEvent(new Event("input", { bubbles: true }));
 
-    // The newline is inserted imperatively, so keep the textarea geometry and
-    // caret viewport in sync instead of waiting for the controlled render.
+    // Enter should create a newline without growing the whole composer. Keep the
+    // textarea at its current visual height and scroll inside it to the caret.
+    const fixedHeight = target.getBoundingClientRect().height;
     requestAnimationFrame(() => {
-      target.style.height = "auto";
-      const computed = window.getComputedStyle(target);
-      const maxHeight = Number.parseFloat(computed.maxHeight);
-      const nextHeight = Number.isFinite(maxHeight) && maxHeight > 0
-        ? Math.min(target.scrollHeight, maxHeight)
-        : target.scrollHeight;
-      target.style.height = `${nextHeight}px`;
+      target.style.height = `${fixedHeight}px`;
       target.scrollTop = target.scrollHeight;
     });
   };
