@@ -1,0 +1,38 @@
+name: Fix stable random queue reader
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-stable-random-queue.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Patch queue reader
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('apps/web/lib/supabase.ts')
+          s = p.read_text()
+          old = 'export async function loadMyRandomQueue(userId:string){return supabase.from("random_match_queue").select("*").eq("user_id",userId).maybeSingle<RandomQueueRow>()}'
+          new = 'export async function loadMyRandomQueue(_userId?:string){const result=await supabase.rpc("get_my_random_queue");return {data:Array.isArray(result.data)?result.data[0]??null:result.data??null,error:result.error} as {data:RandomQueueRow|null;error:{message?:string}|null}}'
+          if old not in s:
+              raise SystemExit('target loadMyRandomQueue implementation not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/web/lib/supabase.ts
+          git diff --cached --check
+          git commit -m 'fix(web): read matchmaking queue by stable identity'
+          git push origin HEAD:main
