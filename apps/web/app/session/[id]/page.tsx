@@ -81,6 +81,19 @@ export default function RandomSessionPage() {
     const end = target.selectionEnd ?? start;
     target.setRangeText("\n", start, end, "end");
     target.dispatchEvent(new Event("input", { bubbles: true }));
+
+    // The newline is inserted imperatively, so keep the textarea geometry and
+    // caret viewport in sync instead of waiting for the controlled render.
+    requestAnimationFrame(() => {
+      target.style.height = "auto";
+      const computed = window.getComputedStyle(target);
+      const maxHeight = Number.parseFloat(computed.maxHeight);
+      const nextHeight = Number.isFinite(maxHeight) && maxHeight > 0
+        ? Math.min(target.scrollHeight, maxHeight)
+        : target.scrollHeight;
+      target.style.height = `${nextHeight}px`;
+      target.scrollTop = target.scrollHeight;
+    });
   };
   const reply = () => { if (!menu) return; const bubble = menu.bubble; setMenu(null); bypassClickRef.current = true; bubble.click(); queueMicrotask(() => { bypassClickRef.current = false; }); };
 
