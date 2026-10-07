@@ -655,12 +655,12 @@ export async function loadMyRandomSession(sessionId: string) {
   };
 }
 
-export async function loadMyRandomQueue(userId: string) {
-  return (supabase
-    .from("random_match_queue")
-    .select("*")
-    .eq("user_id", userId)
-    .maybeSingle() as Promise<{ data: RandomQueueRow | null; error: { message?: string } | null }>);
+export async function loadMyRandomQueue(_userId?: string) {
+  const result = await supabase.rpc("get_my_random_queue");
+  return {
+    data: Array.isArray(result.data) ? result.data[0] ?? null : result.data ?? null,
+    error: result.error,
+  } as { data: RandomQueueRow | null; error: { message?: string } | null };
 }
 
 export async function loadRandomMessages(
