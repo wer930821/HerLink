@@ -165,12 +165,12 @@
 /* 首頁手機版：王冠／信箱必須有自己的保留區，不可壓到說明文字或匿名名稱卡。 */
 @media (max-width: 520px) {
   .site-home-viewport .home-app-copy {
-    margin-bottom: 72px !important;
+    margin-bottom: 102px !important;
   }
 
   .site-home-viewport .home-crown-float,
   .site-home-viewport .home-mailbox-float {
-    top: 218px !important;
+    top: 248px !important;
   }
 
   .site-home-viewport .home-crown-float {
