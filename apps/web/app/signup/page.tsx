@@ -3,10 +3,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
-import { signUp } from "../../lib/supabase";
+import { supabase } from "../../lib/supabase";
 import { Button, Field, Notice } from "../../components/ui";
-
-const TEST_NAME = "孤星企鵝";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -19,10 +17,14 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // The signup entry is public. Do not redirect users back to the home page
-    // before they can even open the account form.
-    setAllowed(true);
-    setChecking(false);
+    let alive = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!alive) return;
+      const user = data.session?.user;
+      setAllowed(Boolean(user?.is_anonymous));
+      setChecking(false);
+    });
+    return () => { alive = false; };
   }, []);
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -31,10 +33,12 @@ export default function SignupPage() {
     setLoading(true); setError(null); setMessage(null);
     try {
       if (password.length < 8) throw new Error("密碼至少需要 8 個字元。");
-      const { data, error: authError } = await signUp(email.trim(), password);
+      const before = await supabase.auth.getSession();
+      if (!before.data.session?.user?.is_anonymous) throw new Error("目前沒有可綁定的匿名身分，請先回首頁建立匿名身分。");
+      const { data, error: authError } = await supabase.auth.updateUser({ email: email.trim(), password });
       if (authError) throw authError;
-      if (data.session) { router.replace("/"); return; }
-      setMessage("申請完成。若收到驗證信，請先完成信箱驗證後再登入。");
+      if (!data.user || data.user.id !== before.data.session.user.id) throw new Error("帳號綁定驗證失敗，請先不要登出。");
+      setMessage("申請完成。原本的匿名名稱、聊天室、訊息紀錄與聯絡人都會保留。若收到驗證信，請完成信箱驗證後再跨瀏覽器登入。");
     } catch (err) {
       const rawMessage = err instanceof Error ? err.message : "";
       const alreadyRegistered = /already registered|user already exists|email.*registered/i.test(rawMessage);
@@ -44,7 +48,8 @@ export default function SignupPage() {
     } finally { setLoading(false); }
   };
 
-  if (checking || !allowed) return <main style={{minHeight:"100dvh",display:"grid",placeItems:"center",background:"#0d0a12",color:"#bdb6c7",fontSize:16}}>正在確認測試身分…</main>;
+  if (checking) return <main style={{minHeight:"100dvh",display:"grid",placeItems:"center",background:"#0d0a12",color:"#bdb6c7",fontSize:16}}>正在確認匿名身分…</main>;
+  if (!allowed) return <main style={{minHeight:"100dvh",display:"grid",placeItems:"center",background:"#0d0a12",color:"#fff",padding:24,textAlign:"center"}}><div><p style={{fontSize:18,lineHeight:1.7}}>目前沒有可綁定的匿名身分。</p><Button type="button" size="lg" onClick={()=>router.push("/")}>回首頁</Button></div></main>;
 
   return (
     <main style={{minHeight:"100dvh",background:"radial-gradient(circle at 50% 0%, #291b38 0, #130e19 36%, #0d0a12 72%)",color:"#fff",padding:"max(18px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom))"}}>
@@ -52,7 +57,7 @@ export default function SignupPage() {
         <button type="button" onClick={()=>router.push("/")} style={{border:0,background:"transparent",color:"#d9d1e2",fontSize:16,fontWeight:800,padding:"10px 0 24px",cursor:"pointer"}}>‹ 返回 HerLink</button>
         <div style={{fontSize:13,fontWeight:900,letterSpacing:2,color:"#c69cff",marginBottom:10}}>HERLINK ACCOUNT</div>
         <h1 style={{fontSize:"clamp(30px,8vw,42px)",lineHeight:1.08,margin:"0 0 12px",fontWeight:950}}>申請帳號</h1>
-        <p style={{margin:"0 0 30px",color:"#bdb6c7",fontSize:16,lineHeight:1.7}}>為目前的匿名身份建立登入方式。這是孤星企鵝專用測試頁面。</p>
+        <p style={{margin:"0 0 30px",color:"#bdb6c7",fontSize:16,lineHeight:1.7}}>為目前的匿名身分建立登入方式。綁定後會保留原本的匿名名稱、聊天室、訊息紀錄與聯絡人。</p>
 
         <form onSubmit={onSubmit} style={{display:"grid",gap:18}}>
           <Field label="電子郵件" htmlFor="signup-email">
