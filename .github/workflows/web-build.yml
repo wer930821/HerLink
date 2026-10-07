@@ -2,7 +2,9 @@ name: HerLink Web Build
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - test/account-binding-same-uuid-main
     paths:
       - "apps/web/**"
       - "lib/**"
@@ -31,3 +33,6 @@ jobs:
       - run: node ../../tests/web-egg-permissions.test.cjs
       - run: npm run typecheck
       - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
