@@ -22,3 +22,9 @@ test('all collection milestones can trigger without tester identity', () => {
   assert.doesNotMatch(chat, /milestone && \(collectionTester \|\|/);
   assert.match(chat, /if \(milestone\) triggerEasterEgg\(milestone, true\)/);
 });
+
+test('collection entry is visible without milestone tester permission', () => {
+  assert.doesNotMatch(chat, /milestoneTestAllowed \? \(\s*<button className="home-collection-entry/);
+  assert.match(chat, /<button className="home-collection-entry chat-collection-menu"/);
+  assert.match(chat, /milestoneTestAllowed \? <button className="button secondary"[\s\S]{0,300}測試永恆之約特效/);
+});
