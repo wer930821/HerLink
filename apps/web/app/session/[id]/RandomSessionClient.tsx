@@ -2559,7 +2559,7 @@ export default function RandomSessionClient() {
                 </div>
               </details>
             ) : null}
-            {assistantAllowed ? (
+            {false && assistantAllowed ? (
               <button
                 className="chat-assistant-trigger"
                 type="button"
@@ -2660,69 +2660,6 @@ export default function RandomSessionClient() {
             {contactRequestCard}
             {notice ? <div className="notice chat-status-notice">{notice}</div> : null}
           </div>
-        ) : null}
-
-        {assistantAllowed && assistantOpen ? (
-          <section className="chat-assist-card" aria-live="polite">
-            <div className="chat-assist-heading">
-              <div>
-                <strong>聊天小助手</strong>
-                <div className="muted chat-assist-subtitle">只分析最近的文字訊息，不會自動替你送出。</div>
-              </div>
-              <label className="chat-assist-toggle">
-                <input
-                  type="checkbox"
-                  checked={assistantEnabled}
-                  onChange={(event) => setChatAssistantEnabled(event.target.checked)}
-                />
-                啟用
-              </label>
-            </div>
-
-            {assistantEnabled ? (
-              <>
-                <div className="row">
-                  <Button size="sm" type="button" onClick={() => void requestChatAssist()} disabled={assistantBusy || isEnded}>
-                    {assistantBusy ? "分析中…" : "幫我想怎麼回"}
-                  </Button>
-                </div>
-
-                {assistantError ? <div className="notice">{assistantError}</div> : null}
-
-                {assistantResult &&
-                latestTextMessage &&
-                !latestTextMessage.is_mine &&
-                assistantResultForMessageId === latestTextMessage.id ? (
-                  <div className="chat-assist-result">
-                    {assistantResult.riskProbability >= 0.65 ? (
-                      <div className="notice warning">這段對話可能有風險，先不要提供金錢、驗證碼或敏感個資。</div>
-                    ) : null}
-                    <div className="chat-assist-tip">{assistantResult.tip}</div>
-                    <div className="chat-assist-suggestions">
-                      {assistantResult.suggestions.map((suggestion) => (
-                        <button
-                          key={suggestion}
-                          type="button"
-                          className="chat-assist-suggestion"
-                          onClick={() => {
-                            setDraft(suggestion);
-                            setAssistantOpen(false);
-                          }}
-                        >
-                          {suggestion}
-                        </button>
-                      ))}
-                    </div>
-                    {assistantResult.contactReadiness >= 0.72 && contactState?.status !== "active" ? (
-                      <div className="muted">你們目前互動看起來較穩定，也可以考慮使用「保留匿名聯絡」。</div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </>
-            ) : (
-              <div className="muted">聊天助手已關閉，訊息不會送去分析。</div>
-            )}
-          </section>
         ) : null}
 
         {session ? <SessionSafetyWarning key={session.id} sessionId={session.id} warning={messageWarning}
