@@ -21,6 +21,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: apps/web/package-lock.json
       - name: Add regression check and remove unused UI
         shell: python
         run: |
@@ -36,10 +37,15 @@ jobs:
           t.write_text('''import fs from "node:fs";\nconst source = fs.readFileSync(new URL("../app/session/[id]/RandomSessionClient.tsx", import.meta.url), "utf8");\nif (!source.includes("{false && assistantAllowed ? (")) throw new Error("聊天小助手入口仍可能顯示");\nif (!source.includes("{false && assistantAllowed && assistantOpen ? (")) throw new Error("聊天小助手面板仍可能顯示");\nif (source.includes("icebreaker_prompt") || source.includes("icebreaker_question_code")) throw new Error("聊天室前端仍引用破冰題");\nconsole.log("retired chat features are not exposed");\n''')
       - name: Verify retired features
         run: node apps/web/scripts/check-retired-chat-features.mjs
-      - name: Install dependencies
-        run: npm ci
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm install
+      - name: Typecheck web
+        working-directory: apps/web
+        run: npm run typecheck
       - name: Build web
-        run: npm --workspace apps/web run build
+        working-directory: apps/web
+        run: npm run build
       - name: Commit verified change
         run: |
           git config user.name "github-actions[bot]"
