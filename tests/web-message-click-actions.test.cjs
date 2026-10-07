@@ -12,7 +12,7 @@ test("session action wrapper does not swallow normal message clicks", () => {
   assert.ok(pointerDown, "expected pointer down capture handler");
   assert.doesNotMatch(pointerDown[0], /event\.preventDefault\(\)/, "normal pointer down must still allow click handlers");
 
-  const clickCapture = source.match(/const onClickCapture = [\s\S]*?;\n  const reply =/);
+  const clickCapture = source.match(/const onClickCapture = [\s\S]*?;\n  const onKeyDownCapture =/);
   assert.ok(clickCapture, "expected click capture handler");
   assert.doesNotMatch(clickCapture[0], /event\.preventDefault\(\)|event\.stopPropagation\(\)/, "normal clicks must reach bubble and reply quote handlers");
 });
