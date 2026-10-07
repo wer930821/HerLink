@@ -44,16 +44,26 @@ Deno.serve(async (req) => {
   const user = authResult.data.user;
   if (authResult.error || !user) return json({ error: "匿名身分已失效，請重新整理後再試。" }, 401);
 
+  // Resolve the stable anonymous identity first. After an admin/manual recovery,
+  // auth.uid() can remain the browser credential while chat ownership has moved
+  // to the recovered anonymous identity. Permanent recovery must follow the same
+  // identity primitive as the rest of recovered chat access.
+  const resolvedIdentity = await caller.rpc("resolve_active_anonymous_chat_identity");
+  const anonymousIdentityId = typeof resolvedIdentity.data === "string" && resolvedIdentity.data
+    ? resolvedIdentity.data
+    : user.id;
+  if (resolvedIdentity.error) return json({ error: "目前無法確認匿名身分。" }, 500);
+
   const profileResult = await admin.from("profiles")
     .select("id, anonymous_mode_enabled, anonymous_display_name")
-    .eq("id", user.id).maybeSingle();
+    .eq("id", anonymousIdentityId).maybeSingle();
   if (profileResult.error || !profileResult.data?.id || !profileResult.data.anonymous_mode_enabled) {
     return json({ error: "目前沒有可設定恢復碼的匿名身分。" }, 403);
   }
 
   const activeCredential = async () => await admin.from("anonymous_recovery_credentials")
     .select("id, code_hint, created_at, version")
-    .eq("anonymous_identity_id", user.id)
+    .eq("anonymous_identity_id", anonymousIdentityId)
     .is("used_at", null).is("revoked_at", null)
     .order("created_at", { ascending: false }).limit(1).maybeSingle();
 
@@ -81,7 +91,7 @@ Deno.serve(async (req) => {
 
   if (action === "rotate") {
     const rotated = await admin.rpc("rotate_anonymous_recovery_credential", {
-      p_identity_id: user.id,
+      p_identity_id: anonymousIdentityId,
       p_new_code_hash: codeHash,
       p_new_code_hint: hint,
     });
@@ -91,7 +101,7 @@ Deno.serve(async (req) => {
   }
 
   const inserted = await admin.from("anonymous_recovery_credentials").insert({
-    anonymous_identity_id: user.id,
+    anonymous_identity_id: anonymousIdentityId,
     code_hash: codeHash,
     code_hint: hint,
     version: 1,
