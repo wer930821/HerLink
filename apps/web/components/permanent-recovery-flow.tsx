@@ -74,11 +74,31 @@ export function PermanentRecoveryFlow({ onBack, onRecovered }: Props) {
     <div className="stack">
       <Notice variant="success" title="已接回原本匿名身分">
         <div>新的永久恢復碼</div>
-        <div className="row" style={{ alignItems: "center", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
           <strong style={{ fontSize: 22, letterSpacing: 2 }}>{newRecoveryCode}</strong>
-          <Button size="sm" variant="secondary" onClick={() => void copyRecoveryCode()} aria-label="複製新的永久恢復碼">
+          <button
+            type="button"
+            onClick={() => void copyRecoveryCode()}
+            aria-label="複製新的永久恢復碼"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: 38,
+              padding: "8px 14px",
+              border: "1px solid currentColor",
+              borderRadius: 999,
+              background: "transparent",
+              color: "inherit",
+              fontSize: 15,
+              fontWeight: 800,
+              lineHeight: 1,
+              cursor: "pointer",
+              flex: "0 0 auto",
+            }}
+          >
             {copied ? "已複製" : "複製"}
-          </Button>
+          </button>
         </div>
         <div className="small" style={{ marginTop: 8 }}>請保存這組新碼；舊恢復碼已失效。</div>
       </Notice>
