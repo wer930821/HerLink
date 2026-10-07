@@ -20,13 +20,21 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p = Path('apps/web/lib/supabase.ts')
           s = p.read_text()
-          old = 'export async function loadMyRandomQueue(userId:string){return supabase.from("random_match_queue").select("*").eq("user_id",userId).maybeSingle<RandomQueueRow>()}'
-          new = 'export async function loadMyRandomQueue(_userId?:string){const result=await supabase.rpc("get_my_random_queue");return {data:Array.isArray(result.data)?result.data[0]??null:result.data??null,error:result.error} as {data:RandomQueueRow|null;error:{message?:string}|null}}'
-          if old not in s:
-              raise SystemExit('target loadMyRandomQueue implementation not found')
-          p.write_text(s.replace(old, new, 1))
+          pattern = r'export async function loadMyRandomQueue\([^)]*\)\s*\{.*?\n\}'
+          replacement = '''export async function loadMyRandomQueue(_userId?: string) {
+            const result = await supabase.rpc("get_my_random_queue");
+            return {
+              data: Array.isArray(result.data) ? result.data[0] ?? null : result.data ?? null,
+              error: result.error,
+            } as { data: RandomQueueRow | null; error: { message?: string } | null };
+          }'''
+          updated, count = re.subn(pattern, replacement, s, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit(f'expected one loadMyRandomQueue implementation, found {count}')
+          p.write_text(updated)
           PY
       - name: Commit patch
         run: |
