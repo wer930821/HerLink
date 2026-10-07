@@ -28,4 +28,12 @@ assert.match(login, /setSession\(/);
 assert.doesNotMatch(login, /if \(!isAdminLogin\) await supabase\.auth\.signOut\(\)/);
 assert.match(home, /href="\/signup"[^>]*>申請並綁定帳號<\/a>/);
 assert.doesNotMatch(home, /anonymousSummary\?\.name === "孤星企鵝" \? \([\s\S]{0,400}申請並綁定帳號/);
+
+// A permanent account session must look logged in on the homepage instead of
+// continuing to offer signup/login actions like an anonymous session.
+assert.match(home, /const accountEmail = state\.session\?\.user\.email/);
+assert.match(home, /const isPermanentAccount = Boolean\(accountEmail && !state\.session\?\.user\.is_anonymous\)/);
+assert.match(home, /isPermanentAccount \? \([\s\S]{0,500}已登入[\s\S]{0,500}accountEmail/);
+assert.match(home, /!isPermanentAccount[\s\S]{0,500}申請並綁定帳號[\s\S]{0,500}登入既有帳號/);
+
 console.log("public account flow contract OK");
