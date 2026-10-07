@@ -1746,23 +1746,26 @@ export default function RandomSessionPage() {
         if (easterEggSeenRef.current.has(pending.event_id)) return;
         easterEggSeenRef.current.add(pending.event_id);
 
+        // Claim before playback so polling, focus, reconnect, or a new message
+        // cannot fetch and replay the same pending event while animation is open.
+        const displayed = await supabase.rpc("record_chat_easter_egg_delivery", {
+          p_event_id: pending.event_id,
+        });
+        if (displayed.error) {
+          easterEggSeenRef.current.delete(pending.event_id);
+          return;
+        }
+
         const durationMs = pending.egg_kind === "thousand" ? 5400 : 3200;
         triggerEasterEgg(pending.egg_kind, false, true);
 
         window.setTimeout(() => {
           if (disposed) return;
           void (async () => {
-            const displayed = await supabase.rpc("record_chat_easter_egg_delivery", {
-              p_event_id: pending.event_id,
-            });
-            if (displayed.error) {
-              easterEggSeenRef.current.delete(pending.event_id);
-              return;
-            }
             await supabase.rpc("complete_chat_easter_egg_delivery", {
               p_event_id: pending.event_id,
               p_duration_ms: durationMs,
-              p_client_version: "web-v3-reliable-eggs",
+              p_client_version: "web-v3-claim-before-playback",
             });
             void syncPendingEasterEgg();
           })();
