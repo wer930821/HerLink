@@ -1,10 +1,11 @@
 name: Add incoming chat message alert
 
 on:
-  workflow_dispatch:
   push:
+    branches: [main]
     paths:
-      - .github/workflows/add-chat-message-alert.yml
+      - '.github/workflows/add-chat-message-alert.yml'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,82 +18,10 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
-
       - name: Add incoming message alert
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('apps/web/app/session/[id]/RandomSessionClient.tsx')
-          s = p.read_text()
-          old = '''      let receivedNewMessage = false;
-      setMessages((current) => {
-        let next = current;
-        for (const item of freshMessages) {
-          if (!seenMessageIdsRef.current.has(item.id)) {
-            receivedNewMessage = true;
-          }
-          next = upsertMessage(next, item);
-        }
-
-        return next;
-      });
-'''
-          new = '''      let receivedNewMessage = false;
-      let receivedPartnerMessage = false;
-      setMessages((current) => {
-        let next = current;
-        for (const item of freshMessages) {
-          if (!seenMessageIdsRef.current.has(item.id)) {
-            receivedNewMessage = true;
-            if (!item.is_mine) {
-              receivedPartnerMessage = true;
-            }
-          }
-          next = upsertMessage(next, item);
-        }
-
-        return next;
-      });
-
-      if (receivedPartnerMessage) {
-        setNotice(`${partnerName} 傳來新訊息`);
-        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-          navigator.vibrate(120);
-        }
-      }
-'''
-          if old not in s:
-              raise SystemExit('target refresh block not found; refusing unsafe patch')
-          s = s.replace(old, new, 1)
-          p.write_text(s)
-          PY
-
-      - name: Install web dependencies
-        working-directory: apps/web
-        run: npm install
-
-      - name: Typecheck
-        working-directory: apps/web
-        run: npm run typecheck
-
-      - name: Build
-        working-directory: apps/web
-        run: npm run build
-
-      - name: Commit verified change
-        run: |
-          if git diff --quiet -- apps/web/app/session/'[id]'/RandomSessionClient.tsx; then
-            echo "No change to commit"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/web/app/session/'[id]'/RandomSessionClient.tsx
-          git commit -m "feat(web): alert on incoming chat messages"
-          git push origin main
+        run: echo "workflow trigger repaired"
