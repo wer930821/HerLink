@@ -89,6 +89,8 @@ type ChatAssistResult = {
 };
 
 const EXTERNAL_URL_PATTERN = /((?:https?:\/\/|www\.)[^\s<>"'`]+)/gi;
+const CHAT_FALLBACK_POLL_MS = 60_000;
+const EASTER_EGG_FALLBACK_POLL_MS = 60_000;
 const REPORT_CATEGORY_LABELS: Record<RandomReportCategory, string> = {
   suspected_male_impersonation: "疑似男性冒充",
   spam: "垃圾訊息 / 廣告",
@@ -1391,7 +1393,7 @@ export default function RandomSessionClient() {
       // Recalled messages are UPDATEs to older rows, so cursor-based syncs
       // cannot see them. Keep a lightweight full-state sync while the chat is
       // visible as a fallback when Realtime delivery is delayed or missed.
-      const delay = 3_000;
+      const delay = CHAT_FALLBACK_POLL_MS;
       timer = window.setTimeout(() => {
         syncNow();
         scheduleNext();
@@ -2004,7 +2006,7 @@ export default function RandomSessionClient() {
 
     const onResume = () => void syncPendingEasterEgg();
     void syncPendingEasterEgg();
-    timer = window.setInterval(() => void syncPendingEasterEgg(), 2000);
+    timer = window.setInterval(() => void syncPendingEasterEgg(), EASTER_EGG_FALLBACK_POLL_MS);
     window.addEventListener("focus", onResume);
     window.addEventListener("online", onResume);
     document.addEventListener("visibilitychange", onResume);
