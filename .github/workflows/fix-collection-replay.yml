@@ -1,0 +1,39 @@
+name: Fix collection replay
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-collection-replay.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: RED - verify collection replay is still inline
+        run: |
+          grep -Fq 'onClick={()=>{setPreview(kind)}}' apps/web/app/collection/page.tsx
+      - name: Route replay through the original chat effect
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('apps/web/app/collection/page.tsx')
+          s=p.read_text()
+          old='onClick={()=>{setPreview(kind)}}'
+          new='onClick={()=>{try{sessionStorage.setItem("herlink:replay-egg",kind);const back=sessionStorage.getItem("herlink:collection-return")||localStorage.getItem("herlink:last-session-path");if(back&&back.startsWith("/session/")){router.push(back);return}}catch{}setPreview(kind)}}'
+          if old not in s:
+              raise SystemExit('expected inline replay handler not found')
+          p.write_text(s.replace(old,new))
+      - name: GREEN - verify replay handoff contract
+        run: node apps/web/lib/collection-replay.test.mjs
+      - name: Commit fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add apps/web/app/collection/page.tsx
+          git commit -m 'fix(collection): replay eggs with original chat effects'
+          git push origin HEAD:main
