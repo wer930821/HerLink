@@ -1,0 +1,56 @@
+name: Deploy collection game state migration
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/20261007070000_fix_collection_claims_and_xp.sql'
+      - '.github/workflows/deploy-collection-game-state.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deploy-collection-game-state-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify deployment inputs
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo 'SUPABASE_ACCESS_TOKEN is missing'; exit 1; }
+          test -f supabase/migrations/20261007070000_fix_collection_claims_and_xp.sql
+      - name: Apply collection game state migration
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          jq -Rs '{query:.}' supabase/migrations/20261007070000_fix_collection_claims_and_xp.sql > /tmp/query.json
+          curl --fail-with-body --silent --show-error \
+            -X POST 'https://api.supabase.com/v1/projects/vrwuxjujevhgsjmdjxmc/database/query' \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data-binary @/tmp/query.json
+      - name: Verify deployed function contract
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          cat > /tmp/verify.sql <<'SQL'
+          do $$
+          declare body text;
+          begin
+            select pg_get_functiondef(p.oid) into body
+            from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+            where n.nspname='public' and p.proname='get_my_collection_game_state' and p.pronargs=0;
+            if body is null or body not like '%collection_reward_claims%' or body not like '%resolve_active_anonymous_chat_identity%' then
+              raise exception 'collection game state function contract is stale';
+            end if;
+          end $$;
+          SQL
+          jq -Rs '{query:.}' /tmp/verify.sql > /tmp/verify.json
+          curl --fail-with-body --silent --show-error \
+            -X POST 'https://api.supabase.com/v1/projects/vrwuxjujevhgsjmdjxmc/database/query' \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data-binary @/tmp/verify.json
