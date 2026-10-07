@@ -46,6 +46,7 @@ interface PushTokenRow {
   user_id: string;
   expo_push_token: string;
   active: boolean;
+  token_context: "user" | "admin";
 }
 
 interface WebPushSubscriptionRow {
@@ -397,13 +398,15 @@ async function isRandomConversationPushStillAllowed(
 
 async function loadActiveTokens(
   supabaseAdmin: ReturnType<typeof buildAdminClient>,
-  userId: string
+  userId: string,
+  tokenContext: "user" | "admin"
 ) {
   const { data, error } = await supabaseAdmin
     .from("push_tokens")
-    .select("id,user_id,expo_push_token,active")
+    .select("id,user_id,expo_push_token,active,token_context")
     .eq("user_id", userId)
     .eq("active", true)
+    .eq("token_context", tokenContext)
     .order("updated_at", { ascending: false });
 
   if (error) {
@@ -802,8 +805,10 @@ async function deliverNativePush(
   event: PushEventRow
 ): Promise<DeliveryResult> {
   // Server-side receiver binding: only active tokens owned by event.user_id are
-  // eligible. There is no client-supplied token or receiver id in the payload.
-  const activeTokens = await loadActiveTokens(supabaseAdmin, event.user_id);
+  // eligible. Admin mailbox notifications and normal chat notifications are
+  // separated so the admin app cannot receive user-facing chat pushes.
+  const tokenContext = event.event_type === "admin_mail" ? "admin" : "user";
+  const activeTokens = await loadActiveTokens(supabaseAdmin, event.user_id, tokenContext);
   const validTokens = await handleMalformedTokens(supabaseAdmin, activeTokens, event);
 
   if (validTokens.length === 0) {

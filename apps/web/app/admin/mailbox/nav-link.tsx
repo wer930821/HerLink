@@ -7,7 +7,7 @@ export function AdminMailboxNavLink(){
  const {session}=useAdminSession(); const [count,setCount]=useState(0);
  const refresh=useCallback(async()=>{if(!session){setCount(0);return;}const {data}=await (supabase as any).rpc("station_mail_admin_unread_count");setCount(Number(data??0)); try { (window as any).ReactNativeWebView?.postMessage(JSON.stringify({type:"mailbox-unread",count:Number(data??0)})); } catch {}},[session]);
  useEffect(()=>{if(!session)return;void refresh();
-  const onNativePushToken=async(event:Event)=>{const token=String((event as CustomEvent<{token?:string}>).detail?.token??"").trim();if(!token)return;await (supabase as any).rpc("create_or_update_push_token",{p_expo_push_token:token,p_device_hash:"herlink-admin-app",p_platform:"android"});};
+  const onNativePushToken=async(event:Event)=>{const token=String((event as CustomEvent<{token?:string}>).detail?.token??"").trim();if(!token)return;await (supabase as any).rpc("create_or_update_push_token",{p_expo_push_token:token,p_device_hash:"herlink-admin-app",p_platform:"android",p_token_context:"admin"});};
   window.addEventListener("herlink-admin-push-token",onNativePushToken as EventListener);
   const c=supabase.channel("admin-mailbox-nav")
   .on("postgres_changes",{event:"*",schema:"public",table:"station_mail_threads"},()=>void refresh())
