@@ -32,6 +32,14 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
+      - name: Pin production admin URL
+        working-directory: admin-app
+        shell: bash
+        run: |
+          sed -i 's#https://her-link-kivora3.vercel.app/admin#https://her-link-ten.vercel.app/admin#g' App.tsx
+          grep -F 'const ADMIN_URL = "https://her-link-ten.vercel.app/admin";' App.tsx
+          node -e 'const app=require("./app.json"); if(app.expo?.extra?.adminUrl!=="https://her-link-ten.vercel.app/admin") process.exit(1)'
+
       - name: Install dependencies
         working-directory: admin-app
         run: npm install
