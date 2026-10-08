@@ -29,7 +29,7 @@
       "expo-notifications"
     ],
     "extra": {
-      "adminUrl": "https://her-link-kivora3.vercel.app/admin",
+      "adminUrl": "https://her-link-ten.vercel.app/admin",
       "eas": {
         "projectId": "f2cdaed8-e7a6-48ba-aa41-c2cd32f88720"
       }
