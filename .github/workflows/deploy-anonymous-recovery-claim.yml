@@ -1,0 +1,48 @@
+name: Deploy anonymous-recovery-claim Edge Function
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/functions/anonymous-recovery-claim/**'
+      - 'supabase/functions/_shared/anonymous-recovery.ts'
+      - '.github/workflows/deploy-anonymous-recovery-claim.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-anonymous-recovery-claim-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify deployment inputs
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo 'SUPABASE_ACCESS_TOKEN is missing'; exit 1; }
+          test -f supabase/functions/anonymous-recovery-claim/index.ts
+          test -f supabase/functions/_shared/anonymous-recovery.ts
+          grep -Fq 'claim_anonymous_recovery_and_device' supabase/functions/anonymous-recovery-claim/index.ts
+          grep -Fq 'RECOVERY_CODE_HMAC_SECRET' supabase/functions/_shared/anonymous-recovery.ts
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy anonymous recovery claim
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy anonymous-recovery-claim \
+            --project-ref vrwuxjujevhgsjmdjxmc \
+            --no-verify-jwt
