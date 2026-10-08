@@ -47,9 +47,6 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Build application
-        run: npm run build
-
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
