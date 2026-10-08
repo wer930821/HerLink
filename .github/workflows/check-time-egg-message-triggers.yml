@@ -1,0 +1,16 @@
+name: Check time egg message triggers
+
+on:
+  push:
+    branches:
+      - fix/weekend-egg-message-replay
+  workflow_dispatch:
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify time eggs are not per-message triggers
+        working-directory: apps/web
+        run: node scripts/check-time-egg-message-triggers.mjs
