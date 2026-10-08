@@ -1,54 +1,20 @@
-name: Fix recovery stable identity
+name: Verify recovery stable identity
 on:
   push:
     branches: [fix/permanent-recovery-frontend-claim]
 permissions:
-  contents: write
+  contents: read
 jobs:
-  patch:
-    if: ${{ !contains(github.event.head_commit.message, '[stable-identity-patched]') }}
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: fix/permanent-recovery-frontend-claim
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Patch recovered identity reads
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('apps/web/lib/supabase.ts')
-          s=p.read_text()
-          marker='export async function resolveActiveAnonymousChatIdentity'
-          if marker not in s:
-              insert='''\nexport async function resolveActiveAnonymousChatIdentity(fallbackUserId: string) {\n  const { data, error } = await supabase.rpc("resolve_active_anonymous_chat_identity");\n  if (error) return fallbackUserId;\n  if (typeof data === "string" && data) return data;\n  if (Array.isArray(data) && typeof data[0] === "string" && data[0]) return data[0];\n  if (data && typeof data === "object") {\n    const candidate = data.identity_id ?? data.id;\n    if (typeof candidate === "string" && candidate) return candidate;\n  }\n  return fallbackUserId;\n}\n\n'''
-              anchor='export async function loadMyProfile(userId:string)'
-              if anchor not in s: raise SystemExit('loadMyProfile anchor not found')
-              s=s.replace(anchor, insert+anchor, 1)
-          old='export async function loadMyProfile(userId:string){return supabase.from("profiles").select("id, anonymous_mode_enabled, anonymous_display_name, anonymous_avatar, account_status").eq("id",userId).maybeSingle()}'
-          new='export async function loadMyProfile(userId:string){const identityId=await resolveActiveAnonymousChatIdentity(userId);return supabase.from("profiles").select("id, anonymous_mode_enabled, anonymous_display_name, anonymous_avatar, account_status").eq("id",identityId).maybeSingle()}'
-          if old not in s and new not in s: raise SystemExit('loadMyProfile exact body not found')
-          s=s.replace(old,new,1)
-          oldq='export async function loadMyRandomQueue(userId:string){return supabase.from("random_queue").select("user_id, status, joined_at, updated_at, matched_session_id").eq("user_id",userId).maybeSingle()}'
-          newq='export async function loadMyRandomQueue(userId:string){const identityId=await resolveActiveAnonymousChatIdentity(userId);return supabase.from("random_queue").select("user_id, status, joined_at, updated_at, matched_session_id").eq("user_id",identityId).maybeSingle()}'
-          if oldq not in s and newq not in s: raise SystemExit('loadMyRandomQueue exact body not found')
-          s=s.replace(oldq,newq,1)
-          p.write_text(s)
-          PY
-      - name: Verify recovery contracts
-        run: |
-          node --test apps/web/lib/permanent-recovery-stable-identity.test.mjs
-          grep -q 'resolveActiveAnonymousChatIdentity(userId)' apps/web/lib/supabase.ts
-          grep -q 'eq("id",identityId)' apps/web/lib/supabase.ts
-          grep -q 'eq("user_id",identityId)' apps/web/lib/supabase.ts
-      - name: Commit patch
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add apps/web/lib/supabase.ts
-          git diff --cached --quiet && exit 0
-          git commit -m 'fix(recovery): resolve stable identity before bootstrap [stable-identity-patched]'
-          git push origin HEAD:fix/permanent-recovery-frontend-claim
+      - name: Verify permanent recovery UI
+        run: node --test apps/web/__tests__/permanent-recovery-ui.test.mjs
+      - name: Verify recovery claim identity contract
+        run: node --test apps/web/__tests__/permanent-recovery-claim-identity.test.mjs
