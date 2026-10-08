@@ -5,7 +5,7 @@ import { Button } from "./ui/Button";
 import { Field } from "./ui/Field";
 import { Notice } from "./ui/Notice";
 import { claimPermanentRecovery, normalizePermanentRecoveryCode, previewPermanentRecovery } from "../lib/permanent-recovery";
-import { ensureAnonymousBootstrapProfile, signInAnonymously } from "../lib/supabase";
+import { ensureAnonymousBootstrapProfile, loadMyActiveRandomSession, signInAnonymously } from "../lib/supabase";
 
 type Props = { onBack: () => void; onRecovered?: () => void };
 
@@ -13,6 +13,7 @@ export function PermanentRecoveryFlow({ onBack, onRecovered }: Props) {
   const [code, setCode] = useState("");
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [newRecoveryCode, setNewRecoveryCode] = useState<string | null>(null);
+  const [recoveredSessionId, setRecoveredSessionId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,9 +47,26 @@ export function PermanentRecoveryFlow({ onBack, onRecovered }: Props) {
   const claim = async () => {
     setBusy(true); setError(null);
     try {
-      await prepareReplacementPrincipal();
+      const replacementUserId = await prepareReplacementPrincipal();
       const result = await claimPermanentRecovery(code);
+      if (!result.identityId) throw new Error("恢復成功，但伺服器沒有回傳原匿名身分，請重新整理後再試。");
+
+      // The auth user stays the replacement principal after a successful claim.
+      // Re-read the effective profile and session through the stable-identity RPCs
+      // before allowing navigation, otherwise the UI can keep showing the temporary
+      // replacement identity even though the recovery transaction already succeeded.
+      const effectiveProfile = await ensureAnonymousBootstrapProfile(replacementUserId);
+      if (effectiveProfile.error || effectiveProfile.data?.id !== result.identityId) {
+        throw new Error(effectiveProfile.error?.message || "已接回原匿名身分，但前端尚未同步完成，請重新整理後再試。");
+      }
+
+      const activeSession = await loadMyActiveRandomSession();
+      if (activeSession.error) {
+        throw new Error(activeSession.error.message || "已接回原匿名身分，但聊天室同步失敗，請重新整理後再試。");
+      }
+
       setDisplayName(result.displayName);
+      setRecoveredSessionId(activeSession.data?.id ?? null);
       setNewRecoveryCode(result.newRecoveryCode);
     } catch (e) { setError(e instanceof Error ? e.message : "目前無法接回匿名身分。"); }
     finally { setBusy(false); }
@@ -67,7 +85,7 @@ export function PermanentRecoveryFlow({ onBack, onRecovered }: Props) {
 
   const finishRecovery = () => {
     onRecovered?.();
-    window.location.assign("/");
+    window.location.assign(recoveredSessionId ? `/session/${recoveredSessionId}` : "/chats");
   };
 
   if (newRecoveryCode) return (
@@ -103,7 +121,7 @@ export function PermanentRecoveryFlow({ onBack, onRecovered }: Props) {
         <div className="small" style={{ marginTop: 8 }}>請保存這組新碼；舊恢復碼已失效。</div>
       </Notice>
       {error ? <Notice variant="danger">{error}</Notice> : null}
-      <Button onClick={finishRecovery}>我已保存，回到首頁</Button>
+      <Button onClick={finishRecovery}>{recoveredSessionId ? "我已保存，回到聊天室" : "我已保存，查看聊天室"}</Button>
     </div>
   );
 
