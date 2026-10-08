@@ -1688,7 +1688,6 @@ export default function RandomSessionClient() {
       }
     });
     observer.observe(container);
-    for (const child of Array.from(container.children)) observer.observe(child);
 
     return () => observer.disconnect();
   }, [messages.length, session?.id]);
@@ -2166,9 +2165,6 @@ export default function RandomSessionClient() {
       }
       stopTyping();
       setDraft("");
-      // Do not programmatically refocus the composer after send on mobile Web.
-      // Keeping focus here reopens the virtual keyboard while an easter egg is showing.
-      chatInputRef.current?.blur();
       setAssistantResult(null);
       setAssistantResultForMessageId(null);
       setAssistantError(null);
