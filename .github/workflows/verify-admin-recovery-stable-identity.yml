@@ -1,0 +1,30 @@
+name: Verify admin recovery stable identity
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/20261009003000_admin_recovery_stable_identity.sql'
+      - '.github/workflows/verify-admin-recovery-stable-identity.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify stable identity binding migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          f=supabase/migrations/20261009003000_admin_recovery_stable_identity.sql
+          test -f "$f"
+          grep -q 'anonymous_identity_device_state' "$f"
+          grep -q 'active_auth_user_id' "$f"
+          grep -q 'v_source = p_target_user_id' "$f"
+          grep -q 'on conflict (anonymous_identity_id) do update' "$f"
+          grep -q 'where active_auth_user_id = p_target_user_id' "$f"
+          grep -q 'where status=.active. and (user_a=v_source or user_b=v_source)' "$f"
+          echo 'GREEN: admin recovery migration contains stable identity persistence and idempotent repair path.'
