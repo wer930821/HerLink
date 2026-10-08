@@ -1,1 +1,44 @@
-sed: can't read .github/workflows/formal-binding-verify.yml: No such file or directory
+name: Web verification
+
+on:
+  push:
+    branches:
+      - "feat/**"
+  pull_request:
+    paths:
+      - "apps/web/**"
+      - "supabase/migrations/**"
+      - ".github/workflows/formal-binding-verify.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: AI helper rule tests
+        run: node --test apps/web/lib/ai-helper.test.mjs apps/web/lib/ai-helper-waiting.test.mjs
+
+      - name: Typecheck web
+        run: npm --prefix apps/web run typecheck
+
+      - name: Build web
+        run: npm --prefix apps/web run build
