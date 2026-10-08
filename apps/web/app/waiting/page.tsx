@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   isAnonymousProfileReady,
@@ -13,6 +13,7 @@ import {
   type RandomSessionRow,
   type WebProfile,
 } from "../../lib/supabase";
+import { getAiHelperOfferState } from "../../lib/ai-helper-waiting";
 
 export default function WaitingPage() {
   const router = useRouter();
@@ -22,6 +23,8 @@ export default function WaitingPage() {
   const [session, setSession] = useState<RandomSessionRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionBusy, setActionBusy] = useState(false);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [aiOfferDismissed, setAiOfferDismissed] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -48,22 +51,26 @@ export default function WaitingPage() {
         setQueue(queueResult.data ?? null);
         setSession(sessionResult.data ?? null);
       } catch {
-        if (mounted) {
-          router.replace("/");
-        }
+        if (mounted) router.replace("/");
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        if (mounted) setLoading(false);
       }
     }
 
     void bootstrap();
-
     return () => {
       mounted = false;
     };
   }, [router]);
+
+  useEffect(() => {
+    if (loading) return;
+    const startedAt = Date.now();
+    const tick = () => setElapsedMs(Date.now() - startedAt);
+    tick();
+    const timer = window.setInterval(tick, 500);
+    return () => window.clearInterval(timer);
+  }, [loading]);
 
   useEffect(() => {
     if (!userId) return;
@@ -84,7 +91,7 @@ export default function WaitingPage() {
           if (nextQueue.status === "matched" && nextQueue.matched_session_id) {
             router.replace(`/session/${nextQueue.matched_session_id}`);
           }
-        }
+        },
       )
       .subscribe();
 
@@ -94,16 +101,23 @@ export default function WaitingPage() {
   }, [router, userId]);
 
   useEffect(() => {
-    if (!loading && (!profile || !isAnonymousProfileReady(profile))) {
-      router.replace("/onboarding");
-    }
+    if (!loading && (!profile || !isAnonymousProfileReady(profile))) router.replace("/onboarding");
   }, [loading, profile, router]);
 
   useEffect(() => {
-    if (!loading && session) {
-      router.replace(`/session/${session.id}`);
-    }
+    if (!loading && session) router.replace(`/session/${session.id}`);
   }, [loading, router, session]);
+
+  const aiOfferState = useMemo(
+    () =>
+      getAiHelperOfferState({
+        displayName: profile?.anonymous_display_name,
+        elapsedMs,
+        matched: Boolean(session || queue?.status === "matched"),
+        dismissed: aiOfferDismissed,
+      }),
+    [aiOfferDismissed, elapsedMs, profile?.anonymous_display_name, queue?.status, session],
+  );
 
   if (loading) {
     return (
@@ -124,6 +138,11 @@ export default function WaitingPage() {
     }
   };
 
+  const openAiHelper = () => {
+    // Do not leave the human queue. The helper page keeps matching alive in the background.
+    router.push("/waiting/helper");
+  };
+
   return (
     <main className="stack">
       <section className="hero">
@@ -137,6 +156,20 @@ export default function WaitingPage() {
             </div>
           </div>
         ) : null}
+
+        {aiOfferState === "offer" ? (
+          <div className="stack" aria-live="polite">
+            <div>
+              <div className="title">還沒遇到人，要不要先找 HerLink 小幫手？</div>
+              <div className="muted small">小幫手是 HerLink 官方 AI，不是匿名真人；聊天時仍會繼續幫你找真人。</div>
+            </div>
+            <div className="row">
+              <button className="button" onClick={openAiHelper}>先跟小幫手聊</button>
+              <button className="button secondary" onClick={() => setAiOfferDismissed(true)}>繼續等真人</button>
+            </div>
+          </div>
+        ) : null}
+
         <div className="row">
           <button className="button secondary" onClick={cancelWaiting} disabled={actionBusy}>
             取消配對
