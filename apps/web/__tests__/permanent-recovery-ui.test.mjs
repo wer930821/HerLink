@@ -34,6 +34,17 @@ test("self-service recovery previews identity before claim", () => {
   assert.match(flow, /舊裝置會立即失效/);
 });
 
+test("successful claim verifies stable identity and recovered session before showing success", () => {
+  assert.match(flow, /result\.identityId/);
+  assert.match(flow, /ensureAnonymousBootstrapProfile\(replacementUserId\)/);
+  assert.match(flow, /effectiveProfile\.data\?\.id !== result\.identityId/);
+  assert.match(flow, /loadMyActiveRandomSession\(\)/);
+  assert.match(flow, /setRecoveredSessionId\(activeSession\.data\?\.id \?\? null\)/);
+  const verifyIdentity = flow.indexOf("effectiveProfile.data?.id !== result.identityId");
+  const success = flow.indexOf("setNewRecoveryCode(result.newRecoveryCode)");
+  assert.ok(verifyIdentity !== -1 && success > verifyIdentity);
+});
+
 test("successful claim shows the newly rotated permanent recovery code before recovery callback", () => {
   assert.match(flow, /claimPermanentRecovery/);
   assert.match(flow, /newRecoveryCode/);
@@ -46,6 +57,11 @@ test("successful claim shows the newly rotated permanent recovery code before re
   assert.doesNotMatch(flow.slice(claimStart, finishStart), /onRecovered\?\.\(\)/);
   assert.match(flow.slice(finishStart, successScreen), /onRecovered\?\.\(\)/);
   assert.match(flow.slice(successScreen), /onClick=\{finishRecovery\}/);
+});
+
+test("finishing recovery routes to the recovered room or chat list instead of stale home bootstrap", () => {
+  assert.match(flow, /window\.location\.assign\(recoveredSessionId \? `\/session\/\$\{recoveredSessionId\}` : "\/chats"\)/);
+  assert.doesNotMatch(flow, /window\.location\.assign\("\/"\)/);
 });
 
 test("recovery client calls the edge endpoint with bearer auth and normalized eight-character code", () => {
