@@ -6,7 +6,6 @@ import { fetchAdminJson, useAdminSession } from "../../lib/admin-client";
 import type { AdminRealtimeDiagnosticRow, AdminSummary } from "../../lib/admin-types";
 import { AdminBadge, AdminEmpty, AdminSection, AdminStat, AdminStatGrid, AdminTable, AdminTableWrap, formatAdminTime, shortId } from "./_components";
 import { Button, Notice } from "../../components/ui";
-import RecoveryPage from "./recovery/page";
 
 type DashboardPayload = AdminSummary & {
   recent_realtime_diagnostics: AdminRealtimeDiagnosticRow[];
@@ -207,8 +206,6 @@ export default function AdminDashboardPage() {
           <AdminStat label="今日通知失效" value={formatCount(data?.today_web_push_revoked_count)} tone="warning" />
         </AdminStatGrid>
       </AdminSection>
-
-      <RecoveryPage />
 
       <AdminSection title="管理員建立碼" description="建立一次性管理員帳號建立碼。預設 30 分鐘失效，輸錯 5 次後也會失效。" action={<Button variant="secondary" size="sm" type="button" onClick={() => void createAdminInvite()} disabled={inviteBusy}>{inviteBusy ? "產生中…" : "產生建立碼"}</Button>}>
         {inviteCode ? <div className="admin-invite-result"><div><div className="muted small">建立碼只顯示這一次</div><code className="admin-invite-code">{inviteCode}</code></div><div className="muted small">到期時間：{inviteExpiresAt ? formatAdminTime(inviteExpiresAt) : "—"}</div><Button variant="link" size="sm" type="button" onClick={() => void navigator.clipboard?.writeText(inviteCode)}>複製建立碼</Button></div> : <div className="muted small">需要新增管理員時再產生，建立碼不可重複使用。</div>}
