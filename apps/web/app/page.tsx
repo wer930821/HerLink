@@ -761,6 +761,7 @@ export default function HomePage() {
             <span aria-hidden="true" />
             <Button variant="link" href="/login">登入既有帳號</Button>
           </div>
+          <p className="guest-account-help">帳號只用來保留匿名身分與聊天室；不會公開你的 Email 或真實資料。</p>
           <div className="guest-status">
             {onlineCountConnected ? <Badge variant="success">在線 {onlineCount} 人</Badge> : null}
             <Badge variant="neutral">排隊 {waitingCount === null ? "更新中…" : waitingCount + " 人"}</Badge>
@@ -1040,6 +1041,7 @@ export default function HomePage() {
           <a href="/signup" className="home-account-button home-account-signup">申請並綁定帳號</a>
           <a href="/login" className="home-account-button home-account-login">登入既有帳號</a>
         </div>
+        <p className="home-account-help">綁定後會保留目前匿名名稱、聊天室、聯絡人與永久恢復碼；Email 不會顯示給聊天對象。</p>
 
       <Modal open={permanentRecoveryOpen} title="永久恢復碼" onClose={() => { if (!recoveryBusy) setPermanentRecoveryOpen(false); }}>
         <div className="stack">
