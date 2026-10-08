@@ -35,6 +35,7 @@ export async function loadSafeAnonymousProfiles(userIds:string[]){return supabas
 export async function findOrJoinRandomMatch(){return supabase.rpc("find_or_join_random_match")}
 export async function leaveRandomQueue(){return supabase.rpc("leave_random_queue")}
 export async function leaveRandomSession(sessionId?:string|null){return supabase.rpc("leave_random_session",{p_session_id:sessionId??null})}
+export async function declineAiHelperHandoff(sessionId:string){return supabase.rpc("decline_ai_helper_handoff",{p_session_id:sessionId}) as unknown as Promise<{data:{released:boolean;resumed_waiting:boolean}[]|null;error:{message?:string}|null}>}
 export async function blockRandomUser(sessionId:string){return supabase.rpc("block_random_user",{p_session_id:sessionId}) as unknown as Promise<{data:{blocked:boolean;session_ended:boolean}[]|null;error:{message?:string}|null}>}
 export const RANDOM_REPORT_CATEGORIES=["spam","scam","money_request","investment_scam","harassment","sexual_content","threat","impersonation","suspected_minor","other"] as const;
 export type RandomReportCategory=(typeof RANDOM_REPORT_CATEGORIES)[number];
