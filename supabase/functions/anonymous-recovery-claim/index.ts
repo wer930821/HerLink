@@ -23,8 +23,15 @@ Deno.serve(async (req) => {
   const caller=createClient(url,anonKey,{global:{headers:{Authorization:token}}}), admin=createClient(url,serviceKey);
   const auth=await caller.auth.getUser(), user=auth.data.user;
   if(!user) return reply({error:"Current identity required."},401);
-  const current=await admin.from("profiles").select("id, anonymous_mode_enabled").eq("id",user.id).maybeSingle();
+
+  // Keep recovery aligned with the same stable anonymous identity used by chat.
+  // After a previous recovery, auth.uid() may be only the device credential.
+  const resolvedIdentity=await caller.rpc("resolve_active_anonymous_chat_identity");
+  if(resolvedIdentity.error) return reply({error:"目前無法確認匿名身分。"},500);
+  const currentIdentityId=typeof resolvedIdentity.data==="string"&&resolvedIdentity.data?resolvedIdentity.data:user.id;
+  const current=await admin.from("profiles").select("id, anonymous_mode_enabled").eq("id",currentIdentityId).maybeSingle();
   if(!current.data?.anonymous_mode_enabled) return reply({error:"Current anonymous identity required."},403);
+
   const body=await req.json().catch(()=>({})) as {action?:string;recoveryCode?:string};
   const action=body.action==="claim"?"claim":"preview";
   let codeHash:string;
