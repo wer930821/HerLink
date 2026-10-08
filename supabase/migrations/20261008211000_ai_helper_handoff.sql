@@ -36,6 +36,17 @@ BEGIN
       ended_reason = 'ai_helper_handoff_declined'
   WHERE id = p_session_id AND status = 'active';
 
+  -- The normal matcher records pair history as soon as it creates a session.
+  -- A helper handoff decline/timeout means the human introduction was never
+  -- accepted, so remove only the history row created for this exact session.
+  -- This prevents an unaccepted handoff from triggering the 24-hour rematch block.
+  DELETE FROM public.random_pair_history h
+  WHERE h.pair_key = public.random_pair_key(target.user_a, target.user_b)
+    AND h.user_a = target.user_a
+    AND h.user_b = target.user_b
+    AND h.matched_at >= target.created_at - INTERVAL '1 second'
+    AND h.matched_at <= target.created_at + INTERVAL '1 second';
+
   INSERT INTO public.random_match_queue(user_id,status,joined_at,updated_at,matched_session_id)
   VALUES(actor_id,'waiting',timezone('utc'::text,now()),timezone('utc'::text,now()),NULL)
   ON CONFLICT(user_id) DO UPDATE SET status='waiting',joined_at=EXCLUDED.joined_at,updated_at=EXCLUDED.updated_at,matched_session_id=NULL;
