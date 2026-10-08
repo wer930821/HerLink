@@ -43,7 +43,19 @@ export default function ChatsPage() {
         <h1>我的聊天</h1>
       </div>
       {loading ? <p className="muted">載入中…</p> : null}
-      {!loading && sessions.length === 0 ? <Notice>目前沒有進行中的聊天室。</Notice> : null}
+      {!loading && sessions.length === 0 ? (
+        <Notice title="目前沒有進行中的聊天室">
+          <div className="chats-empty-help">
+            <p>如果你是第一次使用，可以回首頁開始匿名配對。</p>
+            <p>如果你是換瀏覽器、換裝置，或清除過瀏覽資料，請先登入原本綁定的帳號；沒有綁定帳號時，回首頁使用「永久恢復碼」或「找回聊天室」。</p>
+            <div>
+              <Button href="/" variant="secondary" size="sm">回首頁恢復</Button>
+              <Button href="/login" variant="ghost" size="sm">登入帳號</Button>
+              <Button variant="ghost" size="sm" onClick={() => window.location.reload()}>重新整理</Button>
+            </div>
+          </div>
+        </Notice>
+      ) : null}
       <div className="stack">
         {sessions.map((session) => (
           <button

@@ -1045,7 +1045,7 @@ export default function HomePage() {
 
       <Modal open={permanentRecoveryOpen} title="永久恢復碼" onClose={() => { if (!recoveryBusy) setPermanentRecoveryOpen(false); }}>
         <div className="stack">
-          <p className="muted">保存永久恢復碼後，換裝置也能自行接回原本的匿名聊天室。</p>
+          <p className="muted">永久恢復碼是你的備用鑰匙。換手機、換瀏覽器或清除資料後，可用它接回原本的匿名身分、聊天室與聯絡人。</p>
           {permanentRecoveryError ? <Notice variant="danger">{permanentRecoveryError}</Notice> : null}
           {permanentRecoveryCode ? (
             <Notice variant="success" title="請立即保存新的恢復碼">
@@ -1055,10 +1055,10 @@ export default function HomePage() {
                   {permanentRecoveryCopied ? "已複製" : "複製恢復碼"}
                 </Button>
               </div>
-              <div className="small">這組恢復碼只會顯示這一次，請勿分享給他人。</div>
+              <div className="small">這組恢復碼只會顯示這一次，請保存到安全的地方；任何拿到碼的人都可能接回你的匿名身分。</div>
             </Notice>
           ) : permanentRecoveryStatus?.hasRecoveryCode ? (
-            <Notice variant="info">目前已有永久恢復碼（提示：{permanentRecoveryStatus.hint ?? "••••••"}）。如遺失，請重新產生新碼。</Notice>
+            <Notice variant="info">目前已有永久恢復碼（提示：{permanentRecoveryStatus.hint ?? "••••••"}）。如遺失，請重新產生新碼；新碼建立後，舊碼會失效。</Notice>
           ) : (
             <Notice variant="warning">目前尚未設定永久恢復碼。</Notice>
           )}

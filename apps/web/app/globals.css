@@ -1354,6 +1354,8 @@ select {
   background: var(--color-danger-soft);
 }
 
+.chats-empty-help{display:grid;gap:10px}.chats-empty-help p{margin:0}.chats-empty-help>div{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+
 .empty-state {
   display: grid;
   place-items: center;
