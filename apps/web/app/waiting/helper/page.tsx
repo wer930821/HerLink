@@ -36,10 +36,20 @@ export default function AiHelperPage() {
       if (!mounted) return;
       const name = profileResult.data?.anonymous_display_name ?? null;
       if (!isAiHelperTester(name)) return router.replace("/waiting");
-      if (humanResult.data) return router.replace(`/session/${humanResult.data.id}`);
-      if (!queueResult.data || queueResult.data.status !== "waiting") return router.replace("/waiting");
+
       setUserId(data.session.user.id);
       setDisplayName(name);
+
+      // A human can match in the short race between tapping the helper offer and
+      // this page bootstrapping. Keep the helper handoff contract: prompt first,
+      // never silently redirect into the human room.
+      if (humanResult.data) {
+        setHandoffSeconds(Math.ceil(AI_HANDOFF_TIMEOUT_MS / 1000));
+        setHandoffSessionId(humanResult.data.id);
+        return;
+      }
+
+      if (!queueResult.data || queueResult.data.status !== "waiting") return router.replace("/waiting");
     })();
     return () => { mounted = false; requestRef.current?.abort(); setMessages([]); };
   }, [router]);
