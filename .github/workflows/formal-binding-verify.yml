@@ -31,8 +31,11 @@ jobs:
             package-lock.json
             apps/web/package-lock.json
 
-      - name: Install dependencies
+      - name: Install root dependencies
         run: npm ci
+
+      - name: Install web dependencies
+        run: npm ci --prefix apps/web
 
       - name: AI helper rule tests
         run: node --test apps/web/lib/ai-helper.test.mjs apps/web/lib/ai-helper-waiting.test.mjs
