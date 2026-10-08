@@ -1,4 +1,4 @@
-import { shouldOfferAiHelper } from "./ai-helper";
+import { shouldOfferAiHelper } from "./ai-helper.ts";
 
 export type AiHelperOfferState = "hidden" | "offer";
 
