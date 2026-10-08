@@ -7,6 +7,7 @@
 -- 5. historical chat messages can backfill eggs that played before event persistence.
 -- 6. chat easter egg writes use the stable identity after account recovery.
 -- 7. claim_collection_reward writes against the stable identity and is idempotent.
+-- 8. text easter egg writes dedupe repeated triggers by Taipei day.
 
 do $$
 declare
@@ -27,6 +28,9 @@ begin
   select pg_get_functiondef('public.record_chat_easter_egg_event(uuid,text,text)'::regprocedure) into state_def;
   if state_def not ilike '%resolve_active_anonymous_chat_identity%' or state_def ilike '%caller uuid := auth.uid()%' then
     raise exception 'record_chat_easter_egg_event must use stable anonymous identity';
+  end if;
+  if state_def not ilike '%Asia/Taipei%' or state_def not ilike '%p_trigger_type=''text''%' then
+    raise exception 'record_chat_easter_egg_event must dedupe repeated text eggs by Taipei day';
   end if;
 
   select pg_get_functiondef('public.claim_collection_reward(text)'::regprocedure) into claim_def;

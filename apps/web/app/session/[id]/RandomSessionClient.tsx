@@ -91,6 +91,8 @@ type ChatAssistResult = {
 const EXTERNAL_URL_PATTERN = /((?:https?:\/\/|www\.)[^\s<>"'`]+)/gi;
 const CHAT_FALLBACK_POLL_MS = 60_000;
 const EASTER_EGG_FALLBACK_POLL_MS = 60_000;
+const EASTER_EGG_MIN_PLAYBACK_GAP_MS = 12_000;
+const DEDUPED_EASTER_EGGS = new Set<EasterEggKind>(["midnight", "threeam", "weekend"]);
 const REPORT_CATEGORY_LABELS: Record<RandomReportCategory, string> = {
   suspected_male_impersonation: "疑似男性冒充",
   spam: "垃圾訊息 / 廣告",
@@ -279,6 +281,7 @@ export default function RandomSessionClient() {
   const pendingReplyPreviewRef = useRef<Set<string>>(new Set());
   const easterEggSeenRef = useRef<Set<string>>(new Set());
   const easterEggLastAtRef = useRef<Map<string, number>>(new Map());
+  const easterEggLastPlaybackAtRef = useRef(0);
   const easterEggPendingSyncRef = useRef(false);
   const easterEggPlaybackBusyRef = useRef(false);
   const historicalThousandCheckedRef = useRef<Set<string>>(new Set());
@@ -1859,6 +1862,38 @@ export default function RandomSessionClient() {
     window.setTimeout(() => setEasterEgg((current) => (current === kind ? null : current)), COLLECTION_EGG_META[kind]?.duration ?? (kind === "thousand" ? 7000 : 4600));
   };
 
+  const completePendingEasterEggEvent = async (
+    eventId: string,
+    durationMs: number,
+    clientVersion = "web-v3-reliable-eggs"
+  ) => {
+    const displayed = await supabase.rpc("record_chat_easter_egg_delivery", {
+      p_event_id: eventId,
+    });
+    if (displayed.error) {
+      return false;
+    }
+
+    const completed = await supabase.rpc("complete_chat_easter_egg_delivery", {
+      p_event_id: eventId,
+      p_duration_ms: durationMs,
+      p_client_version: clientVersion,
+    });
+    return !completed.error;
+  };
+
+  const getEasterEggDedupeKey = (pending: PendingEasterEggEvent) => {
+    if (!session?.id || !myProfile?.id || !DEDUPED_EASTER_EGGS.has(pending.egg_kind)) {
+      return null;
+    }
+
+    const eventDate = new Date(pending.created_at);
+    const taipeiDate = Number.isNaN(eventDate.getTime())
+      ? new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" })
+      : eventDate.toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" });
+    return `herlink:easter-egg-played:${session.id}:${myProfile.id}:${pending.egg_kind}:${taipeiDate}`;
+  };
+
   useEffect(() => {
     if (!session?.id) return;
     try { const path=window.location.pathname + window.location.search; sessionStorage.setItem("herlink:collection-return", path); localStorage.setItem("herlink:last-session-path", path); } catch {}
@@ -1978,24 +2013,58 @@ export default function RandomSessionClient() {
         if (easterEggSeenRef.current.has(pending.event_id)) return;
         easterEggSeenRef.current.add(pending.event_id);
 
-        const durationMs = pending.egg_kind === "thousand" ? 5400 : 3200;
+        const effectDurationMs = COLLECTION_EGG_META[pending.egg_kind]?.duration ?? (pending.egg_kind === "thousand" ? 7000 : 4600);
+        const durationMs = Math.min(effectDurationMs, pending.egg_kind === "eternal_bond" ? 12_000 : 6_000);
+        const dedupeKey = getEasterEggDedupeKey(pending);
+        let alreadyPlayed = false;
+        try {
+          alreadyPlayed = dedupeKey ? window.localStorage.getItem(dedupeKey) === "1" : false;
+        } catch {
+          alreadyPlayed = false;
+        }
+        const now = Date.now();
+        const tooSoon =
+          pending.trigger_type === "text" &&
+          now - easterEggLastPlaybackAtRef.current < EASTER_EGG_MIN_PLAYBACK_GAP_MS;
+
+        if (alreadyPlayed || tooSoon) {
+          const completed = await completePendingEasterEggEvent(pending.event_id, 0, "web-v3-deduped-eggs");
+          if (!completed) {
+            easterEggSeenRef.current.delete(pending.event_id);
+          }
+          return;
+        }
+
+        easterEggPlaybackBusyRef.current = true;
+        easterEggLastPlaybackAtRef.current = now;
+        if (dedupeKey) {
+          try {
+            window.localStorage.setItem(dedupeKey, "1");
+          } catch {
+            // Some in-app/private browsers block localStorage. Playback throttling still works in memory.
+          }
+        }
         triggerEasterEgg(pending.egg_kind, false, true);
 
         window.setTimeout(() => {
-          if (disposed) return;
+          if (disposed) {
+            easterEggPlaybackBusyRef.current = false;
+            return;
+          }
           void (async () => {
-            const displayed = await supabase.rpc("record_chat_easter_egg_delivery", {
-              p_event_id: pending.event_id,
-            });
-            if (displayed.error) {
+            const completed = await completePendingEasterEggEvent(pending.event_id, durationMs);
+            if (!completed) {
               easterEggSeenRef.current.delete(pending.event_id);
+              if (dedupeKey) {
+                try {
+                  window.localStorage.removeItem(dedupeKey);
+                } catch {
+                  // Ignore storage failures in private browsers.
+                }
+              }
+              easterEggPlaybackBusyRef.current = false;
               return;
             }
-            await supabase.rpc("complete_chat_easter_egg_delivery", {
-              p_event_id: pending.event_id,
-              p_duration_ms: durationMs,
-              p_client_version: "web-v3-reliable-eggs",
-            });
             easterEggPlaybackBusyRef.current = false;
             void syncPendingEasterEgg();
           })();
