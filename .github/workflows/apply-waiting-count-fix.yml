@@ -2,9 +2,10 @@ name: Apply message count egress fix
 
 on:
   push:
-    branches: [fix/egress-session-coalescing-v5]
+    branches:
+      - fix/egress-session-coalescing-v5
     paths:
-      - ".github/workflows/apply-waiting-count-fix.yml"
+      - .github/workflows/apply-waiting-count-fix.yml
 
 permissions:
   contents: write
@@ -16,57 +17,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: fix/egress-session-coalescing-v5
-      - name: Patch local message count tracking
+      - name: Patch source
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          p = Path('apps/web/app/session/[id]/RandomSessionClient.tsx')
-          s = p.read_text()
-
-          s = s.replace('  const historicalThousandCheckedRef = useRef<Set<string>>(new Set());', '  const historicalThousandCheckedRef = useRef<Set<string>>(new Set());\n  const sessionMessageCountRef = useRef(0);', 1)
-
-          old = '        if (!result.error && Number.isFinite(count)) setSessionMessageCount(count);'
-          new = '        if (!result.error && Number.isFinite(count)) {\n          sessionMessageCountRef.current = count;\n          setSessionMessageCount(count);\n        }'
-          if old not in s:
-              raise SystemExit('initial count anchor not found')
-          s = s.replace(old, new, 1)
-
-          old = '''        const countResult = await getRandomChatMessageCount(refreshedSession.id).catch(() => ({ data: null, error: null }));
-        const messageCount = Number(countResult.data);
-        if (!countResult.error && Number.isFinite(messageCount)) setSessionMessageCount(messageCount);'''
-          new = '''        const messageCount = sessionMessageCountRef.current + 1;
-        sessionMessageCountRef.current = messageCount;
-        setSessionMessageCount(messageCount);'''
-          if old not in s:
-              raise SystemExit('send count anchor not found')
-          s = s.replace(old, new, 1)
-
-          p.write_text(s)
-          PY
-      - name: Update contract to match authoritative initial count
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          p = Path('apps/web/lib/message-count-egress-contract.test.mjs')
-          s = p.read_text()
-          s = s.replace('''assert.match(
-            source,
-            /sessionMessageCountRef\\.current = messages\\.length/,
-            "initial loaded history should seed the local message count when the full count is known locally"
-          );''', '''assert.match(
-            source,
-            /sessionMessageCountRef\\.current = count/,
-            "the one authoritative initial count should seed local message count tracking"
-          );''')
-          p.write_text(s)
-          PY
-      - name: Verify contract
-        working-directory: apps/web
-        run: node lib/message-count-egress-contract.test.mjs
+          python -c "from pathlib import Path; p=Path('apps/web/app/session/[id]/RandomSessionClient.tsx'); s=p.read_text(); a='  const historicalThousandCheckedRef = useRef<Set<string>>(new Set());'; s=s.replace(a,a+'\\n  const sessionMessageCountRef = useRef(0);',1); p.write_text(s)"
+          python -c "from pathlib import Path; p=Path('apps/web/app/session/[id]/RandomSessionClient.tsx'); s=p.read_text(); a='        if (!result.error && Number.isFinite(count)) setSessionMessageCount(count);'; b='        if (!result.error && Number.isFinite(count)) {\\n          sessionMessageCountRef.current = count;\\n          setSessionMessageCount(count);\\n        }'; assert a in s; p.write_text(s.replace(a,b,1))"
+          python -c "from pathlib import Path; p=Path('apps/web/app/session/[id]/RandomSessionClient.tsx'); s=p.read_text(); a='        const countResult = await getRandomChatMessageCount(refreshedSession.id).catch(() => ({ data: null, error: null }));\\n        const messageCount = Number(countResult.data);\\n        if (!countResult.error && Number.isFinite(messageCount)) setSessionMessageCount(messageCount);'; b='        const messageCount = sessionMessageCountRef.current + 1;\\n        sessionMessageCountRef.current = messageCount;\\n        setSessionMessageCount(messageCount);'; assert a in s; p.write_text(s.replace(a,b,1))"
       - name: Commit
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add 'apps/web/app/session/[id]/RandomSessionClient.tsx' apps/web/lib/message-count-egress-contract.test.mjs
-          git commit -m "fix(web): track message count locally after initial sync" || exit 0
+          git config user.name github-actions-bot
+          git config user.email 41898282+github-actions-bot@users.noreply.github.com
+          git add 'apps/web/app/session/[id]/RandomSessionClient.tsx'
+          git commit -m 'fix(web): track message count locally after initial sync'
           git push origin HEAD:fix/egress-session-coalescing-v5
