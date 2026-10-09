@@ -72,6 +72,9 @@ const initialActiveSessionLookup: ActiveSessionLookup = {
   error: null,
 };
 
+const WAITING_COUNT_POLL_MS = 60_000;
+const WAITING_COUNT_REFRESH_DEDUPE_MS = 5_000;
+
 function summarizeActiveSessionRpcError(error: { code?: unknown; message?: unknown } | null) {
   const code = typeof error?.code === "string" && error.code ? error.code.slice(0, 40) : "RPC_ERROR";
   const message = typeof error?.message === "string" && error.message
@@ -123,6 +126,7 @@ export default function HomePage() {
   const [mailUnreadCount, setMailUnreadCount] = useState(0);
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const waitingCountRequestRef = useRef(0);
+  const lastWaitingCountRefreshRef = useRef(0);
   const { onlineCount, onlineCountConnected } = useOnlinePresence(state.session?.user.id ?? null);
 
   const refreshMailUnread = useCallback(async () => {
@@ -164,7 +168,10 @@ export default function HomePage() {
     };
   }, [state.session?.user.id, refreshChatUnread]);
 
-  const refreshWaitingCount = useCallback(async () => {
+  const refreshWaitingCount = useCallback(async (force = false) => {
+    const now = Date.now();
+    if (!force && Date.now() - lastWaitingCountRefreshRef.current < WAITING_COUNT_REFRESH_DEDUPE_MS) return;
+    lastWaitingCountRefreshRef.current = now;
     const requestId = ++waitingCountRequestRef.current;
     try {
       const response = await fetch(`/api/public/match-status?t=${Date.now()}`, {
@@ -189,7 +196,7 @@ export default function HomePage() {
     const onFocus = () => void refreshWaitingCount();
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onFocus);
-    const timer = window.setInterval(() => void refreshWaitingCount(), 15000);
+    const timer = window.setInterval(() => void refreshWaitingCount(), WAITING_COUNT_POLL_MS);
 
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
@@ -244,7 +251,7 @@ export default function HomePage() {
     setActionBusy(true);
     try {
       await leaveRandomSession(state.activeSession.id);
-      void refreshWaitingCount();
+      void refreshWaitingCount(true);
       setState((prev) => ({ ...prev, activeSession: null }));
       setMessage("已離開聊天室。");
     } finally {
