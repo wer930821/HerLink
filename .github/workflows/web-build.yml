@@ -33,10 +33,9 @@ jobs:
       - run: node lib/realtime-fallback-polling-contract.test.mjs
       - run: node lib/waiting-count-polling-contract.test.mjs
       - run: node lib/easter-egg-polling-contract.test.mjs
+      - run: node lib/online-presence-polling-contract.test.mjs
       - run: node lib/collection-replay.test.mjs
       - run: node ../../tests/web-collection-access.test.cjs
       - run: node ../../tests/web-egg-permissions.test.cjs
       - run: npm run typecheck
       - run: npm run build
-
-# Full verification trigger after realtime easter egg sync optimization.
