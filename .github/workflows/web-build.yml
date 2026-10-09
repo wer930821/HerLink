@@ -32,10 +32,9 @@ jobs:
       - run: node lib/session-refresh-contract.test.mjs
       - run: node lib/realtime-fallback-polling-contract.test.mjs
       - run: node lib/waiting-count-polling-contract.test.mjs
+      - run: node lib/easter-egg-polling-contract.test.mjs
       - run: node lib/collection-replay.test.mjs
       - run: node ../../tests/web-collection-access.test.cjs
       - run: node ../../tests/web-egg-permissions.test.cjs
       - run: npm run typecheck
       - run: npm run build
-
-# Full branch verification trigger after waiting-count optimization.
