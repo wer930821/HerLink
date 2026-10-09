@@ -287,6 +287,7 @@ export default function RandomSessionClient() {
   const syncPendingEasterEggRef = useRef<(() => void) | null>(null);
   const easterEggPlaybackBusyRef = useRef(false);
   const historicalThousandCheckedRef = useRef<Set<string>>(new Set());
+  const sessionMessageCountRef = useRef(0);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
   const realtimeClientInstanceIdRef = useRef(
@@ -1942,7 +1943,10 @@ export default function RandomSessionClient() {
     void getRandomChatMessageCount(session.id)
       .then((result) => {
         const count = Number(result.data);
-        if (!result.error && Number.isFinite(count)) setSessionMessageCount(count);
+        if (!result.error && Number.isFinite(count)) {
+          sessionMessageCountRef.current = count;
+          setSessionMessageCount(count);
+        }
         if (!result.error && Number.isFinite(count) && count >= 1000) {
           triggerEasterEgg("thousand", true);
         }
@@ -2145,9 +2149,9 @@ export default function RandomSessionClient() {
       const nextMessage = Array.isArray(data) ? data[0] : data;
       maybeTriggerEasterEgg(content);
       if (easterEggAllowed) {
-        const countResult = await getRandomChatMessageCount(refreshedSession.id).catch(() => ({ data: null, error: null }));
-        const messageCount = Number(countResult.data);
-        if (!countResult.error && Number.isFinite(messageCount)) setSessionMessageCount(messageCount);
+        const messageCount = sessionMessageCountRef.current + 1;
+        sessionMessageCountRef.current = messageCount;
+        setSessionMessageCount(messageCount);
         const collectionTester = myProfile?.anonymous_display_name === "孤星企鵝";
         const milestoneKind: Record<number, EasterEggKind> = {50:"fifty",100:"hundred",200:"twoHundred",300:"threeHundred",400:"fourHundred",500:"fiveHundred",600:"sixHundred",700:"sevenHundred",800:"eightHundred",900:"nineHundred",1000:"thousand",1500:"fifteenHundred",2000:"twoThousand",3000:"threeThousand",5000:"fiveThousand",10000:"tenThousand"};
         const milestone = milestoneKind[messageCount];
