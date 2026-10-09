@@ -18,8 +18,9 @@ BEGIN
   END IF;
 
   IF fn NOT ILIKE '%web_push_subscriptions%'
+     OR fn NOT ILIKE '%revoked_at IS NULL%'
      OR fn NOT ILIKE '%push_tokens%'
-     OR fn NOT ILIKE '%is_active%'
+     OR fn NOT ILIKE '%active = TRUE%'
      OR fn NOT ILIKE '%RETURN NULL%' THEN
     RAISE EXCEPTION 'random push endpoint gate is missing';
   END IF;
