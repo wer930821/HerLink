@@ -2,7 +2,7 @@ name: HerLink Web Build
 
 on:
   push:
-    branches: [main, test/reduce-chat-polling]
+    branches: [main, test/reduce-chat-polling, fix/reduce-session-refresh]
     paths:
       - "apps/web/**"
       - "lib/**"
