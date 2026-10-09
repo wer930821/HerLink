@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   getCurrentSession,
   listMyAnonymousContacts,
-  markRandomSessionRead,
   removeAnonymousContact,
   requestAnonymousContact,
   startAnonymousContactSession,
@@ -128,7 +127,6 @@ export default function AnonymousContactsPage() {
       const result = await startAnonymousContactSession(item.contact_id);
       if (result.error) throw result.error;
       if (!result.data?.session_id) throw new Error("Missing session");
-      await markRandomSessionRead(result.data.session_id);
       router.push(`/session/${result.data.session_id}`);
     } catch (error) {
       setNotice(friendlyContactError(error));
@@ -149,10 +147,7 @@ export default function AnonymousContactsPage() {
     }
     setBusyId(item.contact_id);
     setNotice(null);
-    void markRandomSessionRead(sessionId).catch(() => undefined);
-    // Use a full document navigation here rather than relying on Next's client
-    // router. This also clears any stale chat-page pointer/viewport state left by
-    // a previous client-side transition on mobile browsers.
+    // SessionReadTracker marks the room read after navigation, avoiding a duplicate RPC.
     window.location.assign(`/session/${encodeURIComponent(sessionId)}`);
   };
 
