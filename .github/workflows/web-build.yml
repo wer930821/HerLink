@@ -37,3 +37,5 @@ jobs:
       - run: node ../../tests/web-egg-permissions.test.cjs
       - run: npm run typecheck
       - run: npm run build
+
+# Full branch verification trigger after waiting-count optimization.
