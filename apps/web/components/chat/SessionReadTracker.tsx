@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { markRandomSessionRead, supabase } from "../../lib/supabase";
+import { markRandomSessionRead } from "../../lib/supabase";
+
+const READ_MARK_DEBOUNCE_MS = 1500;
 
 function getSessionId(pathname: string) {
   const match = pathname.match(/^\/session\/([0-9a-f-]{36})(?:\/|$)/i);
@@ -14,14 +16,30 @@ export function SessionReadTracker() {
   const sessionId = getSessionId(pathname);
   const markingRef = useRef(false);
   const queuedRef = useRef(false);
+  const lastMarkedAtRef = useRef(0);
+  const timerRef = useRef<number | null>(null);
 
   const markVisibleSessionRead = useCallback(async () => {
     if (!sessionId || document.visibilityState !== "visible") return;
+
+    const elapsed = Date.now() - lastMarkedAtRef.current;
+    if (elapsed < READ_MARK_DEBOUNCE_MS) {
+      if (timerRef.current === null) {
+        timerRef.current = window.setTimeout(() => {
+          timerRef.current = null;
+          void markVisibleSessionRead();
+        }, READ_MARK_DEBOUNCE_MS - elapsed);
+      }
+      return;
+    }
+
     if (markingRef.current) {
       queuedRef.current = true;
       return;
     }
+
     markingRef.current = true;
+    lastMarkedAtRef.current = Date.now();
     try {
       await markRandomSessionRead(sessionId);
     } finally {
@@ -42,20 +60,12 @@ export function SessionReadTracker() {
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
 
-    const channel = supabase
-      .channel(`session-read-${sessionId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "random_chat_messages", filter: `session_id=eq.${sessionId}` },
-        () => {
-          if (document.visibilityState === "visible") void markVisibleSessionRead();
-        }
-      )
-      .subscribe();
-
     return () => {
       document.removeEventListener("visibilitychange", onVisibilityChange);
-      void supabase.removeChannel(channel);
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
     };
   }, [sessionId, markVisibleSessionRead]);
 
