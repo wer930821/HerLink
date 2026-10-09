@@ -38,3 +38,5 @@ jobs:
       - run: node ../../tests/web-egg-permissions.test.cjs
       - run: npm run typecheck
       - run: npm run build
+
+# Full verification trigger after realtime easter egg sync optimization.
