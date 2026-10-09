@@ -284,6 +284,7 @@ export default function RandomSessionClient() {
   const easterEggLastAtRef = useRef<Map<string, number>>(new Map());
   const easterEggLastPlaybackAtRef = useRef(0);
   const easterEggPendingSyncRef = useRef(false);
+  const syncPendingEasterEggRef = useRef<(() => void) | null>(null);
   const easterEggPlaybackBusyRef = useRef(false);
   const historicalThousandCheckedRef = useRef<Set<string>>(new Set());
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
@@ -1489,6 +1490,9 @@ export default function RandomSessionClient() {
         .on("broadcast", { event: "message-recalled" }, () => {
           void refreshMessagesFromServerRef.current?.({ forceScroll: false });
         })
+        .on("broadcast", { event: "easter-egg" }, () => {
+          syncPendingEasterEggRef.current?.();
+        })
         .on(
           "postgres_changes",
           {
@@ -1762,6 +1766,14 @@ export default function RandomSessionClient() {
         } else {
           const eventId = typeof insertResult.data === "string" ? insertResult.data : null;
           if (eventId) {
+            const channel = typingChannelRef.current;
+            if (channel && typingChannelReadyRef.current) {
+              void channel.send({
+                type: "broadcast",
+                event: "easter-egg",
+                payload: { eventId },
+              }).catch(() => undefined);
+            }
             const clientVersion = "web-v2";
             const dispatchedResult = await supabase.rpc("mark_chat_easter_egg_dispatched", {
               p_event_id: eventId,
@@ -2081,9 +2093,14 @@ export default function RandomSessionClient() {
       }
     };
 
+    syncPendingEasterEggRef.current = () => { void syncPendingEasterEgg(); };
     const onResume = () => void syncPendingEasterEgg();
     void syncPendingEasterEgg();
-    timer = window.setInterval(() => void syncPendingEasterEgg(), EASTER_EGG_FALLBACK_POLL_MS);
+    timer = window.setInterval(() => {
+      if (!realtimeHealthyRef.current) {
+        void syncPendingEasterEgg();
+      }
+    }, EASTER_EGG_FALLBACK_POLL_MS);
     window.addEventListener("focus", onResume);
     window.addEventListener("online", onResume);
     document.addEventListener("visibilitychange", onResume);
@@ -2094,6 +2111,7 @@ export default function RandomSessionClient() {
       window.removeEventListener("focus", onResume);
       window.removeEventListener("online", onResume);
       document.removeEventListener("visibilitychange", onResume);
+      syncPendingEasterEggRef.current = null;
       easterEggPendingSyncRef.current = false;
     };
   }, [easterEggAllowed, isEnded, myProfile?.id, session?.id]);
