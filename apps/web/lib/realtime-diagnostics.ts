@@ -14,6 +14,11 @@ export const REALTIME_DIAGNOSTIC_EVENT_TYPES = [
 
 export type RealtimeDiagnosticEventType = (typeof REALTIME_DIAGNOSTIC_EVENT_TYPES)[number];
 
+const LOCAL_ONLY_REALTIME_DIAGNOSTIC_EVENT_TYPES = new Set<RealtimeDiagnosticEventType>([
+  "message_received_realtime",
+  "message_loaded_from_db",
+]);
+
 export type RealtimeDiagnosticInput = {
   sessionId: string;
   eventType: RealtimeDiagnosticEventType;
@@ -24,6 +29,17 @@ export type RealtimeDiagnosticInput = {
 };
 
 export async function recordRealtimeDiagnostic(input: RealtimeDiagnosticInput) {
+  // Healthy per-message events are intentionally not persisted. They can occur
+  // for every delivered message and every database refresh, so writing an RPC
+  // for each one amplifies Database Egress without helping incident diagnosis.
+  // Keep connection lifecycle and error events persisted below.
+  if (LOCAL_ONLY_REALTIME_DIAGNOSTIC_EVENT_TYPES.has(input.eventType)) {
+    return {
+      data: null,
+      error: null,
+    };
+  }
+
   const result = await supabase.rpc("record_realtime_diagnostic", {
     p_session_id: input.sessionId,
     p_event_type: input.eventType,
