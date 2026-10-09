@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { markRandomSessionRead, supabase } from "../../lib/supabase";
+import { markRandomSessionRead } from "../../lib/supabase";
+
+const READ_MARK_DEDUPE_MS = 15_000;
 
 function getSessionId(pathname: string) {
   const match = pathname.match(/^\/session\/([0-9a-f-]{36})(?:\/|$)/i);
@@ -14,16 +16,20 @@ export function SessionReadTracker() {
   const sessionId = getSessionId(pathname);
   const markingRef = useRef(false);
   const queuedRef = useRef(false);
+  const lastMarkedRef = useRef<{ sessionId: string; at: number } | null>(null);
 
   const markVisibleSessionRead = useCallback(async () => {
     if (!sessionId || document.visibilityState !== "visible") return;
+    const lastMarked = lastMarkedRef.current;
+    if (lastMarked?.sessionId === sessionId && Date.now() - lastMarked.at < READ_MARK_DEDUPE_MS) return;
     if (markingRef.current) {
       queuedRef.current = true;
       return;
     }
     markingRef.current = true;
     try {
-      await markRandomSessionRead(sessionId);
+      const result = await markRandomSessionRead(sessionId);
+      if (!result.error) lastMarkedRef.current = { sessionId, at: Date.now() };
     } finally {
       markingRef.current = false;
       if (queuedRef.current) {
@@ -42,20 +48,8 @@ export function SessionReadTracker() {
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
 
-    const channel = supabase
-      .channel(`session-read-${sessionId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "random_chat_messages", filter: `session_id=eq.${sessionId}` },
-        () => {
-          if (document.visibilityState === "visible") void markVisibleSessionRead();
-        }
-      )
-      .subscribe();
-
     return () => {
       document.removeEventListener("visibilitychange", onVisibilityChange);
-      void supabase.removeChannel(channel);
     };
   }, [sessionId, markVisibleSessionRead]);
 

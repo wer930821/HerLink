@@ -271,6 +271,7 @@ export default function RandomSessionClient() {
   const typingSenderTimerRef = useRef<number | null>(null);
   const typingLastSentAtRef = useRef(0);
   const typingChannelReadyRef = useRef(false);
+  const realtimeHealthyRef = useRef(false);
   const typingReceiverTimerRef = useRef<number | null>(null);
   const typingReceiverDeadlineRef = useRef<number | null>(null);
   const typingActiveRef = useRef(false);
@@ -283,8 +284,10 @@ export default function RandomSessionClient() {
   const easterEggLastAtRef = useRef<Map<string, number>>(new Map());
   const easterEggLastPlaybackAtRef = useRef(0);
   const easterEggPendingSyncRef = useRef(false);
+  const syncPendingEasterEggRef = useRef<(() => void) | null>(null);
   const easterEggPlaybackBusyRef = useRef(false);
   const historicalThousandCheckedRef = useRef<Set<string>>(new Set());
+  const sessionMessageCountRef = useRef(0);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
   const realtimeClientInstanceIdRef = useRef(
@@ -1398,7 +1401,9 @@ export default function RandomSessionClient() {
       // visible as a fallback when Realtime delivery is delayed or missed.
       const delay = CHAT_FALLBACK_POLL_MS;
       timer = window.setTimeout(() => {
-        syncNow();
+        if (!realtimeHealthyRef.current) {
+          syncNow();
+        }
         scheduleNext();
       }, delay);
     };
@@ -1486,6 +1491,9 @@ export default function RandomSessionClient() {
         .on("broadcast", { event: "message-recalled" }, () => {
           void refreshMessagesFromServerRef.current?.({ forceScroll: false });
         })
+        .on("broadcast", { event: "easter-egg" }, () => {
+          syncPendingEasterEggRef.current?.();
+        })
         .on(
           "postgres_changes",
           {
@@ -1531,6 +1539,7 @@ export default function RandomSessionClient() {
         })
         .subscribe((status: string, channelError?: Error) => {
           if (status === "SUBSCRIBED") {
+            realtimeHealthyRef.current = true;
             startingRealtime = false;
             lastErrorAt = 0;
             typingChannelReadyRef.current = true;
@@ -1546,6 +1555,7 @@ export default function RandomSessionClient() {
           }
 
           if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            realtimeHealthyRef.current = false;
             typingChannelReadyRef.current = false;
             startingRealtime = false;
             const now = Date.now();
@@ -1582,6 +1592,7 @@ export default function RandomSessionClient() {
           }
 
           if (status === "CLOSED") {
+            realtimeHealthyRef.current = false;
             typingChannelReadyRef.current = false;
             startingRealtime = false;
             // removeChannel() during normal navigation/unmount also emits CLOSED.
@@ -1756,6 +1767,14 @@ export default function RandomSessionClient() {
         } else {
           const eventId = typeof insertResult.data === "string" ? insertResult.data : null;
           if (eventId) {
+            const channel = typingChannelRef.current;
+            if (channel && typingChannelReadyRef.current) {
+              void channel.send({
+                type: "broadcast",
+                event: "easter-egg",
+                payload: { eventId },
+              }).catch(() => undefined);
+            }
             const clientVersion = "web-v2";
             const dispatchedResult = await supabase.rpc("mark_chat_easter_egg_dispatched", {
               p_event_id: eventId,
@@ -1924,7 +1943,10 @@ export default function RandomSessionClient() {
     void getRandomChatMessageCount(session.id)
       .then((result) => {
         const count = Number(result.data);
-        if (!result.error && Number.isFinite(count)) setSessionMessageCount(count);
+        if (!result.error && Number.isFinite(count)) {
+          sessionMessageCountRef.current = count;
+          setSessionMessageCount(count);
+        }
         if (!result.error && Number.isFinite(count) && count >= 1000) {
           triggerEasterEgg("thousand", true);
         }
@@ -2075,9 +2097,14 @@ export default function RandomSessionClient() {
       }
     };
 
+    syncPendingEasterEggRef.current = () => { void syncPendingEasterEgg(); };
     const onResume = () => void syncPendingEasterEgg();
     void syncPendingEasterEgg();
-    timer = window.setInterval(() => void syncPendingEasterEgg(), EASTER_EGG_FALLBACK_POLL_MS);
+    timer = window.setInterval(() => {
+      if (!realtimeHealthyRef.current) {
+        void syncPendingEasterEgg();
+      }
+    }, EASTER_EGG_FALLBACK_POLL_MS);
     window.addEventListener("focus", onResume);
     window.addEventListener("online", onResume);
     document.addEventListener("visibilitychange", onResume);
@@ -2088,6 +2115,7 @@ export default function RandomSessionClient() {
       window.removeEventListener("focus", onResume);
       window.removeEventListener("online", onResume);
       document.removeEventListener("visibilitychange", onResume);
+      syncPendingEasterEggRef.current = null;
       easterEggPendingSyncRef.current = false;
     };
   }, [easterEggAllowed, isEnded, myProfile?.id, session?.id]);
@@ -2121,9 +2149,9 @@ export default function RandomSessionClient() {
       const nextMessage = Array.isArray(data) ? data[0] : data;
       maybeTriggerEasterEgg(content);
       if (easterEggAllowed) {
-        const countResult = await getRandomChatMessageCount(refreshedSession.id).catch(() => ({ data: null, error: null }));
-        const messageCount = Number(countResult.data);
-        if (!countResult.error && Number.isFinite(messageCount)) setSessionMessageCount(messageCount);
+        const messageCount = sessionMessageCountRef.current + 1;
+        sessionMessageCountRef.current = messageCount;
+        setSessionMessageCount(messageCount);
         const collectionTester = myProfile?.anonymous_display_name === "孤星企鵝";
         const milestoneKind: Record<number, EasterEggKind> = {50:"fifty",100:"hundred",200:"twoHundred",300:"threeHundred",400:"fourHundred",500:"fiveHundred",600:"sixHundred",700:"sevenHundred",800:"eightHundred",900:"nineHundred",1000:"thousand",1500:"fifteenHundred",2000:"twoThousand",3000:"threeThousand",5000:"fiveThousand",10000:"tenThousand"};
         const milestone = milestoneKind[messageCount];

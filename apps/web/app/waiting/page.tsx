@@ -15,6 +15,9 @@ import {
 import { Badge, Button, Notice, PageHero } from "../../components/ui";
 import { PushPermissionCard } from "../../components/push/PushPermissionCard";
 
+const WAITING_FALLBACK_POLL_MS = 60_000;
+type WaitingRealtimeStatus = "SUBSCRIBED" | "TIMED_OUT" | "CLOSED" | "CHANNEL_ERROR";
+
 export default function WaitingPage() {
   const router = useRouter();
   const [debug, setDebug] = useState(false);
@@ -27,6 +30,7 @@ export default function WaitingPage() {
   const waitingMountedAtRef = useRef<number>(Date.now());
   const waitingStartedAtRef = useRef<number | null>(null);
   const requestedMatchRef = useRef<string | null>(null);
+  const waitingRealtimeHealthyRef = useRef(false);
   const { onlineCount } = useOnlinePresence(userId);
 
   useEffect(() => {
@@ -88,9 +92,40 @@ export default function WaitingPage() {
         else if (!debug && !requestedMatchId && sessionResult.data?.id && queueResult.data?.status !== "waiting") router.replace(`/session/${sessionResult.data.id}`);
       } finally { syncing = false; }
     };
+
+    waitingRealtimeHealthyRef.current = false;
+    const realtime = supabase
+      .channel(`waiting-match-${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "random_match_queue" }, () => void syncMatchState())
+      .on("postgres_changes", { event: "*", schema: "public", table: "random_chat_sessions" }, () => void syncMatchState())
+      .subscribe((status: WaitingRealtimeStatus) => {
+        if (status === "SUBSCRIBED") {
+          waitingRealtimeHealthyRef.current = true;
+          void syncMatchState();
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          waitingRealtimeHealthyRef.current = false;
+        }
+      });
+
     void syncMatchState();
-    const interval = window.setInterval(() => void syncMatchState(), 5_000);
-    return () => { mounted = false; window.clearInterval(interval); };
+    const interval = window.setInterval(() => {
+      if (!waitingRealtimeHealthyRef.current) void syncMatchState();
+    }, WAITING_FALLBACK_POLL_MS);
+    const resume = () => {
+      if (document.visibilityState === "visible") void syncMatchState();
+    };
+    window.addEventListener("focus", resume);
+    window.addEventListener("online", resume);
+    document.addEventListener("visibilitychange", resume);
+    return () => {
+      mounted = false;
+      waitingRealtimeHealthyRef.current = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", resume);
+      window.removeEventListener("online", resume);
+      document.removeEventListener("visibilitychange", resume);
+      void supabase.removeChannel(realtime);
+    };
   }, [debug, router, userId]);
 
   useEffect(() => {
@@ -104,8 +139,6 @@ export default function WaitingPage() {
       setElapsedSeconds(0);
       return;
     }
-    // Queue state is the source of truth. A retained active chat may coexist
-    // with a new matchmaking wait and must not freeze the waiting timer.
     if (!queue || queue.status !== "waiting" || queue.matched_session_id) {
       waitingStartedAtRef.current = null;
       setElapsedSeconds(0);

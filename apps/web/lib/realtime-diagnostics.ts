@@ -23,7 +23,18 @@ export type RealtimeDiagnosticInput = {
   metadata?: Record<string, unknown>;
 };
 
+const NON_PERSISTED_REALTIME_DIAGNOSTIC_EVENTS = new Set<RealtimeDiagnosticEventType>([
+  "message_received_realtime",
+  "message_loaded_from_db",
+  "realtime_subscribe_started",
+  "realtime_subscribed",
+]);
+
 export async function recordRealtimeDiagnostic(input: RealtimeDiagnosticInput) {
+  if (NON_PERSISTED_REALTIME_DIAGNOSTIC_EVENTS.has(input.eventType)) {
+    return { data: null, error: null };
+  }
+
   const result = await supabase.rpc("record_realtime_diagnostic", {
     p_session_id: input.sessionId,
     p_event_type: input.eventType,
