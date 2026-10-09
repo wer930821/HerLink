@@ -28,6 +28,7 @@ jobs:
       - run: node lib/public-account-flow.test.mjs
       - run: node lib/chat-polling-contract.test.mjs
       - run: node lib/realtime-diagnostics-contract.test.mjs
+      - run: node lib/session-read-tracker-contract.test.mjs
       - run: node lib/collection-replay.test.mjs
       - run: node ../../tests/web-collection-access.test.cjs
       - run: node ../../tests/web-egg-permissions.test.cjs
