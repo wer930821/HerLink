@@ -16,6 +16,7 @@ import { Badge, Button, Notice, PageHero } from "../../components/ui";
 import { PushPermissionCard } from "../../components/push/PushPermissionCard";
 
 const WAITING_FALLBACK_POLL_MS = 60_000;
+type WaitingRealtimeStatus = "SUBSCRIBED" | "TIMED_OUT" | "CLOSED" | "CHANNEL_ERROR";
 
 export default function WaitingPage() {
   const router = useRouter();
@@ -97,7 +98,7 @@ export default function WaitingPage() {
       .channel(`waiting-match-${userId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "random_match_queue" }, () => void syncMatchState())
       .on("postgres_changes", { event: "*", schema: "public", table: "random_chat_sessions" }, () => void syncMatchState())
-      .subscribe((status) => {
+      .subscribe((status: WaitingRealtimeStatus) => {
         if (status === "SUBSCRIBED") {
           waitingRealtimeHealthyRef.current = true;
           void syncMatchState();
