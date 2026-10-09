@@ -2,7 +2,7 @@ name: HerLink Web Build
 
 on:
   push:
-    branches: [main, test/reduce-chat-polling, fix/reduce-session-refresh]
+    branches: [main, test/reduce-chat-polling, fix/reduce-session-refresh, fix/egress-session-coalescing-v5]
     paths:
       - "apps/web/**"
       - "lib/**"
@@ -29,6 +29,7 @@ jobs:
       - run: node lib/chat-polling-contract.test.mjs
       - run: node lib/realtime-diagnostics-contract.test.mjs
       - run: node lib/session-read-tracker-contract.test.mjs
+      - run: node lib/session-refresh-contract.test.mjs
       - run: node lib/collection-replay.test.mjs
       - run: node ../../tests/web-collection-access.test.cjs
       - run: node ../../tests/web-egg-permissions.test.cjs
