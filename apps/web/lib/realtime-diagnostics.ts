@@ -26,6 +26,8 @@ export type RealtimeDiagnosticInput = {
 const NON_PERSISTED_REALTIME_DIAGNOSTIC_EVENTS = new Set<RealtimeDiagnosticEventType>([
   "message_received_realtime",
   "message_loaded_from_db",
+  "realtime_subscribe_started",
+  "realtime_subscribed",
 ]);
 
 export async function recordRealtimeDiagnostic(input: RealtimeDiagnosticInput) {
