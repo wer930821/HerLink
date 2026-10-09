@@ -271,6 +271,7 @@ export default function RandomSessionClient() {
   const typingSenderTimerRef = useRef<number | null>(null);
   const typingLastSentAtRef = useRef(0);
   const typingChannelReadyRef = useRef(false);
+  const realtimeHealthyRef = useRef(false);
   const typingReceiverTimerRef = useRef<number | null>(null);
   const typingReceiverDeadlineRef = useRef<number | null>(null);
   const typingActiveRef = useRef(false);
@@ -1398,7 +1399,9 @@ export default function RandomSessionClient() {
       // visible as a fallback when Realtime delivery is delayed or missed.
       const delay = CHAT_FALLBACK_POLL_MS;
       timer = window.setTimeout(() => {
-        syncNow();
+        if (!realtimeHealthyRef.current) {
+          syncNow();
+        }
         scheduleNext();
       }, delay);
     };
@@ -1531,6 +1534,7 @@ export default function RandomSessionClient() {
         })
         .subscribe((status: string, channelError?: Error) => {
           if (status === "SUBSCRIBED") {
+            realtimeHealthyRef.current = true;
             startingRealtime = false;
             lastErrorAt = 0;
             typingChannelReadyRef.current = true;
@@ -1546,6 +1550,7 @@ export default function RandomSessionClient() {
           }
 
           if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            realtimeHealthyRef.current = false;
             typingChannelReadyRef.current = false;
             startingRealtime = false;
             const now = Date.now();
@@ -1582,6 +1587,7 @@ export default function RandomSessionClient() {
           }
 
           if (status === "CLOSED") {
+            realtimeHealthyRef.current = false;
             typingChannelReadyRef.current = false;
             startingRealtime = false;
             // removeChannel() during normal navigation/unmount also emits CLOSED.
