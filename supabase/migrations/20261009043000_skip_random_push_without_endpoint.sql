@@ -52,13 +52,14 @@ BEGIN
         SELECT 1
         FROM public.web_push_subscriptions AS web
         WHERE web.user_id = p_user_id
-          AND web.is_active = TRUE
+          AND web.revoked_at IS NULL
       )
       OR EXISTS (
         SELECT 1
         FROM public.push_tokens AS native
         WHERE native.user_id = p_user_id
-          AND native.is_active = TRUE
+          AND native.active = TRUE
+          AND native.token_context = 'user'
       )
     INTO has_push_endpoint;
 
