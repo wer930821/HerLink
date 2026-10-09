@@ -1,0 +1,45 @@
+name: Apply waiting count polling fix
+
+on:
+  push:
+    branches: [fix/egress-session-coalescing-v5]
+    paths:
+      - ".github/workflows/apply-waiting-count-fix.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/egress-session-coalescing-v5
+      - name: Patch homepage polling
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('apps/web/app/page.tsx')
+          s = p.read_text()
+          s = s.replace('const initialActiveSessionLookup: ActiveSessionLookup = {\n  result: "loading",\n  error: null,\n};', 'const initialActiveSessionLookup: ActiveSessionLookup = {\n  result: "loading",\n  error: null,\n};\n\nconst WAITING_COUNT_POLL_MS = 60_000;\nconst WAITING_COUNT_REFRESH_DEDUPE_MS = 5_000;')
+          s = s.replace('  const waitingCountRequestRef = useRef(0);', '  const waitingCountRequestRef = useRef(0);\n  const lastWaitingCountRefreshRef = useRef(0);')
+          old = '''  const refreshWaitingCount = useCallback(async () => {\n    const requestId = ++waitingCountRequestRef.current;'''
+          new = '''  const refreshWaitingCount = useCallback(async (force = false) => {\n    const now = Date.now();\n    if (!force && Date.now() - lastWaitingCountRefreshRef.current < WAITING_COUNT_REFRESH_DEDUPE_MS) return;\n    lastWaitingCountRefreshRef.current = now;\n    const requestId = ++waitingCountRequestRef.current;'''
+          if old not in s:
+              raise SystemExit('refreshWaitingCount block not found')
+          s = s.replace(old, new, 1)
+          s = s.replace('const timer = window.setInterval(() => void refreshWaitingCount(), 15000);', 'const timer = window.setInterval(() => void refreshWaitingCount(), WAITING_COUNT_POLL_MS);', 1)
+          s = s.replace('await leaveRandomSession(state.activeSession.id);\n      void refreshWaitingCount();', 'await leaveRandomSession(state.activeSession.id);\n      void refreshWaitingCount(true);', 1)
+          p.write_text(s)
+          PY
+      - name: Verify contract
+        working-directory: apps/web
+        run: node lib/waiting-count-polling-contract.test.mjs
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/web/app/page.tsx
+          git commit -m "fix(web): reduce waiting count polling" || exit 0
+          git push origin HEAD:fix/egress-session-coalescing-v5
