@@ -20,8 +20,8 @@ assert.match(
 );
 assert.match(
   source,
-  /sessionMessageCountRef\.current = messages\.length/,
-  "initial loaded history should seed the local message count when the full count is known locally"
+  /sessionMessageCountRef\.current = count/,
+  "the one authoritative initial count should seed local message count tracking"
 );
 
 console.log("message count egress contract OK");
