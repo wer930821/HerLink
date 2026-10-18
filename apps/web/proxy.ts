@@ -16,11 +16,15 @@ export function proxy(request: NextRequest) {
   }
   // Admin backend stays reachable during maintenance so the site can be
   // managed (via the HerLink 後台 app) while the public site is paused.
+  // /login and /auth/callback are also open so admins can sign in.
   const pathname = request.nextUrl.pathname;
   if (
     pathname === "/admin" ||
     pathname.startsWith("/admin/") ||
-    pathname.startsWith("/api/admin/")
+    pathname.startsWith("/api/admin/") ||
+    pathname === "/login" ||
+    pathname.startsWith("/login/") ||
+    pathname.startsWith("/auth/callback")
   ) {
     return NextResponse.next();
   }

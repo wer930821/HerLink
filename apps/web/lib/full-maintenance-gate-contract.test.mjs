@@ -21,6 +21,8 @@ assert.match(proxySource, /NextResponse\.next\(\)/, "gate must pass traffic thro
 // managed (HerLink 後台 app) while the public site is paused.
 assert.match(proxySource, /\/admin/, "gate must exempt the admin backend during maintenance");
 assert.match(proxySource, /\/api\/admin\//, "gate must exempt admin API routes during maintenance");
+// Admins must be able to sign in during maintenance.
+assert.match(proxySource, /\/login/, "gate must exempt the login page during maintenance");
 
 // site-config must derive the flag from the same env var, defaulting to ON
 // (paused = safe default; reopening requires a deliberate env change).
