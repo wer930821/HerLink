@@ -17,6 +17,10 @@ assert.doesNotMatch(proxySource, /supabase/i, "maintenance gate must not initial
 // The gate must be conditional now, not an unconditional 503:
 // traffic must pass through when the switch is off.
 assert.match(proxySource, /NextResponse\.next\(\)/, "gate must pass traffic through when maintenance is off");
+// The admin backend must stay reachable during maintenance so the site can be
+// managed (HerLink 後台 app) while the public site is paused.
+assert.match(proxySource, /\/admin/, "gate must exempt the admin backend during maintenance");
+assert.match(proxySource, /\/api\/admin\//, "gate must exempt admin API routes during maintenance");
 
 // site-config must derive the flag from the same env var, defaulting to ON
 // (paused = safe default; reopening requires a deliberate env change).
