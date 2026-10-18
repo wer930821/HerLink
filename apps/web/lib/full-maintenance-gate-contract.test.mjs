@@ -2,12 +2,27 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const proxyPath = new URL("../proxy.ts", import.meta.url);
-assert.equal(fs.existsSync(proxyPath), true, "full maintenance mode must be enforced before app code loads");
+const configPath = new URL("../lib/site-config.ts", import.meta.url);
 
-const source = fs.readFileSync(proxyPath, "utf8");
-assert.match(source, /HerLink 暫停服務中/);
-assert.match(source, /NextResponse/);
-assert.match(source, /_next\/static/);
-assert.doesNotMatch(source, /supabase/i, "maintenance gate must not initialize Supabase");
+// The maintenance gate must exist and be enforced before app code loads.
+assert.equal(fs.existsSync(proxyPath), true, "maintenance gate proxy must exist");
 
-console.log("full maintenance gate contract passed");
+const proxySource = fs.readFileSync(proxyPath, "utf8");
+// The gate must be controllable via env var (so previews can test the real app
+// and production can reopen without a code change).
+assert.match(proxySource, /NEXT_PUBLIC_MAINTENANCE_MODE/, "gate must be controlled by env var");
+assert.match(proxySource, /NextResponse/);
+assert.match(proxySource, /_next\/static/);
+assert.doesNotMatch(proxySource, /supabase/i, "maintenance gate must not initialize Supabase");
+// The gate must be conditional now, not an unconditional 503:
+// traffic must pass through when the switch is off.
+assert.match(proxySource, /NextResponse\.next\(\)/, "gate must pass traffic through when maintenance is off");
+
+// site-config must derive the flag from the same env var, defaulting to ON
+// (paused = safe default; reopening requires a deliberate env change).
+const configSource = fs.readFileSync(configPath, "utf8");
+assert.match(configSource, /NEXT_PUBLIC_MAINTENANCE_MODE/);
+assert.match(configSource, /!==\s*["']false["']/, "maintenance must default to ON when env var is unset");
+assert.match(configSource, /HerLink 暫停服務中/);
+
+console.log("maintenance gate contract passed");

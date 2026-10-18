@@ -1,4 +1,7 @@
-export const MAINTENANCE_MODE = true;
+// Maintenance switch shared by the edge gate (proxy.ts) and client pages.
+// NEXT_PUBLIC_ prefix: inlined at build time for client components, also readable at runtime in middleware.
+// Defaults to ON (paused). Reopen = set NEXT_PUBLIC_MAINTENANCE_MODE=false and redeploy.
+export const MAINTENANCE_MODE = process.env.NEXT_PUBLIC_MAINTENANCE_MODE !== "false";
 
 export const MAINTENANCE_TITLE = "HerLink 暫停服務中";
 
