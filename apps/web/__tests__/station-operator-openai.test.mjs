@@ -14,7 +14,23 @@ test('uses Responses API and validates structured decision', async () => {
   assert.match(JSON.parse(request.init.body).instructions, /不可信/);
 });
 
-test('fails closed when OpenAI fails', async () => {
-  const fetchImpl = async () => ({ok:false,status:500});
+test('keeps only safe OpenAI error status/type/code', async () => {
+  const fetchImpl = async () => ({
+    ok:false,
+    status:429,
+    json:async()=>({error:{type:'insufficient_quota',code:'billing_hard_limit',message:'secret request body must not be logged'}})
+  });
+  await assert.rejects(
+    ()=>decideMailboxThread({messages:[],fetchImpl,apiKey:'test'}),
+    error => {
+      assert.equal(error.message, 'OpenAI 429 insufficient_quota billing_hard_limit');
+      assert.doesNotMatch(error.message, /secret request body/);
+      return true;
+    }
+  );
+});
+
+test('fails closed on malformed OpenAI error body', async () => {
+  const fetchImpl = async () => ({ok:false,status:500,json:async()=>{throw new Error('bad json')}});
   await assert.rejects(()=>decideMailboxThread({messages:[],fetchImpl,apiKey:'test'}), /OpenAI 500/);
 });

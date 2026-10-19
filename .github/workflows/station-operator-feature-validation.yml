@@ -1,0 +1,44 @@
+name: Station Operator Feature Validation
+
+on:
+  push:
+    branches:
+      - feat/station-operator-auto-repair
+      - feat/station-operator-production-rollout
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/lib/station-operator/**'
+      - 'apps/web/app/api/internal/station-operator/**'
+      - 'apps/web/app/api/internal/station-repair/**'
+      - 'apps/web/__tests__/station-operator-*.test.mjs'
+      - 'apps/web/__tests__/station-repair-*.test.mjs'
+      - 'supabase/migrations/*station_operator*'
+      - 'supabase/migrations/*station_repair*'
+      - '.github/workflows/station-operator-feature-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Station Operator tests
+        run: npm run test:station-operator
+      - name: TypeScript
+        run: npm run typecheck --if-present
+      - name: Production build
+        run: npm run build

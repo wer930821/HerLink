@@ -10,6 +10,17 @@ function outputText(response) {
   throw new Error('OpenAI response missing output text');
 }
 
+async function safeOpenAIError(res) {
+  let type = '';
+  let code = '';
+  try {
+    const payload = await res.json();
+    if (typeof payload?.error?.type === 'string' && /^[a-z0-9_.-]{1,80}$/i.test(payload.error.type)) type = payload.error.type;
+    if (typeof payload?.error?.code === 'string' && /^[a-z0-9_.-]{1,80}$/i.test(payload.error.code)) code = payload.error.code;
+  } catch {}
+  return [`OpenAI ${res.status}`, type, code].filter(Boolean).join(' ');
+}
+
 export async function decideMailboxThread({ messages, fetchImpl = fetch, apiKey = process.env.OPENAI_API_KEY, model = process.env.STATION_OPERATOR_MODEL || 'gpt-6-luna' }) {
   if (!apiKey) throw new Error('OPENAI_API_KEY missing');
   const controller = new AbortController();
@@ -26,7 +37,7 @@ export async function decideMailboxThread({ messages, fetchImpl = fetch, apiKey 
         text:{ format:{ type:'json_schema', name:'station_operator_decision', strict:true, schema:decisionJsonSchema } }
       })
     });
-    if (!res.ok) throw new Error(`OpenAI ${res.status}`);
+    if (!res.ok) throw new Error(await safeOpenAIError(res));
     return validateDecision(JSON.parse(outputText(await res.json())));
   } finally { clearTimeout(timer); }
 }
