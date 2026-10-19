@@ -1,0 +1,24 @@
+name: Recovery PR Regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/__tests__/**'
+      - 'supabase/migrations/**'
+      - '.github/workflows/pr-recovery-regression.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  recovery-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Recovery regression tests
+        run: node --test apps/web/__tests__/recovery-preserves-all-retained-contacts.test.mjs apps/web/__tests__/recovered-anonymous-contacts.test.mjs
