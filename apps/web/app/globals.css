@@ -6433,7 +6433,7 @@ body:has(.site-mailbox-viewport){
   opacity: .72;
 }
 .halloween-home-decor span:nth-child(1) { top: 12%; right: 8%; font-size: 2rem; transform: rotate(9deg); }
-.halloween-home-decor span:nth-child(2) { top: 31%; left: 3%; font-size: 1.55rem; animation: herlinkGhostFloat 5s ease-in-out infinite; }
+.halloween-home-decor span:nth-child(2) { top: 44%; left: 2%; font-size: 1.55rem; animation: herlinkGhostFloat 5s ease-in-out infinite; }
 .halloween-home-decor span:nth-child(3) { top: 7%; left: 15%; font-size: 1.15rem; animation: herlinkBatFloat 7s ease-in-out infinite; }
 .halloween-chat-decor span:nth-child(1) { top: 10%; right: 4%; font-size: 1.05rem; animation: herlinkBatFloat 7s ease-in-out infinite; }
 .halloween-chat-decor span:nth-child(2) { bottom: 15%; left: 2%; font-size: 1.35rem; opacity: .48; }
