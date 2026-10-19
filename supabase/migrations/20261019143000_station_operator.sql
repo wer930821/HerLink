@@ -35,27 +35,16 @@ create index if not exists station_operator_audit_thread_idx
 
 alter table public.station_operator_jobs enable row level security;
 alter table public.station_operator_audit enable row level security;
-
 revoke all on public.station_operator_jobs from anon, authenticated;
 revoke all on public.station_operator_audit from anon, authenticated;
-
 grant all on public.station_operator_jobs to service_role;
 grant all on public.station_operator_audit to service_role;
 grant usage, select on sequence public.station_operator_audit_id_seq to service_role;
 
 create or replace function public.station_operator_enqueue_unread(p_limit integer default 20)
-returns integer
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_count integer;
+returns integer language plpgsql security definer set search_path = '' as $$
+declare v_count integer;
 begin
-  if auth.role() <> 'service_role' then
-    raise exception 'service_role required';
-  end if;
-
   with latest_user_message as (
     select distinct on (m.thread_id) m.thread_id, m.id as message_id, m.created_at
     from public.station_mail_messages m
@@ -64,79 +53,39 @@ begin
     order by m.thread_id, m.created_at desc
   ), ins as (
     insert into public.station_operator_jobs(thread_id, trigger_message_id, kind)
-    select l.thread_id, l.message_id, 'triage'
-    from latest_user_message l
-    where not exists (
-      select 1 from public.station_operator_jobs j
-      where j.trigger_message_id = l.message_id and j.kind = 'triage'
-    )
-    order by l.created_at asc
-    limit greatest(1, least(coalesce(p_limit,20),50))
-    on conflict do nothing
-    returning 1
-  )
-  select count(*) into v_count from ins;
+    select l.thread_id, l.message_id, 'triage' from latest_user_message l
+    where not exists (select 1 from public.station_operator_jobs j where j.trigger_message_id=l.message_id and j.kind='triage')
+    order by l.created_at asc limit greatest(1, least(coalesce(p_limit,20),50))
+    on conflict do nothing returning 1
+  ) select count(*) into v_count from ins;
   return v_count;
-end;
-$$;
+end; $$;
 
 create or replace function public.station_operator_claim(p_limit integer default 5)
-returns setof public.station_operator_jobs
-language plpgsql
-security definer
-set search_path = public
-as $$
+returns setof public.station_operator_jobs language plpgsql security definer set search_path = '' as $$
 begin
-  if auth.role() <> 'service_role' then
-    raise exception 'service_role required';
-  end if;
+  return query with picked as (
+    select j.id from public.station_operator_jobs j
+    where j.status='pending' and j.attempt_count<2
+    order by j.created_at asc for update skip locked
+    limit greatest(1,least(coalesce(p_limit,5),10))
+  ) update public.station_operator_jobs j
+    set status='processing',attempt_count=j.attempt_count+1,claim_token=gen_random_uuid(),claimed_at=now(),updated_at=now()
+    from picked p where j.id=p.id returning j.*;
+end; $$;
 
-  return query
-  with picked as (
-    select j.id
-    from public.station_operator_jobs j
-    where j.status = 'pending' and j.attempt_count < 2
-    order by j.created_at asc
-    for update skip locked
-    limit greatest(1, least(coalesce(p_limit,5),10))
-  )
-  update public.station_operator_jobs j
-  set status='processing', attempt_count=j.attempt_count+1,
-      claim_token=gen_random_uuid(), claimed_at=now(), updated_at=now()
-  from picked p
-  where j.id=p.id
-  returning j.*;
-end;
-$$;
-
-create or replace function public.station_operator_finish(
-  p_job_id uuid,
-  p_claim_token uuid,
-  p_status text,
-  p_result jsonb default '{}'::jsonb,
-  p_error text default null
-) returns boolean
-language plpgsql
-security definer
-set search_path = public
-as $$
+create or replace function public.station_operator_finish(p_job_id uuid,p_claim_token uuid,p_status text,p_result jsonb default '{}'::jsonb,p_error text default null)
+returns boolean language plpgsql security definer set search_path = '' as $$
 begin
-  if auth.role() <> 'service_role' then raise exception 'service_role required'; end if;
-  if p_status not in ('pending','waiting_ci','completed','failed','human_review') then
-    raise exception 'invalid status';
-  end if;
-
-  update public.station_operator_jobs
-  set status=p_status, result=coalesce(p_result,'{}'::jsonb), last_error=p_error,
-      claim_token=null, claimed_at=null, updated_at=now()
+  if p_status not in ('pending','waiting_ci','completed','failed','human_review') then raise exception 'invalid status'; end if;
+  update public.station_operator_jobs set status=p_status,result=coalesce(p_result,'{}'::jsonb),last_error=p_error,claim_token=null,claimed_at=null,updated_at=now()
   where id=p_job_id and status='processing' and claim_token=p_claim_token;
   return found;
-end;
-$$;
+end; $$;
 
-revoke all on function public.station_operator_enqueue_unread(integer) from public, anon, authenticated;
-revoke all on function public.station_operator_claim(integer) from public, anon, authenticated;
-revoke all on function public.station_operator_finish(uuid,uuid,text,jsonb,text) from public, anon, authenticated;
+revoke execute on function public.station_operator_enqueue_unread(integer) from public, anon, authenticated;
+revoke execute on function public.station_operator_claim(integer) from public, anon, authenticated;
+revoke execute on function public.station_operator_finish(uuid,uuid,text,jsonb,text) from public, anon, authenticated;
 grant execute on function public.station_operator_enqueue_unread(integer) to service_role;
 grant execute on function public.station_operator_claim(integer) to service_role;
 grant execute on function public.station_operator_finish(uuid,uuid,text,jsonb,text) to service_role;
