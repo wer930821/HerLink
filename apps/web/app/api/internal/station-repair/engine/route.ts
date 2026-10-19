@@ -85,6 +85,10 @@ function githubCapabilities() {
     return response.status===204 ? null : response.json();
   };
   return {
+    resolveBaseSha:async ()=>{
+      const ref=await call(`${api}/git/ref/heads/main`);
+      return String(ref?.object?.sha ?? '');
+    },
     createBranch:async ({branch,baseSha}:{branch:string;baseSha:string})=>{
       await call(`${api}/git/refs`,{method:'POST',body:JSON.stringify({ref:`refs/heads/${branch}`,sha:baseSha})});
       return {ok:true};
@@ -138,6 +142,7 @@ export async function POST(request:Request) {
       mode:process.env.STATION_OPERATOR_MODE,
       payload,
       db:createOperatorDb(),
+      resolveBaseSha:capabilities?.resolveBaseSha,
       execute:engine.execute
     });
     return NextResponse.json(result.body,{status:result.status});
