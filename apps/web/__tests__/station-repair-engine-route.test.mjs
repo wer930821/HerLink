@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validateRepairEngineInvocation, executeRepairEngine } from '../lib/station-operator/repair-engine-route.mjs';
 
-const request={repairId:'r1',jobId:'j1',branch:'ai-repair/j1',summary:'回覆按鈕沒有反應',attempt:1,allowedRoots:['apps/web/app/','apps/web/components/','apps/web/lib/','apps/web/__tests__/']};
+const baseSha='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const request={repairId:'r1',jobId:'j1',branch:'ai-repair/j1',baseSha,summary:'回覆按鈕沒有反應',attempt:1,allowedRoots:['apps/web/app/','apps/web/components/','apps/web/lib/','apps/web/__tests__/']};
 const repair={id:'r1',job_id:'j1',risk:'low',status:'queued',attempt_count:1};
 
 test('repair engine endpoint accepts only authenticated allowlist low-risk queued repairs',()=>{
@@ -13,6 +14,12 @@ test('repair engine endpoint requires exact isolated ai-repair branch',()=>{
   assert.equal(validateRepairEngineInvocation({authenticated:true,mode:'allowlist',repair,request:{...request,branch:'main'}}).ok,false);
   assert.equal(validateRepairEngineInvocation({authenticated:true,mode:'allowlist',repair,request:{...request,branch:'ai-repair/other'}}).ok,false);
   assert.equal(validateRepairEngineInvocation({authenticated:true,mode:'allowlist',repair,request:{...request,branch:undefined}}).ok,false);
+});
+
+test('repair engine endpoint requires an immutable 40-char base sha',()=>{
+  for (const invalid of [undefined,'main','abc123','g'.repeat(40)]) {
+    assert.equal(validateRepairEngineInvocation({authenticated:true,mode:'allowlist',repair,request:{...request,baseSha:invalid}}).ok,false);
+  }
 });
 
 test('repair engine endpoint fails closed outside allowlist',()=>{
@@ -30,11 +37,13 @@ test('repair engine endpoint rejects unauthenticated, high-risk, non-queued, mis
 
 test('repair engine execution discovers context, asks model, validates plan, then uses injected writer', async()=>{
   const calls=[];
+  let writeInput;
   const result=await executeRepairEngine({authenticated:true,mode:'allowlist',repair,request,
     discoverContext:async input=>{calls.push(['discover',input.summary]);return{ok:true,context:[{path:'apps/web/app/page.tsx',content:'export default function Page(){}'}]};},
     callModel:async input=>{calls.push(['model',input.input.summary]);return JSON.stringify({cause:'click handler missing',confidence:.9,files:[{path:'apps/web/app/page.tsx',content:'export default function Page(){ return null }'}]});},
-    writeRepair:async input=>{calls.push(['write',input.files[0].path]);return{ok:true,branch:'ai-repair/j1',prNumber:99};}});
+    writeRepair:async input=>{writeInput=input;calls.push(['write',input.files[0].path]);return{ok:true,branch:'ai-repair/j1',prNumber:99};}});
   assert.equal(result.ok,true); assert.equal(result.prNumber,99); assert.deepEqual(calls.map(x=>x[0]),['discover','model','write']);
+  assert.equal(writeInput.baseSha,baseSha);
 });
 
 test('repair engine execution fails closed before writer when model output is unsafe', async()=>{
