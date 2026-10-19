@@ -22,14 +22,18 @@ export async function executeRepairEngine({ authenticated, mode, repair, request
   const gate = validateRepairEngineInvocation({ authenticated, mode, repair, request });
   if (!gate.ok) return gate;
   if (typeof discoverContext !== 'function' || typeof callModel !== 'function' || typeof writeRepair !== 'function') return { ok: false, reason: 'missing_capability' };
-  const discovered = await discoverContext({ summary: request.summary, allowedRoots: request.allowedRoots });
-  if (!discovered?.ok) return { ok: false, reason: discovered?.reason ?? 'context_discovery_failed' };
-  const modelRequest = buildRepairModelRequest({ request, context: discovered.context });
-  if (!modelRequest.ok) return modelRequest;
-  const raw = await callModel(modelRequest);
-  const plan = prepareValidatedRepairPlan({ raw });
-  if (!plan.ok) return plan;
-  const written = await writeRepair({jobId:request.jobId,repairId:request.repairId,branch:request.branch,cause:plan.cause,confidence:plan.confidence,files:plan.files});
-  if (!written?.ok) return { ok: false, reason: written?.reason ?? 'write_failed' };
-  return { ok: true, branch: written.branch, prNumber: written.prNumber };
+  try {
+    const discovered = await discoverContext({ summary: request.summary, allowedRoots: request.allowedRoots });
+    if (!discovered?.ok) return { ok: false, reason: discovered?.reason ?? 'context_discovery_failed' };
+    const modelRequest = buildRepairModelRequest({ request, context: discovered.context });
+    if (!modelRequest.ok) return modelRequest;
+    const raw = await callModel(modelRequest);
+    const plan = prepareValidatedRepairPlan({ raw });
+    if (!plan.ok) return plan;
+    const written = await writeRepair({jobId:request.jobId,repairId:request.repairId,branch:request.branch,cause:plan.cause,confidence:plan.confidence,files:plan.files});
+    if (!written?.ok) return { ok: false, reason: written?.reason ?? 'write_failed' };
+    return { ok: true, branch: written.branch, prNumber: written.prNumber };
+  } catch {
+    return { ok: false, reason: 'engine_failed' };
+  }
 }
