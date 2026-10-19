@@ -262,19 +262,23 @@ export default function AnonymousContactsPage() {
         .halloween-contacts-decor * {
           pointer-events: none !important;
         }
+        html:has(.halloween-contacts-page),
         body:has(.halloween-contacts-page) {
-          overflow-x: hidden !important;
           overflow-y: auto !important;
+          overflow-x: hidden !important;
           height: auto !important;
           min-height: 100dvh !important;
+          position: static !important;
           touch-action: pan-y !important;
-          -webkit-overflow-scrolling: touch;
+          -webkit-overflow-scrolling: touch !important;
+          overscroll-behavior-y: auto !important;
         }
         body:has(.halloween-contacts-page) .shell,
         body:has(.halloween-contacts-page) .container,
         .halloween-contacts-page {
           height: auto !important;
           max-height: none !important;
+          min-height: 0 !important;
           overflow: visible !important;
           touch-action: pan-y !important;
         }
