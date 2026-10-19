@@ -1095,6 +1095,8 @@ export default function HomePage() {
           <Button variant="link" href="/terms">服務條款</Button>
           <span aria-hidden="true">·</span>
           <Button variant="link" href="/privacy">隱私權政策</Button>
+          <span aria-hidden="true">·</span>
+          <Button variant="link" href="/support">支持 HerLink</Button>
         </nav>
       </footer>
 
