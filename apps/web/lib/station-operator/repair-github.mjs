@@ -37,3 +37,44 @@ export function buildRepairGitHubWriteRequest(input = {}) {
     },
   };
 }
+
+export async function executeRepairGitHubWrite(input = {}, capabilities = {}) {
+  const built = buildRepairGitHubWriteRequest(input);
+  if (!built.ok) return built;
+
+  const { createBranch, writeFiles, createDraftPr } = capabilities;
+  if (typeof createBranch !== 'function' || typeof writeFiles !== 'function' || typeof createDraftPr !== 'function') {
+    return { ok: false, reason: 'missing_capability' };
+  }
+
+  const request = built.request;
+  try {
+    const branched = await createBranch({ branch: request.branch, baseSha: request.baseSha });
+    if (!branched?.ok) return { ok: false, reason: 'branch_create_failed' };
+
+    const written = await writeFiles({ branch: request.branch, files: request.files });
+    if (!written?.ok || !SAFE_SHA.test(String(written.commitSha ?? ''))) {
+      return { ok: false, reason: 'file_write_failed' };
+    }
+
+    const opened = await createDraftPr({
+      head: request.branch,
+      base: request.base,
+      draft: true,
+      title: request.title,
+      body: request.body,
+    });
+    if (!opened?.ok || !Number.isInteger(Number(opened.prNumber)) || Number(opened.prNumber) < 1) {
+      return { ok: false, reason: 'pr_create_failed' };
+    }
+
+    return {
+      ok: true,
+      branch: request.branch,
+      prNumber: Number(opened.prNumber),
+      commitSha: written.commitSha,
+    };
+  } catch {
+    return { ok: false, reason: 'github_write_failed' };
+  }
+}
