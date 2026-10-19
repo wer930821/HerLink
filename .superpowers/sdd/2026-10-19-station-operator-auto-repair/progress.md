@@ -9,3 +9,5 @@
 - [ ] Task 7: safe rollout verification
 
 Validation note: PR #42 is temporarily based on `ci/station-operator-validation` so GitHub Actions can validate this isolated feature branch before any merge to `main`.
+
+Latest validation: Station Operator tests passed 31/31 on run 39235240564. The validation base now includes the unrelated `support/page.tsx` nullable `finalAmount` TypeScript fix at `8018bc4f0cce3f2043a54cca85992c1ec7494138`. This progress-only commit retriggers validation against that corrected base. Production remains disabled.
