@@ -24,11 +24,12 @@ export async function processClaimedJob({ job, db, decide }) {
   }
 
   if (decision.kind === 'reply' && decision.reply) {
-    await db.reply(job.thread_id, decision.reply);
-    await db.audit({jobId:job.id,threadId:job.thread_id,action:'reply',outcome:'sent',details:{confidence:decision.confidence}});
-  } else {
-    await db.audit({jobId:job.id,threadId:job.thread_id,action:'ignore',outcome:'completed',details:{kind:decision.kind}});
+    // Reply + audit + job completion happen in one DB transaction. A retry cannot double-send.
+    await db.replyAndFinish({jobId:job.id,claimToken:job.claim_token,body:decision.reply,result:{decision}});
+    return { status:'completed' };
   }
+
+  await db.audit({jobId:job.id,threadId:job.thread_id,action:'ignore',outcome:'completed',details:{kind:decision.kind}});
   await db.finish({jobId:job.id,claimToken:job.claim_token,status:'completed',result:{decision}});
   return { status:'completed' };
 }
