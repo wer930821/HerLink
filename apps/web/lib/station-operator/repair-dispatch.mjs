@@ -83,3 +83,10 @@ export function buildRepairGitHubSteps({spec,baseSha}={}) {
     {action:'create_pull_request',head:branch,base:'main',draft:true,title,body}
   ];
 }
+
+export function validateRepairBranchWrite({jobId,branch,force=false}={}) {
+  const safeJobId=String(jobId ?? '');
+  const safeBranch=String(branch ?? '');
+  if (!SAFE_ID.test(safeJobId) || force === true || safeBranch !== `ai-repair/${safeJobId}`) return {ok:false,reason:'invalid_branch_write'};
+  return {ok:true,branch:safeBranch};
+}
