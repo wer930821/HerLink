@@ -92,7 +92,7 @@ export default function SupportPage() {
               cursor: "pointer",
             }}
           >
-            用台灣Pay 贊助 NT$ {finalAmount}
+            用LINE Pay 贊助 NT$ {finalAmount}
           </button>
         </div>
       )}
@@ -108,12 +108,12 @@ export default function SupportPage() {
         }}>
           <h3 style={{ fontSize: 18, margin: "0 0 8px" }}>掃碼贊助 NT$ {finalAmount}</h3>
           <p style={{ color: "#b8b3bd", fontSize: 14, margin: "0 0 16px" }}>
-            打開銀行 App 或台灣Pay App 掃碼轉帳
+            打開 LINE App 掃碼轉帳
           </p>
-          {/* 台灣Pay QR code 放在 public/taiwanpay-qr.png */}
+          {/* LINE Pay QR code 放在 public/linepay-qr.png */}
           <img
-            src="/taiwanpay-qr.png"
-            alt="台灣Pay 收款碼"
+            src="/linepay-qr.png"
+            alt="LINE Pay 收款碼"
             style={{
               width: 240,
               height: 240,
