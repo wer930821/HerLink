@@ -26,6 +26,14 @@ test('repair engine http handler derives trusted request fields from stored repa
   assert.notEqual(invocation.request.branch,'main');
 });
 
+test('fresh queued repair starts execution at attempt one without trusting payload attempt', async()=>{
+  const fresh={...repair,attempt_count:0};
+  let invocation;
+  const result=await handleRepairEngineHttp({authorization:'Bearer secret',secret:'secret',mode:'allowlist',payload:{repairId:'r1',attempt:99},db:{repair:async()=>fresh},execute:async input=>{invocation=input;return{ok:true};}});
+  assert.equal(result.status,200);
+  assert.equal(invocation.request.attempt,1);
+});
+
 test('repair engine http handler fails closed for malformed payload, missing repair, or execution errors', async()=>{
   const base={authorization:'Bearer secret',secret:'secret',mode:'allowlist'};
   assert.equal((await handleRepairEngineHttp({...base,payload:{},db:{repair:async()=>repair},execute:async()=>({ok:true})})).status,400);
