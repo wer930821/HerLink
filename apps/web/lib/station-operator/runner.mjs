@@ -14,6 +14,7 @@ export async function runClaimedJobs({jobs,db,mode,testThreads,decide}) {
       const decision=await decide({messages});
       const latest=await db.latestUserMessage(job.thread_id);
       await db.audit({jobId:job.id,threadId:job.thread_id,action:'dry_run',outcome:'observed',details:{kind:decision.kind,confidence:decision.confidence,needsHuman:decision.needsHuman,stale:Boolean(latest&&latest!==job.trigger_message_id)}});
+      await db.finish({jobId:job.id,claimToken:job.claim_token,status:'completed',result:{mode:'dry_run'}});
       results.push({status:'dry_run'});
       continue;
     }

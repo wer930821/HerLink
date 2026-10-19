@@ -4,20 +4,41 @@ import { runClaimedJobs } from '../lib/station-operator/runner.mjs';
 
 function job(thread='t1'){ return {id:'j1',thread_id:thread,trigger_message_id:'m1',claim_token:'c1',attempt_count:1}; }
 
-test('dry run records decision but never replies, repairs, or finishes job', async () => {
+test('dry run records decision and safely finishes job without reply or repair', async () => {
   const calls=[];
   const db={
     async messages(){return[{sender_role:'user',body:'測試'}]},
     async latestUserMessage(){return'm1'},
-    async audit(v){calls.push(['audit',v.action,v.outcome])},
+    async audit(v){calls.push(['audit',v.action,v.outcome,v.details])},
     async replyAndFinish(){calls.push(['reply'])},
     async createBugRepair(){calls.push(['repair'])},
-    async finish(){calls.push(['finish'])}
+    async finish(v){calls.push(['finish',v])}
   };
   const results=await runClaimedJobs({jobs:[job()],db,mode:'dry_run',testThreads:new Set(),decide:async()=>({kind:'reply',reply:'回答',actions:[],confidence:.9,needsHuman:false})});
   assert.deepEqual(results,[{status:'dry_run'}]);
-  assert.equal(calls.some(x=>['reply','repair','finish'].includes(x[0])),false);
+  assert.equal(calls.some(x=>['reply','repair'].includes(x[0])),false);
   assert.equal(calls.some(x=>x[0]==='audit'&&x[1]==='dry_run'),true);
+  const finish=calls.find(x=>x[0]==='finish');
+  assert.ok(finish);
+  assert.deepEqual(finish[1],{jobId:'j1',claimToken:'c1',status:'completed',result:{mode:'dry_run'}});
+});
+
+test('dry run marks stale observation in audit and still safely finishes without reply', async () => {
+  const calls=[];
+  const db={
+    async messages(){return[{sender_role:'user',body:'舊訊息'}]},
+    async latestUserMessage(){return'm2'},
+    async audit(v){calls.push(['audit',v])},
+    async replyAndFinish(){calls.push(['reply'])},
+    async createBugRepair(){calls.push(['repair'])},
+    async finish(v){calls.push(['finish',v])}
+  };
+  const results=await runClaimedJobs({jobs:[job()],db,mode:'dry_run',testThreads:new Set(),decide:async()=>({kind:'reply',reply:'回答',actions:[],confidence:.8,needsHuman:false})});
+  assert.deepEqual(results,[{status:'dry_run'}]);
+  const audit=calls.find(x=>x[0]==='audit')?.[1];
+  assert.equal(audit?.details?.stale,true);
+  assert.equal(calls.some(x=>['reply','repair'].includes(x[0])),false);
+  assert.equal(calls.some(x=>x[0]==='finish'),true);
 });
 
 test('allowlist refuses non-test thread without model call or mutation', async () => {
