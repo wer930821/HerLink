@@ -54,3 +54,23 @@ export function validateRepairPlan(plan={}) {
   }
   return {ok:true,files:safe};
 }
+
+export function buildRepairPrSpec({request,plan}={}) {
+  const repairId=String(request?.repairId ?? '');
+  const jobId=String(request?.jobId ?? '');
+  const branch=String(request?.branch ?? '');
+  const attempt=Number(request?.attempt ?? 0);
+  if (!SAFE_ID.test(repairId) || !SAFE_ID.test(jobId) || branch !== `ai-repair/${jobId}` || !Number.isInteger(attempt) || attempt < 1 || attempt > 2 || plan?.ok !== true || !Array.isArray(plan.files) || plan.files.length < 1) {
+    throw new Error('Invalid repair PR');
+  }
+  const validated=validateRepairPlan({files:plan.files});
+  if (!validated.ok) throw new Error('Invalid repair PR');
+  return {
+    branch,
+    base:'main',
+    draft:true,
+    title:`fix: automated repair ${jobId}`,
+    body:`Automated low-risk repair.\n\nRepair: ${repairId}\nAttempt: ${attempt}\n\nRequires CI validation before any merge.`,
+    files:validated.files
+  };
+}
