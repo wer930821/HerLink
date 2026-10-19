@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildRepairDispatch, buildRepairEngineRequest, validateRepairPlan, buildRepairPrSpec, buildRepairGitHubSteps, validateRepairBranchWrite } from '../lib/station-operator/repair-dispatch.mjs';
 
+const FULL_SHA='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
 test('builds an isolated ai-repair branch request from a low-risk queued repair', () => {
   const result=buildRepairDispatch({repair:{id:'r1',job_id:'j1',status:'queued',risk:'low',summary:'回覆訊息按鈕沒有反應'},attemptCount:1});
   assert.deepEqual(result,{ok:true,repairId:'r1',jobId:'j1',branch:'ai-repair/j1',summary:'回覆訊息按鈕沒有反應',attempt:1});
@@ -57,15 +59,21 @@ test('repair PR spec fails closed for invalid plan, non-ai branch, or attempt ov
 
 test('builds deterministic GitHub execution steps without merge or direct main writes', () => {
   const spec={branch:'ai-repair/j1',base:'main',draft:true,title:'fix: automated repair j1',body:'safe',files:[{path:'apps/web/components/A.tsx',content:'x'}]};
-  assert.deepEqual(buildRepairGitHubSteps({spec,baseSha:'abc123'}),[{action:'create_branch',branch:'ai-repair/j1',from:'abc123'},{action:'write_file',branch:'ai-repair/j1',path:'apps/web/components/A.tsx',content:'x'},{action:'create_pull_request',head:'ai-repair/j1',base:'main',draft:true,title:'fix: automated repair j1',body:'safe'}]);
+  assert.deepEqual(buildRepairGitHubSteps({spec,baseSha:FULL_SHA}),[{action:'create_branch',branch:'ai-repair/j1',from:FULL_SHA},{action:'write_file',branch:'ai-repair/j1',path:'apps/web/components/A.tsx',content:'x'},{action:'create_pull_request',head:'ai-repair/j1',base:'main',draft:true,title:'fix: automated repair j1',body:'safe'}]);
+});
+
+test('GitHub execution steps require exactly a full 40-character hexadecimal base sha', () => {
+  const safe={branch:'ai-repair/j1',base:'main',draft:true,title:'fix: automated repair j1',body:'safe',files:[{path:'apps/web/components/A.tsx',content:'x'}]};
+  assert.doesNotThrow(()=>buildRepairGitHubSteps({spec:safe,baseSha:FULL_SHA}));
+  for (const sha of ['abc123','a'.repeat(39),'a'.repeat(41),'g'.repeat(40)]) assert.throws(()=>buildRepairGitHubSteps({spec:safe,baseSha:sha}), /invalid github repair/i, sha);
 });
 
 test('GitHub execution steps reject main branch, non-draft PR, invalid base sha, and unsafe files', () => {
   const safe={branch:'ai-repair/j1',base:'main',draft:true,title:'fix: automated repair j1',body:'safe',files:[{path:'apps/web/components/A.tsx',content:'x'}]};
-  assert.throws(()=>buildRepairGitHubSteps({spec:{...safe,branch:'main'},baseSha:'abc123'}), /invalid github repair/i);
-  assert.throws(()=>buildRepairGitHubSteps({spec:{...safe,draft:false},baseSha:'abc123'}), /invalid github repair/i);
+  assert.throws(()=>buildRepairGitHubSteps({spec:{...safe,branch:'main'},baseSha:FULL_SHA}), /invalid github repair/i);
+  assert.throws(()=>buildRepairGitHubSteps({spec:{...safe,draft:false},baseSha:FULL_SHA}), /invalid github repair/i);
   assert.throws(()=>buildRepairGitHubSteps({spec:safe,baseSha:'../../main'}), /invalid github repair/i);
-  assert.throws(()=>buildRepairGitHubSteps({spec:{...safe,files:[{path:'.github/workflows/x.yml',content:'x'}]},baseSha:'abc123'}), /invalid github repair/i);
+  assert.throws(()=>buildRepairGitHubSteps({spec:{...safe,files:[{path:'.github/workflows/x.yml',content:'x'}]},baseSha:FULL_SHA}), /invalid github repair/i);
 });
 
 test('allows writes only to the exact isolated ai-repair job branch', () => {
