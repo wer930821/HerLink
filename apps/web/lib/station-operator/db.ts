@@ -40,9 +40,11 @@ export function createOperatorDb(client = createOperatorSupabase()) {
       const { error } = await client.from('station_operator_audit').insert({job_id:jobId,thread_id:threadId,action,outcome,details:details ?? {}});
       if (error) throw error;
     },
-    createBugRepair: async ({job,decision,messages}:{job:Job;decision:unknown;messages:unknown}) => {
-      const { error } = await client.from('station_operator_audit').insert({job_id:job.id,thread_id:job.thread_id,action:'repair_payload',outcome:'queued',details:{decision,messages}});
-      if (error) throw error;
-    }
+    createBugRepair: ({job,risk,summary}:{job:Job;risk:string;summary:string}) =>
+      rpc<string>('station_operator_create_repair',{p_job_id:job.id,p_claim_token:job.claim_token,p_risk:risk,p_summary:summary}),
+    applyRepairEvent: ({repairId,event,metadata}:{repairId:string;event:string;metadata?:Record<string,unknown>}) =>
+      rpc<{status:string;changed:boolean}>('station_operator_apply_repair_event',{p_repair_id:repairId,p_event:event,p_metadata:metadata ?? {}}),
+    finalizeVerifiedRepair: ({repairId,body}:{repairId:string;body:string}) =>
+      rpc<{status:string;changed:boolean;reason?:string;replyMessageId?:string}>('station_operator_finalize_verified_repair',{p_repair_id:repairId,p_body:body})
   };
 }

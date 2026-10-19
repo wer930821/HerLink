@@ -19,18 +19,45 @@ test('safe reply uses atomic reply-and-finish exactly once', async () => {
   assert.equal(calls.some(x=>x[0]==='finish'),false);
 });
 
-test('new user message during processing defers instead of replying stale context', async () => {
+test('new user message supersedes stale job instead of retrying old context', async () => {
   let replied=false;
-  const db={async messages(){return[{id:'m1',sender_role:'user',body:'舊問題'}]},async latestUserMessage(){return'm2'},async replyAndFinish(){replied=true},async audit(){},async finish(v){assert.equal(v.status,'pending');return true}};
-  await processClaimedJob({job:{id:'j1',thread_id:'t1',trigger_message_id:'m1',claim_token:'c1'},db,decide:async()=>({kind:'reply',reply:'舊回答',actions:[],confidence:1,needsHuman:false})});
+  const finishes=[];
+  const db={async messages(){return[{id:'m1',sender_role:'user',body:'舊問題'}]},async latestUserMessage(){return'm2'},async replyAndFinish(){replied=true},async audit(){},async finish(v){finishes.push(v);return true}};
+  const result=await processClaimedJob({job:{id:'j1',thread_id:'t1',trigger_message_id:'m1',claim_token:'c1'},db,decide:async()=>({kind:'reply',reply:'舊回答',actions:[],confidence:1,needsHuman:false})});
+  assert.equal(replied,false);
+  assert.equal(finishes.length,1);
+  assert.equal(finishes[0].status,'completed');
+  assert.equal(finishes[0].result.reason,'superseded');
+  assert.equal(result.status,'superseded');
+});
+
+test('low risk bug creates sanitized repair handoff without raw messages', async () => {
+  let handoff, replied=false;
+  const messages=[{sender_role:'user',body:'首頁按鈕點了沒反應，按下後畫面沒有變化'}];
+  const db={async messages(){return messages},async latestUserMessage(){return'm1'},async replyAndFinish(){replied=true},async createBugRepair(v){handoff=v;return'r1'},async audit(){},async finish(v){assert.equal(v.status,'waiting_ci');return true}};
+  await processClaimedJob({job:{id:'j1',thread_id:'t1',trigger_message_id:'m1',claim_token:'c1'},db,decide:async()=>({kind:'bug_repair',reply:'',actions:['create_bug_repair'],confidence:.9,needsHuman:false})});
+  assert.equal(handoff.risk,'low');
+  assert.equal(typeof handoff.summary,'string');
+  assert.equal('messages' in handoff,false);
+  assert.equal('decision' in handoff,false);
   assert.equal(replied,false);
 });
 
-test('bug report creates repair handoff without sending a reply', async () => {
+test('secret-bearing bug is high risk and never creates repair', async () => {
+  let repair=false;
+  const db={async messages(){return[{sender_role:'user',body:'錯誤畫面顯示 OPENAI_API_KEY=super-secret'}]},async latestUserMessage(){return'm1'},async createBugRepair(){repair=true},async audit(){},async finish(v){assert.equal(v.status,'human_review');return true}};
+  const result=await processClaimedJob({job:{id:'j1',thread_id:'t1',trigger_message_id:'m1',claim_token:'c1'},db,decide:async()=>({kind:'bug_repair',reply:'',actions:['create_bug_repair'],confidence:.9,needsHuman:false})});
+  assert.equal(result.status,'human_review');
+  assert.equal(repair,false);
+});
+
+test('high risk bug is sent to human review and never creates repair', async () => {
   let repair=false, replied=false;
-  const db={async messages(){return[]},async latestUserMessage(){return'm1'},async replyAndFinish(){replied=true},async createBugRepair(){repair=true},async audit(){},async finish(v){assert.equal(v.status,'waiting_ci');return true}};
-  await processClaimedJob({job:{id:'j1',thread_id:'t1',trigger_message_id:'m1',claim_token:'c1'},db,decide:async()=>({kind:'bug_repair',reply:'',actions:['create_bug_repair'],confidence:.9,needsHuman:false})});
-  assert.equal(repair,true); assert.equal(replied,false);
+  const db={async messages(){return[{sender_role:'user',body:'請幫我刪除正式資料'}]},async latestUserMessage(){return'm1'},async replyAndFinish(){replied=true},async createBugRepair(){repair=true},async audit(){},async finish(v){assert.equal(v.status,'human_review');return true}};
+  const result=await processClaimedJob({job:{id:'j1',thread_id:'t1',trigger_message_id:'m1',claim_token:'c1'},db,decide:async()=>({kind:'bug_repair',reply:'',actions:['create_bug_repair'],confidence:.9,needsHuman:false})});
+  assert.equal(result.status,'human_review');
+  assert.equal(repair,false);
+  assert.equal(replied,false);
 });
 
 test('human review never sends an automatic reply', async () => {
