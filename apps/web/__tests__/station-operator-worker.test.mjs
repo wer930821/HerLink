@@ -19,11 +19,16 @@ test('safe reply uses atomic reply-and-finish exactly once', async () => {
   assert.equal(calls.some(x=>x[0]==='finish'),false);
 });
 
-test('new user message during processing defers instead of replying stale context', async () => {
+test('new user message supersedes stale job instead of retrying old context', async () => {
   let replied=false;
-  const db={async messages(){return[{id:'m1',sender_role:'user',body:'舊問題'}]},async latestUserMessage(){return'm2'},async replyAndFinish(){replied=true},async audit(){},async finish(v){assert.equal(v.status,'pending');return true}};
-  await processClaimedJob({job:{id:'j1',thread_id:'t1',trigger_message_id:'m1',claim_token:'c1'},db,decide:async()=>({kind:'reply',reply:'舊回答',actions:[],confidence:1,needsHuman:false})});
+  const finishes=[];
+  const db={async messages(){return[{id:'m1',sender_role:'user',body:'舊問題'}]},async latestUserMessage(){return'm2'},async replyAndFinish(){replied=true},async audit(){},async finish(v){finishes.push(v);return true}};
+  const result=await processClaimedJob({job:{id:'j1',thread_id:'t1',trigger_message_id:'m1',claim_token:'c1'},db,decide:async()=>({kind:'reply',reply:'舊回答',actions:[],confidence:1,needsHuman:false})});
   assert.equal(replied,false);
+  assert.equal(finishes.length,1);
+  assert.equal(finishes[0].status,'completed');
+  assert.equal(finishes[0].result.reason,'superseded');
+  assert.equal(result.status,'superseded');
 });
 
 test('bug report creates repair handoff without sending a reply', async () => {
