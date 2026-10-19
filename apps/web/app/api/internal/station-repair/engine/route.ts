@@ -10,7 +10,9 @@ const SOURCE_EXT=/\.(?:[cm]?[jt]sx?|mjs)$/i;
 const MAX_SCAN_FILES=600;
 const MAX_SOURCE_FILE_BYTES=50000;
 const WEB_ROOT=path.resolve(process.cwd());
+const SAFE_REPOSITORY=/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 type RepairContextInput={summary?:string;allowedRoots?:string[]};
+type RepairFile={path:string;content:string};
 
 function sourcePath(relativePath:string) {
   const normalized=relativePath.replace(/\\/g,'/').replace(/^\.\//,'');
@@ -71,22 +73,64 @@ async function readBundledSource(file:string) {
   return fs.readFile(await safeSourceFile(file),'utf8');
 }
 
+function githubCapabilities() {
+  const token=process.env.STATION_REPAIR_GITHUB_TOKEN;
+  const repository=process.env.STATION_REPAIR_GITHUB_REPOSITORY;
+  if (!token || !repository || !SAFE_REPOSITORY.test(repository)) return null;
+  const api=`https://api.github.com/repos/${repository}`;
+  const headers={Authorization:`Bearer ${token}`,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'};
+  const call=async (url:string,init:RequestInit={})=>{
+    const response=await fetch(url,{...init,headers:{...headers,...(init.headers ?? {})},cache:'no-store'});
+    if (!response.ok) throw new Error('github_request_failed');
+    return response.status===204 ? null : response.json();
+  };
+  return {
+    createBranch:async ({branch,baseSha}:{branch:string;baseSha:string})=>{
+      await call(`${api}/git/refs`,{method:'POST',body:JSON.stringify({ref:`refs/heads/${branch}`,sha:baseSha})});
+      return {ok:true};
+    },
+    writeFiles:async ({branch,files}:{branch:string;files:RepairFile[]})=>{
+      let commitSha='';
+      for (const file of files) {
+        const encodedPath=file.path.split('/').map(encodeURIComponent).join('/');
+        let sha: string|undefined;
+        const existing=await fetch(`${api}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`,{headers,cache:'no-store'});
+        if (existing.ok) sha=String((await existing.json()).sha ?? '') || undefined;
+        else if (existing.status!==404) throw new Error('github_read_failed');
+        const body:{message:string;content:string;branch:string;sha?:string}={message:`fix: autonomous repair ${file.path}`,content:Buffer.from(file.content,'utf8').toString('base64'),branch};
+        if (sha) body.sha=sha;
+        const written=await call(`${api}/contents/${encodedPath}`,{method:'PUT',body:JSON.stringify(body)});
+        commitSha=String(written?.commit?.sha ?? '');
+      }
+      return {ok:true,commitSha};
+    },
+    createDraftPr:async ({head,base,draft,title,body}:{head:string;base:string;draft:boolean;title:string;body:string})=>{
+      const opened=await call(`${api}/pulls`,{method:'POST',body:JSON.stringify({head,base,draft,title,body})});
+      return {ok:true,prNumber:Number(opened?.number)};
+    }
+  };
+}
+
 export async function POST(request:Request) {
   const { handleRepairEngineHttp } = await import('../../../../../lib/station-operator/repair-engine-http.mjs');
   const { buildRepairEngineRuntime } = await import('../../../../../lib/station-operator/repair-engine-runtime.mjs');
   const { executeRepairEngine } = await import('../../../../../lib/station-operator/repair-engine-route.mjs');
   const { callRepairModel } = await import('../../../../../lib/station-operator/repair-openai.mjs');
   const { discoverRepairContext } = await import('../../../../../lib/station-operator/repair-context-runtime.mjs');
+  const { executeRepairGitHubWrite } = await import('../../../../../lib/station-operator/repair-github.mjs');
   let payload:unknown;
   try { payload=await request.json(); }
   catch { return NextResponse.json({ok:false},{status:400}); }
 
   try {
+    const capabilities=githubCapabilities();
     const engine=buildRepairEngineRuntime({
       execute:executeRepairEngine,
       discoverContext:(input:RepairContextInput)=>discoverRepairContext({...input,search:searchBundledSource,readFile:readBundledSource}),
       callModel:callRepairModel,
-      writeRepair:async () => ({ok:false,reason:'github_writer_not_wired'})
+      writeRepair:async (input:Record<string,unknown>) => capabilities
+        ? executeRepairGitHubWrite(input,capabilities)
+        : ({ok:false,reason:'missing_capability'})
     });
     const result=await handleRepairEngineHttp({
       authorization:request.headers.get('authorization'),
