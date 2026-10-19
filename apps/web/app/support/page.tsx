@@ -20,6 +20,7 @@ export default function SupportPage() {
   const [copied, setCopied] = useState(false);
 
   const finalAmount = customAmount ? Number(customAmount) : amount;
+  const hasAmount = finalAmount !== null && finalAmount > 0;
 
   const copyAccount = () => {
     navigator.clipboard.writeText(BANK_INFO.account).then(() => {
@@ -92,7 +93,7 @@ export default function SupportPage() {
         </div>
       </div>
 
-      {finalAmount > 0 && (
+      {hasAmount && (
         <div style={{ marginTop: 24 }}>
           <button
             onClick={() => setShowInfo(true)}
@@ -113,7 +114,7 @@ export default function SupportPage() {
         </div>
       )}
 
-      {showInfo && finalAmount > 0 && (
+      {showInfo && hasAmount && (
         <div style={{
           marginTop: 24,
           padding: 24,
