@@ -2,6 +2,11 @@ name: Station Repair Engine
 
 on:
   workflow_dispatch:
+    inputs:
+      job_id:
+        description: Station Operator job ID
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -23,3 +28,15 @@ jobs:
       - name: Validate repair safety contracts
         working-directory: apps/web
         run: node --test __tests__/station-repair-dispatch.test.mjs
+      - name: Validate isolated repair branch
+        working-directory: apps/web
+        env:
+          JOB_ID: ${{ inputs.job_id }}
+        run: |
+          node --input-type=module <<'NODE'
+          import {validateRepairBranchWrite} from './lib/station-operator/repair-dispatch.mjs';
+          const branch=`ai-repair/${process.env.JOB_ID ?? ''}`;
+          const result=validateRepairBranchWrite({jobId:process.env.JOB_ID,branch,force:false});
+          if (!result.ok) throw new Error(`Blocked repair branch: ${result.reason}`);
+          console.log(`Validated isolated branch: ${result.branch}`);
+          NODE
