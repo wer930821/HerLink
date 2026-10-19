@@ -19,7 +19,7 @@ export default function SupportPage() {
   const [showInfo, setShowInfo] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const finalAmount = customAmount ? Number(customAmount) : amount;
+  const finalAmount = customAmount ? Number(customAmount) : (amount ?? 0);
 
   const copyAccount = () => {
     navigator.clipboard.writeText(BANK_INFO.account).then(() => {
