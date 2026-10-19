@@ -1,5 +1,14 @@
 const SAFE_ID=/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 const ALLOWED_ROOTS=['apps/web/app/','apps/web/components/','apps/web/lib/','apps/web/__tests__/'];
+const MAX_REPAIR_FILES=5;
+const MAX_FILE_BYTES=50000;
+const BLOCKED_PATHS=[
+  /^\.github\//,
+  /^supabase\/migrations\//,
+  /(^|\/)\.env(?:\.|$)/,
+  /^apps\/web\/lib\/station-operator(?:\/|$)/,
+  /^apps\/web\/app\/api\/internal\/station-repair(?:\/|$)/
+];
 
 export function buildRepairDispatch({repair,attemptCount}={}) {
   const id=String(repair?.id ?? '');
@@ -15,34 +24,33 @@ export function buildRepairDispatch({repair,attemptCount}={}) {
   if (!Number.isInteger(attempt) || attempt < 1 || attempt > 2) return {ok:false,reason:'attempt_limit'};
   if (!summary) return {ok:false,reason:'missing_summary'};
 
-  return {
-    ok:true,
-    repairId:id,
-    jobId,
-    branch:`ai-repair/${jobId}`,
-    summary,
-    attempt
-  };
+  return {ok:true,repairId:id,jobId,branch:`ai-repair/${jobId}`,summary,attempt};
 }
 
 export function buildRepairEngineRequest({dispatch}={}) {
   if (!dispatch?.ok) throw new Error('Invalid repair dispatch');
   const {repairId,jobId,branch,summary,attempt}=dispatch;
-  if (!SAFE_ID.test(String(repairId ?? '')) || !SAFE_ID.test(String(jobId ?? ''))) {
-    throw new Error('Invalid repair dispatch');
-  }
-  if (branch !== `ai-repair/${jobId}` || !Number.isInteger(attempt) || attempt < 1 || attempt > 2) {
-    throw new Error('Invalid repair dispatch');
-  }
+  if (!SAFE_ID.test(String(repairId ?? '')) || !SAFE_ID.test(String(jobId ?? ''))) throw new Error('Invalid repair dispatch');
+  if (branch !== `ai-repair/${jobId}` || !Number.isInteger(attempt) || attempt < 1 || attempt > 2) throw new Error('Invalid repair dispatch');
   const safeSummary=String(summary ?? '').trim().slice(0,800);
   if (!safeSummary) throw new Error('Invalid repair dispatch');
+  return {repairId,jobId,branch,summary:safeSummary,attempt,allowedRoots:[...ALLOWED_ROOTS]};
+}
 
-  return {
-    repairId,
-    jobId,
-    branch,
-    summary:safeSummary,
-    attempt,
-    allowedRoots:[...ALLOWED_ROOTS]
-  };
+export function validateRepairPlan(plan={}) {
+  const files=Array.isArray(plan.files) ? plan.files : [];
+  if (files.length < 1 || files.length > MAX_REPAIR_FILES) return {ok:false,reason:'file_count'};
+  const seen=new Set();
+  const safe=[];
+  for (const file of files) {
+    const path=String(file?.path ?? '').replace(/\\/g,'/').replace(/^\.\//,'');
+    const content=typeof file?.content === 'string' ? file.content : '';
+    if (!path || seen.has(path)) return {ok:false,reason:'duplicate_or_missing_path'};
+    seen.add(path);
+    if (!ALLOWED_ROOTS.some(root=>path.startsWith(root)) || BLOCKED_PATHS.some(pattern=>pattern.test(path))) return {ok:false,reason:'blocked_path'};
+    if (!content || Buffer.byteLength(content,'utf8') > MAX_FILE_BYTES) return {ok:false,reason:'invalid_size'};
+    if (/```(?:sh|bash|shell|zsh|powershell|cmd)?\b/i.test(content) || /\brm\s+-rf\b/i.test(content)) return {ok:false,reason:'command_content'};
+    safe.push({path,content});
+  }
+  return {ok:true,files:safe};
 }
