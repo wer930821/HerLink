@@ -24,7 +24,7 @@ export function createOperatorDb(client = createOperatorSupabase()) {
     enqueue: (limit=20) => rpc<number>('station_operator_enqueue_unread',{p_limit:limit}),
     claim: (limit=5) => rpc<Job[]>('station_operator_claim',{p_limit:limit}),
     messages: async (threadId:string) => {
-      const data = await rpc<any[]>('station_mail_admin_messages',{p_thread_id:threadId});
+      const data = await rpc<any[]>('station_operator_messages',{p_thread_id:threadId});
       return (data ?? []).map(m => ({sender_role:m.sender_role, body:m.body, created_at:m.created_at}));
     },
     latestUserMessage: async (threadId:string) => {
@@ -32,7 +32,8 @@ export function createOperatorDb(client = createOperatorSupabase()) {
       if (error) throw error;
       return data?.id ?? null;
     },
-    reply: (threadId:string, body:string) => rpc<string>('station_mail_admin_reply',{p_thread_id:threadId,p_body:body}),
+    replyAndFinish: ({jobId,claimToken,body,result}:{jobId:string;claimToken:string;body:string;result?:unknown}) =>
+      rpc<string>('station_operator_reply_and_finish',{p_job_id:jobId,p_claim_token:claimToken,p_body:body,p_result:result ?? {}}),
     finish: ({jobId,claimToken,status,result,error}:{jobId:string;claimToken:string;status:string;result?:unknown;error?:string}) =>
       rpc<boolean>('station_operator_finish',{p_job_id:jobId,p_claim_token:claimToken,p_status:status,p_result:result ?? {},p_error:error ?? null}),
     audit: async ({jobId,threadId,action,outcome,details}:{jobId:string;threadId:string;action:string;outcome:string;details?:unknown}) => {
