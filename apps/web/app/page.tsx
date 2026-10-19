@@ -1090,12 +1090,6 @@ export default function HomePage() {
           <Button variant="link" onClick={logout} disabled={actionBusy}>登出</Button>
         </div>
         <nav className="home-app-legal-links" aria-label="網站資訊">
-          <Button variant="link" href="/safety">安全說明</Button>
-          <span aria-hidden="true">·</span>
-          <Button variant="link" href="/terms">服務條款</Button>
-          <span aria-hidden="true">·</span>
-          <Button variant="link" href="/privacy">隱私權政策</Button>
-          <span aria-hidden="true">·</span>
           <Button variant="link" href="/support">支持 HerLink</Button>
         </nav>
       </footer>
