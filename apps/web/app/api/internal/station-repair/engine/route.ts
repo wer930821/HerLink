@@ -8,6 +8,7 @@ export const runtime='nodejs';
 const SOURCE_ROOTS=['app/','components/','lib/','__tests__/'];
 const SOURCE_EXT=/\.(?:[cm]?[jt]sx?|mjs)$/i;
 const MAX_SCAN_FILES=600;
+type RepairContextInput={summary?:string;allowedRoots?:string[]};
 
 function sourcePath(relativePath:string) {
   const normalized=relativePath.replace(/\\/g,'/').replace(/^\.\//,'');
@@ -65,7 +66,7 @@ export async function POST(request:Request) {
   try {
     const engine=buildRepairEngineRuntime({
       execute:executeRepairEngine,
-      discoverContext:input=>discoverRepairContext({...input,search:searchBundledSource,readFile:readBundledSource}),
+      discoverContext:(input:RepairContextInput)=>discoverRepairContext({...input,search:searchBundledSource,readFile:readBundledSource}),
       callModel:callRepairModel,
       writeRepair:async () => ({ok:false,reason:'github_writer_not_wired'})
     });
