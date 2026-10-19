@@ -30,7 +30,12 @@ export async function processClaimedJob({ job, db, decide, mode, repairEngine })
     await db.audit({jobId:job.id,threadId:job.thread_id,action:'bug_repair',outcome:'queued',details:{repairId,risk,confidence:payload.confidence}});
 
     if (mode === 'allowlist' && typeof repairEngine === 'function') {
-      const engineResult = await repairEngine({repairId,jobId:job.id,risk});
+      let engineResult;
+      try {
+        engineResult = await repairEngine({repairId,jobId:job.id,risk});
+      } catch {
+        engineResult = {ok:false,reason:'engine_failed'};
+      }
       if (!engineResult?.ok) {
         await db.audit({jobId:job.id,threadId:job.thread_id,action:'repair_engine',outcome:'human_review',details:{repairId,reason:String(engineResult?.reason ?? 'engine_failed').slice(0,200)}});
         await db.finish({jobId:job.id,claimToken:job.claim_token,status:'human_review',result:{repairId,risk,reason:'repair_engine_failed'}});
