@@ -1,5 +1,5 @@
 const SAFE_ID=/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
-const SAFE_SHA=/^[A-Fa-f0-9]{6,64}$/;
+const SAFE_SHA=/^[A-Fa-f0-9]{40}$/;
 const ALLOWED_ROOTS=['apps/web/app/','apps/web/components/','apps/web/lib/','apps/web/__tests__/'];
 const MAX_REPAIR_FILES=5;
 const MAX_FILE_BYTES=50000;
