@@ -8,24 +8,42 @@ export const runtime='nodejs';
 const SOURCE_ROOTS=['app/','components/','lib/','__tests__/'];
 const SOURCE_EXT=/\.(?:[cm]?[jt]sx?|mjs)$/i;
 const MAX_SCAN_FILES=600;
+const MAX_SOURCE_FILE_BYTES=50000;
+const WEB_ROOT=path.resolve(process.cwd());
 type RepairContextInput={summary?:string;allowedRoots?:string[]};
 
 function sourcePath(relativePath:string) {
   const normalized=relativePath.replace(/\\/g,'/').replace(/^\.\//,'');
   if (!normalized.startsWith('apps/web/')) throw new Error('outside_source_root');
-  return path.join(process.cwd(),normalized.slice('apps/web/'.length));
+  const resolved=path.resolve(WEB_ROOT,normalized.slice('apps/web/'.length));
+  const relative=path.relative(WEB_ROOT,resolved);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('outside_source_root');
+  return resolved;
+}
+
+async function safeSourceFile(relativePath:string) {
+  const resolved=sourcePath(relativePath);
+  const info=await fs.stat(resolved);
+  if (!info.isFile() || info.size>MAX_SOURCE_FILE_BYTES) throw new Error('source_file_not_allowed');
+  return resolved;
 }
 
 async function walkSourceFiles() {
   const out:string[]=[];
   async function walk(relative:string) {
     if (out.length>=MAX_SCAN_FILES) return;
-    const entries=await fs.readdir(path.join(process.cwd(),relative),{withFileTypes:true});
+    const directory=path.resolve(WEB_ROOT,relative);
+    const contained=path.relative(WEB_ROOT,directory);
+    if (!contained || contained.startsWith('..') || path.isAbsolute(contained)) throw new Error('outside_source_root');
+    const entries=(await fs.readdir(directory,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name));
     for (const entry of entries) {
       if (out.length>=MAX_SCAN_FILES) return;
       const child=path.posix.join(relative.replace(/\\/g,'/'),entry.name);
       if (entry.isDirectory()) await walk(child);
-      else if (entry.isFile() && SOURCE_EXT.test(entry.name)) out.push(`apps/web/${child}`);
+      else if (entry.isFile() && SOURCE_EXT.test(entry.name)) {
+        const file=`apps/web/${child}`;
+        try { await safeSourceFile(file); out.push(file); } catch { /* skip unsafe or oversized source */ }
+      }
     }
   }
   for (const root of SOURCE_ROOTS) {
@@ -41,7 +59,7 @@ async function searchBundledSource(query:string) {
   const scored:Array<{path:string;score:number}>=[];
   for (const file of files) {
     let content='';
-    try { content=await fs.readFile(sourcePath(file),'utf8'); } catch { continue; }
+    try { content=await fs.readFile(await safeSourceFile(file),'utf8'); } catch { continue; }
     const haystack=`${file}\n${content}`.toLowerCase();
     const score=terms.reduce((sum,term)=>sum+(haystack.includes(term)?1:0),0);
     if (score>0) scored.push({path:file,score});
@@ -50,7 +68,7 @@ async function searchBundledSource(query:string) {
 }
 
 async function readBundledSource(file:string) {
-  return fs.readFile(sourcePath(file),'utf8');
+  return fs.readFile(await safeSourceFile(file),'utf8');
 }
 
 export async function POST(request:Request) {
