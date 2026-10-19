@@ -52,6 +52,19 @@ test('allowlist low-risk bug invokes repair engine once after repair creation', 
   assert.equal(result.status,'waiting_ci');
 });
 
+test('allowlist repair engine throw fails closed to human review without leaking error', async () => {
+  const audits=[];
+  const finishes=[];
+  const db={async messages(){return[{sender_role:'user',body:'回覆按鈕沒反應'}]},async latestUserMessage(){return'm1'},async createBugRepair(){return'r1'},async audit(v){audits.push(v)},async finish(v){finishes.push(v)}};
+  const result=await processClaimedJob({mode:'allowlist',job:{id:'j1',thread_id:'t1',trigger_message_id:'m1',claim_token:'c1'},db,decide:async()=>({kind:'bug_repair',reply:'',actions:['create_bug_repair'],confidence:.95,needsHuman:false}),repairEngine:async()=>{throw new Error('OPENAI_API_KEY=must-not-leak')}});
+  assert.equal(result.status,'human_review');
+  assert.equal(finishes.length,1);
+  assert.equal(finishes[0].status,'human_review');
+  assert.equal(audits.at(-1).action,'repair_engine');
+  assert.equal(audits.at(-1).outcome,'human_review');
+  assert.equal(JSON.stringify(audits).includes('must-not-leak'),false);
+});
+
 test('dry-run and production never invoke repair engine', async () => {
   for (const mode of ['dry_run','production']) {
     let called=false;
