@@ -1,5 +1,6 @@
 import { buildRepairContextQuery, validateRepairContextFiles } from './repair-context.mjs';
 
+const MAX_FILE_BYTES=50000;
 const MAX_TOTAL_BYTES=120000;
 
 function normalizeRoot(value) {
@@ -29,7 +30,9 @@ export async function discoverRepairContext({summary,allowedRoots=[],search,read
     let total=0;
     for (const path of guarded.files) {
       const content=String(await readFile(path) ?? '');
-      total+=Buffer.byteLength(content,'utf8');
+      const fileBytes=Buffer.byteLength(content,'utf8');
+      if (fileBytes>MAX_FILE_BYTES) return {ok:false,reason:'context_file_too_large'};
+      total+=fileBytes;
       if (total>MAX_TOTAL_BYTES) return {ok:false,reason:'context_too_large'};
       context.push({path,content});
     }
