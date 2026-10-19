@@ -2,13 +2,13 @@ import { Button, PageHero, Surface } from "../../components/ui";
 
 const items = [
   "HerLink 不要求您以公開真實姓名、Email、生日、城市或照片作為匿名聊天的必要條件。",
-  "平台會處理 Supabase anonymous auth user id、session、配對、訊息，以及安全、檢舉與封鎖紀錄。",
-  "為了防止濫用，平台可能保存低侵入性的 installation identifier 或其他必要的 abuse prevention signal。",
-  "HerLink 不使用侵入式 fingerprinting，例如 canvas、font 或 WebGL fingerprinting。",
+  "平台會處理 Supabase 匿名驗證使用者 ID、工作階段、配對、訊息，以及安全、檢舉與封鎖紀錄。",
+  "為了防止濫用，平台可能保存低侵入性的安裝識別碼或其他必要的防濫用訊號。",
+  "HerLink 不使用侵入式裝置指紋辨識，例如 canvas、字型或 WebGL 指紋辨識。",
   "IP 或單一訊號不會作為永久封鎖的唯一依據；必要時僅作為風險評估的一部分。",
   "訊息可能被安全系統分析，以辨識詐騙、匯款、投資、驗證碼、惡意連結等風險行為。",
-  "檢舉與封鎖目標由後端根據 auth.uid() 與 session 推導，不依賴匿名顯示名稱。",
-  "client 端不會暴露 service_role、risk hash、內部風險分數或其他敏感安全資料。",
+  "檢舉與封鎖目標由後端根據使用者 ID 與工作階段推導，不依賴匿名顯示名稱。",
+  "用戶端不會暴露伺服器金鑰、風險雜湊值、內部風險分數或其他敏感安全資料。",
   "HerLink 的服務依賴 Supabase、Vercel 與相關基礎設施，資料處理以當前實際提供的功能為限。",
 ];
 

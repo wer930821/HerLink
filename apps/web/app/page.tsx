@@ -799,17 +799,6 @@ export default function HomePage() {
             )}
           </div>
         </Modal>
-        <Surface elevation={1}>
-          <Notice variant="danger" title="安全提醒">
-            請勿向陌生人匯款、投資或提供銀行資料、信用卡資訊與驗證碼。
-          </Notice>
-          <p className="muted small">使用 HerLink 即表示你已年滿 18 歲，並同意服務條款與隱私權政策。</p>
-          <div className="link-row">
-            <Button variant="link" href="/terms">服務條款</Button>
-            <Button variant="link" href="/privacy">隱私權政策</Button>
-            <Button variant="link" href="/safety">安全說明</Button>
-          </div>
-        </Surface>
         <section className="guest-trust">
           <div className="guest-trust-icon" aria-hidden="true">✦</div>
           <div>
