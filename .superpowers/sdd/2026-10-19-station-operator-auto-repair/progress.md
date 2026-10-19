@@ -4,10 +4,10 @@
 - [x] Task 2: stale context, rollout modes, safe OpenAI errors
 - [x] Task 3: repair job model and risk controls
 - [x] Task 4: AI repair file guard and CI guard definition
-- [ ] Task 5: CI/deploy callback and idempotent state machine
+- [x] Task 5: CI/deploy callback and idempotent state machine
 - [ ] Task 6: production deploy and health gate
 - [ ] Task 7: safe rollout verification
 
 Validation note: PR #42 is temporarily based on `ci/station-operator-validation` so GitHub Actions can validate this isolated feature branch before any merge to `main`.
 
-Latest validation: Station Operator tests passed 31/31 on run 39235240564. The validation base now includes the unrelated `support/page.tsx` nullable `finalAmount` TypeScript fix at `8018bc4f0cce3f2043a54cca85992c1ec7494138`. This progress-only commit retriggers validation against that corrected base. Production remains disabled.
+Task 5 verification: callback authentication, metadata sanitization, idempotent state transitions, illegal backward transition rejection, CI/deploy failure to human_review, atomic Supabase RPC/audit, and service_role-only RPC execution are implemented. Station Operator PR Validation run #20 (`39244388229`) passed on head `9ff1df381587c530d6ef23ab5243094b5e269ff9`. Production remains disabled and the callback migration has not been applied to production Supabase.
