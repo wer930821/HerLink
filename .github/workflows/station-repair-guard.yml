@@ -1,0 +1,53 @@
+name: Station Repair Guard
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    if: startsWith(github.head_ref, 'ai-repair/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reject forbidden file changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --name-only "origin/${{ github.base_ref }}...HEAD" > /tmp/changed.txt
+          cat /tmp/changed.txt
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { validateRepairFiles } from './apps/web/lib/station-operator/repair.mjs';
+          const files=fs.readFileSync('/tmp/changed.txt','utf8').split('\n').filter(Boolean);
+          const result=validateRepairFiles(files);
+          if (!result.ok) {
+            console.error('Forbidden AI repair files:', result.blocked.join(', '));
+            process.exit(1);
+          }
+          NODE
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Station operator tests
+        working-directory: apps/web
+        run: npm run test:station-operator
+
+      - name: Typecheck
+        working-directory: apps/web
+        run: npm run typecheck
+
+      - name: Build
+        working-directory: apps/web
+        run: npm run build
