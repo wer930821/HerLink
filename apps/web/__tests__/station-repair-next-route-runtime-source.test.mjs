@@ -9,7 +9,12 @@ test('internal repair route wires constrained engine runtime instead of placehol
   assert.match(source,/executeRepairEngine/);
   assert.match(source,/callRepairModel/);
   assert.match(source,/discoverContext/);
-  assert.doesNotMatch(source,/runtime_not_wired/);
+  assert.doesNotMatch(source,/execute\s*:\s*async\s*\(\)\s*=>\s*\(\{ok:false,reason:['"]runtime_not_wired['"]\}\)/);
+});
+
+test('internal repair route keeps unwired external capabilities fail closed',()=>{
+  assert.match(source,/context_runtime_not_wired/);
+  assert.match(source,/github_writer_not_wired/);
 });
 
 test('internal repair route does not expose OpenAI key or add a new client credential',()=>{
