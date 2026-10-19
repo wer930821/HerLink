@@ -2,12 +2,12 @@ export async function processClaimedJob({ job, db, decide }) {
   const messages = await db.messages(job.thread_id);
   const decision = await decide({ messages });
 
-  // Re-read after model latency. Never answer a stale thread.
+  // Re-read after model latency. Never answer or retry an obsolete context.
   const latest = await db.latestUserMessage(job.thread_id);
   if (latest && latest !== job.trigger_message_id) {
-    await db.audit({jobId:job.id,threadId:job.thread_id,action:'stale_context',outcome:'deferred',details:{latest}});
-    await db.finish({jobId:job.id,claimToken:job.claim_token,status:'pending',result:{reason:'new_message'}});
-    return { status:'pending' };
+    await db.audit({jobId:job.id,threadId:job.thread_id,action:'stale_context',outcome:'superseded',details:{latest}});
+    await db.finish({jobId:job.id,claimToken:job.claim_token,status:'completed',result:{reason:'superseded',latest}});
+    return { status:'superseded' };
   }
 
   if (decision.needsHuman || decision.kind === 'human_review') {
@@ -24,7 +24,6 @@ export async function processClaimedJob({ job, db, decide }) {
   }
 
   if (decision.kind === 'reply' && decision.reply) {
-    // Reply + audit + job completion happen in one DB transaction. A retry cannot double-send.
     await db.replyAndFinish({jobId:job.id,claimToken:job.claim_token,body:decision.reply,result:{decision}});
     return { status:'completed' };
   }
