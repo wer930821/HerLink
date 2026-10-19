@@ -1,4 +1,5 @@
 const SAFE_ID=/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
+const ALLOWED_ROOTS=['apps/web/app/','apps/web/components/','apps/web/lib/','apps/web/__tests__/'];
 
 export function buildRepairDispatch({repair,attemptCount}={}) {
   const id=String(repair?.id ?? '');
@@ -21,5 +22,27 @@ export function buildRepairDispatch({repair,attemptCount}={}) {
     branch:`ai-repair/${jobId}`,
     summary,
     attempt
+  };
+}
+
+export function buildRepairEngineRequest({dispatch}={}) {
+  if (!dispatch?.ok) throw new Error('Invalid repair dispatch');
+  const {repairId,jobId,branch,summary,attempt}=dispatch;
+  if (!SAFE_ID.test(String(repairId ?? '')) || !SAFE_ID.test(String(jobId ?? ''))) {
+    throw new Error('Invalid repair dispatch');
+  }
+  if (branch !== `ai-repair/${jobId}` || !Number.isInteger(attempt) || attempt < 1 || attempt > 2) {
+    throw new Error('Invalid repair dispatch');
+  }
+  const safeSummary=String(summary ?? '').trim().slice(0,800);
+  if (!safeSummary) throw new Error('Invalid repair dispatch');
+
+  return {
+    repairId,
+    jobId,
+    branch,
+    summary:safeSummary,
+    attempt,
+    allowedRoots:[...ALLOWED_ROOTS]
   };
 }
