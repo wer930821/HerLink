@@ -7,10 +7,10 @@ const AMOUNTS = [50, 100, 300, 500];
 
 // 站長填寫實際帳號資訊
 const BANK_INFO = {
-  bank: "銀行名稱",
-  branch: "分行名稱",
-  account: "00000000000000",
-  holder: "戶名",
+  bank: "臺灣企銀",
+  branch: "台中分行",
+  account: "49064610863",
+  holder: "賴加雯",
 };
 
 export default function SupportPage() {
