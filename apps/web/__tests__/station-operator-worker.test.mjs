@@ -33,15 +33,22 @@ test('new user message supersedes stale job instead of retrying old context', as
 
 test('low risk bug creates sanitized repair handoff without raw messages', async () => {
   let handoff, replied=false;
-  const messages=[{sender_role:'user',body:'首頁按鈕點了沒反應 OPENAI_API_KEY=super-secret'}];
+  const messages=[{sender_role:'user',body:'首頁按鈕點了沒反應，按下後畫面沒有變化'}];
   const db={async messages(){return messages},async latestUserMessage(){return'm1'},async replyAndFinish(){replied=true},async createBugRepair(v){handoff=v;return'r1'},async audit(){},async finish(v){assert.equal(v.status,'waiting_ci');return true}};
   await processClaimedJob({job:{id:'j1',thread_id:'t1',trigger_message_id:'m1',claim_token:'c1'},db,decide:async()=>({kind:'bug_repair',reply:'',actions:['create_bug_repair'],confidence:.9,needsHuman:false})});
   assert.equal(handoff.risk,'low');
   assert.equal(typeof handoff.summary,'string');
-  assert.equal(handoff.summary.includes('super-secret'),false);
   assert.equal('messages' in handoff,false);
   assert.equal('decision' in handoff,false);
   assert.equal(replied,false);
+});
+
+test('secret-bearing bug is high risk and never creates repair', async () => {
+  let repair=false;
+  const db={async messages(){return[{sender_role:'user',body:'錯誤畫面顯示 OPENAI_API_KEY=super-secret'}]},async latestUserMessage(){return'm1'},async createBugRepair(){repair=true},async audit(){},async finish(v){assert.equal(v.status,'human_review');return true}};
+  const result=await processClaimedJob({job:{id:'j1',thread_id:'t1',trigger_message_id:'m1',claim_token:'c1'},db,decide:async()=>({kind:'bug_repair',reply:'',actions:['create_bug_repair'],confidence:.9,needsHuman:false})});
+  assert.equal(result.status,'human_review');
+  assert.equal(repair,false);
 });
 
 test('high risk bug is sent to human review and never creates repair', async () => {
