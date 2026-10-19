@@ -45,3 +45,15 @@ test('repair engine execution fails closed before writer when model output is un
     writeRepair:async()=>{wrote=true;return{ok:true};}});
   assert.equal(result.ok,false); assert.equal(wrote,false);
 });
+
+test('repair engine execution fails closed when an injected capability throws', async()=>{
+  const cases=[
+    {discoverContext:async()=>{throw new Error('secret discovery failure');},callModel:async()=>'',writeRepair:async()=>({ok:true})},
+    {discoverContext:async()=>({ok:true,context:[{path:'apps/web/app/page.tsx',content:'x'}]}),callModel:async()=>{throw new Error('secret model failure');},writeRepair:async()=>({ok:true})},
+    {discoverContext:async()=>({ok:true,context:[{path:'apps/web/app/page.tsx',content:'x'}]}),callModel:async()=>JSON.stringify({cause:'safe',confidence:.9,files:[{path:'apps/web/app/page.tsx',content:'x'}]}),writeRepair:async()=>{throw new Error('secret writer failure');}},
+  ];
+  for(const capabilities of cases){
+    const result=await executeRepairEngine({authenticated:true,mode:'allowlist',repair,request,...capabilities});
+    assert.deepEqual(result,{ok:false,reason:'engine_failed'});
+  }
+});
