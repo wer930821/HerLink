@@ -82,15 +82,20 @@ export default function RandomSessionPage() {
     target.setRangeText("\n", start, end, "end");
     target.dispatchEvent(new Event("input", { bubbles: true }));
 
-    // Enter should create a newline without growing the whole composer. Keep the
-    // textarea at its current visual height and scroll inside it to the caret.
     const fixedHeight = target.getBoundingClientRect().height;
     requestAnimationFrame(() => {
       target.style.height = `${fixedHeight}px`;
       target.scrollTop = target.scrollHeight;
     });
   };
-  const reply = () => { if (!menu) return; const bubble = menu.bubble; setMenu(null); bypassClickRef.current = true; bubble.click(); queueMicrotask(() => { bypassClickRef.current = false; }); };
+  const reply = () => {
+    if (!menu) return;
+    const bubble = menu.bubble;
+    setMenu(null);
+    bypassClickRef.current = true;
+    bubble.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+    queueMicrotask(() => { bypassClickRef.current = false; });
+  };
 
   const edit = async () => {
     if (!menu?.mine) return;
@@ -119,11 +124,6 @@ export default function RandomSessionPage() {
       window.alert(`目前無法收回訊息：${result.error.message || "請稍後再試"}`);
       return;
     }
-
-    // Do not dispatch a second client-only recall event. The database UPDATE is
-    // the single source of truth and RandomSessionClient already consumes it via
-    // postgres_changes plus its full-state fallback sync. Keeping one update path
-    // avoids duplicate render cycles immediately after a mobile long-press action.
   };
 
   const menuHasMedia = Boolean(menu?.bubble.querySelector("img, video, audio, [data-media]"));
