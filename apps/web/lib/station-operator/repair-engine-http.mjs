@@ -9,12 +9,14 @@ export async function handleRepairEngineHttp({authorization,secret,mode,payload,
   try {
     const repair=await db.repair(payload.repairId);
     if (!repair) return {status:404,body:{ok:false}};
+    const storedAttempt=Number(repair.attempt_count);
+    const attempt=storedAttempt === 0 ? 1 : storedAttempt;
     const request={
       repairId:repair.id,
       jobId:repair.job_id,
       branch:`ai-repair/${repair.job_id}`,
       summary:String(repair.summary ?? ''),
-      attempt:Number(repair.attempt_count),
+      attempt,
       allowedRoots:[...ALLOWED_ROOTS],
     };
     const result=await execute({authenticated:true,mode,repair,request});
