@@ -13,8 +13,9 @@ export function validateRepairEngineInvocation({ authenticated, mode, repair, re
   if (request.branch !== expectedBranch) return { ok: false, reason: 'branch_mismatch' };
   const attempt = Number(request.attempt);
   const storedAttempt = Number(repair.attempt_count);
+  const expectedAttempt = storedAttempt === 0 ? 1 : storedAttempt;
   if (!Number.isInteger(attempt) || attempt < 1 || attempt > MAX_ATTEMPTS) return { ok: false, reason: 'attempt_not_allowed' };
-  if (!Number.isInteger(storedAttempt) || storedAttempt !== attempt) return { ok: false, reason: 'attempt_mismatch' };
+  if (!Number.isInteger(storedAttempt) || storedAttempt < 0 || storedAttempt > MAX_ATTEMPTS || expectedAttempt !== attempt) return { ok: false, reason: 'attempt_mismatch' };
   return { ok: true };
 }
 
