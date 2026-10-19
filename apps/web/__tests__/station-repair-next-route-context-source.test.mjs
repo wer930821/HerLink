@@ -12,3 +12,15 @@ test('internal repair route uses bounded repository context runtime instead of c
 test('internal repair route keeps GitHub writer fail closed until explicit write capability exists',()=>{
   assert.match(source,/github_writer_not_wired/);
 });
+
+test('repair source runtime resolves and contains paths under the deployed web root',()=>{
+  assert.match(source,/path\.resolve/);
+  assert.match(source,/path\.relative/);
+  assert.match(source,/outside_source_root/);
+});
+
+test('repair source traversal is deterministic and skips files over 50KB before reading them',()=>{
+  assert.match(source,/MAX_SOURCE_FILE_BYTES\s*=\s*50000/);
+  assert.match(source,/\.sort\(/);
+  assert.match(source,/fs\.stat/);
+});
