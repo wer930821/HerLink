@@ -4,7 +4,7 @@ import { approveAdminRecoveryRequest,loadAdminRecoveryRequests,supabase,type Adm
 import { AdminEmpty,AdminSection,formatAdminTime } from "../_components";
 import { Button,Notice } from "../../../components/ui";
 
-function isExpired(x:AdminRecoveryRequest){return x.status==="pending"&&new Date(x.expires_at).getTime()<=Date.now()}
+function isExpired(x:AdminRecoveryRequest){return x.status==="pending" && x.expires_at!=null && new Date(x.expires_at).getTime()<=Date.now()}
 export default function RecoveryPage(){
  const [items,setItems]=useState<AdminRecoveryRequest[]>([]);const [loading,setLoading]=useState(true);const [error,setError]=useState<string|null>(null);const [busy,setBusy]=useState("");const [deleteTarget,setDeleteTarget]=useState<AdminRecoveryRequest|null>(null);const [approveTarget,setApproveTarget]=useState<{x:AdminRecoveryRequest;side:"a"|"b"}|null>(null);const [reactivateTarget,setReactivateTarget]=useState<AdminRecoveryRequest|null>(null);
  const load=useCallback(async()=>{setLoading(true);setError(null);const r=await loadAdminRecoveryRequests();if(r.error)setError(r.error.message||"無法載入恢復申請");else setItems((r.data??[]).filter(x=>x.status==="pending"));setLoading(false)},[]);useEffect(()=>{void load()},[load]);
