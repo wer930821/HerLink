@@ -12,10 +12,12 @@ test('internal repair route wires constrained engine runtime instead of placehol
   assert.doesNotMatch(source,/execute\s*:\s*async\s*\(\)\s*=>\s*\(\{ok:false,reason:['"]runtime_not_wired['"]\}\)/);
 });
 
-test('internal repair route wires bounded context while keeping GitHub writer fail closed',()=>{
+test('internal repair route wires bounded context and capability-limited GitHub writer',()=>{
   assert.match(source,/discoverRepairContext/);
   assert.doesNotMatch(source,/context_runtime_not_wired/);
-  assert.match(source,/github_writer_not_wired/);
+  assert.match(source,/executeRepairGitHubWrite/);
+  assert.match(source,/githubCapabilities/);
+  assert.doesNotMatch(source,/github_writer_not_wired/);
 });
 
 test('internal repair route does not expose OpenAI key or add a new client credential',()=>{
