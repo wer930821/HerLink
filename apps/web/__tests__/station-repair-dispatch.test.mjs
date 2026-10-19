@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildRepairDispatch, buildRepairEngineRequest, validateRepairPlan, buildRepairPrSpec, buildRepairGitHubSteps } from '../lib/station-operator/repair-dispatch.mjs';
+import { buildRepairDispatch, buildRepairEngineRequest, validateRepairPlan, buildRepairPrSpec, buildRepairGitHubSteps, validateRepairBranchWrite } from '../lib/station-operator/repair-dispatch.mjs';
 
 test('builds an isolated ai-repair branch request from a low-risk queued repair', () => {
   const result=buildRepairDispatch({repair:{id:'r1',job_id:'j1',status:'queued',risk:'low',summary:'回覆訊息按鈕沒有反應'},attemptCount:1});
@@ -23,9 +23,7 @@ test('builds a repair engine request without mailbox thread or raw messages', ()
   assert.doesNotMatch(JSON.stringify(request), /private-thread|private-message|raw mailbox content/);
 });
 
-test('repair engine request rejects invalid dispatch objects', () => {
-  assert.throws(()=>buildRepairEngineRequest({dispatch:{ok:false}}), /invalid repair dispatch/i);
-});
+test('repair engine request rejects invalid dispatch objects', () => assert.throws(()=>buildRepairEngineRequest({dispatch:{ok:false}}), /invalid repair dispatch/i));
 
 test('accepts a small constrained repair plan containing only allowed app files', () => {
   const files=[{path:'apps/web/components/ReplyButton.tsx',content:'export function ReplyButton(){ return null; }'},{path:'apps/web/__tests__/reply-button.test.mjs',content:'// regression test'}];
@@ -59,11 +57,7 @@ test('repair PR spec fails closed for invalid plan, non-ai branch, or attempt ov
 
 test('builds deterministic GitHub execution steps without merge or direct main writes', () => {
   const spec={branch:'ai-repair/j1',base:'main',draft:true,title:'fix: automated repair j1',body:'safe',files:[{path:'apps/web/components/A.tsx',content:'x'}]};
-  assert.deepEqual(buildRepairGitHubSteps({spec,baseSha:'abc123'}),[
-    {action:'create_branch',branch:'ai-repair/j1',from:'abc123'},
-    {action:'write_file',branch:'ai-repair/j1',path:'apps/web/components/A.tsx',content:'x'},
-    {action:'create_pull_request',head:'ai-repair/j1',base:'main',draft:true,title:'fix: automated repair j1',body:'safe'}
-  ]);
+  assert.deepEqual(buildRepairGitHubSteps({spec,baseSha:'abc123'}),[{action:'create_branch',branch:'ai-repair/j1',from:'abc123'},{action:'write_file',branch:'ai-repair/j1',path:'apps/web/components/A.tsx',content:'x'},{action:'create_pull_request',head:'ai-repair/j1',base:'main',draft:true,title:'fix: automated repair j1',body:'safe'}]);
 });
 
 test('GitHub execution steps reject main branch, non-draft PR, invalid base sha, and unsafe files', () => {
@@ -72,4 +66,15 @@ test('GitHub execution steps reject main branch, non-draft PR, invalid base sha,
   assert.throws(()=>buildRepairGitHubSteps({spec:{...safe,draft:false},baseSha:'abc123'}), /invalid github repair/i);
   assert.throws(()=>buildRepairGitHubSteps({spec:safe,baseSha:'../../main'}), /invalid github repair/i);
   assert.throws(()=>buildRepairGitHubSteps({spec:{...safe,files:[{path:'.github/workflows/x.yml',content:'x'}]},baseSha:'abc123'}), /invalid github repair/i);
+});
+
+test('allows writes only to the exact isolated ai-repair job branch', () => {
+  assert.deepEqual(validateRepairBranchWrite({jobId:'j1',branch:'ai-repair/j1'}),{ok:true,branch:'ai-repair/j1'});
+});
+
+test('branch write gate rejects main, another repair branch, malformed job IDs, and force updates', () => {
+  assert.equal(validateRepairBranchWrite({jobId:'j1',branch:'main'}).ok,false);
+  assert.equal(validateRepairBranchWrite({jobId:'j1',branch:'ai-repair/j2'}).ok,false);
+  assert.equal(validateRepairBranchWrite({jobId:'../main',branch:'ai-repair/../main'}).ok,false);
+  assert.equal(validateRepairBranchWrite({jobId:'j1',branch:'ai-repair/j1',force:true}).ok,false);
 });
