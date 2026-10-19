@@ -2,7 +2,15 @@ name: HerLink Web Build
 
 on:
   push:
-    branches: [main, test/reduce-chat-polling, fix/reduce-session-refresh, fix/egress-session-coalescing-v5]
+    branches: [main, test/reduce-chat-polling, fix/reduce-session-refresh, fix/egress-session-coalescing-v5, feat/chatgpt-station-operator]
+    paths:
+      - "apps/web/**"
+      - "lib/**"
+      - "tests/web-collection-access.test.cjs"
+      - "tests/web-egg-permissions.test.cjs"
+      - ".github/workflows/web-build.yml"
+  pull_request:
+    branches: [main]
     paths:
       - "apps/web/**"
       - "lib/**"
@@ -40,5 +48,6 @@ jobs:
       - run: node lib/collection-replay.test.mjs
       - run: node ../../tests/web-collection-access.test.cjs
       - run: node ../../tests/web-egg-permissions.test.cjs
+      - run: node --test __tests__/station-operator-*.test.mjs
       - run: npm run typecheck
       - run: npm run build

@@ -1,0 +1,47 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+
+type Job = { id:string; thread_id:string; trigger_message_id:string|null; claim_token:string; attempt_count:number };
+
+function required(name:string) {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} missing`);
+  return value;
+}
+
+export function createOperatorSupabase(): SupabaseClient {
+  return createClient(required('SUPABASE_URL'), required('SUPABASE_SERVICE_ROLE_KEY'), {
+    auth: { persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }
+  });
+}
+
+export function createOperatorDb(client = createOperatorSupabase()) {
+  const rpc = async <T>(name:string, args:Record<string,unknown> = {}) => {
+    const { data, error } = await client.rpc(name, args);
+    if (error) throw error;
+    return data as T;
+  };
+  return {
+    enqueue: (limit=20) => rpc<number>('station_operator_enqueue_unread',{p_limit:limit}),
+    claim: (limit=5) => rpc<Job[]>('station_operator_claim',{p_limit:limit}),
+    messages: async (threadId:string) => {
+      const data = await rpc<any[]>('station_mail_admin_messages',{p_thread_id:threadId});
+      return (data ?? []).map(m => ({sender_role:m.sender_role, body:m.body, created_at:m.created_at}));
+    },
+    latestUserMessage: async (threadId:string) => {
+      const { data, error } = await client.from('station_mail_messages').select('id').eq('thread_id',threadId).eq('sender_role','user').order('created_at',{ascending:false}).limit(1).maybeSingle();
+      if (error) throw error;
+      return data?.id ?? null;
+    },
+    reply: (threadId:string, body:string) => rpc<string>('station_mail_admin_reply',{p_thread_id:threadId,p_body:body}),
+    finish: ({jobId,claimToken,status,result,error}:{jobId:string;claimToken:string;status:string;result?:unknown;error?:string}) =>
+      rpc<boolean>('station_operator_finish',{p_job_id:jobId,p_claim_token:claimToken,p_status:status,p_result:result ?? {},p_error:error ?? null}),
+    audit: async ({jobId,threadId,action,outcome,details}:{jobId:string;threadId:string;action:string;outcome:string;details?:unknown}) => {
+      const { error } = await client.from('station_operator_audit').insert({job_id:jobId,thread_id:threadId,action,outcome,details:details ?? {}});
+      if (error) throw error;
+    },
+    createBugRepair: async ({job,decision,messages}:{job:Job;decision:unknown;messages:unknown}) => {
+      const { error } = await client.from('station_operator_audit').insert({job_id:job.id,thread_id:job.thread_id,action:'repair_payload',outcome:'queued',details:{decision,messages}});
+      if (error) throw error;
+    }
+  };
+}
