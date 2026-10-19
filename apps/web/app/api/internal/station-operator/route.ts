@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createOperatorDb } from '@/lib/station-operator/db';
+import { createOperatorDb } from '../../../../lib/station-operator/db';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -18,8 +18,6 @@ export async function POST(request:Request) {
   const enqueued = await db.enqueue(20);
   const jobs = await db.claim(5);
   const results:unknown[] = [];
-
-  // Worker/OpenAI modules are .mjs and intentionally kept runtime-only so secrets never reach the client.
   const [{processClaimedJob},{decideMailboxThread}] = await Promise.all([
     import('../../../../lib/station-operator/worker.mjs'),
     import('../../../../lib/station-operator/openai.mjs')
