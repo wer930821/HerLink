@@ -9,8 +9,10 @@ test('internal repair route uses bounded repository context runtime instead of c
   assert.doesNotMatch(source,/context_runtime_not_wired/);
 });
 
-test('internal repair route keeps GitHub writer fail closed until explicit write capability exists',()=>{
-  assert.match(source,/github_writer_not_wired/);
+test('internal repair route uses the explicit capability-limited GitHub writer',()=>{
+  assert.match(source,/executeRepairGitHubWrite/);
+  assert.match(source,/githubCapabilities/);
+  assert.doesNotMatch(source,/github_writer_not_wired/);
 });
 
 test('repair source runtime resolves and contains paths under the deployed web root',()=>{
