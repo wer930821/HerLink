@@ -12,8 +12,9 @@ test('internal repair route wires constrained engine runtime instead of placehol
   assert.doesNotMatch(source,/execute\s*:\s*async\s*\(\)\s*=>\s*\(\{ok:false,reason:['"]runtime_not_wired['"]\}\)/);
 });
 
-test('internal repair route keeps unwired external capabilities fail closed',()=>{
-  assert.match(source,/context_runtime_not_wired/);
+test('internal repair route wires bounded context while keeping GitHub writer fail closed',()=>{
+  assert.match(source,/discoverRepairContext/);
+  assert.doesNotMatch(source,/context_runtime_not_wired/);
   assert.match(source,/github_writer_not_wired/);
 });
 
