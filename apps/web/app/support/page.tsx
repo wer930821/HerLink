@@ -5,12 +5,28 @@ import Link from "next/link";
 
 const AMOUNTS = [50, 100, 300, 500];
 
+// 站長填寫實際帳號資訊
+const BANK_INFO = {
+  bank: "銀行名稱",
+  branch: "分行名稱",
+  account: "00000000000000",
+  holder: "戶名",
+};
+
 export default function SupportPage() {
   const [amount, setAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
-  const [showQr, setShowQr] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const finalAmount = customAmount ? Number(customAmount) : amount;
+
+  const copyAccount = () => {
+    navigator.clipboard.writeText(BANK_INFO.account).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   return (
     <div style={{
@@ -38,7 +54,7 @@ export default function SupportPage() {
           {AMOUNTS.map((a) => (
             <button
               key={a}
-              onClick={() => { setAmount(a); setCustomAmount(""); setShowQr(false); }}
+              onClick={() => { setAmount(a); setCustomAmount(""); setShowInfo(false); }}
               style={{
                 padding: "16px",
                 borderRadius: 14,
@@ -61,7 +77,7 @@ export default function SupportPage() {
             min="1"
             placeholder="自訂金額"
             value={customAmount}
-            onChange={(e) => { setCustomAmount(e.target.value); setAmount(null); setShowQr(false); }}
+            onChange={(e) => { setCustomAmount(e.target.value); setAmount(null); setShowInfo(false); }}
             style={{
               width: "100%",
               padding: "14px 16px",
@@ -79,7 +95,7 @@ export default function SupportPage() {
       {finalAmount > 0 && (
         <div style={{ marginTop: 24 }}>
           <button
-            onClick={() => setShowQr(true)}
+            onClick={() => setShowInfo(true)}
             style={{
               width: "100%",
               padding: "16px",
@@ -92,39 +108,55 @@ export default function SupportPage() {
               cursor: "pointer",
             }}
           >
-            用LINE Pay 贊助 NT$ {finalAmount}
+            贊助 NT$ {finalAmount}
           </button>
         </div>
       )}
 
-      {showQr && finalAmount > 0 && (
+      {showInfo && finalAmount > 0 && (
         <div style={{
           marginTop: 24,
           padding: 24,
           borderRadius: 20,
           background: "rgba(255,255,255,.06)",
           border: "1px solid rgba(255,255,255,.1)",
-          textAlign: "center",
         }}>
-          <h3 style={{ fontSize: 18, margin: "0 0 8px" }}>掃碼贊助 NT$ {finalAmount}</h3>
-          <p style={{ color: "#b8b3bd", fontSize: 14, margin: "0 0 16px" }}>
-            打開 LINE App 掃碼轉帳
-          </p>
-          {/* LINE Pay QR code 放在 public/linepay-qr.png */}
-          <img
-            src="/linepay-qr.png"
-            alt="LINE Pay 收款碼"
-            style={{
-              width: 240,
-              height: 240,
-              borderRadius: 12,
-              background: "#fff",
-              padding: 8,
-            }}
-          />
-          <p style={{ color: "#b8b3bd", fontSize: 13, marginTop: 16, lineHeight: 1.7 }}>
-            轉帳後不用特別通知，站長會看到。<br />
-            真的很謝謝你 🙏
+          <h3 style={{ fontSize: 18, margin: "0 0 16px" }}>轉帳資訊（NT$ {finalAmount}）</h3>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ color: "#8a858e", fontSize: 13, marginBottom: 4 }}>銀行</div>
+            <div style={{ fontSize: 16 }}>{BANK_INFO.bank} {BANK_INFO.branch}</div>
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ color: "#8a858e", fontSize: 13, marginBottom: 4 }}>帳號</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: 1 }}>{BANK_INFO.account}</span>
+              <button
+                onClick={copyAccount}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 8,
+                  border: "1px solid rgba(255,255,255,.2)",
+                  background: "transparent",
+                  color: "#fff",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                {copied ? "已複製 ✓" : "複製"}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ color: "#8a858e", fontSize: 13, marginBottom: 4 }}>戶名</div>
+            <div style={{ fontSize: 16 }}>{BANK_INFO.holder}</div>
+          </div>
+
+          <p style={{ color: "#b8b3bd", fontSize: 13, lineHeight: 1.7, margin: 0 }}>
+            請用銀行 App 轉帳 NT$ {finalAmount} 到以上帳戶。<br />
+            轉帳後不用特別通知，真的很謝謝你 🙏
           </p>
         </div>
       )}
