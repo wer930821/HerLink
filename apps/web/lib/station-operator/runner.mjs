@@ -5,6 +5,7 @@ export async function runClaimedJobs({jobs,db,mode,testThreads,decide}) {
   for (const job of jobs ?? []) {
     if (mode === 'allowlist' && !testThreads.has(job.thread_id)) {
       await db.audit({jobId:job.id,threadId:job.thread_id,action:'rollout_gate',outcome:'not_allowed',details:{mode}});
+      await db.finish({jobId:job.id,claimToken:job.claim_token,status:'completed',result:{mode:'allowlist',outcome:'not_allowed'}});
       results.push({status:'not_allowed'});
       continue;
     }

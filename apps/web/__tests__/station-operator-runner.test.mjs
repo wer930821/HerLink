@@ -41,13 +41,17 @@ test('dry run marks stale observation in audit and still safely finishes without
   assert.equal(calls.some(x=>x[0]==='finish'),true);
 });
 
-test('allowlist refuses non-test thread without model call or mutation', async () => {
-  let decided=false, mutated=false;
-  const db={async audit(){},async finish(){mutated=true}};
+test('allowlist refuses non-test thread without model call and safely finishes claimed job', async () => {
+  let decided=false;
+  const calls=[];
+  const db={async audit(v){calls.push(['audit',v])},async finish(v){calls.push(['finish',v])}};
   const results=await runClaimedJobs({jobs:[job('other')],db,mode:'allowlist',testThreads:new Set(['t1']),decide:async()=>{decided=true;return{}}});
   assert.deepEqual(results,[{status:'not_allowed'}]);
   assert.equal(decided,false);
-  assert.equal(mutated,false);
+  assert.equal(calls.some(x=>x[0]==='audit'&&x[1].action==='rollout_gate'&&x[1].outcome==='not_allowed'),true);
+  const finish=calls.find(x=>x[0]==='finish');
+  assert.ok(finish);
+  assert.deepEqual(finish[1],{jobId:'j1',claimToken:'c1',status:'completed',result:{mode:'allowlist',outcome:'not_allowed'}});
 });
 
 test('production delegates allowed job to worker', async () => {
