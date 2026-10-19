@@ -1,4 +1,5 @@
 const SAFE_ID=/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
+const SAFE_SHA=/^[A-Fa-f0-9]{6,64}$/;
 const ALLOWED_ROOTS=['apps/web/app/','apps/web/components/','apps/web/lib/','apps/web/__tests__/'];
 const MAX_REPAIR_FILES=5;
 const MAX_FILE_BYTES=50000;
@@ -17,13 +18,11 @@ export function buildRepairDispatch({repair,attemptCount}={}) {
   const risk=String(repair?.risk ?? '');
   const attempt=Number(attemptCount ?? repair?.attempt_count ?? 0);
   const summary=String(repair?.summary ?? '').trim().slice(0,800);
-
   if (!SAFE_ID.test(id) || !SAFE_ID.test(jobId)) return {ok:false,reason:'invalid_id'};
   if (status !== 'queued') return {ok:false,reason:'invalid_status'};
   if (risk !== 'low') return {ok:false,reason:'risk_not_low'};
   if (!Number.isInteger(attempt) || attempt < 1 || attempt > 2) return {ok:false,reason:'attempt_limit'};
   if (!summary) return {ok:false,reason:'missing_summary'};
-
   return {ok:true,repairId:id,jobId,branch:`ai-repair/${jobId}`,summary,attempt};
 }
 
@@ -60,17 +59,27 @@ export function buildRepairPrSpec({request,plan}={}) {
   const jobId=String(request?.jobId ?? '');
   const branch=String(request?.branch ?? '');
   const attempt=Number(request?.attempt ?? 0);
-  if (!SAFE_ID.test(repairId) || !SAFE_ID.test(jobId) || branch !== `ai-repair/${jobId}` || !Number.isInteger(attempt) || attempt < 1 || attempt > 2 || plan?.ok !== true || !Array.isArray(plan.files) || plan.files.length < 1) {
-    throw new Error('Invalid repair PR');
-  }
+  if (!SAFE_ID.test(repairId) || !SAFE_ID.test(jobId) || branch !== `ai-repair/${jobId}` || !Number.isInteger(attempt) || attempt < 1 || attempt > 2 || plan?.ok !== true || !Array.isArray(plan.files) || plan.files.length < 1) throw new Error('Invalid repair PR');
   const validated=validateRepairPlan({files:plan.files});
   if (!validated.ok) throw new Error('Invalid repair PR');
-  return {
-    branch,
-    base:'main',
-    draft:true,
-    title:`fix: automated repair ${jobId}`,
-    body:`Automated low-risk repair.\n\nRepair: ${repairId}\nAttempt: ${attempt}\n\nRequires CI validation before any merge.`,
-    files:validated.files
-  };
+  return {branch,base:'main',draft:true,title:`fix: automated repair ${jobId}`,body:`Automated low-risk repair.\n\nRepair: ${repairId}\nAttempt: ${attempt}\n\nRequires CI validation before any merge.`,files:validated.files};
+}
+
+export function buildRepairGitHubSteps({spec,baseSha}={}) {
+  const branch=String(spec?.branch ?? '');
+  const base=String(spec?.base ?? '');
+  const sha=String(baseSha ?? '');
+  if (!branch.startsWith('ai-repair/') || branch === 'ai-repair/' || base !== 'main' || spec?.draft !== true || !SAFE_SHA.test(sha)) throw new Error('Invalid GitHub repair');
+  const jobId=branch.slice('ai-repair/'.length);
+  if (!SAFE_ID.test(jobId)) throw new Error('Invalid GitHub repair');
+  const validated=validateRepairPlan({files:spec?.files});
+  if (!validated.ok) throw new Error('Invalid GitHub repair');
+  const title=String(spec?.title ?? '').trim();
+  const body=String(spec?.body ?? '');
+  if (!title) throw new Error('Invalid GitHub repair');
+  return [
+    {action:'create_branch',branch,from:sha},
+    ...validated.files.map(file=>({action:'write_file',branch,path:file.path,content:file.content})),
+    {action:'create_pull_request',head:branch,base:'main',draft:true,title,body}
+  ];
 }
