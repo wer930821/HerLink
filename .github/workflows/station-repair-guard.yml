@@ -3,8 +3,6 @@ name: Station Repair Guard
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'apps/web/**'
 
 permissions:
   contents: read
@@ -25,16 +23,27 @@ jobs:
           set -euo pipefail
           git diff --name-only "origin/${{ github.base_ref }}...HEAD" > /tmp/changed.txt
           cat /tmp/changed.txt
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          import { validateRepairFiles } from './apps/web/lib/station-operator/repair.mjs';
-          const files=fs.readFileSync('/tmp/changed.txt','utf8').split('\n').filter(Boolean);
-          const result=validateRepairFiles(files);
-          if (!result.ok) {
-            console.error('Forbidden AI repair files:', result.blocked.join(', '));
-            process.exit(1);
-          }
-          NODE
+          while IFS= read -r path; do
+            [ -z "$path" ] && continue
+            case "$path" in
+              apps/web/lib/station-operator/*|apps/web/app/api/internal/station-operator/*|apps/web/app/api/internal/station-repair/*)
+                echo "Forbidden AI repair safety path: $path" >&2
+                exit 1
+                ;;
+              apps/web/app/*|apps/web/components/*|apps/web/lib/*|apps/web/__tests__/*)
+                ;;
+              *)
+                echo "Forbidden AI repair file: $path" >&2
+                exit 1
+                ;;
+            esac
+            case "$path" in
+              */.env|*/.env.*|.env|.env.*|*/secrets/*|*/credentials/*|*/vercel.json|*/package.json|*/package-lock.json|*/pnpm-lock.yaml|*/yarn.lock)
+                echo "Forbidden AI repair config/secret file: $path" >&2
+                exit 1
+                ;;
+            esac
+          done < /tmp/changed.txt
 
       - name: Install web dependencies
         working-directory: apps/web
