@@ -36,3 +36,15 @@ test('repair file guard blocks paths outside approved app scope', () => {
   assert.equal(result.ok,false);
   assert.equal(result.blocked.length,3);
 });
+
+test('repair file guard blocks its own safety machinery', () => {
+  const files=[
+    'apps/web/lib/station-operator/repair.mjs',
+    'apps/web/lib/station-operator/worker.mjs',
+    'apps/web/app/api/internal/station-operator/route.ts',
+    'apps/web/app/api/internal/station-repair/callback/route.ts'
+  ];
+  const result=validateRepairFiles(files);
+  assert.equal(result.ok,false);
+  assert.deepEqual(result.blocked,files);
+});
