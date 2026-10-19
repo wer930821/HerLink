@@ -6,6 +6,9 @@ const HIGH_RISK = [
 const BLOCKED_FILES = [
   /^\.github\//,
   /^supabase\/migrations\//,
+  /^apps\/web\/lib\/station-operator(?:\/|$)/,
+  /^apps\/web\/app\/api\/internal\/station-operator(?:\/|$)/,
+  /^apps\/web\/app\/api\/internal\/station-repair(?:\/|$)/,
   /(^|\/)\.env(?:\.|$)/,
   /(^|\/)(?:vercel\.json|package\.json|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$/,
   /(^|\/)(?:secrets?|credentials?)(?:\.|\/|$)/i
