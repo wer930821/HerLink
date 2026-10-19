@@ -74,7 +74,7 @@
   .site-mailbox-viewport .mailbox-compose-panel > .btn { position: sticky !important; bottom: 0 !important; flex: 0 0 auto !important; width: 100% !important; min-height: 52px !important; z-index: 5 !important; }
 }
 
-/* 手機首頁：內容高度因裝置字級／瀏覽器工具列而變動時，允許頁面捲動，避免頁尾被裁切。 */
+/* 手機首頁：固定在單一畫面內，頁尾貼齊底部。 */
 @media (max-width: 520px) {
   .home-app-hero .home-app-eyebrow,
   .home-app-hero .home-app-title,
@@ -89,8 +89,8 @@
   .home-app-hero .halloween-home-decor { transform: translateY(-14px) !important; }
   .home-app-hero .halloween-home-decor span:nth-child(2) { top: 24% !important; left: 0 !important; }
 
-  .site-home-viewport { height: auto !important; min-height: 100dvh !important; overflow: visible !important; }
-  .home-fixed.home-app-like { box-sizing: border-box !important; height: auto !important; min-height: 100dvh !important; overflow: visible !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; gap: 0 !important; padding-top: 0 !important; padding-bottom: max(16px, env(safe-area-inset-bottom)) !important; }
+  .site-home-viewport { height: 100dvh !important; min-height: 100dvh !important; overflow: hidden !important; }
+  .home-fixed.home-app-like { box-sizing: border-box !important; height: 100dvh !important; min-height: 0 !important; overflow: hidden !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; gap: 0 !important; padding-top: 0 !important; padding-bottom: max(12px, env(safe-area-inset-bottom)) !important; }
   .home-app-hero { flex: 0 0 auto !important; min-height: 0 !important; }
 
   .home-app-identity { margin-top: 14px !important; padding-top: 12px !important; padding-bottom: 12px !important; }
@@ -100,7 +100,7 @@
   .home-account-button { min-height: 43px !important; padding-top: 8px !important; padding-bottom: 8px !important; }
   .home-app-status { margin-top: 15px !important; padding-top: 8px !important; padding-bottom: 8px !important; }
 
-  .home-app-footer { flex: 0 0 auto !important; margin-top: 20px !important; padding-top: 9px !important; padding-bottom: max(12px, env(safe-area-inset-bottom)) !important; gap: 10px !important; line-height: 1.25 !important; }
+  .home-app-footer { flex: 0 0 auto !important; margin-top: auto !important; padding-top: 9px !important; padding-bottom: max(12px, env(safe-area-inset-bottom)) !important; gap: 10px !important; line-height: 1.25 !important; }
   .home-app-presence, .home-app-footer-links, .home-app-legal-links { margin-top: 0 !important; margin-bottom: 0 !important; min-height: 0 !important; line-height: 1.25 !important; }
   .home-app-footer .btn, .home-app-footer button, .home-app-footer a { min-height: 28px !important; padding-top: 3px !important; padding-bottom: 3px !important; }
 }
