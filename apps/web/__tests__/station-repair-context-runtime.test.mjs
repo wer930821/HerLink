@@ -26,6 +26,26 @@ test('fails closed when discovery returns forbidden paths, too many files, or ov
   assert.equal(huge.ok,false);
 });
 
+test('fails closed when any single context file exceeds 50KB even below total context limit',async()=>{
+  const result=await discoverRepairContext({
+    summary:'reply bug',
+    allowedRoots:['apps/web/app/'],
+    search:async()=>['apps/web/app/large.tsx'],
+    readFile:async()=> 'x'.repeat(50001),
+  });
+  assert.deepEqual(result,{ok:false,reason:'context_file_too_large'});
+});
+
+test('per-file context limit uses utf8 bytes rather than character count',async()=>{
+  const result=await discoverRepairContext({
+    summary:'reply bug',
+    allowedRoots:['apps/web/app/'],
+    search:async()=>['apps/web/app/multibyte.tsx'],
+    readFile:async()=> '界'.repeat(17000),
+  });
+  assert.deepEqual(result,{ok:false,reason:'context_file_too_large'});
+});
+
 test('never reads files outside the caller allowed roots even if repository guard would otherwise allow them',async()=>{
   let reads=0;
   const result=await discoverRepairContext({summary:'reply bug',allowedRoots:['apps/web/app/'],search:async()=>['apps/web/lib/helper.ts'],readFile:async()=>{reads++;return 'x';}});
