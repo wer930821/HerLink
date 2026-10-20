@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import { useAuth } from "../context/auth";
 import { colors, radii, spacing, typography } from "../theme";
 
 export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const { signInAnonymously } = useAuth();
+  const router = useRouter();
 
   async function continueAnonymously() {
     setLoading(true);
@@ -32,6 +34,15 @@ export default function LoginScreen() {
         onPress={() => void continueAnonymously()}
       >
         {loading ? <ActivityIndicator color={colors.primaryText} /> : <Text style={styles.buttonText}>匿名開始</Text>}
+      </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="找回原本聊天室"
+        style={styles.linkButton}
+        onPress={() => router.push("/recovery" as never)}
+      >
+        <Text style={styles.linkText}>以前用過 HerLink？找回原本聊天室</Text>
       </Pressable>
     </View>
   );
@@ -73,5 +84,14 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.6,
+  },
+  linkButton: {
+    marginTop: spacing.lg,
+    alignItems: "center",
+    paddingVertical: spacing.md,
+  },
+  linkText: {
+    color: colors.primary,
+    ...typography.bodyStrong,
   },
 });

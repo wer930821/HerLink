@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import * as Clipboard from "expo-clipboard";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -45,6 +46,7 @@ import {
   sendRandomText,
   uploadRandomChatImage,
 } from "../../lib/random-chat";
+import { requestRandomSessionRecovery } from "../../lib/recovery";
 import { supabase } from "../../lib/supabase";
 import { colors, radii, spacing, typography } from "../../theme";
 
@@ -173,9 +175,24 @@ export default function RandomSessionScreen() {
   const [replyTarget, setReplyTarget] = useState<RandomMessage | null>(null);
   const [partnerTyping, setPartnerTyping] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sessionRecoveryCode, setSessionRecoveryCode] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [contactState, setContactState] = useState<{ status: "pending" | "active"; my_approved: boolean; partner_approved: boolean } | null>(null);
+
+  const showSessionRecoveryCode = async () => {
+    if (!sessionId) return;
+    setMenuOpen(false);
+    setBusyAction("recovery");
+    try {
+      const row = await requestRandomSessionRecovery(sessionId);
+      setSessionRecoveryCode(row.recovery_code);
+    } catch (error) {
+      Alert.alert("無法取得恢復碼", error instanceof Error ? error.message : "請稍後再試。");
+    } finally {
+      setBusyAction(null);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -1239,6 +1256,14 @@ export default function RandomSessionScreen() {
             </Pressable>
             <Pressable
               style={styles.menuItem}
+              onPress={() => void showSessionRecoveryCode()}
+              disabled={busyAction !== null}
+            >
+              <Ionicons name="key-outline" size={20} color={colors.text} />
+              <Text style={styles.menuItemText}>本聊天室恢復碼</Text>
+            </Pressable>
+            <Pressable
+              style={styles.menuItem}
               onPress={() => {
                 setMenuOpen(false);
                 leaveChat();
@@ -1272,6 +1297,37 @@ export default function RandomSessionScreen() {
             </Pressable>
             <Pressable style={[styles.menuItem, styles.menuCancel]} onPress={() => setMenuOpen(false)}>
               <Text style={styles.menuCancelText}>取消</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={sessionRecoveryCode !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSessionRecoveryCode(null)}
+      >
+        <Pressable style={styles.menuBackdrop} onPress={() => setSessionRecoveryCode(null)}>
+          <View style={styles.menuCard}>
+            <Text style={styles.menuTitle}>本聊天室恢復碼</Text>
+            <Text selectable style={styles.recoveryCodeText}>
+              {sessionRecoveryCode}
+            </Text>
+            <Text style={styles.recoveryCodeNote}>
+              如果之後進不來這個聊天室，把這組 8 碼傳給管理員，就能幫你接回。請自己保存好，不要傳給不認識的人。
+            </Text>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => {
+                if (sessionRecoveryCode) void Clipboard.setStringAsync(sessionRecoveryCode);
+              }}
+            >
+              <Ionicons name="copy-outline" size={20} color={colors.text} />
+              <Text style={styles.menuItemText}>複製恢復碼</Text>
+            </Pressable>
+            <Pressable style={[styles.menuItem, styles.menuCancel]} onPress={() => setSessionRecoveryCode(null)}>
+              <Text style={styles.menuCancelText}>關閉</Text>
             </Pressable>
           </View>
         </Pressable>
@@ -1635,6 +1691,19 @@ const styles = StyleSheet.create({
     color: colors.textSoft,
     textAlign: "center",
     ...typography.eyebrow,
+    marginBottom: spacing.md,
+  },
+  recoveryCodeText: {
+    color: colors.text,
+    fontSize: 26,
+    fontWeight: "800",
+    letterSpacing: 2,
+    textAlign: "center",
+    marginBottom: spacing.md,
+  },
+  recoveryCodeNote: {
+    color: colors.textMuted,
+    ...typography.body,
     marginBottom: spacing.md,
   },
   menuItem: {

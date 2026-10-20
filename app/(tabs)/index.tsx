@@ -66,6 +66,24 @@ export default function AnonymousHomeScreen() {
       >
         <Text style={styles.secondaryButtonText}>匿名聯絡人</Text>
       </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="找回原本聊天室"
+        style={styles.secondaryButton}
+        onPress={() => router.push("/recovery" as never)}
+      >
+        <Text style={styles.secondaryButtonText}>找回原本聊天室</Text>
+      </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="支持 HerLink"
+        style={styles.secondaryButton}
+        onPress={() => router.push("/support" as never)}
+      >
+        <Text style={styles.secondaryButtonText}>支持 HerLink</Text>
+      </Pressable>
     </View>
   );
 }

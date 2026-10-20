@@ -150,6 +150,8 @@ function RootLayoutNav() {
       <Stack.Screen name="privacy" options={{ headerShown: true, title: "隱私權政策" }} />
       <Stack.Screen name="terms" options={{ headerShown: true, title: "服務條款" }} />
       <Stack.Screen name="community-guidelines" options={{ headerShown: true, title: "社群守則" }} />
+      <Stack.Screen name="recovery" options={{ headerShown: true, title: "找回聊天室" }} />
+      <Stack.Screen name="support" options={{ headerShown: true, title: "支持 HerLink" }} />
     </Stack>
   );
 }
