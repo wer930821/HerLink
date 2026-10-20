@@ -42,7 +42,7 @@ export async function POST(request:Request) {
   const jobs = await db.claim(5);
   const testThreads=new Set(String(process.env.STATION_OPERATOR_TEST_THREADS ?? '').split(',').map(v=>v.trim()).filter(Boolean));
   const repairSecret=process.env.STATION_REPAIR_CALLBACK_SECRET;
-  const repairEngine=mode === 'allowlist' && repairSecret
+  const repairEngine=(mode === 'allowlist' || mode === 'production') && repairSecret
     ? async ({repairId}:{repairId:string}) => {
         const url=new URL('/api/internal/station-repair/engine',request.url);
         const response=await fetch(url,{method:'POST',headers:{Authorization:`Bearer ${repairSecret}`,'Content-Type':'application/json'},body:JSON.stringify({repairId}),cache:'no-store'});
