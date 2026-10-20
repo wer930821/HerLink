@@ -49,6 +49,6 @@ export async function executeRepairEngine({ authenticated, mode, repair, request
     const errorType = error instanceof Error ? error.name : typeof error;
     const errorCode = error && typeof error === 'object' && typeof error.code === 'string' && /^[a-z0-9_.-]{1,80}$/i.test(error.code) ? error.code : undefined;
     console.error('station_repair_engine_failed', { reason, errorType, errorCode });
-    return { ok: false, reason, safety: 'engine_stopped_before_write' };
+    return { ok: false, reason, errorType, ...(errorCode ? { errorCode } : {}), safety: 'engine_stopped_before_write' };
   }
 }
