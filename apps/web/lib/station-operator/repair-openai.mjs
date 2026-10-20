@@ -28,6 +28,10 @@ export async function callRepairModel({modelRequest,fetchImpl=fetch,apiKey=proce
     });
     if (!res.ok) throw new Error(await safeOpenAIError(res));
     return outputText(await res.json());
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error('OpenAI timeout');
+    if (error instanceof TypeError) throw new Error('OpenAI network_error');
+    throw error;
   } finally {
     clearTimeout(timer);
   }
