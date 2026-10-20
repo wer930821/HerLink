@@ -3,6 +3,13 @@ export const dynamic = "force-dynamic";
 import { createClient } from "@supabase/supabase-js";
 import { adminJson, getAdminContext } from "../_shared";
 
+function serviceClient() {
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) return null;
+  return createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+}
+
 export async function GET(request: Request) {
   const admin = await getAdminContext(request);
   if ("error" in admin) return admin.error;
