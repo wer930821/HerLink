@@ -1,0 +1,3 @@
+# OK
+
+Start RED test.
