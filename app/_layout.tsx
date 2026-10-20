@@ -152,6 +152,8 @@ function RootLayoutNav() {
       <Stack.Screen name="community-guidelines" options={{ headerShown: true, title: "社群守則" }} />
       <Stack.Screen name="recovery" options={{ headerShown: true, title: "找回聊天室" }} />
       <Stack.Screen name="support" options={{ headerShown: true, title: "支持 HerLink" }} />
+      <Stack.Screen name="mailbox" options={{ headerShown: true, title: "站長信箱" }} />
+      <Stack.Screen name="collection" options={{ headerShown: true, title: "彩蛋圖鑑" }} />
     </Stack>
   );
 }
