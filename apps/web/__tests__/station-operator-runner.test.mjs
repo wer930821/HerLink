@@ -75,7 +75,7 @@ test('allowlisted bug delegates mode and repair engine to worker', async () => {
   const repairEngine=async input=>{engineInput=input;return{ok:true}};
   const results=await runClaimedJobs({
     jobs:[job()],db,mode:'allowlist',testThreads:new Set(['t1']),repairEngine,
-    decide:async()=>({kind:'bug_repair',reply:null,actions:[{type:'create_bug_repair'}],confidence:.97,needsHuman:false})
+    decide:async()=>({kind:'bug_repair',reply:null,actions:['create_bug_repair'],confidence:.97,needsHuman:false})
   });
   assert.deepEqual(results,[{status:'waiting_ci'}]);
   assert.deepEqual(engineInput,{repairId:'r1',jobId:'j1',risk:'low'});
