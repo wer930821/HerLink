@@ -24,6 +24,14 @@ const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.E
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: { externalDir: true },
+  outputFileTracingIncludes: {
+    '/api/internal/station-repair/engine': [
+      './app/**/*',
+      './components/**/*',
+      './lib/**/*',
+      './__tests__/**/*',
+    ],
+  },
   env: {
     NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
