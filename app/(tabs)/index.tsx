@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "expo-router/react-navigation";
 import { useRouter } from "expo-router";
 import { colors, radii, spacing, typography } from "../../theme";
 import { listMyActiveRandomSessions, type RandomSession } from "../../lib/random-chat";

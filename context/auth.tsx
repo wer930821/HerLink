@@ -38,7 +38,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const nativePushTokenRef = useRef<string | null>(null);\n  const restorePromiseRef = useRef<Promise<void> | null>(null);\n  const hydratedUserIdRef = useRef<string | null>(null);
+  const nativePushTokenRef = useRef<string | null>(null);
+  const restorePromiseRef = useRef<Promise<void> | null>(null);
+  const hydratedUserIdRef = useRef<string | null>(null);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -69,7 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const hydrateSignedInUser = async (currentUser: User) => {\n    if (hydratedUserIdRef.current === currentUser.id) return;\n    hydratedUserIdRef.current = currentUser.id;
+  const hydrateSignedInUser = async (currentUser: User) => {
+    if (hydratedUserIdRef.current === currentUser.id) return;
+    hydratedUserIdRef.current = currentUser.id;
     const results = await Promise.allSettled([
       fetchProfile(currentUser.id),
       registerCurrentDevice(),
@@ -138,7 +142,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     setLoading(true);
     await disableNativePushToken(nativePushTokenRef.current).catch((error) => console.warn("Native push token cleanup failed", error));
-    nativePushTokenRef.current = null;\n    hydratedUserIdRef.current = null;
+    nativePushTokenRef.current = null;
+    hydratedUserIdRef.current = null;
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
