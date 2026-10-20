@@ -136,16 +136,27 @@ export async function POST(request:Request) {
         ? executeRepairGitHubWrite(input,capabilities)
         : ({ok:false,reason:'missing_capability'})
     });
+    const db=createOperatorDb();
     const result=await handleRepairEngineHttp({
       authorization:request.headers.get('authorization'),
       secret:process.env.STATION_REPAIR_CALLBACK_SECRET,
       mode:process.env.STATION_OPERATOR_MODE,
       payload,
-      db:createOperatorDb(),
+      db,
       resolveBaseSha:capabilities?.resolveBaseSha,
       execute:engine.execute
     });
-    return NextResponse.json(result.body,{status:result.status});
+    const body=result.body as Record<string,unknown>;
+    if (body.reason==='insufficient_evidence' && typeof (payload as Record<string,unknown>)?.repairId==='string') {
+      try {
+        await db.applyRepairEvent({
+          repairId:(payload as Record<string,unknown>).repairId as string,
+          event:'engine_blocked',
+          metadata:{reason:'insufficient_evidence',stage:body.stage ?? null}
+        });
+      } catch { /* preserve the original engine response if state recording fails */ }
+    }
+    return NextResponse.json(body,{status:result.status});
   } catch {
     return NextResponse.json({ok:false},{status:500});
   }
