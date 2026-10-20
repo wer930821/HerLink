@@ -154,6 +154,7 @@ function RootLayoutNav() {
       <Stack.Screen name="support" options={{ headerShown: true, title: "支持 HerLink" }} />
       <Stack.Screen name="mailbox" options={{ headerShown: true, title: "站長信箱" }} />
       <Stack.Screen name="collection" options={{ headerShown: true, title: "彩蛋圖鑑" }} />
+      <Stack.Screen name="chats" options={{ headerShown: true, title: "我的聊天" }} />
     </Stack>
   );
 }
