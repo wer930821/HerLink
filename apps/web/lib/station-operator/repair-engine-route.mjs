@@ -11,6 +11,14 @@ function safeFailureCode(error) {
   return 'engine_failed';
 }
 
+function safeErrorCode(error) {
+  if (error && typeof error === 'object' && typeof error.code === 'string' && /^[a-z0-9_.-]{1,80}$/i.test(error.code)) return error.code;
+  const message = error instanceof Error ? error.message : '';
+  const match = message.match(/OpenAI\s+(\\d{3})(?:\s+([a-z0-9_.-]{1,60}))?/i);
+  if (!match) return undefined;
+  return `openai_${match[1]}${match[2] ? `_${match[2].toLowerCase()}` : ''}`;
+}
+
 export function validateRepairEngineInvocation({ authenticated, mode, repair, request } = {}) {
   if (authenticated !== true) return { ok: false, reason: 'unauthenticated' };
   if (mode !== 'allowlist') return { ok: false, reason: 'mode_not_allowed' };
@@ -51,7 +59,7 @@ export async function executeRepairEngine({ authenticated, mode, repair, request
   } catch (error) {
     const reason = safeFailureCode(error);
     const errorType = error instanceof Error ? error.name : typeof error;
-    const errorCode = error && typeof error === 'object' && typeof error.code === 'string' && /^[a-z0-9_.-]{1,80}$/i.test(error.code) ? error.code : undefined;
+    const errorCode = safeErrorCode(error);
     console.error('station_repair_engine_failed', { reason, errorType, errorCode, stage });
     return { ok: false, reason, errorType, stage, ...(errorCode ? { errorCode } : {}), safety: 'engine_stopped_before_write' };
   }
