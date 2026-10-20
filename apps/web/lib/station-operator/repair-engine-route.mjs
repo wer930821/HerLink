@@ -21,7 +21,7 @@ function safeErrorCode(error) {
 
 export function validateRepairEngineInvocation({ authenticated, mode, repair, request } = {}) {
   if (authenticated !== true) return { ok: false, reason: 'unauthenticated' };
-  if (mode !== 'allowlist') return { ok: false, reason: 'mode_not_allowed' };
+  if (mode !== 'allowlist' && mode !== 'production') return { ok: false, reason: 'mode_not_allowed' };
   if (!repair || !request) return { ok: false, reason: 'missing_input' };
   if (repair.risk !== 'low') return { ok: false, reason: 'risk_not_allowed' };
   if (repair.status !== 'queued') return { ok: false, reason: 'status_not_allowed' };
