@@ -4,10 +4,12 @@ import { useFocusEffect } from "expo-router/react-navigation";
 import { useRouter } from "expo-router";
 import { colors, radii, spacing, typography } from "../../theme";
 import { listMyActiveRandomSessions, type RandomSession } from "../../lib/random-chat";
+import { isUnreadThread, listMyMailThreads } from "../../lib/station-mail";
 
 export default function AnonymousHomeScreen() {
   const router = useRouter();
   const [activeSessions, setActiveSessions] = useState<RandomSession[]>([]);
+  const [unreadMail, setUnreadMail] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -18,6 +20,13 @@ export default function AnonymousHomeScreen() {
         })
         .catch(() => {
           if (alive) setActiveSessions([]);
+        });
+      void listMyMailThreads()
+        .then((rows) => {
+          if (alive) setUnreadMail(rows.filter(isUnreadThread).length);
+        })
+        .catch(() => {
+          if (alive) setUnreadMail(0);
         });
       return () => {
         alive = false;
@@ -65,6 +74,24 @@ export default function AnonymousHomeScreen() {
         onPress={() => router.push("/contacts" as never)}
       >
         <Text style={styles.secondaryButtonText}>匿名聯絡人</Text>
+      </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="站長信箱"
+        style={styles.secondaryButton}
+        onPress={() => router.push("/mailbox" as never)}
+      >
+        <Text style={styles.secondaryButtonText}>站長信箱{unreadMail > 0 ? `（${unreadMail}）` : ""}</Text>
+      </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="彩蛋圖鑑"
+        style={styles.secondaryButton}
+        onPress={() => router.push("/collection" as never)}
+      >
+        <Text style={styles.secondaryButtonText}>彩蛋圖鑑</Text>
       </Pressable>
 
       <Pressable
