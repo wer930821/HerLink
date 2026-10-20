@@ -141,14 +141,9 @@ export default function AdminDashboardPage() {
     if (!data) return { label: "檢查中", tone: "default" as const, reasons: ["正在取得最新健康資料"] };
     const criticalReasons: string[] = [];
     const warningReasons: string[] = [];
-    if (data.laya_service_state === "error") criticalReasons.push("聊天助手服務回報異常");
-    if (data.laya_service_state === "unreachable") criticalReasons.push("無法連線到聊天助手服務");
-    if (data.laya_service_state === "loading") warningReasons.push("聊天助手模型仍在載入");
     if (data.realtime_errors_5m > 0) warningReasons.push(`目前有 ${data.realtime_errors_5m} 個近期異常連線需要觀察`);
-    if (data.today_chat_assist_requests >= 3 && typeof data.today_laya_success_rate === "number" && data.today_laya_success_rate < 80) warningReasons.push(`今日聊天助手成功率為 ${data.today_laya_success_rate.toFixed(1)}%`);
     if (typeof data.today_match_success_rate === "number" && data.today_match_success_rate < 50) warningReasons.push(`今日配對成功率為 ${data.today_match_success_rate.toFixed(1)}%`);
     if (typeof data.today_push_success_rate === "number" && data.today_push_success_rate < 95) warningReasons.push(`今日通知成功率為 ${data.today_push_success_rate.toFixed(1)}%`);
-    if (typeof data.laya_health_latency_ms === "number" && data.laya_health_latency_ms > 1500) warningReasons.push(`聊天助手回應延遲偏高（${data.laya_health_latency_ms} ms）`);
     if (criticalReasons.length > 0) return { label: "異常", tone: "danger" as const, reasons: criticalReasons };
     if (warningReasons.length > 0) return { label: "需注意", tone: "warning" as const, reasons: warningReasons };
     return { label: "正常", tone: "success" as const, reasons: ["所有核心服務目前正常"] };
@@ -216,7 +211,7 @@ export default function AdminDashboardPage() {
         <div className="muted small" style={{ marginTop: 10, overflowWrap: "anywhere" }}>部署編號：{data?.deployment_id ?? "—"}</div>
       </AdminSection>
 
-      <AdminSection title="系統健康狀態" description="快速確認配對、即時連線、通知與聊天助手是否正常；異常連線以受影響裝置去重計算。">
+      <AdminSection title="系統健康狀態" description="快速確認配對、即時連線與通知是否正常；聊天助手已停用，不列入核心健康狀態。">
         <AdminStatGrid>
           <AdminStat label="今日配對成功率" value={formatPercent(data?.today_match_success_rate)} tone={typeof data?.today_match_success_rate === "number" && data.today_match_success_rate < 50 ? "warning" : "success"} />
           <AdminStat label="今日平均等待時間" value={formatWait(data?.today_avg_wait_seconds)} tone={typeof data?.today_avg_wait_seconds === "number" && data.today_avg_wait_seconds > 120 ? "warning" : "default"} />
@@ -231,7 +226,7 @@ export default function AdminDashboardPage() {
 
       <AdminSection title="近 7 天匿名聊天室" description="最近 7×24 小時的實際匿名聊天活動。"><AdminStatGrid><AdminStat label="使用者數" value={formatCount(data?.seven_day_anonymous_user_count)} /><AdminStat label="訊息數" value={formatCount(data?.seven_day_message_count)} /><AdminStat label="配對場次" value={formatCount(data?.seven_day_session_count)} /><AdminStat label="進入佇列" value={formatCount(data?.seven_day_queue_join_count)} /></AdminStatGrid></AdminSection>
 
-      <AdminSection title="最近錯誤摘要" description="彙整最近 24 小時的即時連線、通知與聊天助手備援事件。">
+      <AdminSection title="最近錯誤摘要" description="彙整最近 24 小時的即時連線與通知事件。">
         {data?.recent_error_summary?.length ? <AdminTableWrap><AdminTable label="最近錯誤摘要"><thead><tr><th scope="col">來源</th><th scope="col">錯誤</th><th scope="col">次數</th><th scope="col">最近發生</th></tr></thead><tbody>{data.recent_error_summary.map((item, index) => <tr key={`${item.source}-${item.error_code}-${index}`}><td><AdminBadge tone="warning">{errorSourceLabel(item.source)}</AdminBadge></td><td>{errorCodeLabel(item.error_code)}</td><td>{formatCount(item.error_count)}</td><td>{formatAdminTime(item.last_seen)}</td></tr>)}</tbody></AdminTable></AdminTableWrap> : <AdminEmpty>最近 24 小時沒有偵測到需要顯示的錯誤。</AdminEmpty>}
       </AdminSection>
 
