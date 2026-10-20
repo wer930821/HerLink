@@ -1,0 +1,112 @@
+name: Build HerLink App APK
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "user-app/**"
+      - "assets/images/**"
+      - ".github/workflows/build-herlink-app-apk.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Pin production site URL
+        working-directory: user-app
+        shell: bash
+        run: |
+          grep -F 'const SITE_URL = "https://her-link-ten.vercel.app";' App.tsx
+          node -e 'const app=require("./app.json"); if(app.expo?.extra?.siteUrl!=="https://her-link-ten.vercel.app") process.exit(1)'
+
+      - name: Install dependencies
+        working-directory: user-app
+        run: npm install
+
+      # versionCode 加 100：舊原生 App 的最後一版是 34，新 App 必須保持更大才能覆蓋安裝與觸發 App 內更新。
+      - name: Set build version
+        working-directory: user-app
+        shell: bash
+        run: |
+          VERSION_CODE="$((GITHUB_RUN_NUMBER + 100))"
+          VERSION_NAME="1.0.${VERSION_CODE}"
+          echo "VERSION_CODE=${VERSION_CODE}" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=${VERSION_NAME}" >> "$GITHUB_ENV"
+          export VERSION_CODE VERSION_NAME
+          node - <<'NODE'
+          const fs = require("fs");
+          const app = JSON.parse(fs.readFileSync("app.json", "utf8"));
+          const code = Number(process.env.VERSION_CODE);
+          app.expo.version = process.env.VERSION_NAME;
+          app.expo.android = app.expo.android || {};
+          app.expo.android.versionCode = code;
+          fs.writeFileSync("app.json", JSON.stringify(app, null, 2) + "\n");
+          NODE
+
+      - name: Generate Android project
+        working-directory: user-app
+        run: npx expo prebuild --platform android --non-interactive
+
+      - name: Build APK
+        working-directory: user-app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Rename APK
+        run: |
+          cp user-app/android/app/build/outputs/apk/release/app-release.apk HerLink.apk
+
+      - name: Prepare update manifest
+        shell: bash
+        run: |
+          APK_SHA256="$(sha256sum HerLink.apk | awk '{print $1}')"
+          cat > app-update-info.json <<EOF
+          {
+            "versionCode": ${VERSION_CODE},
+            "versionName": "${VERSION_NAME}",
+            "apkUrl": "https://github.com/wer930821/HerLink/releases/download/app-latest/HerLink.apk",
+            "sha256": "${APK_SHA256}",
+            "commit": "${GITHUB_SHA}"
+          }
+          EOF
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HerLink-APK
+          path: HerLink.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish stable app release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete app-latest --cleanup-tag -y || true
+          gh release create app-latest \
+            HerLink.apk \
+            app-update-info.json \
+            --title "HerLink App Latest" \
+            --notes "Automated WebView Android build from ${GITHUB_SHA}"
