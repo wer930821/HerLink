@@ -6,8 +6,9 @@ const baseSha='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const request={repairId:'r1',jobId:'j1',branch:'ai-repair/j1',baseSha,summary:'回覆按鈕沒有反應',attempt:1,allowedRoots:['apps/web/app/','apps/web/components/','apps/web/lib/','apps/web/__tests__/']};
 const repair={id:'r1',job_id:'j1',risk:'low',status:'queued',attempt_count:1};
 
-test('repair engine endpoint accepts only authenticated allowlist low-risk queued repairs',()=>{
+test('repair engine endpoint accepts authenticated low-risk queued repairs in controlled modes',()=>{
   assert.deepEqual(validateRepairEngineInvocation({authenticated:true,mode:'allowlist',repair,request}),{ok:true});
+  assert.deepEqual(validateRepairEngineInvocation({authenticated:true,mode:'production',repair,request}),{ok:true});
 });
 
 test('repair engine endpoint requires exact isolated ai-repair branch',()=>{
@@ -22,9 +23,10 @@ test('repair engine endpoint requires an immutable 40-char base sha',()=>{
   }
 });
 
-test('repair engine endpoint fails closed outside allowlist',()=>{
+test('repair engine endpoint fails closed outside controlled modes',()=>{
   assert.equal(validateRepairEngineInvocation({authenticated:true,mode:'dry_run',repair,request}).ok,false);
-  assert.equal(validateRepairEngineInvocation({authenticated:true,mode:'production',repair,request}).ok,false);
+  assert.equal(validateRepairEngineInvocation({authenticated:true,mode:'disabled',repair,request}).ok,false);
+  assert.equal(validateRepairEngineInvocation({authenticated:true,mode:'unknown',repair,request}).ok,false);
 });
 
 test('repair engine endpoint rejects unauthenticated, high-risk, non-queued, mismatched, and over-limit attempts',()=>{
