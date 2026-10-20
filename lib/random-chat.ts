@@ -198,6 +198,12 @@ export async function listMyActiveRandomSessions() {
   return (data ?? []) as RandomSession[];
 }
 
+export async function getMyRandomChatUnreadCount() {
+  const { data, error } = await rpc.rpc("get_my_random_chat_unread_count");
+  if (error) throw error;
+  return Math.max(0, Number(data ?? 0));
+}
+
 export async function getRandomSession(sessionId: string) {
   const { data, error } = await rpc.rpc("get_my_random_session_view", { p_session_id: sessionId });
   if (error) throw error;
