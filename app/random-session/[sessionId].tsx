@@ -164,7 +164,9 @@ export default function RandomSessionScreen() {
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);\n  const [privateEggsAllowed, setPrivateEggsAllowed] = useState(false);\n  const [easterEgg, setEasterEgg] = useState<"goodnight" | "penguin" | "sync" | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [privateEggsAllowed, setPrivateEggsAllowed] = useState(false);
+  const [easterEgg, setEasterEgg] = useState<"goodnight" | "penguin" | "sync" | null>(null);
   const [sending, setSending] = useState(false);
   const [mediaUploading, setMediaUploading] = useState(false);
   const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
@@ -599,7 +601,15 @@ export default function RandomSessionScreen() {
       const attempt = async (replyId: string | null): Promise<boolean> => {
         try {
           const sent = await sendRandomText(sessionId, content, replyId);
-          appendSentMessage(sent);\n          if (privateEggsAllowed) {\n            if (content.includes("晚安")) triggerPrivateEgg("goodnight");\n            else if (content.includes("企鵝")) triggerPrivateEgg("penguin");\n            else if (/哈{2,}/.test(content)) {\n              const partnerLaugh = [...messages].reverse().find((item) => !item.is_mine && item.message_type !== "image");\n              if (partnerLaugh && /哈{2,}/.test(partnerLaugh.content || "")) triggerPrivateEgg("sync");\n            }\n          }
+          appendSentMessage(sent);
+          if (privateEggsAllowed) {
+            if (content.includes("晚安")) triggerPrivateEgg("goodnight");
+            else if (content.includes("企鵝")) triggerPrivateEgg("penguin");
+            else if (/哈{2,}/.test(content)) {
+              const partnerLaugh = [...messages].reverse().find((item) => !item.is_mine && item.message_type !== "image");
+              if (partnerLaugh && /哈{2,}/.test(partnerLaugh.content || "")) triggerPrivateEgg("sync");
+            }
+          }
           void broadcastRefresh("message");
           setDraft("");
           setReplyTarget(null);
