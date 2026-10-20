@@ -22,11 +22,21 @@ export async function POST(request:Request) {
   const enqueued = await db.enqueue(20);
   const jobs = await db.claim(5);
   const testThreads=new Set(String(process.env.STATION_OPERATOR_TEST_THREADS ?? '').split(',').map(v=>v.trim()).filter(Boolean));
+  const repairSecret=process.env.STATION_REPAIR_CALLBACK_SECRET;
+  const repairEngine=mode === 'allowlist' && repairSecret
+    ? async ({repairId}:{repairId:string}) => {
+        const url=new URL('/api/internal/station-repair/engine',request.url);
+        const response=await fetch(url,{method:'POST',headers:{Authorization:`Bearer ${repairSecret}`,'Content-Type':'application/json'},body:JSON.stringify({repairId}),cache:'no-store'});
+        let body:Record<string,unknown>={ok:false};
+        try { body=await response.json(); } catch {}
+        return response.ok ? body : {...body,ok:false};
+      }
+    : undefined;
   const results:unknown[] = [];
 
   for (const job of jobs ?? []) {
     try {
-      const [result] = await runClaimedJobs({jobs:[job],db,mode,testThreads,decide:decideMailboxThread});
+      const [result] = await runClaimedJobs({jobs:[job],db,mode,testThreads,decide:decideMailboxThread,repairEngine});
       results.push(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'unknown error';
