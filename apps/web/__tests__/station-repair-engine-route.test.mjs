@@ -40,7 +40,7 @@ test('repair engine execution discovers context, asks model, validates plan, the
   let writeInput;
   const result=await executeRepairEngine({authenticated:true,mode:'allowlist',repair,request,
     discoverContext:async input=>{calls.push(['discover',input.summary]);return{ok:true,context:[{path:'apps/web/app/page.tsx',content:'export default function Page(){}'}]};},
-    callModel:async input=>{calls.push(['model',input.input.summary]);return JSON.stringify({cause:'click handler missing',confidence:.9,files:[{path:'apps/web/app/page.tsx',content:'export default function Page(){ return null }'}]});},
+    callModel:async input=>{calls.push(['model',input.modelRequest.input.summary]);return JSON.stringify({cause:'click handler missing',confidence:.9,files:[{path:'apps/web/app/page.tsx',content:'export default function Page(){ return null }'}]});},
     writeRepair:async input=>{writeInput=input;calls.push(['write',input.files[0].path]);return{ok:true,branch:'ai-repair/j1',prNumber:99};}});
   assert.equal(result.ok,true); assert.equal(result.prNumber,99); assert.deepEqual(calls.map(x=>x[0]),['discover','model','write']);
   assert.equal(writeInput.baseSha,baseSha);
@@ -63,6 +63,25 @@ test('repair engine execution fails closed when an injected capability throws', 
   ];
   for(const capabilities of cases){
     const result=await executeRepairEngine({authenticated:true,mode:'allowlist',repair,request,...capabilities});
-    assert.deepEqual(result,{ok:false,reason:'engine_failed'});
+    assert.equal(result.ok,false);
+    assert.equal(result.reason,'engine_failed');
+    assert.equal(result.safety,'engine_stopped_before_write');
   }
+});
+
+test('repair engine execution works with the real repair model caller', async()=>{
+  const { callRepairModel } = await import('../lib/station-operator/repair-openai.mjs');
+  let fetched=false;
+  const fetchImpl=async(url)=>{
+    fetched=true;
+    assert.equal(url,'https://api.openai.com/v1/responses');
+    return { ok:true, json:async()=>({output_text:JSON.stringify({cause:'real wiring works',confidence:.9,files:[{path:'apps/web/app/page.tsx',content:'export default function Page(){ return null }'}]})}) };
+  };
+  const result=await executeRepairEngine({authenticated:true,mode:'allowlist',repair,request,
+    discoverContext:async()=>({ok:true,context:[{path:'apps/web/app/page.tsx',content:'x'}]}),
+    callModel:(args)=>callRepairModel({...args,fetchImpl,apiKey:'test-key',model:'test-model'}),
+    writeRepair:async()=>({ok:true,branch:'ai-repair/j1',prNumber:100})});
+  assert.equal(fetched,true);
+  assert.equal(result.ok,true);
+  assert.equal(result.prNumber,100);
 });

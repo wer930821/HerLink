@@ -48,7 +48,7 @@ export async function executeRepairEngine({ authenticated, mode, repair, request
     stage = 'model';
     const modelRequest = buildRepairModelRequest({ request, context: discovered.context });
     if (!modelRequest.ok) return { ...modelRequest, stage };
-    const raw = await callModel(modelRequest);
+    const raw = await callModel({ modelRequest });
     stage = 'plan';
     const plan = prepareValidatedRepairPlan({ raw });
     if (!plan.ok) return { ...plan, stage };
