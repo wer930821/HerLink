@@ -1,1 +1,0 @@
-TDD RED checkpoint commit series ends here. No production implementation has been changed.
