@@ -25,7 +25,9 @@ export async function POST(request:Request) {
     requestedRepairId=typeof body?.repairId === 'string' ? body.repairId : null;
   } catch {}
   if (requestedRepairId) {
-    if (mode !== 'allowlist') return NextResponse.json({ok:false,mode,error:'mode_not_allowed'},{status:409});
+    // Explicit repair dispatch is safe in both controlled allowlist and production modes.
+    // The repair engine still enforces its own callback authentication and safety gates.
+    if (mode !== 'allowlist' && mode !== 'production') return NextResponse.json({ok:false,mode,error:'mode_not_allowed'},{status:409});
     const repair=await db.dispatchQueuedRepair(requestedRepairId);
     if (!repair) return NextResponse.json({ok:false,error:'repair_not_dispatchable'},{status:409});
     const repairSecret=process.env.STATION_REPAIR_CALLBACK_SECRET;
