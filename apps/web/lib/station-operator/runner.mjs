@@ -1,6 +1,6 @@
 import { processClaimedJob } from './worker.mjs';
 
-export async function runClaimedJobs({jobs,db,mode,testThreads,decide}) {
+export async function runClaimedJobs({jobs,db,mode,testThreads,decide,repairEngine}) {
   const results=[];
   for (const job of jobs ?? []) {
     if (mode === 'allowlist' && !testThreads.has(job.thread_id)) {
@@ -20,7 +20,7 @@ export async function runClaimedJobs({jobs,db,mode,testThreads,decide}) {
       continue;
     }
 
-    results.push(await processClaimedJob({job,db,decide}));
+    results.push(await processClaimedJob({job,db,mode,decide,repairEngine}));
   }
   return results;
 }
