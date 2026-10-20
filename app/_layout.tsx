@@ -128,6 +128,8 @@ function RootLayoutNav() {
           pathname: "/random-session/[sessionId]",
           params: { sessionId: target.sessionId },
         } as never);
+      } else if (session && target.kind === "mailbox") {
+        router.replace("/mailbox" as never);
       } else {
         router.replace("/(tabs)");
       }
