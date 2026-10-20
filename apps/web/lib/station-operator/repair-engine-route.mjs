@@ -14,7 +14,7 @@ function safeFailureCode(error) {
 function safeErrorCode(error) {
   if (error && typeof error === 'object' && typeof error.code === 'string' && /^[a-z0-9_.-]{1,80}$/i.test(error.code)) return error.code;
   const message = error instanceof Error ? error.message : '';
-  const match = message.match(/OpenAI\s+(\\d{3})(?:\s+([a-z0-9_.-]{1,60}))?/i);
+  const match = message.match(/OpenAI\s+([0-9]{3})(?:\s+([a-z0-9_.-]{1,60}))?/i);
   if (!match) return undefined;
   return `openai_${match[1]}${match[2] ? `_${match[2].toLowerCase()}` : ''}`;
 }
