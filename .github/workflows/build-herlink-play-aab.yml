@@ -1,0 +1,89 @@
+name: Build HerLink Google Play AAB
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-play-aab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Install dependencies
+        working-directory: user-app
+        run: npm install
+
+      - name: Prepare Google Play configuration
+        working-directory: user-app
+        shell: bash
+        run: |
+          VERSION_CODE="$((GITHUB_RUN_NUMBER + 1000))"
+          VERSION_NAME="1.0.${VERSION_CODE}"
+          export VERSION_CODE VERSION_NAME
+          node - <<'NODE'
+          const fs = require('fs');
+          const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+          app.expo.version = process.env.VERSION_NAME;
+          app.expo.android = app.expo.android || {};
+          app.expo.android.versionCode = Number(process.env.VERSION_CODE);
+          app.expo.android.permissions = (app.expo.android.permissions || [])
+            .filter((p) => p !== 'android.permission.REQUEST_INSTALL_PACKAGES');
+          fs.writeFileSync('app.json', JSON.stringify(app, null, 2) + '\n');
+
+          const appTsx = fs.readFileSync('App.tsx', 'utf8');
+          const playTsx = appTsx
+            .replace(/import \* as FileSystem from "expo-file-system\/legacy";\n/, '')
+            .replace(/import \* as IntentLauncher from "expo-intent-launcher";\n/, '')
+            .replace(/const UPDATE_INFO_URL =[\s\S]*?;\n\n/, '')
+            .replace(/type UpdateInfo =[\s\S]*?\n};\n\n/, '')
+            .replace(/function getCurrentVersionCode\(\) {[\s\S]*?\n}\n\n/, '')
+            .replace(/  const \[updateProgress[\s\S]*?const updatePromptedRef = useRef<number \| null>\(null\);\n/, '')
+            .replace(/  const installUpdateInsideApp[\s\S]*?\n  };\n\n  const handleNavigation/, '  const handleNavigation')
+            .replace(/  useEffect\(\(\) => {\n    let checking = false;[\s\S]*?\n  }, \[\]\);\n\n/, '')
+            .replace(/\n        \{updateProgress !== null \? \([\s\S]*?\n        \) : null\}\n/, '\n')
+            .replace('loading && !webReady && updateProgress === null', 'loading && !webReady');
+          fs.writeFileSync('App.tsx', playTsx);
+          NODE
+
+          if grep -R "REQUEST_INSTALL_PACKAGES\|app-update-info.json\|IntentLauncher\|HerLink-update.apk" app.json App.tsx; then
+            echo "Google Play build still contains sideload update capability."
+            exit 1
+          fi
+
+      - name: Generate Android project
+        working-directory: user-app
+        run: npx expo prebuild --platform android --non-interactive
+
+      - name: Build Google Play AAB
+        working-directory: user-app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease --no-daemon
+
+      - name: Collect AAB
+        run: cp user-app/android/app/build/outputs/bundle/release/app-release.aab HerLink-Play.aab
+
+      - name: Upload Google Play AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: HerLink-Google-Play-AAB
+          path: HerLink-Play.aab
+          if-no-files-found: error
+          retention-days: 14
