@@ -1,37 +1,6 @@
--- Recovery requests must store the stable anonymous identity, not the transient
--- auth user id. Also repair already-pending requests created before this fix by
--- resolving requester_user_id through anonymous_identity_device_state.
-
-create or replace function public.request_random_session_recovery(p_session_id uuid)
-returns table(recovery_code text, expires_at timestamptz)
-language plpgsql security definer set search_path=public
-as $$
-declare
-  v_actor uuid := public.resolve_active_anonymous_chat_identity();
-  v_code text;
-begin
-  if auth.uid() is null then raise exception 'authentication required'; end if;
-  if v_actor is null or not exists(select 1 from public.profiles where id=v_actor) then
-    raise exception 'anonymous identity unavailable';
-  end if;
-  if not exists(
-    select 1 from public.random_chat_sessions
-    where id=p_session_id and status='active'
-  ) then raise exception 'session unavailable'; end if;
-
-  update public.anonymous_session_recovery_requests
-  set status='expired', resolved_at=now()
-  where requester_user_id=v_actor and session_id=p_session_id and status='pending';
-
-  v_code:=upper(substr(replace(gen_random_uuid()::text,'-',''),1,8));
-  insert into public.anonymous_session_recovery_requests(
-    session_id, requester_user_id, recovery_code, expires_at
-  ) values(p_session_id, v_actor, v_code, null);
-  return query select v_code, null::timestamptz;
-end $$;
-
-revoke all on function public.request_random_session_recovery(uuid) from public,anon;
-grant execute on function public.request_random_session_recovery(uuid) to authenticated;
+-- Admin recovery is requested by the caller's transient auth uid. Approval must
+-- bind the selected existing anonymous identity to that auth uid; it must not
+-- require a new profile row for the requester or rewrite historical chat ids.
 
 create or replace function public.approve_random_session_recovery(p_recovery_code text, p_side text)
 returns boolean
@@ -41,11 +10,8 @@ set search_path=public
 as $$
 declare
   v_req public.anonymous_session_recovery_requests%rowtype;
-  v_requester uuid;
   v_old uuid;
-  v_new_a uuid;
-  v_new_b uuid;
-  v_conflict boolean;
+  v_generation bigint;
 begin
   if auth.uid() is null or not public.can_use_chat_assistant() then
     raise exception 'admin required';
@@ -60,31 +26,10 @@ begin
 
   if not found then raise exception 'recovery request unavailable'; end if;
   if p_side not in ('a','b') then raise exception 'invalid side'; end if;
-
-  -- New requests already contain the stable identity. For legacy requests,
-  -- requester_user_id may instead be the transient auth uid; prefer its active
-  -- stable mapping when one exists.
-  select coalesce(
-    (select s.anonymous_identity_id
-       from public.anonymous_identity_device_state s
-      where s.active_auth_user_id=v_req.requester_user_id
-      limit 1),
-    v_req.requester_user_id
-  ) into v_requester;
-
-  if v_requester is null or not exists(
-    select 1 from public.profiles where id=v_requester
+  if v_req.requester_user_id is null or not exists(
+    select 1 from auth.users where id=v_req.requester_user_id
   ) then
-    raise exception '恢復失敗：找不到請求者的身分，請使用者重新申請恢復碼。';
-  end if;
-
-  -- Persist the repaired requester so retries and admin inspection use the
-  -- canonical identity from now on.
-  if v_req.requester_user_id is distinct from v_requester then
-    update public.anonymous_session_recovery_requests
-    set requester_user_id=v_requester
-    where id=v_req.id;
-    v_req.requester_user_id:=v_requester;
+    raise exception '恢復失敗：找不到請求者的登入身分，請使用者重新申請恢復碼。';
   end if;
 
   select case when p_side='a' then user_a else user_b end
@@ -93,57 +38,40 @@ begin
   where id=v_req.session_id and status='active'
   for update;
 
-  if v_old is null then raise exception 'session unavailable'; end if;
-
-  if exists(
-    select 1 from public.random_chat_sessions
-    where id=v_req.session_id
-      and (user_a=v_requester or user_b=v_requester)
+  if v_old is null or not exists(
+    select 1 from public.profiles
+    where id=v_old and anonymous_mode_enabled=true
   ) then
-    update public.anonymous_session_recovery_requests
-    set status='approved', resolved_at=now()
-    where id=v_req.id;
-    return true;
+    raise exception '恢復失敗：原匿名身分不存在。';
   end if;
 
-  select exists(
-    select 1
-    from public.anonymous_contacts src
-    join public.anonymous_contacts dst
-      on dst.id<>src.id
-     and dst.status='active'
-     and (dst.user_a=v_requester or dst.user_b=v_requester)
-     and (case when dst.user_a=v_requester then dst.user_b else dst.user_a end)
-       = (case when src.user_a=v_old then src.user_b else src.user_a end)
-    where src.status='active'
-      and (src.user_a=v_old or src.user_b=v_old)
-  ) into v_conflict;
+  -- A recovery code proves only which side the admin selected. The requester's
+  -- current auth uid becomes the active device for that existing anonymous
+  -- identity. Sessions, messages and contacts stay attached to the canonical
+  -- old identity, so no history rewrite or replacement profile is required.
+  perform pg_advisory_xact_lock(hashtextextended(v_old::text,0));
+  perform pg_advisory_xact_lock(hashtextextended(v_req.requester_user_id::text,0));
 
-  if v_conflict then
-    raise exception '恢復失敗：目前身分與原身分存在重複聯絡人，請人工檢查。';
+  delete from public.anonymous_identity_device_state
+  where active_auth_user_id=v_req.requester_user_id
+    and anonymous_identity_id<>v_old;
+
+  select generation into v_generation
+  from public.anonymous_identity_device_state
+  where anonymous_identity_id=v_old
+  for update;
+
+  if found then
+    update public.anonymous_identity_device_state
+    set active_auth_user_id=v_req.requester_user_id,
+        generation=generation+1,
+        updated_at=timezone('utc',now())
+    where anonymous_identity_id=v_old;
+  else
+    insert into public.anonymous_identity_device_state(
+      anonymous_identity_id,active_auth_user_id,generation,updated_at
+    ) values(v_old,v_req.requester_user_id,1,timezone('utc',now()));
   end if;
-
-  v_new_a := case when p_side='a' then v_requester else (select user_a from public.random_chat_sessions where id=v_req.session_id) end;
-  v_new_b := case when p_side='b' then v_requester else (select user_b from public.random_chat_sessions where id=v_req.session_id) end;
-
-  update public.random_chat_sessions
-  set user_a=least(v_new_a,v_new_b), user_b=greatest(v_new_a,v_new_b)
-  where id=v_req.session_id;
-
-  update public.random_chat_messages
-  set sender_id=v_requester
-  where session_id=v_req.session_id and sender_id=v_old;
-
-  update public.anonymous_contacts
-  set user_a=least(
-        case when user_a=v_old then v_requester else user_a end,
-        case when user_b=v_old then v_requester else user_b end),
-      user_b=greatest(
-        case when user_a=v_old then v_requester else user_a end,
-        case when user_b=v_old then v_requester else user_b end),
-      requested_by=case when requested_by=v_old then v_requester else requested_by end,
-      updated_at=now()
-  where status='active' and (user_a=v_old or user_b=v_old);
 
   update public.anonymous_session_recovery_requests
   set status='approved',resolved_at=now()
@@ -152,6 +80,6 @@ begin
   return true;
 exception
   when unique_violation then
-    raise exception '恢復失敗：聯絡人或聊天室存在唯一值衝突，所有變更已回滾。';
+    raise exception '恢復失敗：目前登入身分已有衝突的匿名身分，所有變更已回滾。';
 end
 $$;
