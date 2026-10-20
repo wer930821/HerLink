@@ -69,6 +69,7 @@ export function pushNavigationSessionId(response: Notifications.NotificationResp
 export type PushNavigationTarget =
   | { kind: "random_session"; sessionId: string }
   | { kind: "match_chat"; matchId: string }
+  | { kind: "mailbox" }
   | { kind: "home" };
 
 export function pushNavigationTarget(
@@ -91,6 +92,10 @@ export function pushNavigationTarget(
     if (matchId) {
       return { kind: "match_chat", matchId };
     }
+  }
+
+  if (data.event_type === "station_mail_reply" || targetUrl === "/mailbox") {
+    return { kind: "mailbox" };
   }
 
   const sessionId = pushNavigationSessionId(response);
