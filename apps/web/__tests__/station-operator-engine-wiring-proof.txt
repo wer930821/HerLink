@@ -1,0 +1,1 @@
+CI should fail on missing repair engine wiring before implementation.
