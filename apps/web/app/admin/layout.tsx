@@ -8,6 +8,7 @@ import { AdminMailboxNavLink } from "./mailbox/nav-link";
 
 const navItems = [
   { href: "/admin", label: "總覽" },
+  { href: "/admin/repairs", label: "AI 維修員" },
   { href: "/admin/sessions", label: "聊天場次" },
   { href: "/admin/recovery", label: "聊天室恢復" },
   { href: "/admin/easter-eggs", label: "彩蛋紀錄" },
@@ -30,18 +31,16 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <h1>後台總覽</h1>
               <p>營運狀態、聊天活動與安全事件集中管理。</p>
             </div>
-
             <nav className="admin-nav" aria-label="後台導覽">
-              {navItems.slice(0, 1).map((item) => (
+              {navItems.slice(0, 2).map((item) => (
                 <a key={item.href} className="admin-nav-link" href={item.href}>{item.label}</a>
               ))}
               <AdminMailboxNavLink />
-              {navItems.slice(1).map((item) => (
+              {navItems.slice(2).map((item) => (
                 <a key={item.href} className="admin-nav-link" href={item.href}>{item.label}</a>
               ))}
             </nav>
           </header>
-
           <main className="admin-content">{children}</main>
         </AdminAccessGate>
       </div>
