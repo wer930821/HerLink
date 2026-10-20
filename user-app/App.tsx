@@ -1,0 +1,330 @@
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  AppState,
+  BackHandler,
+  Platform,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
+  ToastAndroid,
+  View,
+} from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import Constants from "expo-constants";
+import * as FileSystem from "expo-file-system/legacy";
+import * as IntentLauncher from "expo-intent-launcher";
+import { WebView } from "react-native-webview";
+import type { WebViewNavigation } from "react-native-webview";
+
+const SITE_URL = "https://her-link-ten.vercel.app";
+const UPDATE_INFO_URL =
+  "https://github.com/wer930821/HerLink/releases/download/app-latest/app-update-info.json";
+
+type UpdateInfo = {
+  versionCode?: number;
+  versionName?: string;
+  apkUrl?: string;
+};
+
+function getCurrentVersionCode() {
+  const configuredCode = Constants.expoConfig?.android?.versionCode;
+  return typeof configuredCode === "number" ? configuredCode : 1;
+}
+
+function HerLinkApp() {
+  const webRef = useRef<WebView>(null);
+  const lastBackPressRef = useRef(0);
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [webKey, setWebKey] = useState(0);
+  const [webReady, setWebReady] = useState(false);
+  const [updateProgress, setUpdateProgress] = useState<number | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null);
+  const updatePromptedRef = useRef<number | null>(null);
+
+  const installUpdateInsideApp = async (info: UpdateInfo) => {
+    if (!info.apkUrl || Platform.OS !== "android") return;
+    try {
+      setUpdateProgress(0);
+      setUpdateStatus("正在下載更新…");
+      const target = `${FileSystem.cacheDirectory}HerLink-update.apk`;
+      await FileSystem.deleteAsync(target, { idempotent: true });
+      const download = FileSystem.createDownloadResumable(
+        info.apkUrl,
+        target,
+        {},
+        ({ totalBytesWritten, totalBytesExpectedToWrite }) => {
+          if (totalBytesExpectedToWrite > 0) {
+            setUpdateProgress(totalBytesWritten / totalBytesExpectedToWrite);
+          }
+        }
+      );
+      const result = await download.downloadAsync();
+      if (!result?.uri) throw new Error("下載失敗");
+
+      setUpdateProgress(1);
+      setUpdateStatus("正在開啟更新安裝…");
+      const contentUri = await FileSystem.getContentUriAsync(result.uri);
+      await IntentLauncher.startActivityAsync("android.intent.action.VIEW", {
+        data: contentUri,
+        flags: 1,
+        type: "application/vnd.android.package-archive",
+      });
+    } catch {
+      setUpdateProgress(null);
+      setUpdateStatus(null);
+      Alert.alert("更新失敗", "無法在 App 內完成更新，請稍後再試。");
+    }
+  };
+
+  const handleNavigation = (nav: WebViewNavigation) => {
+    setCanGoBack(nav.canGoBack);
+  };
+
+  const reload = () => {
+    setFailed(false);
+    setLoading(true);
+    setWebReady(false);
+    setWebKey((value) => value + 1);
+  };
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (canGoBack) {
+        webRef.current?.goBack();
+        return true;
+      }
+
+      const now = Date.now();
+      if (now - lastBackPressRef.current < 2000) {
+        BackHandler.exitApp();
+        return true;
+      }
+
+      lastBackPressRef.current = now;
+      if (Platform.OS === "android") {
+        ToastAndroid.show("再按一次返回鍵才會離開 HerLink", ToastAndroid.SHORT);
+      }
+      return true;
+    });
+
+    return () => sub.remove();
+  }, [canGoBack]);
+
+  useEffect(() => {
+    let checking = false;
+
+    const checkForUpdate = async () => {
+      if (Platform.OS !== "android" || checking) return;
+      checking = true;
+
+      try {
+        const response = await fetch(`${UPDATE_INFO_URL}?t=${Date.now()}`, {
+          headers: { "Cache-Control": "no-cache" },
+        });
+        if (!response.ok) return;
+
+        const info = (await response.json()) as UpdateInfo;
+        const latestCode = Number(info.versionCode ?? 0);
+        const currentCode = getCurrentVersionCode();
+
+        if (latestCode > currentCode && info.apkUrl && updatePromptedRef.current !== latestCode) {
+          updatePromptedRef.current = latestCode;
+          Alert.alert(
+            "發現新版 HerLink",
+            `目前版本：${Constants.expoConfig?.version ?? "目前版本"}\n最新版本：${info.versionName ?? latestCode}\n\n要現在更新嗎？`,
+            [
+              { text: "稍後", style: "cancel" },
+              {
+                text: "更新",
+                onPress: () => {
+                  void installUpdateInsideApp(info);
+                },
+              },
+            ],
+            { cancelable: true }
+          );
+        }
+      } catch {
+        // 更新檢查失敗不影響 App 使用。
+      } finally {
+        checking = false;
+      }
+    };
+
+    void checkForUpdate();
+
+    const appStateSub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        void checkForUpdate();
+      }
+    });
+
+    return () => appStateSub.remove();
+  }, []);
+
+  return (
+    <SafeAreaView style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#120A3D" />
+
+      <View style={styles.webWrap}>
+        <WebView
+          key={webKey}
+          ref={webRef}
+          source={{ uri: SITE_URL }}
+          applicationNameForUserAgent="HerLinkApp"
+          style={styles.web}
+          originWhitelist={["https://*", "http://*"]}
+          sharedCookiesEnabled
+          thirdPartyCookiesEnabled
+          javaScriptEnabled
+          domStorageEnabled
+          cacheEnabled
+          cacheMode="LOAD_DEFAULT"
+          setSupportMultipleWindows={false}
+          pullToRefreshEnabled
+          allowsBackForwardNavigationGestures
+          startInLoadingState={false}
+          onNavigationStateChange={handleNavigation}
+          onLoadStart={() => {
+            // 只在 App 第一次開啟或手動重新整理時顯示全頁載入。
+            // 站內頁面導覽不再重新蓋上全頁載入畫面。
+            if (!webReady) setLoading(true);
+            setFailed(false);
+          }}
+          onLoadEnd={() => {
+            setLoading(false);
+            setWebReady(true);
+          }}
+          onError={() => {
+            setLoading(false);
+            setFailed(true);
+          }}
+          onHttpError={({ nativeEvent }) => {
+            if (nativeEvent.statusCode >= 400) {
+              setLoading(false);
+              setFailed(true);
+            }
+          }}
+        />
+
+        {updateProgress !== null ? (
+          <View style={styles.updateOverlay}>
+            <ActivityIndicator size="large" color="#6E4EE8" />
+            <Text style={styles.errorTitle}>HerLink 更新中</Text>
+            <Text style={styles.loadingText}>{updateStatus ?? "正在準備更新…"}</Text>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${Math.round(updateProgress * 100)}%` }]} />
+            </View>
+            <Text style={styles.loadingText}>{Math.round(updateProgress * 100)}%</Text>
+          </View>
+        ) : null}
+
+        {loading && !webReady && updateProgress === null ? (
+          <View style={styles.overlay}>
+            <ActivityIndicator size="large" color="#6E4EE8" />
+            <Text style={styles.loadingText}>正在載入 HerLink…</Text>
+          </View>
+        ) : null}
+
+        {failed ? (
+          <View style={styles.overlay}>
+            <Text style={styles.errorTitle}>HerLink 暫時無法開啟</Text>
+            <Text style={styles.errorBody}>請確認網路後再重新整理。</Text>
+            <Pressable style={styles.retryButton} onPress={reload}>
+              <Text style={styles.retryText}>重新整理</Text>
+            </Pressable>
+          </View>
+        ) : null}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <HerLinkApp />
+    </SafeAreaProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: "#120A3D",
+  },
+  webWrap: {
+    flex: 1,
+    position: "relative",
+    backgroundColor: "#120A3D",
+  },
+  web: {
+    flex: 1,
+    backgroundColor: "#120A3D",
+  },
+  updateOverlay: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    padding: 28,
+    backgroundColor: "#120A3D",
+  },
+  progressTrack: {
+    width: "82%",
+    height: 8,
+    overflow: "hidden",
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: "#6E4EE8",
+  },
+  overlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    padding: 28,
+    backgroundColor: "#120A3D",
+  },
+  loadingText: {
+    color: "#b7aecb",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  errorTitle: {
+    color: "#f6f1ff",
+    fontSize: 19,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+  },
+  errorBody: {
+    color: "#b7aecb",
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: "center",
+  },
+  retryButton: {
+    marginTop: 8,
+    minHeight: 46,
+    paddingHorizontal: 22,
+    borderRadius: 14,
+    backgroundColor: "#6E4EE8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  retryText: {
+    color: "#ffffff",
+    fontWeight: "800",
+    fontSize: 14,
+  },
+});
