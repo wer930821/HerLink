@@ -46,7 +46,9 @@ export async function executeRepairEngine({ authenticated, mode, repair, request
     return { ok: true, branch: written.branch, prNumber: written.prNumber };
   } catch (error) {
     const reason = safeFailureCode(error);
-    console.error('station_repair_engine_failed', { reason });
+    const errorType = error instanceof Error ? error.name : typeof error;
+    const errorCode = error && typeof error === 'object' && typeof error.code === 'string' && /^[a-z0-9_.-]{1,80}$/i.test(error.code) ? error.code : undefined;
+    console.error('station_repair_engine_failed', { reason, errorType, errorCode });
     return { ok: false, reason, safety: 'engine_stopped_before_write' };
   }
 }
