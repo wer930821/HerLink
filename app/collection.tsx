@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,6 +21,7 @@ import {
   type CollectionGameState,
   type CollectionReward,
 } from "../lib/collection";
+import { EggReplayOverlay, type EggReplayInfo } from "../components/EggReplayOverlay";
 
 type Tab = "collection" | "missions" | "achievements";
 
@@ -38,7 +38,7 @@ export default function CollectionScreen() {
   const [state, setState] = useState<CollectionGameState>(EMPTY_COLLECTION_STATE);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState<string | null>(null);
-  const [preview, setPreview] = useState<{ name: string; rarity: string } | null>(null);
+  const [preview, setPreview] = useState<EggReplayInfo | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -172,7 +172,7 @@ export default function CollectionScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={`播放 ${name}`}
                     style={styles.playButton}
-                    onPress={() => setPreview({ name, rarity })}
+                    onPress={() => setPreview({ kind, name, rarity })}
                   >
                     <Text style={styles.playButtonText}>▶ 播放</Text>
                   </Pressable>
@@ -198,16 +198,7 @@ export default function CollectionScreen() {
         </View>
       ) : null}
 
-      <Modal visible={preview !== null} transparent animationType="fade" onRequestClose={() => setPreview(null)}>
-        <View style={styles.replayBackdrop}>
-          <Text style={styles.replayMark}>✦</Text>
-          <Text style={styles.replayName}>{preview?.name}</Text>
-          <Text style={styles.mutedSmall}>{preview?.rarity}彩蛋</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="關閉" style={styles.replayClose} onPress={() => setPreview(null)}>
-            <Text style={styles.replayCloseText}>×</Text>
-          </Pressable>
-        </View>
-      </Modal>
+      <EggReplayOverlay egg={preview} onClose={() => setPreview(null)} />
     </ScrollView>
   );
 }
