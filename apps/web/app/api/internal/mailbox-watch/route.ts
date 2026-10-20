@@ -65,7 +65,7 @@ export async function GET(request: Request) {
   for (const t of unread) {
     const { data: msgs } = await supabase
       .from("station_mail_messages")
-      .select("content, sender_role, created_at")
+      .select("body, sender_role, created_at")
       .eq("thread_id", t.id)
       .order("created_at", { ascending: false })
       .limit(1);
@@ -77,7 +77,7 @@ export async function GET(request: Request) {
       created_at: t.created_at,
       latest_message: latest
         ? {
-            content: String(latest.content ?? "").slice(0, 200),
+            content: String(latest.body ?? "").slice(0, 200),
             sender_role: latest.sender_role,
             created_at: latest.created_at,
           }
