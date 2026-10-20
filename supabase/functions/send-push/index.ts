@@ -8,7 +8,8 @@ type EventType =
   | "push_test"
   | "random_match"
   | "random_message"
-  | "admin_mail";
+  | "admin_mail"
+  | "station_mail_reply";
 
 type DeliveryTarget = "web" | "native" | "both";
 type TargetName = "web" | "native";
@@ -644,7 +645,9 @@ function buildNativePushData(event: PushEventRow): Record<string, unknown> {
       : null);
 
   let targetUrl =
-    event.event_type === "admin_mail" && event.payload && typeof event.payload.target_url === "string"
+    (event.event_type === "admin_mail" || event.event_type === "station_mail_reply") &&
+    event.payload &&
+    typeof event.payload.target_url === "string"
       ? event.payload.target_url
       : "/";
   if (isRandomEvent && sessionId) {
