@@ -61,3 +61,22 @@ test('production delegates allowed job to worker', async () => {
   assert.equal(results[0].status,'completed');
   assert.equal(replied,true);
 });
+
+test('allowlisted bug delegates mode and repair engine to worker', async () => {
+  const calls=[];
+  const db={
+    async messages(){return[{sender_role:'user',body:'回覆按鈕沒反應'}]},
+    async latestUserMessage(){return'm1'},
+    async createBugRepair(){return'r1'},
+    async audit(v){calls.push(['audit',v])},
+    async finish(v){calls.push(['finish',v])}
+  };
+  let engineInput=null;
+  const repairEngine=async input=>{engineInput=input;return{ok:true}};
+  const results=await runClaimedJobs({
+    jobs:[job()],db,mode:'allowlist',testThreads:new Set(['t1']),repairEngine,
+    decide:async()=>({kind:'bug_repair',reply:null,actions:[{type:'create_bug_repair'}],confidence:.97,needsHuman:false})
+  });
+  assert.deepEqual(results,[{status:'waiting_ci'}]);
+  assert.deepEqual(engineInput,{repairId:'r1',jobId:'j1',risk:'low'});
+});
