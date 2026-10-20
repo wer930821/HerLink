@@ -1068,7 +1068,7 @@ export default function RandomSessionScreen() {
           return (
             <View style={[styles.messageRow, isMine ? styles.mineRow : styles.otherRow]}>
               {!isMine ? (
-                <Pressable onLongPress={() => startReply(item)} style={styles.replyInlineButton}>
+                <Pressable onPress={() => startReply(item)} onLongPress={() => startReply(item)} style={styles.replyInlineButton}>
                   <Ionicons name="return-down-back" size={16} color={colors.textSoft} />
                 </Pressable>
               ) : null}
@@ -1105,7 +1105,7 @@ export default function RandomSessionScreen() {
                 </Text>
               </Pressable>
               {isMine ? (
-                <Pressable onLongPress={() => startReply(item)} style={styles.replyInlineButton}>
+                <Pressable onPress={() => startReply(item)} onLongPress={() => startReply(item)} style={styles.replyInlineButton}>
                   <Ionicons name="return-up-forward" size={16} color={colors.textSoft} />
                 </Pressable>
               ) : null}
