@@ -3,6 +3,13 @@ export const dynamic = "force-dynamic";
 import { createClient } from "@supabase/supabase-js";
 import { adminJson, getAdminContext } from "../_shared";
 
+function serviceClient() {
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) return null;
+  return createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+}
+
 export async function GET(request: Request) {
   const admin = await getAdminContext(request);
   if ("error" in admin) return admin.error;
@@ -19,4 +26,18 @@ export async function GET(request: Request) {
     .limit(limit);
   if (error) return adminJson({ error: "無法載入 AI 維修狀態。" }, 500);
   return adminJson({ items: data ?? [], generated_at: new Date().toISOString() });
+}
+
+export async function POST(request: Request) {
+  const admin = await getAdminContext(request);
+  if ("error" in admin) return admin.error;
+  let payload: unknown;
+  try { payload = await request.json(); } catch { return adminJson({ error: "請求格式錯誤。" }, 400); }
+  const repairId = payload && typeof payload === "object" && "repairId" in payload && typeof payload.repairId === "string" ? payload.repairId : "";
+  if (!repairId) return adminJson({ error: "缺少 repairId。" }, 400);
+  const client = serviceClient();
+  if (!client) return adminJson({ error: "AI 維修狀態服務尚未設定。" }, 500);
+  const { data, error } = await client.rpc("station_operator_apply_repair_event", { p_repair_id: repairId, p_event: "cancelled", p_metadata: { source: "admin" } });
+  if (error) return adminJson({ error: error.message.includes("invalid repair transition") ? "只能取消尚未執行的排隊項目。" : "無法取消 Repair。" }, 409);
+  return adminJson({ ok: true, result: data });
 }
