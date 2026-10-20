@@ -53,12 +53,14 @@ jobs:
       - name: Set build version
         shell: bash
         run: |
-          VERSION_CODE="${GITHUB_RUN_NUMBER}"
-          VERSION_NAME="1.0.${GITHUB_RUN_NUMBER}"
+          # 版號 +100：WebView 版已用到 102，原生版必須更大才能覆蓋安裝、完成接手。
+          export BUILD_NUMBER=$((GITHUB_RUN_NUMBER + 100))
+          VERSION_CODE="${BUILD_NUMBER}"
+          VERSION_NAME="1.0.${BUILD_NUMBER}"
           node - <<'NODE'
           const fs = require("fs");
           const app = JSON.parse(fs.readFileSync("app.json", "utf8"));
-          const code = Number(process.env.GITHUB_RUN_NUMBER);
+          const code = Number(process.env.BUILD_NUMBER);
           app.expo.version = `1.0.${code}`;
           app.expo.android = app.expo.android || {};
           app.expo.android.versionCode = code;
@@ -119,3 +121,20 @@ jobs:
         run: |
           gh release delete latest --cleanup-tag -y || true
           gh release create latest             HerLink.apk             update-info.json             --title "HerLink Latest"             --notes "Automated Android build from ${GITHUB_SHA}"             --latest
+
+      - name: Publish app-latest for WebView takeover
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK_SHA256="$(sha256sum HerLink.apk | awk '{print $1}')"
+          cat > app-update-info.json <<EOF
+          {
+            "versionCode": ${VERSION_CODE},
+            "versionName": "${VERSION_NAME}",
+            "apkUrl": "https://github.com/wer930821/HerLink/releases/download/app-latest/HerLink.apk",
+            "sha256": "${APK_SHA256}",
+            "commit": "${GITHUB_SHA}"
+          }
+          EOF
+          gh release delete app-latest --cleanup-tag -y || true
+          gh release create app-latest HerLink.apk app-update-info.json --title "HerLink App Latest" --notes "Automated Android build from ${GITHUB_SHA}"
