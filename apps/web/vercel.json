@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/internal/station-operator-cron",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
