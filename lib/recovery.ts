@@ -1,11 +1,9 @@
-import { supabase } from "./supabase";
+import { supabase, SUPABASE_URL } from "./supabase";
 
 // Native counterpart of the web recovery helpers
 // (apps/web/lib/permanent-recovery.ts, permanent-recovery-code.ts and the
 // recovery RPC wrappers in apps/web/lib/supabase.ts). Everything talks to the
 // same backend: two Edge Functions plus plain RPCs, so behavior matches web.
-
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
 
 const rpc = supabase as any;
 
@@ -25,7 +23,6 @@ async function accessToken(): Promise<string> {
 }
 
 async function callEdge<T>(path: string, init: { method: "GET" | "POST"; body?: unknown }): Promise<T> {
-  if (!SUPABASE_URL) throw new Error("目前無法連線恢復服務。");
   const token = await accessToken();
   const response = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
     method: init.method,

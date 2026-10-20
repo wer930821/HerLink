@@ -872,8 +872,17 @@ export type DiscoverProfileRow = Database["public"]["Functions"]["list_discover_
 export type ConversationRow = Database["public"]["Functions"]["list_active_conversations"]["Returns"][number];
 export type PublicProfilePhoto = Database["public"]["Functions"]["get_public_profile_photos"]["Returns"][number];
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
+// The publishable key is public by design (it ships in the website's JS to
+// every visitor; RLS is the access control). CI APK builds have no
+// EXPO_PUBLIC_* env, and createClient throws on an empty URL, which left the
+// app stuck on the splash screen — so fall back to the project's public
+// values when the env vars are absent.
+const supabaseUrl =
+  process.env.EXPO_PUBLIC_SUPABASE_URL || "https://vrwuxjujevhgsjmdjxmc.supabase.co";
+const supabaseAnonKey =
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_gGoIh1LMlsZSA060bitlFA_oSecByLn";
+
+export const SUPABASE_URL = supabaseUrl;
 const authStorage =
   typeof window === "undefined"
     ? {
