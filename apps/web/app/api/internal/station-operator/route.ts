@@ -19,6 +19,23 @@ export async function POST(request:Request) {
   if (mode === 'disabled') return NextResponse.json({ok:true,mode,disabled:true,processed:0});
 
   const db = createOperatorDb();
+  let requestedRepairId:string|null=null;
+  try {
+    const body=await request.clone().json();
+    requestedRepairId=typeof body?.repairId === 'string' ? body.repairId : null;
+  } catch {}
+  if (requestedRepairId) {
+    if (mode !== 'allowlist') return NextResponse.json({ok:false,mode,error:'mode_not_allowed'},{status:409});
+    const repair=await db.dispatchQueuedRepair(requestedRepairId);
+    if (!repair) return NextResponse.json({ok:false,error:'repair_not_dispatchable'},{status:409});
+    const repairSecret=process.env.STATION_REPAIR_CALLBACK_SECRET;
+    if (!repairSecret) return NextResponse.json({ok:false,error:'repair_capability_missing'},{status:500});
+    const url=new URL('/api/internal/station-repair/engine',request.url);
+    const response=await fetch(url,{method:'POST',headers:{Authorization:`Bearer ${repairSecret}`,'Content-Type':'application/json'},body:JSON.stringify({repairId:requestedRepairId}),cache:'no-store'});
+    let body:Record<string,unknown>={ok:false};
+    try { body=await response.json(); } catch {}
+    return NextResponse.json({ok:response.ok,mode,repairId:requestedRepairId,engine:body},{status:response.ok?200:409});
+  }
   const enqueued = await db.enqueue(20);
   const jobs = await db.claim(5);
   const testThreads=new Set(String(process.env.STATION_OPERATOR_TEST_THREADS ?? '').split(',').map(v=>v.trim()).filter(Boolean));

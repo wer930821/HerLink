@@ -47,6 +47,8 @@ export function createOperatorDb(client = createOperatorSupabase()) {
       if (error) throw error;
       return data;
     },
+    dispatchQueuedRepair: (repairId:string) =>
+      rpc<any[]>('station_operator_dispatch_queued_repair',{p_repair_id:repairId}).then(rows => rows?.[0] ?? null),
     applyRepairEvent: ({repairId,event,metadata}:{repairId:string;event:string;metadata?:Record<string,unknown>}) =>
       rpc<{status:string;changed:boolean}>('station_operator_apply_repair_event',{p_repair_id:repairId,p_event:event,p_metadata:metadata ?? {}}),
     finalizeVerifiedRepair: ({repairId,body}:{repairId:string;body:string}) =>
