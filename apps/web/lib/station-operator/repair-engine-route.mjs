@@ -3,6 +3,14 @@ import { buildRepairModelRequest, prepareValidatedRepairPlan } from './repair-en
 const MAX_ATTEMPTS = 2;
 const SAFE_SHA = /^[A-Fa-f0-9]{40}$/;
 
+function safeFailureCode(error) {
+  const message = error instanceof Error ? error.message : '';
+  if (/openai/i.test(message)) return 'model_request_failed';
+  if (/github/i.test(message)) return 'github_write_failed';
+  if (/context|source|search|read/i.test(message)) return 'context_failed';
+  return 'engine_failed';
+}
+
 export function validateRepairEngineInvocation({ authenticated, mode, repair, request } = {}) {
   if (authenticated !== true) return { ok: false, reason: 'unauthenticated' };
   if (mode !== 'allowlist') return { ok: false, reason: 'mode_not_allowed' };
@@ -36,7 +44,9 @@ export async function executeRepairEngine({ authenticated, mode, repair, request
     const written = await writeRepair({jobId:request.jobId,repairId:request.repairId,branch:request.branch,baseSha:request.baseSha,cause:plan.cause,confidence:plan.confidence,files:plan.files});
     if (!written?.ok) return { ok: false, reason: written?.reason ?? 'write_failed' };
     return { ok: true, branch: written.branch, prNumber: written.prNumber };
-  } catch {
-    return { ok: false, reason: 'engine_failed' };
+  } catch (error) {
+    const reason = safeFailureCode(error);
+    console.error('station_repair_engine_failed', { reason });
+    return { ok: false, reason, safety: 'engine_stopped_before_write' };
   }
 }
