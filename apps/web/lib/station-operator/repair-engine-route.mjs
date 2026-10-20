@@ -33,22 +33,26 @@ export async function executeRepairEngine({ authenticated, mode, repair, request
   const gate = validateRepairEngineInvocation({ authenticated, mode, repair, request });
   if (!gate.ok) return gate;
   if (typeof discoverContext !== 'function' || typeof callModel !== 'function' || typeof writeRepair !== 'function') return { ok: false, reason: 'missing_capability' };
+  let stage = 'context';
   try {
     const discovered = await discoverContext({ summary: request.summary, allowedRoots: request.allowedRoots });
-    if (!discovered?.ok) return { ok: false, reason: discovered?.reason ?? 'context_discovery_failed' };
+    if (!discovered?.ok) return { ok: false, reason: discovered?.reason ?? 'context_discovery_failed', stage };
+    stage = 'model';
     const modelRequest = buildRepairModelRequest({ request, context: discovered.context });
-    if (!modelRequest.ok) return modelRequest;
+    if (!modelRequest.ok) return { ...modelRequest, stage };
     const raw = await callModel(modelRequest);
+    stage = 'plan';
     const plan = prepareValidatedRepairPlan({ raw });
-    if (!plan.ok) return plan;
+    if (!plan.ok) return { ...plan, stage };
+    stage = 'writer';
     const written = await writeRepair({jobId:request.jobId,repairId:request.repairId,branch:request.branch,baseSha:request.baseSha,cause:plan.cause,confidence:plan.confidence,files:plan.files});
-    if (!written?.ok) return { ok: false, reason: written?.reason ?? 'write_failed' };
+    if (!written?.ok) return { ok: false, reason: written?.reason ?? 'write_failed', stage };
     return { ok: true, branch: written.branch, prNumber: written.prNumber };
   } catch (error) {
     const reason = safeFailureCode(error);
     const errorType = error instanceof Error ? error.name : typeof error;
     const errorCode = error && typeof error === 'object' && typeof error.code === 'string' && /^[a-z0-9_.-]{1,80}$/i.test(error.code) ? error.code : undefined;
-    console.error('station_repair_engine_failed', { reason, errorType, errorCode });
-    return { ok: false, reason, errorType, ...(errorCode ? { errorCode } : {}), safety: 'engine_stopped_before_write' };
+    console.error('station_repair_engine_failed', { reason, errorType, errorCode, stage });
+    return { ok: false, reason, errorType, stage, ...(errorCode ? { errorCode } : {}), safety: 'engine_stopped_before_write' };
   }
 }
