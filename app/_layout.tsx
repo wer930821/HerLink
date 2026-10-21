@@ -3,12 +3,11 @@ import { AuthProvider, useAuth } from "../context/auth";
 import { useEffect, useRef } from "react";
 import { SplashScreen } from "expo-router";
 import { Alert, AppState, Platform } from "react-native";
-import { colors } from "../theme/colors";
 import * as Notifications from "expo-notifications";
 import { pushNavigationTarget, syncNativePushToken } from "../lib/native-push";
 import { downloadAndInstallHerLinkUpdate, getAvailableHerLinkUpdate } from "../lib/app-update";
+import Constants from "expo-constants";
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -25,75 +24,38 @@ function RootLayoutNav() {
   const updateCheckBusyRef = useRef(false);
   const lastUpdateCheckRef = useRef(0);
   const notifiedUpdateVersionRef = useRef<number | null>(null);
+  const playStoreBuild = Constants.expoConfig?.extra?.playStoreBuild === true;
 
   useEffect(() => {
-    if (!loading) {
-      SplashScreen.hideAsync();
-    }
+    if (!loading) SplashScreen.hideAsync();
   }, [loading]);
 
   useEffect(() => {
-    if (__DEV__ || Platform.OS !== "android") return;
+    if (__DEV__ || Platform.OS !== "android" || playStoreBuild) return;
 
     let disposed = false;
-
     const checkUpdate = async () => {
       const now = Date.now();
       if (updateCheckBusyRef.current || now - lastUpdateCheckRef.current < 60_000) return;
       updateCheckBusyRef.current = true;
       lastUpdateCheckRef.current = now;
-
       try {
         const info = await getAvailableHerLinkUpdate();
         if (!info || disposed || notifiedUpdateVersionRef.current === info.versionCode) return;
-
         notifiedUpdateVersionRef.current = info.versionCode;
-        Alert.alert(
-          "HerLink 有新版本",
-          `版本 ${info.versionName} 已可更新。`,
-          [
-            { text: "稍後", style: "cancel" },
-            {
-              text: "立即更新",
-              onPress: () => {
-                let lastShown = -1;
-                void downloadAndInstallHerLinkUpdate(info, (progress) => {
-                  const percent = Math.round(progress * 100);
-                  if (percent === 100 || percent - lastShown >= 10) {
-                    lastShown = percent;
-                    console.log(`[HerLink Update] 下載進度 ${percent}%`);
-                  }
-                }).catch((error: any) => {
-                  if (error?.code === "APK_INSTALL_PERMISSION_REQUIRED" || error?.message === "APK_INSTALL_PERMISSION_REQUIRED") {
-                    Alert.alert(
-                      "需要安裝權限",
-                      "請允許 HerLink 安裝未知應用程式。開啟權限後回到 HerLink，系統會再次檢查更新；已下載完成的 APK 不會重複下載。",
-                      [{ text: "知道了" }]
-                    );
-                    return;
-                  }
-                  Alert.alert(
-                    "更新失敗",
-                    "新版下載或驗證失敗。可以直接重新嘗試，不需要到 GitHub 手動下載。",
-                    [
-                      { text: "稍後", style: "cancel" },
-                      {
-                        text: "重新嘗試",
-                        onPress: () => {
-                          notifiedUpdateVersionRef.current = null;
-                          lastUpdateCheckRef.current = 0;
-                          void checkUpdate();
-                        },
-                      },
-                    ]
-                  );
-                });
-              },
+        Alert.alert("HerLink 有新版本", `版本 ${info.versionName} 已可更新。`, [
+          { text: "稍後", style: "cancel" },
+          {
+            text: "立即更新",
+            onPress: () => {
+              void downloadAndInstallHerLinkUpdate(info).catch(() => {
+                Alert.alert("更新失敗", "新版下載或驗證失敗，請稍後再試。");
+              });
             },
-          ]
-        );
+          },
+        ]);
       } catch {
-        // GitHub 暫時不可用時不影響正常聊天。
+        // 更新檢查失敗不影響正常聊天。
       } finally {
         updateCheckBusyRef.current = false;
       }
@@ -107,15 +69,12 @@ function RootLayoutNav() {
         void checkUpdate();
       }
     });
-
     return () => {
       disposed = true;
       clearInterval(timer);
       appStateSubscription.remove();
     };
-  }, []);
-
-
+  }, [playStoreBuild]);
 
   useEffect(() => {
     const tokenSubscription = Notifications.addPushTokenListener((token) => {
@@ -124,10 +83,7 @@ function RootLayoutNav() {
     const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const target = pushNavigationTarget(response);
       if (session && target.kind === "random_session") {
-        router.replace({
-          pathname: "/random-session/[sessionId]",
-          params: { sessionId: target.sessionId },
-        } as never);
+        router.replace({ pathname: "/random-session/[sessionId]", params: { sessionId: target.sessionId } } as never);
       } else if (session && target.kind === "mailbox") {
         router.replace("/mailbox" as never);
       } else {
@@ -140,9 +96,7 @@ function RootLayoutNav() {
     };
   }, [router, session]);
 
-  if (loading) {
-    return null; // 或者顯示一個全屏的 loading 指示器
-  }
+  if (loading) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -163,4 +117,3 @@ function RootLayoutNav() {
     </Stack>
   );
 }
-
