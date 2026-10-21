@@ -15,124 +15,23 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - name: Verify regression test fails before fix
-        run: |
-          if node --test work/anonymous-contact-invite-overlay.test.mjs; then
-            echo 'Regression test unexpectedly passed before the fix.' >&2
-            exit 1
-          fi
-
+        run: "! node --test work/anonymous-contact-invite-overlay.test.mjs"
       - name: Apply focused UI fix
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          client_path = Path('apps/web/app/session/[id]/RandomSessionClient.tsx')
-          client = client_path.read_text()
-          old_card = '''  const contactRequestCard =
-    contactState?.status !== "active" && contactState?.partner_approved && !contactState.my_approved ? (
-      <section className="notice" style={{ margin: "12px 16px" }}>
-        <strong>{partnerName} 想和你成為匿名聯絡人</strong>
-        <div className="muted small" style={{ marginTop: 6 }}>雙方都同意後，之後可以從「匿名聯絡人」再次找到彼此。</div>
-        <div className="row" style={{ marginTop: 10 }}>
-          <Button size="sm" type="button" onPointerDown={(event) => { event.preventDefault(); event.stopPropagation(); void handleAnonymousContact(); }} disabled={contactBusy}>
-            {contactBusy ? "處理中…" : "同意"}
-          </Button>
-        </div>
-      </section>
-    ) : null;
-'''
-          new_card = '''  const contactRequestCard =
-    contactState?.status !== "active" && contactState?.partner_approved && !contactState.my_approved ? (
-      <div className="anonymous-contact-invite-overlay" role="presentation">
-        <section className="notice anonymous-contact-invite-card" role="dialog" aria-modal="false" aria-label="匿名聯絡人邀請">
-          <strong>{partnerName} 想和你成為匿名聯絡人</strong>
-          <div className="muted small" style={{ marginTop: 6 }}>雙方都同意後，之後可以從「匿名聯絡人」再次找到彼此。</div>
-          <div className="row" style={{ marginTop: 10 }}>
-            <Button size="sm" type="button" onPointerDown={(event) => { event.preventDefault(); event.stopPropagation(); void handleAnonymousContact(); }} disabled={contactBusy}>
-              {contactBusy ? "處理中…" : "同意"}
-            </Button>
-          </div>
-        </section>
-      </div>
-    ) : null;
-'''
-          if old_card not in client:
-              raise SystemExit('Expected contact request card block not found')
-          client = client.replace(old_card, new_card, 1)
-
-          old_stack = '''        {(contactRequestCard || notice) ? (
-          <div className="chat-status-stack">
-            {contactRequestCard}
-            {notice ? <div className="notice chat-status-notice">{notice}</div> : null}
-          </div>
-        ) : null}
-'''
-          new_stack = '''        {contactRequestCard}
-        {notice ? (
-          <div className="chat-status-stack">
-            <div className="notice chat-status-notice">{notice}</div>
-          </div>
-        ) : null}
-'''
-          if old_stack not in client:
-              raise SystemExit('Expected chat status stack block not found')
-          client = client.replace(old_stack, new_stack, 1)
-          client_path.write_text(client)
-
-          css_path = Path('apps/web/app/globals.css')
-          css = css_path.read_text()
-          marker = '/* Anonymous contact invite must stay tappable above the scrolling message layer. */'
-          if marker not in css:
-              css += '''\n\n/* Anonymous contact invite must stay tappable above the scrolling message layer. */
-.anonymous-contact-invite-overlay {
-  position: fixed;
-  inset: calc(env(safe-area-inset-top) + 72px) 0 auto;
-  z-index: 1200;
-  display: flex;
-  justify-content: center;
-  padding: 0 16px;
-  pointer-events: none;
-}
-
-.anonymous-contact-invite-card {
-  width: min(100%, 688px);
-  margin: 0;
-  pointer-events: auto;
-  background: color-mix(in srgb, var(--color-surface-1) 96%, transparent);
-  border-color: color-mix(in srgb, var(--color-accent) 34%, var(--color-border));
-  box-shadow: var(--shadow-floating);
-}
-
-@media (max-width: 720px) {
-  .anonymous-contact-invite-overlay {
-    inset: calc(env(safe-area-inset-top) + 64px) 0 auto;
-    padding: 0 12px;
-  }
-}
-'''
-          css_path.write_text(css)
-          PY
-
+        run: node work/fix-anonymous-contact-invite-overlay.mjs
       - name: Verify regression test passes
         run: node --test work/anonymous-contact-invite-overlay.test.mjs
-
       - name: Build web app
-        run: |
-          cd apps/web
-          npm ci
-          npm run build
-
-      - name: Commit verified fix and remove one-shot workflow
+        working-directory: apps/web
+        run: npm ci && npm run build
+      - name: Commit verified fix
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm .github/workflows/fix-anonymous-contact-invite-overlay.yml
+          git rm .github/workflows/fix-anonymous-contact-invite-overlay.yml work/fix-anonymous-contact-invite-overlay.mjs
           git add apps/web/app/session/'[id]'/RandomSessionClient.tsx apps/web/app/globals.css work/anonymous-contact-invite-overlay.test.mjs
           git commit -m 'fix: keep anonymous contact invite above chat messages'
           git push
