@@ -7,8 +7,6 @@ on:
         description: '既有 queued repair ID（留空則執行一般輪詢）'
         required: false
         type: string
-  schedule:
-    - cron: '*/5 * * * *'
 
 concurrency:
   group: herlink-station-operator
