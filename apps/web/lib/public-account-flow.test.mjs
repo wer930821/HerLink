@@ -4,6 +4,7 @@ import fs from "node:fs";
 const home = fs.readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
 const login = fs.readFileSync(new URL("../app/login/page.tsx", import.meta.url), "utf8");
 const signup = fs.readFileSync(new URL("../app/signup/page.tsx", import.meta.url), "utf8");
+const bindExisting = fs.readFileSync(new URL("../../../supabase/functions/account-bind-existing/index.ts", import.meta.url), "utf8");
 
 assert.doesNotMatch(login, /GUXING_USER_ID|僅供孤星企鵝使用|登入後會回到孤星企鵝/);
 assert.doesNotMatch(signup, /TEST_NAME|孤星企鵝專用測試頁面|正在確認測試身分/);
@@ -17,10 +18,18 @@ assert.doesNotMatch(signup, /signInAnonymously/);
 assert.match(signup, /建立 HerLink 帳號後即可登入使用/);
 assert.match(signup, /為目前的匿名身分建立登入方式/);
 assert.match(login, /登入後會接回這個帳號原本的匿名身分/);
-// Existing-account login must preserve the current anonymous session until the server verifies and binds it.
+// Existing-account login must preserve the current anonymous session until the server verifies it.
 assert.match(login, /functions\.invoke\("account-bind-existing"/);
 assert.match(login, /setSession\(/);
 assert.doesNotMatch(login, /if \(!isAdminLogin\) await supabase\.auth\.signOut\(\)/);
+// A verified existing account that already owns anonymous data must log into that identity instead of overwriting it.
+assert.match(bindExisting, /existingIdentityLogin:true/);
+assert.match(bindExisting, /targetState\.data\?\.anonymous_identity_id/);
+assert.match(bindExisting, /targetProfile\.data\?\.anonymous_display_name/);
+assert.doesNotMatch(bindExisting, /這個帳號已有匿名資料，為避免覆蓋資料已停止綁定。/);
+// Edge Function errors must surface their JSON error instead of the generic non-2xx message.
+assert.match(login, /bindError\.context/);
+assert.match(login, /payload\?\.error/);
 // Every signed-in anonymous user must be able to reach account binding from home.
 assert.match(home, /href="\/signup"[^>]*>申請並綁定帳號<\/a>/);
 assert.doesNotMatch(home, /anonymousSummary\?\.name === "孤星企鵝" \? \([\s\S]{0,400}申請並綁定帳號/);
