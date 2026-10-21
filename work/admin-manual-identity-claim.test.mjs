@@ -26,3 +26,8 @@ test("manual identity claim never updates chat or contact tables directly", () =
   assert.doesNotMatch(migration, /update\s+(?:public\.)?(?:random_chat_sessions|random_chat_messages|anonymous_contacts)\s+set/i);
   assert.match(migration, /claim_anonymous_identity_device/);
 });
+
+test("manual identity claim qualifies active auth binding columns", () => {
+  assert.doesNotMatch(migration, /where\s+active_auth_user_id\s*=/i);
+  assert.match(migration, /where\s+\w+\.active_auth_user_id\s*=/i);
+});

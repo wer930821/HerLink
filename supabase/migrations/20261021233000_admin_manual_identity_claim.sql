@@ -69,9 +69,9 @@ begin
   if coalesce(p_confirm,false) is not true then raise exception 'CONFIRMATION_REQUIRED'; end if;
   select t.user_id into v_auth_user_id from public.station_mail_threads t where t.id=p_thread_id and t.deleted_at is null;
   if v_auth_user_id is null then raise exception 'MAIL_THREAD_NOT_FOUND'; end if;
-  if exists(select 1 from public.anonymous_identity_device_state where active_auth_user_id=v_auth_user_id and anonymous_identity_id<>p_identity_id) then raise exception 'AUTH_USER_ALREADY_BOUND'; end if;
-  if not exists(select 1 from public.profiles where id=p_identity_id and anonymous_mode_enabled=true) then raise exception 'ANONYMOUS_IDENTITY_NOT_FOUND'; end if;
-  if not exists(select 1 from public.profiles where id=v_auth_user_id and anonymous_mode_enabled=true) then raise exception 'REPLACEMENT_ANONYMOUS_PROFILE_NOT_FOUND'; end if;
+  if exists(select 1 from public.anonymous_identity_device_state s where s.active_auth_user_id=v_auth_user_id and s.anonymous_identity_id<>p_identity_id) then raise exception 'AUTH_USER_ALREADY_BOUND'; end if;
+  if not exists(select 1 from public.profiles p where p.id=p_identity_id and p.anonymous_mode_enabled=true) then raise exception 'ANONYMOUS_IDENTITY_NOT_FOUND'; end if;
+  if not exists(select 1 from public.profiles p where p.id=v_auth_user_id and p.anonymous_mode_enabled=true) then raise exception 'REPLACEMENT_ANONYMOUS_PROFILE_NOT_FOUND'; end if;
   select count(*) into before_chat from public.random_chat_sessions where user_a=p_identity_id or user_b=p_identity_id;
   select count(*) into before_messages from public.random_chat_messages m join public.random_chat_sessions s on s.id=m.session_id where s.user_a=p_identity_id or s.user_b=p_identity_id;
   select count(*) into before_contacts from public.anonymous_contacts where user_a=p_identity_id or user_b=p_identity_id;
