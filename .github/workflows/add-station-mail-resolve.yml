@@ -1,0 +1,34 @@
+name: Add station mailbox resolve
+on:
+  push:
+    paths:
+      - '.github/workflows/add-station-mail-resolve.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Verify regression is red
+        run: '! node --test work/station-mail-resolve.test.mjs'
+      - name: Apply feature
+        run: node work/add-station-mail-resolve.mjs
+      - name: Verify regression is green
+        run: node --test work/station-mail-resolve.test.mjs
+      - name: Build web
+        working-directory: apps/web
+        run: npm ci && npm run build
+      - name: Commit verified feature
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/add-station-mail-resolve.yml work/add-station-mail-resolve.mjs
+          git add apps/web/app/admin/mailbox/page.tsx supabase/migrations/20261021133000_station_mail_admin_resolve.sql work/station-mail-resolve.test.mjs
+          git commit -m 'feat: allow station mail to be marked resolved without reply'
+          git push
