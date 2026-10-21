@@ -11,16 +11,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
-      - name: Link production
+
+      - name: Deploy bounded admin recovery SQL
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: supabase link --project-ref vrwuxjujevhgsjmdjxmc --password "$SUPABASE_DB_PASSWORD"
-      - name: Deploy migrations
+        run: |
+          set -euo pipefail
+          SQL_FILE="supabase/migrations/20261021220000_allow_ended_session_admin_recovery.sql"
+          test -f "$SQL_FILE"
+          jq -n --rawfile query "$SQL_FILE" '{query: $query}' > /tmp/query.json
+          curl --fail-with-body --silent --show-error \
+            -X POST \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data-binary @/tmp/query.json \
+            "https://api.supabase.com/v1/projects/vrwuxjujevhgsjmdjxmc/database/query"
+
+      - name: Verify ended-session recovery function
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: supabase db push --include-all --password "$SUPABASE_DB_PASSWORD"
+        run: |
+          set -euo pipefail
+          cat > /tmp/verify.json <<'JSON'
+          {"query":"select pg_get_functiondef('public.approve_random_session_recovery(text,text)'::regprocedure) as definition;"}
+          JSON
+          RESPONSE="$(curl --fail-with-body --silent --show-error -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data-binary @/tmp/verify.json "https://api.supabase.com/v1/projects/vrwuxjujevhgsjmdjxmc/database/query")"
+          printf '%s' "$RESPONSE" | jq -e '.[0].definition | contains("where id=v_req.session_id") and (contains("status='\''active'\''") | not)' >/dev/null
