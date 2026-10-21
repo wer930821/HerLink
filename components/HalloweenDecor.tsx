@@ -7,7 +7,7 @@ import { Animated, Easing, StyleSheet, Text, View } from "react-native";
  * bat, a pumpkin, a cobweb corner, and warm/cool radial glows. Purely
  * decorative; never intercepts touches.
  */
-export function HalloweenDecor() {
+export function HalloweenDecor({ topOffset = 12 }: { topOffset?: number }) {
   const ghost = useRef(new Animated.Value(0)).current;
   const bat = useRef(new Animated.Value(0)).current;
 
@@ -56,6 +56,11 @@ export function HalloweenDecor() {
 
   return (
     <View pointerEvents="none" style={styles.root}>
+      <View style={[styles.bannerWrap, { top: topOffset }]}>
+        <View style={styles.banner}>
+          <Text style={styles.bannerText}>HAPPY HALLOWEEN</Text>
+        </View>
+      </View>
       <View style={styles.orangeGlow} />
       <View style={styles.purpleGlow} />
       <Text style={styles.cobweb}>🕸️</Text>
@@ -70,6 +75,27 @@ const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFill,
     overflow: "hidden",
+  },
+  bannerWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    zIndex: 2,
+  },
+  banner: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,150,50,0.45)",
+    backgroundColor: "rgba(24,12,6,0.55)",
+    paddingVertical: 6,
+    paddingHorizontal: 18,
+  },
+  bannerText: {
+    color: "#FFB35C",
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 3,
   },
   orangeGlow: {
     position: "absolute",
