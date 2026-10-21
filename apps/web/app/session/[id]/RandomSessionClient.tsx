@@ -2385,15 +2385,17 @@ export default function RandomSessionClient() {
 
   const contactRequestCard =
     contactState?.status !== "active" && contactState?.partner_approved && !contactState.my_approved ? (
-      <section className="notice" style={{ margin: "12px 16px" }}>
-        <strong>{partnerName} 想和你成為匿名聯絡人</strong>
-        <div className="muted small" style={{ marginTop: 6 }}>雙方都同意後，之後可以從「匿名聯絡人」再次找到彼此。</div>
-        <div className="row" style={{ marginTop: 10 }}>
-          <Button size="sm" type="button" onPointerDown={(event) => { event.preventDefault(); event.stopPropagation(); void handleAnonymousContact(); }} disabled={contactBusy}>
-            {contactBusy ? "處理中…" : "同意"}
-          </Button>
-        </div>
-      </section>
+      <div className="anonymous-contact-invite-overlay" role="presentation">
+        <section className="notice anonymous-contact-invite-card" role="dialog" aria-modal="false" aria-label="匿名聯絡人邀請">
+          <strong>{partnerName} 想和你成為匿名聯絡人</strong>
+          <div className="muted small" style={{ marginTop: 6 }}>雙方都同意後，之後可以從「匿名聯絡人」再次找到彼此。</div>
+          <div className="row" style={{ marginTop: 10 }}>
+            <Button size="sm" type="button" onPointerDown={(event) => { event.preventDefault(); event.stopPropagation(); void handleAnonymousContact(); }} disabled={contactBusy}>
+              {contactBusy ? "處理中…" : "同意"}
+            </Button>
+          </div>
+        </section>
+      </div>
     ) : null;
 
   const copyBrowserHandoffLink = async () => {
@@ -2743,10 +2745,10 @@ export default function RandomSessionClient() {
           </div>
         ) : null}
 
-        {(contactRequestCard || notice) ? (
+        {contactRequestCard}
+        {notice ? (
           <div className="chat-status-stack">
-            {contactRequestCard}
-            {notice ? <div className="notice chat-status-notice">{notice}</div> : null}
+            <div className="notice chat-status-notice">{notice}</div>
           </div>
         ) : null}
 

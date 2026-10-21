@@ -8890,3 +8890,31 @@ body:has(.site-collection-viewport) .collection-skip-link:not(:focus) {
   line-height: 1;
   vertical-align: middle;
 }
+
+
+/* Anonymous contact invite must stay tappable above the scrolling message layer. */
+.anonymous-contact-invite-overlay {
+  position: fixed;
+  inset: calc(env(safe-area-inset-top) + 72px) 0 auto;
+  z-index: 1200;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.anonymous-contact-invite-card {
+  width: min(100%, 688px);
+  margin: 0;
+  pointer-events: auto;
+  background: color-mix(in srgb, var(--color-surface-1) 96%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 34%, var(--color-border));
+  box-shadow: var(--shadow-floating);
+}
+
+@media (max-width: 720px) {
+  .anonymous-contact-invite-overlay {
+    inset: calc(env(safe-area-inset-top) + 64px) 0 auto;
+    padding: 0 12px;
+  }
+}
