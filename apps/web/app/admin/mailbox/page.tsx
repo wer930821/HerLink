@@ -1,5 +1,5 @@
 "use client";
-import { useCallback,useEffect,useState } from "react";
+import { cloneElement,useCallback,useEffect,useState } from "react";
 import { useAdminSession } from "../../../lib/admin-client";
 import { supabase } from "../../../lib/supabase";
 import { AdminEmpty,AdminSection } from "../_components";
@@ -9,7 +9,7 @@ type T={id:string;user_id:string;subject:string;category:string;status:string;up
 type M={id:string;sender_role:"user"|"admin";body:string;created_at:string;attachment_path:string|null;attachment_mime:string|null;attachment_size:number|null};
 type P={anonymous_display_name:string|null;chat_count:number;message_count:number;contact_count:number;auth_user_bound_identity_id:string|null;conflict_code:string|null};
 function AdminMailAttachment({path}:{path:string}){const [url,setUrl]=useState<string|null>(null);useEffect(()=>{let active=true;void supabase.storage.from("station-mail").createSignedUrl(path,3600).then((result:{data:{signedUrl:string}|null})=>{if(active)setUrl(result.data?.signedUrl??null)});return()=>{active=false}},[path]);if(!url)return <div className="muted small">照片載入中…</div>;return <a href={url} target="_blank" rel="noreferrer"><img src={url} alt="使用者照片附件" style={{display:"block",maxWidth:"min(100%,520px)",maxHeight:520,objectFit:"contain",borderRadius:14,marginTop:10}}/></a>}
-function Field(props:any){return <BaseField {...props} label={props.label==="舊 anonymous identity UUID"?"匿名名稱":props.label}/>}
+function Field(props:any){const isIdentity=props.label==="舊 anonymous identity UUID";const child=isIdentity&&props.children?cloneElement(props.children,{placeholder:"例如 這裡真的會有人跟我聊天嗎"}):props.children;return <BaseField {...props} label={isIdentity?"匿名名稱":props.label}>{child}</BaseField>}
 
 export default function AdminMailbox(){
  const {session,loading}=useAdminSession();const [items,setItems]=useState<T[]>([]);const [sel,setSel]=useState<T|null>(null);const [msgs,setMsgs]=useState<M[]>([]);const [reply,setReply]=useState("");const [err,setErr]=useState<string|null>(null);const [trash,setTrash]=useState(false);const [confirmAction,setConfirmAction]=useState<{kind:"trash"|"destroy";item:T}|null>(null);const [identityId,setIdentityId]=useState("");const [identityQuery,setIdentityQuery]=useState("");const [identityMatches,setIdentityMatches]=useState<Array<{identity_id:string;anonymous_display_name:string}>>([]);const [preflight,setPreflight]=useState<P|null>(null);const [claiming,setClaiming]=useState(false);
