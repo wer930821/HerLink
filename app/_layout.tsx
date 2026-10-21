@@ -157,6 +157,9 @@ function RootLayoutNav() {
       <Stack.Screen name="mailbox" options={{ headerShown: true, title: "站長信箱" }} />
       <Stack.Screen name="collection" options={{ headerShown: true, title: "彩蛋圖鑑" }} />
       <Stack.Screen name="chats" options={{ headerShown: true, title: "我的聊天" }} />
+      <Stack.Screen name="account-signup" options={{ headerShown: true, title: "申請帳號" }} />
+      <Stack.Screen name="account-login" options={{ headerShown: true, title: "登入帳號" }} />
+      <Stack.Screen name="account-forgot" options={{ headerShown: true, title: "忘記密碼" }} />
     </Stack>
   );
 }
