@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+const p='apps/web/app/admin/mailbox/page.tsx';
+let s=fs.readFileSync(p,'utf8');
+s=s.replace(' const moveToTrash=async(t:T)=>{', ' const resolve=async(t:T)=>{setErr(null);const {data,error}=await (supabase as any).rpc("station_mail_admin_resolve",{p_thread_id:t.id});if(error||data!==true)return setErr("標記完成失敗，請稍後再試。");setSel(current=>current?.id===t.id?{...current,status:"resolved",unread:false}:current);await load()};\n const moveToTrash=async(t:T)=>{');
+s=s.replace('<div style={{display:"flex",gap:8}}>{trash?', '<div style={{display:"flex",gap:8}}>{trash?');
+s=s.replace('</>:<button type="button" onClick={()=>setConfirmAction({kind:"trash",item:sel})}', '</>:<>{sel.status!=="resolved"&&sel.status!=="replied"?<Button variant="secondary" onClick={()=>void resolve(sel)}>標記完成</Button>:null}<button type="button" onClick={()=>setConfirmAction({kind:"trash",item:sel})}');
+s=s.replace('>移到垃圾桶</button>}</div></div><h2>', '>移到垃圾桶</button></>}</div></div><h2>');
+s=s.replace('`${t.status==="replied"?"已回覆":"待處理"} · ${new Date(t.updated_at)', '`${t.status==="replied"?"已回覆":t.status==="resolved"?"已處理":"待處理"} · ${new Date(t.updated_at)');
+if(!s.includes('station_mail_admin_resolve')||!s.includes('標記完成')||!s.includes('已處理')) throw new Error('patch failed');
+fs.writeFileSync(p,s);
