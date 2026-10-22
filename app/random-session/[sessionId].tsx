@@ -9,6 +9,7 @@ import {
   AppState,
   Alert,
   FlatList,
+  Linking,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -1104,6 +1105,15 @@ export default function RandomSessionScreen() {
               ) : null}
               <Pressable
                 onLongPress={() => startReply(item)}
+                onPress={() => {
+                  if (item.message_type !== "image") {
+                    const match = (item.content || "").match(/(?:https?:\\/\\/|www\\.)[^\\s<>"'\`]+/i);
+                    if (match) {
+                      const url = match[0].startsWith("www.") ? `https://${match[0]}` : match[0];
+                      void Linking.openURL(url);
+                    }
+                  }
+                }}
                 delayLongPress={350}
                 style={[styles.bubble, isMine ? styles.mineBubble : styles.otherBubble]}
               >
