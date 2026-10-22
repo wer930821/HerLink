@@ -4,6 +4,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { colors, radii, spacing, typography } from "../../theme";
 import { HalloweenDecor } from "../../components/HalloweenDecor";
 import { useAuth } from "../../context/auth";
+import { Alert } from "react-native";
+import { requestAccountDeletion } from "../../lib/account";
 
 const safetyTips = [
   ["金錢與投資要求", "匿名聊天中若有人要求匯款、轉帳、投資或代購，請直接提高警覺。"],
@@ -23,6 +25,24 @@ const settings = [
 export default function SafetyScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
+
+  const deleteAccount = () => {
+    Alert.alert("刪除帳號", "這會永久刪除登入帳號與相關資料，且無法復原。匿名聊天室也可能無法再取回。確定要繼續嗎？", [
+      { text: "取消", style: "cancel" },
+      {
+        text: "確認刪除",
+        style: "destructive",
+        onPress: () => void (async () => {
+          try {
+            await requestAccountDeletion();
+            await signOut();
+          } catch {
+            Alert.alert("刪除失敗", "目前無法刪除帳號，請稍後再試或聯絡站長。");
+          }
+        })(),
+      },
+    ]);
+  };
 
   return (
     <View style={styles.root}>
@@ -60,6 +80,11 @@ export default function SafetyScreen() {
           </View>
         ))}
 
+        <Pressable style={styles.deleteAccount} onPress={deleteAccount}>
+          <Ionicons name="trash-outline" size={20} color={colors.error} />
+          <Text style={styles.signOutText}>刪除帳號與資料</Text>
+        </Pressable>
+
         <Pressable style={styles.signOut} onPress={() => void signOut()}>
           <Ionicons name="log-out-outline" size={20} color={colors.error} />
           <Text style={styles.signOutText}>登出</Text>
@@ -89,6 +114,7 @@ const styles = StyleSheet.create({
   card: { marginTop: spacing.md, padding: spacing.lg, borderRadius: radii.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   cardTitle: { color: colors.text, ...typography.cardTitle },
   cardBody: { marginTop: spacing.sm, color: colors.textMuted, ...typography.body },
+  deleteAccount: { marginTop: spacing.xl, minHeight: 52, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.error, backgroundColor: colors.errorSurface, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm },
   signOut: { marginTop: spacing.xxl, minHeight: 52, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.error, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm },
   signOutText: { color: colors.error, ...typography.bodyStrong },
 });
