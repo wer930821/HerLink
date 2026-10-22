@@ -1107,7 +1107,7 @@ export default function RandomSessionScreen() {
                 onLongPress={() => startReply(item)}
                 onPress={() => {
                   if (item.message_type !== "image") {
-                    const match = (item.content || "").match(/(?:https?:\\/\\/|www\\.)[^\\s<>"'\`]+/i);
+                    const match = (item.content || "").match(/https?:\/\/\S+|www\.\S+/i);
                     if (match) {
                       const url = match[0].startsWith("www.") ? `https://${match[0]}` : match[0];
                       void Linking.openURL(url);
