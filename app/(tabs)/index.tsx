@@ -71,7 +71,6 @@ export default function AnonymousHomeScreen() {
   userIdRef.current = userId;
 
   const refreshPresence = useCallback(async () => {
-    if (!userIdRef.current) return;
     try {
       await touchOnlineActivity();
       const [online, waiting] = await Promise.all([
