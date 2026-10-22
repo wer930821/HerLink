@@ -20,6 +20,7 @@ import {
   View,
 } from "react-native";
 import { RandomChatImage } from "../../components/RandomChatImage";
+import { HalloweenDecor } from "../../components/HalloweenDecor";
 import { RandomReportModal } from "../../components/RandomReportModal";
 import { VerifiedBadge } from "../../components/VerifiedBadge";
 import { useAuth } from "../../context/auth";
@@ -1014,6 +1015,8 @@ export default function RandomSessionScreen() {
       style={styles.root}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <HalloweenDecor topOffset={0} />
+
       {privateEggsAllowed && easterEgg ? (
         <View pointerEvents="none" style={styles.easterEggOverlay}>
           <Text style={easterEgg === "sync" ? styles.easterEggSync : styles.easterEggIcon}>
@@ -1374,7 +1377,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
+    backgroundColor: "rgba(22, 14, 28, 0.96)",
   },
   headerBack: {
     paddingVertical: spacing.xs,
@@ -1512,11 +1515,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   mineBubble: {
-    backgroundColor: colors.primary,
+    backgroundColor: "#7A4964",
+    borderWidth: 1,
+    borderColor: "rgba(255, 154, 136, 0.45)",
     borderBottomRightRadius: 8,
   },
   otherBubble: {
-    backgroundColor: colors.surface,
+    backgroundColor: "rgba(26, 25, 35, 0.96)",
     borderWidth: 1,
     borderColor: colors.border,
     borderBottomLeftRadius: 8,
@@ -1636,7 +1641,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    backgroundColor: colors.surface,
+    backgroundColor: "rgba(22, 18, 30, 0.98)",
   },
   photoButton: {
     paddingBottom: spacing.sm,
