@@ -171,3 +171,10 @@ export async function sendPasswordReset(email: string): Promise<void> {
   });
   if (error) throw error;
 }
+
+
+export async function requestAccountDeletion(): Promise<void> {
+  const { data, error } = await rpc.functions.invoke("delete-account", { body: {} });
+  if (error) throw error;
+  if (!data?.ok) throw new Error(data?.error || "帳號刪除失敗，請稍後再試。");
+}
