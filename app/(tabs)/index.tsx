@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Alert,
   Modal,
@@ -65,10 +65,6 @@ export default function AnonymousHomeScreen() {
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
-
-  const userId = session?.user?.id ?? null;
-  const userIdRef = useRef<string | null>(null);
-  userIdRef.current = userId;
 
   const refreshPresence = useCallback(async () => {
     try {
