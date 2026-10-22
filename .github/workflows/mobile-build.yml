@@ -106,16 +106,20 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --max-workers=2 --stacktrace
+          ./gradlew assembleRelease bundleRelease --no-daemon --max-workers=2 --stacktrace
 
-      - name: Copy APK
-        run: cp android/app/build/outputs/apk/release/app-release.apk ./HerLink.apk
+      - name: Copy release files
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk ./HerLink.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab ./HerLink.aab
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: HerLink-APK
-          path: HerLink.apk
+          path: |
+            HerLink.apk
+            HerLink.aab
           if-no-files-found: error
           retention-days: 14
 
@@ -138,7 +142,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete latest --cleanup-tag -y || true
-          gh release create latest             HerLink.apk             update-info.json             --title "HerLink Latest"             --notes "Automated Android build from ${GITHUB_SHA}"             --latest
+          gh release create latest HerLink.apk HerLink.aab update-info.json             --title "HerLink Latest"             --notes "Automated Android build from ${GITHUB_SHA}"             --latest
 
       - name: Publish app-latest for WebView takeover
         env:
@@ -155,4 +159,4 @@ jobs:
           }
           EOF
           gh release delete app-latest --cleanup-tag -y || true
-          gh release create app-latest HerLink.apk app-update-info.json --title "HerLink App Latest" --notes "Automated Android build from ${GITHUB_SHA}"
+          gh release create app-latest HerLink.apk HerLink.aab app-update-info.json --title "HerLink App Latest" --notes "Automated Android build from ${GITHUB_SHA}"
