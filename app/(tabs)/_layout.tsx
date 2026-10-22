@@ -10,7 +10,9 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSoft,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border, height: 70, paddingBottom: 8, paddingTop: 8 },
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border, height: 88, paddingBottom: 18, paddingTop: 6 },
+        tabBarLabelStyle: { fontSize: 11, lineHeight: 14, fontWeight: "600" },
+        tabBarItemStyle: { minHeight: 62 },
         sceneStyle: {
           backgroundColor: colors.background,
         },
