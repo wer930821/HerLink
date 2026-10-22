@@ -15,18 +15,43 @@ function AuthCallbackInner() {
     const next = searchParams.get("next") ?? "/";
 
     async function handleCallback() {
+      let sessionReady = false;
+
       if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          const { data } = await supabase.auth.getSession();
-          if (!data.session) {
-            if (mounted) {
-              router.replace("/login?error=invalid_link");
-            }
-            return;
-          }
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        sessionReady = Boolean(data?.session);
+        if (error && !sessionReady) {
+          const current = await supabase.auth.getSession();
+          sessionReady = Boolean(current.data.session);
+        }
+      } else if (typeof window !== "undefined" && window.location.hash) {
+        // Supabase password-recovery links can still arrive using the implicit
+        // fragment flow. Handle those tokens explicitly because this callback
+        // otherwise redirects before the recovery session is persisted.
+        const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        const accessToken = fragment.get("access_token");
+        const refreshToken = fragment.get("refresh_token");
+
+        if (accessToken && refreshToken) {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          sessionReady = !error && Boolean(data.session);
+          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
         }
       }
+
+      if (!sessionReady) {
+        const current = await supabase.auth.getSession();
+        sessionReady = Boolean(current.data.session);
+      }
+
+      if (!sessionReady) {
+        if (mounted) router.replace("/login?error=invalid_link");
+        return;
+      }
+
       if (mounted) {
         router.replace(next);
       }
