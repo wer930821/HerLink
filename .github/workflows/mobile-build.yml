@@ -81,7 +81,7 @@ jobs:
           const app = JSON.parse(fs.readFileSync("app.json", "utf8"));
           app.expo.android = app.expo.android || {};
           app.expo.android.googleServicesFile = "./google-services.json";
-          fs.writeFileSync("app.json", JSON.stringify(app, null, 2) + "\\n");
+          fs.writeFileSync("app.json", JSON.stringify(app, null, 2) + "\n");
           const firebase = JSON.parse(fs.readFileSync("google-services.json", "utf8"));
           const pkg = firebase.client?.[0]?.client_info?.android_client_info?.package_name;
           if (pkg !== "com.wer93.herlink") throw new Error("Firebase package mismatch: " + pkg);
