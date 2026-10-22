@@ -345,47 +345,6 @@ export default function AnonymousHomeScreen() {
           </View>
         </View>
 
-        <View style={styles.footerRow}>
-          <Pressable accessibilityRole="button" onPress={() => void shareBrowserHandoff()}>
-            <Text style={styles.footerLink}>跨瀏覽器續聊</Text>
-          </Pressable>
-          <Text style={styles.footerSeparator}>·</Text>
-          <Pressable accessibilityRole="button" onPress={() => void signOut()}>
-            <Text style={styles.footerLink}>登出</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.supportRow}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push("/support" as never)}
-          >
-            <Text style={styles.supportLink}>支持 HerLink</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.secondaryLinks}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push("/mailbox" as never)}
-          >
-            <Text style={styles.footerLink}>站長信箱</Text>
-          </Pressable>
-          <Text style={styles.footerSeparator}>·</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push("/collection" as never)}
-          >
-            <Text style={styles.footerLink}>彩蛋圖鑑</Text>
-          </Pressable>
-          <Text style={styles.footerSeparator}>·</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push("/recovery" as never)}
-          >
-            <Text style={styles.footerLink}>找回原本聊天室</Text>
-          </Pressable>
-        </View>
       </ScrollView>
 
       <Modal
