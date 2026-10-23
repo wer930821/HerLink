@@ -10,7 +10,11 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -96,7 +100,7 @@ export function ChatImageViewer({
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <View style={styles.backdrop}>
+      <GestureHandlerRootView style={styles.backdrop}>
         {uri ? (
           <GestureDetector gesture={composed}>
             <Animated.View style={[styles.fill, animatedStyle]}>
@@ -128,7 +132,7 @@ export function ChatImageViewer({
         >
           <Ionicons name="close" size={26} color="#FFFFFF" />
         </Pressable>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
