@@ -8,7 +8,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   AppState,
-  Alert,
   FlatList,
   Linking,
   Image,
@@ -189,6 +188,29 @@ export default function RandomSessionScreen() {
   const [messageActionBusy, setMessageActionBusy] = useState(false);
   const [viewerPath, setViewerPath] = useState<string | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [appDialog, setAppDialog] = useState<{
+    title: string;
+    body?: string;
+    buttons: {
+      label: string;
+      kind?: "cancel" | "primary" | "destructive";
+      onPress?: () => void;
+    }[];
+  } | null>(null);
+  const showAppDialog = useCallback(
+    (
+      title: string,
+      body: string | undefined,
+      buttons: {
+        label: string;
+        kind?: "cancel" | "primary" | "destructive";
+        onPress?: () => void;
+      }[]
+    ) => {
+      setAppDialog({ title, body, buttons });
+    },
+    []
+  );
   const [sessionRecoveryCode, setSessionRecoveryCode] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [busyAction, setBusyAction] = useState<string | null>(null);
@@ -202,7 +224,7 @@ export default function RandomSessionScreen() {
       const row = await requestRandomSessionRecovery(sessionId);
       setSessionRecoveryCode(row.recovery_code);
     } catch (error) {
-      Alert.alert("無法取得恢復碼", error instanceof Error ? error.message : "請稍後再試。");
+      showAppDialog("無法取得恢復碼", error instanceof Error ? error.message : "請稍後再試。", [{ label: "好" }]);
     } finally {
       setBusyAction(null);
     }
@@ -640,11 +662,11 @@ export default function RandomSessionScreen() {
   const handleRecallMessage = useCallback(
     (message: RandomMessage) => {
       setMessageMenu(null);
-      Alert.alert("收回訊息", "收回後，對方只會看到「此訊息已收回」。", [
-        { text: "取消", style: "cancel" },
+      showAppDialog("收回訊息", "收回後，對方只會看到「此訊息已收回」。", [
+        { label: "取消", kind: "cancel" },
         {
-          text: "收回",
-          style: "destructive",
+          label: "收回",
+          kind: "destructive",
           onPress: () => {
             void (async () => {
               try {
@@ -665,7 +687,7 @@ export default function RandomSessionScreen() {
         },
       ]);
     },
-    [broadcastRefresh]
+    [broadcastRefresh, showAppDialog]
   );
 
   const openEditMessage = useCallback((message: RandomMessage) => {
@@ -721,6 +743,9 @@ export default function RandomSessionScreen() {
         setTimeout(() => {
           listRef.current?.scrollToEnd({ animated: true });
         }, 60);
+        setTimeout(() => {
+          listRef.current?.scrollToEnd({ animated: false });
+        }, 300);
       }
     });
     const hideSub = Keyboard.addListener("keyboardDidHide", () => {
@@ -821,7 +846,7 @@ export default function RandomSessionScreen() {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert("需要相簿權限", "請允許存取相簿後再傳送照片。");
+        showAppDialog("需要相簿權限", "請允許存取相簿後再傳送照片。", [{ label: "好" }]);
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -930,11 +955,11 @@ export default function RandomSessionScreen() {
     if (!sessionId) {
       return;
     }
-    Alert.alert("離開聊天室", "離開後就無法再繼續這段對話。", [
-      { text: "先不要", style: "cancel" },
+    showAppDialog("離開聊天室", "離開後就無法再繼續這段對話。", [
+      { label: "先不要", kind: "cancel" },
       {
-        text: "離開",
-        style: "destructive",
+        label: "離開",
+        kind: "destructive",
         onPress: () =>
           void (async () => {
             setBusyAction("leave");
@@ -981,10 +1006,11 @@ export default function RandomSessionScreen() {
     if (!sessionId) {
       return;
     }
-    Alert.alert("換下一位", "會先結束目前對話，再開始尋找新的聊天對象。", [
-      { text: "先不要", style: "cancel" },
+    showAppDialog("換下一位", "會先結束目前對話，再開始尋找新的聊天對象。", [
+      { label: "先不要", kind: "cancel" },
       {
-        text: "換下一位",
+        label: "換下一位",
+        kind: "primary",
         onPress: () =>
           void (async () => {
             setBusyAction("next");
@@ -1016,11 +1042,11 @@ export default function RandomSessionScreen() {
     if (!sessionId) {
       return;
     }
-    Alert.alert("封鎖對象", "封鎖後無法再與對方配對或繼續對話，對方不會收到通知。", [
-      { text: "先不要", style: "cancel" },
+    showAppDialog("封鎖對象", "封鎖後無法再與對方配對或繼續對話，對方不會收到通知。", [
+      { label: "先不要", kind: "cancel" },
       {
-        text: "確認封鎖",
-        style: "destructive",
+        label: "確認封鎖",
+        kind: "destructive",
         onPress: () =>
           void (async () => {
             setBusyAction("block");
@@ -1029,7 +1055,7 @@ export default function RandomSessionScreen() {
               clearPartnerTyping();
               await blockRandomUser(sessionId);
               setMenuOpen(false);
-              Alert.alert("已封鎖", "已封鎖對方並結束這段對話。");
+              showAppDialog("已封鎖", "已封鎖對方並結束這段對話。", [{ label: "好" }]);
               goWaiting(false);
             } catch (error) {
               setNotice(friendlyError(error, "目前無法封鎖這位使用者，請稍後再試。"));
@@ -1055,11 +1081,11 @@ export default function RandomSessionScreen() {
         );
         setReportOpen(false);
         setMenuOpen(false);
-        Alert.alert("檢舉已送出", "安全流程已收到檢舉，對方不會知道是誰送出的。", [
-          { text: "繼續聊天" },
+        showAppDialog("檢舉已送出", "安全流程已收到檢舉，對方不會知道是誰送出的。", [
+          { label: "繼續聊天" },
           {
-            text: "封鎖並離開",
-            style: "destructive",
+            label: "封鎖並離開",
+            kind: "destructive",
             onPress: () => {
               if (!sessionId) {
                 return;
@@ -1161,7 +1187,7 @@ export default function RandomSessionScreen() {
       style={[
         styles.root,
         Platform.OS === "android" && keyboardHeight
-          ? { paddingBottom: keyboardHeight }
+          ? { paddingBottom: keyboardHeight + 12 }
           : null,
       ]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -1618,6 +1644,47 @@ export default function RandomSessionScreen() {
         onClose={() => setReportOpen(false)}
         onSubmit={submitReport}
       />
+      <Modal
+        visible={appDialog !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAppDialog(null)}
+      >
+        <View style={styles.dialogBackdrop}>
+          <View style={styles.dialogCard}>
+            <Text style={styles.dialogTitle}>{appDialog?.title}</Text>
+            {appDialog?.body ? (
+              <Text style={styles.dialogBody}>{appDialog.body}</Text>
+            ) : null}
+            <View style={styles.dialogButtons}>
+              {(appDialog?.buttons ?? []).map((btn) => (
+                <Pressable
+                  key={btn.label}
+                  style={[
+                    styles.dialogButton,
+                    btn.kind === "primary" ? styles.dialogButtonPrimary : null,
+                    btn.kind === "destructive" ? styles.dialogButtonDestructive : null,
+                  ]}
+                  onPress={() => {
+                    setAppDialog(null);
+                    btn.onPress?.();
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.dialogButtonText,
+                      btn.kind === "cancel" ? styles.dialogButtonCancelText : null,
+                    ]}
+                  >
+                    {btn.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <ChatImageViewer path={viewerPath} onClose={() => setViewerPath(null)} />
     </KeyboardAvoidingView>
   );
@@ -2013,6 +2080,56 @@ const styles = StyleSheet.create({
   recalledText: {
     fontStyle: "italic",
     opacity: 0.7,
+    paddingRight: 4,
+  },
+  dialogBackdrop: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
+  },
+  dialogCard: {
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+  dialogTitle: {
+    color: colors.text,
+    ...typography.title,
+  },
+  dialogBody: {
+    color: colors.textMuted,
+    ...typography.body,
+    marginTop: spacing.sm,
+  },
+  dialogButtons: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+  },
+  dialogButton: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: radii.md,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surfaceStrong,
+    paddingHorizontal: spacing.sm,
+  },
+  dialogButtonPrimary: {
+    backgroundColor: colors.primary,
+  },
+  dialogButtonDestructive: {
+    backgroundColor: colors.error,
+  },
+  dialogButtonText: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  dialogButtonCancelText: {
+    color: colors.textMuted,
   },
   editBackdrop: {
     flex: 1,
