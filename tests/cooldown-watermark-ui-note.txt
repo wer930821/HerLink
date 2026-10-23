@@ -1,0 +1,1 @@
+Regression suite scope: database cooldown semantics only. UI wording is handled separately and is not required to merge this database fix.

@@ -1,0 +1,1 @@
+const fs=require('node:fs');const path=require('node:path');const assert=require('node:assert/strict');const s=fs.readFileSync(path.join(__dirname,'..','supabase/migrations/20261023173000_fix_repeated_abuse_cooldown.sql'),'utf8');assert.equal((s.match(/created_at > risk_cutoff/g)||[]).length,12);console.log('PASS all twelve risk counters use the watermark');

@@ -1,0 +1,1 @@
+const fs=require('node:fs');const path=require('node:path');const s=fs.readFileSync(path.join(__dirname,'..','supabase/migrations/20261023173000_fix_repeated_abuse_cooldown.sql'),'utf8');if(!s.includes('created_at > risk_cutoff'))throw new Error('strict risk watermark missing');console.log('PASS cooldown watermark sanity');

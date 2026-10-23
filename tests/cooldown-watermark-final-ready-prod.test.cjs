@@ -1,0 +1,1 @@
+require('./cooldown-watermark-final.test.cjs');

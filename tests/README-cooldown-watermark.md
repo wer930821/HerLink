@@ -1,0 +1,1 @@
+Temporary regression notes for the 2026-10-23 cooldown fix. Covered by verify-cooldown-watermark.yml: consumed events use a strict watermark, active deadlines remain fixed, the watermark survives release, and high-risk thresholds remain present.

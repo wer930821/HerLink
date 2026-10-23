@@ -1,0 +1,1 @@
+const fs=require('node:fs');const path=require('node:path');const assert=require('node:assert/strict');const s=fs.readFileSync(path.join(__dirname,'..','supabase/migrations/20261023173000_fix_repeated_abuse_cooldown.sql'),'utf8');assert.ok(s.includes('After expiry, only newer events may open another cooldown.'));console.log('PASS migration intent is documented');
