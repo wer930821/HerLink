@@ -1,0 +1,1 @@
+require('./cooldown-watermark-summary.test.cjs');require('./cooldown-watermark-migration-present.test.cjs');require('./cooldown-watermark-allow.test.cjs');console.log('PASS complete cooldown watermark contract');
