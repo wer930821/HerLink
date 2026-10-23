@@ -12,6 +12,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node tests/cooldown-watermark-summary.test.cjs
-      - run: node tests/cooldown-watermark-migration-present.test.cjs
-      - run: node tests/cooldown-watermark-allow.test.cjs
+      - run: node tests/cooldown-watermark-final.test.cjs
