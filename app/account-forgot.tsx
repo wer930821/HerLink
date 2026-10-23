@@ -1,5 +1,7 @@
 import { useState } from "react";
 import {
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -40,7 +42,8 @@ export default function AccountForgotScreen() {
   };
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+    <ScrollView style={styles.root} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.eyebrow}>HERLINK ACCOUNT</Text>
       <Text style={styles.title}>忘記密碼</Text>
       <Text style={styles.description}>
@@ -94,10 +97,15 @@ export default function AccountForgotScreen() {
         </Pressable>
       )}
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoid: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   root: {
     flex: 1,
     backgroundColor: colors.background,

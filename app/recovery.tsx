@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -391,7 +393,8 @@ export default function RecoveryScreen() {
   const back = () => setView("menu");
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+    <ScrollView style={styles.root} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>找回原本聊天室</Text>
       {view === "menu" ? (
         <View>
@@ -412,10 +415,15 @@ export default function RecoveryScreen() {
         <MyCodeView onBack={back} />
       )}
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoid: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   root: {
     flex: 1,
     backgroundColor: colors.background,
