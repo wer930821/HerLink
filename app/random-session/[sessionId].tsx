@@ -3,6 +3,7 @@ import { RealtimeChannel } from "@supabase/supabase-js";
 import * as Clipboard from "expo-clipboard";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -162,6 +163,7 @@ export default function RandomSessionScreen() {
   );
   const { user } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [session, setSession] = useState<RandomSession | null>(null);
   const [messages, setMessages] = useState<RandomMessage[]>([]);
@@ -1026,7 +1028,7 @@ export default function RandomSessionScreen() {
         </View>
       ) : null}
 
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <Pressable onPress={handleBack} hitSlop={8} style={styles.headerBack}>
           <Text style={styles.headerActionText}>返回</Text>
         </Pressable>

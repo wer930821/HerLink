@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router/react-navigation";
 import { useRouter } from "expo-router";
@@ -10,6 +10,7 @@ import { listMyActiveRandomSessions, type RandomSession } from "../lib/random-ch
 
 export default function ChatsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [sessions, setSessions] = useState<RandomSession[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -35,7 +36,7 @@ export default function ChatsScreen() {
   return (
     <FlatList
       style={styles.root}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
       data={sessions}
       keyExtractor={(item) => item.id}
       ListEmptyComponent={

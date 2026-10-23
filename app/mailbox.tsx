@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radii, spacing, typography } from "../theme";
 import { useAuth } from "../context/auth";
 import { supabase } from "../lib/supabase";
@@ -78,6 +79,7 @@ function PhotoPicker({
 
 export default function MailboxScreen() {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [view, setView] = useState<"compose" | "inbox">("compose");
   const [threads, setThreads] = useState<StationMailThread[]>([]);
   const [selected, setSelected] = useState<StationMailThread | null>(null);
@@ -222,7 +224,7 @@ export default function MailboxScreen() {
 
   if (selected) {
     return (
-      <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xl }]}>
         <Pressable accessibilityRole="button" accessibilityLabel="返回我的信件" style={styles.secondaryButton} onPress={() => setSelected(null)}>
           <Text style={styles.secondaryButtonText}>返回我的信件</Text>
         </Pressable>
@@ -261,7 +263,7 @@ export default function MailboxScreen() {
   }
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xl }]}>
       <Text style={styles.intro}>有問題、建議或想告訴站長的事，都可以從這裡寄出。</Text>
       <View style={styles.tabs}>
         <Pressable

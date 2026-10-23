@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radii, spacing, typography } from "../../theme";
 import { HalloweenDecor } from "../../components/HalloweenDecor";
 import { useAuth } from "../../context/auth";
@@ -26,6 +26,7 @@ const settings = [
 export default function SafetyScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const deleteAccount = () => {
     Alert.alert("刪除帳號", "這會永久刪除登入帳號與相關資料，且無法復原。匿名聊天室也可能無法再取回。確定要繼續嗎？", [
@@ -48,7 +49,7 @@ export default function SafetyScreen() {
   return (
     <View style={styles.root}>
       <HalloweenDecor topOffset={0} />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xl }]}>
         <Text style={styles.eyebrow}>HerLink 設定中心</Text>
         <Text style={styles.title}>安全與設定</Text>
         <Text style={styles.subtitle}>管理匿名身分、恢復方式與使用安全。</Text>

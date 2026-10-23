@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "../context/auth";
 import { useEffect, useRef } from "react";
 import { SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Alert, AppState, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { pushNavigationTarget, syncNativePushToken } from "../lib/native-push";
@@ -13,9 +14,12 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootLayoutNav />
-    </AuthProvider>
+    <SafeAreaProvider>
+      <StatusBar style="light" />
+      <AuthProvider>
+        <RootLayoutNav />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 
