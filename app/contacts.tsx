@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
   AnonymousContact,
@@ -33,6 +33,7 @@ function friendlyError(error: unknown) {
 
 export default function AnonymousContactsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [items, setItems] = useState<AnonymousContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -104,7 +105,7 @@ export default function AnonymousContactsScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.root}>
+    <ScrollView contentContainerStyle={[styles.root, { paddingTop: insets.top + spacing.xl }]}>
       <Text style={styles.eyebrow}>HerLink</Text>
       <Text style={styles.title}>匿名聯絡人</Text>
       <Text style={styles.copy}>只有雙方都同意才會保留聯絡。</Text>
