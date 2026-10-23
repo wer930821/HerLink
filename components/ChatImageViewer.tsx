@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import {
   Image,
   Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -11,14 +10,20 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useRandomChatImageUrl } from "./RandomChatImage";
 
-const ZOOM_SCALE = 2.5;
+const MAX_SCALE = 4;
 
 /**
- * Full-screen viewer for one chat image: tap to close, double-tap to zoom
- * in/out, drag to pan while zoomed. Close also via the X button or the
- * Android back button (onRequestClose).
+ * Full-screen viewer for one chat image with two-finger pinch zoom and
+ * drag-to-pan (pinch back to 1x snaps back to center). Close via the X
+ * button or the Android back button (onRequestClose).
  */
 export function ChatImageViewer({
   path,
@@ -30,52 +35,58 @@ export function ChatImageViewer({
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const { uri, failed, retry } = useRandomChatImageUrl(path);
-  const [zoomed, setZoomed] = useState(false);
-  const lastTapRef = useRef(0);
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hScrollRef = useRef<ScrollView | null>(null);
-  const vScrollRef = useRef<ScrollView | null>(null);
+
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const savedTranslateX = useSharedValue(0);
+  const savedTranslateY = useSharedValue(0);
 
   useEffect(() => {
-    setZoomed(false);
-    lastTapRef.current = 0;
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-  }, [path]);
+    scale.value = 1;
+    savedScale.value = 1;
+    translateX.value = 0;
+    translateY.value = 0;
+    savedTranslateX.value = 0;
+    savedTranslateY.value = 0;
+  }, [path, scale, savedScale, translateX, translateY, savedTranslateX, savedTranslateY]);
 
-  useEffect(() => {
-    if (!zoomed) return;
-    const timer = setTimeout(() => {
-      hScrollRef.current?.scrollTo({
-        x: (width * ZOOM_SCALE - width) / 2,
-        animated: false,
-      });
-      vScrollRef.current?.scrollTo({
-        y: (height * ZOOM_SCALE - height) / 2,
-        animated: false,
-      });
-    }, 60);
-    return () => clearTimeout(timer);
-  }, [zoomed, width, height]);
-
-  const handleTap = () => {
-    const now = Date.now();
-    if (now - lastTapRef.current < 300) {
-      lastTapRef.current = 0;
-      if (closeTimerRef.current) {
-        clearTimeout(closeTimerRef.current);
-        closeTimerRef.current = null;
+  const pinch = Gesture.Pinch()
+    .onUpdate((e) => {
+      scale.value = Math.min(MAX_SCALE, Math.max(1, savedScale.value * e.scale));
+    })
+    .onEnd(() => {
+      savedScale.value = scale.value;
+      if (scale.value <= 1) {
+        translateX.value = withTiming(0);
+        translateY.value = withTiming(0);
+        savedTranslateX.value = 0;
+        savedTranslateY.value = 0;
       }
-      setZoomed((current) => !current);
-      return;
-    }
-    lastTapRef.current = now;
-    if (!zoomed) {
-      closeTimerRef.current = setTimeout(onClose, 280);
-    }
-  };
+    });
+
+  const pan = Gesture.Pan()
+    .onUpdate((e) => {
+      if (scale.value > 1) {
+        translateX.value = savedTranslateX.value + e.translationX;
+        translateY.value = savedTranslateY.value + e.translationY;
+      }
+    })
+    .onEnd(() => {
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
+    });
+
+  const composed = Gesture.Simultaneous(pinch, pan);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+  }));
 
   return (
     <Modal
@@ -86,54 +97,28 @@ export function ChatImageViewer({
       onRequestClose={onClose}
     >
       <View style={styles.backdrop}>
-        <Pressable style={styles.fill} onPress={handleTap}>
-          {uri ? (
-            zoomed ? (
-              <ScrollView
-                ref={hScrollRef}
-                horizontal
-                bounces={false}
-                showsHorizontalScrollIndicator={false}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ width: width * ZOOM_SCALE, height }}
-              >
-                <ScrollView
-                  ref={vScrollRef}
-                  bounces={false}
-                  showsVerticalScrollIndicator={false}
-                  style={{ width: width * ZOOM_SCALE, height }}
-                  contentContainerStyle={{
-                    width: width * ZOOM_SCALE,
-                    height: height * ZOOM_SCALE,
-                  }}
-                >
-                  <Image
-                    source={{ uri }}
-                    style={{ width: width * ZOOM_SCALE, height: height * ZOOM_SCALE }}
-                    resizeMode="contain"
-                  />
-                </ScrollView>
-              </ScrollView>
-            ) : (
+        {uri ? (
+          <GestureDetector gesture={composed}>
+            <Animated.View style={[styles.fill, animatedStyle]}>
               <Image
                 source={{ uri }}
                 style={{ width, height }}
                 resizeMode="contain"
               />
-            )
-          ) : (
-            <View style={styles.stateWrap}>
-              <Text style={styles.stateText}>
-                {failed ? "圖片無法載入" : "載入中…"}
-              </Text>
-              {failed ? (
-                <Pressable onPress={retry} hitSlop={10}>
-                  <Text style={styles.retryText}>重試</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          )}
-        </Pressable>
+            </Animated.View>
+          </GestureDetector>
+        ) : (
+          <View style={styles.stateWrap}>
+            <Text style={styles.stateText}>
+              {failed ? "圖片無法載入" : "載入中…"}
+            </Text>
+            {failed ? (
+              <Pressable onPress={retry} hitSlop={10}>
+                <Text style={styles.retryText}>重試</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        )}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="關閉圖片"
