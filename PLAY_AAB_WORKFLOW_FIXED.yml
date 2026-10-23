@@ -101,11 +101,16 @@ jobs:
             "        }",
           ].join("\n");
           const debugBlock = /(\n\s*debug \{\n\s*storeFile file\('debug\.keystore'\)\n\s*storePassword 'android'\n\s*keyAlias 'androiddebugkey'\n\s*keyPassword 'android'\n\s*\})/;
-          if (!debugBlock.test(gradle)) throw new Error("signingConfigs.debug block not found; template changed, patch needs updating");
+          if (!debugBlock.test(gradle)) { console.error(gradle.slice(gradle.indexOf("signingConfigs"), gradle.indexOf("signingConfigs") + 600)); throw new Error("signingConfigs.debug block not found; template changed, patch needs updating"); }
           gradle = gradle.replace(debugBlock, "$1\n" + releaseConfig);
-          const releaseSigning = /(release \{\n\s*)signingConfig signingConfigs\.debug/;
-          if (!releaseSigning.test(gradle)) throw new Error("release signingConfig line not found; template changed, patch needs updating");
-          gradle = gradle.replace(releaseSigning, "$1signingConfig signingConfigs.release");
+          const btIndex = gradle.indexOf("buildTypes {");
+          if (btIndex < 0) throw new Error("buildTypes section not found");
+          const gradleHead = gradle.slice(0, btIndex);
+          let gradleTail = gradle.slice(btIndex);
+          const releaseSigning = /(release \{[\s\S]*?)signingConfig signingConfigs\.debug/;
+          if (!releaseSigning.test(gradleTail)) { console.error(gradleTail.slice(0, 900)); throw new Error("release signingConfig line not found in buildTypes; template changed, patch needs updating"); }
+          gradleTail = gradleTail.replace(releaseSigning, "$1signingConfig signingConfigs.release");
+          gradle = gradleHead + gradleTail;
           fs.writeFileSync(path, gradle);
           console.log("Release signing patched to use the upload key.");
           NODE
