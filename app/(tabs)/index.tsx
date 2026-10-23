@@ -276,28 +276,6 @@ export default function AnonymousHomeScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.accountActions}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="申請並綁定帳號"
-            style={styles.accountButtonSignup}
-            onPress={() => router.push("/account-signup" as never)}
-          >
-            <Text style={styles.accountButtonTextLight}>申請並綁定帳號</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="登入既有帳號"
-            style={styles.accountButtonLogin}
-            onPress={() => router.push("/account-login" as never)}
-          >
-            <Text style={styles.accountButtonTextDark}>登入既有帳號</Text>
-          </Pressable>
-        </View>
-        <Text style={styles.accountHelp}>
-          綁定後會保留目前匿名名稱、聊天室、聯絡人與永久恢復碼；Email 不會顯示給聊天對象。
-        </Text>
-
         <View style={styles.presenceRow}>
           <View style={styles.presenceItem}>
             <View style={[styles.presenceDot, styles.presenceDotOnline]} />
@@ -577,50 +555,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: "600",
-  },
-  accountActions: {
-    marginTop: 16,
-    flexDirection: "row",
-    gap: 12,
-  },
-  accountButtonSignup: {
-    flex: 1,
-    minHeight: 48,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.28)",
-    backgroundColor: "#5E5C62",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 8,
-  },
-  accountButtonLogin: {
-    flex: 1,
-    minHeight: 48,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "rgba(255,210,150,0.55)",
-    backgroundColor: "#F08A2B",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 8,
-  },
-  accountButtonTextLight: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  accountButtonTextDark: {
-    color: "#24120C",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  accountHelp: {
-    marginTop: 10,
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: "center",
   },
   presenceRow: {
     marginTop: 22,
