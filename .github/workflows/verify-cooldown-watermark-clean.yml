@@ -1,0 +1,24 @@
+name: Verify cooldown watermark clean
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/20261023173000_fix_repeated_abuse_cooldown.sql'
+      - 'tests/cooldown-watermark-clean.test.cjs'
+      - '.github/workflows/verify-cooldown-watermark-clean.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  cooldown-watermark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Cooldown watermark regression
+        run: node tests/cooldown-watermark-clean.test.cjs
