@@ -24,6 +24,7 @@ export type RandomMessage = {
   session_id: string;
   content: string;
   created_at: string;
+  recalled_at: string | null;
   is_mine: boolean;
   risk_level: string | null;
   risk_types: string[] | null;
@@ -239,6 +240,19 @@ export async function listRandomMessagesAfter(
   });
   if (error) throw error;
   return (data ?? []) as RandomMessage[];
+}
+
+export async function recallRandomMessage(messageId: string) {
+  const { error } = await rpc.rpc("recall_random_message", { p_message_id: messageId });
+  if (error) throw error;
+}
+
+export async function editRandomMessage(messageId: string, content: string) {
+  const { error } = await rpc.rpc("edit_random_message", {
+    p_message_id: messageId,
+    p_content: content,
+  });
+  if (error) throw error;
 }
 
 export async function getRandomMessageReplyPreview(sessionId: string, messageId: string) {
