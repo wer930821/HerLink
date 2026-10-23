@@ -2,8 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +12,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radii, spacing, typography } from "../theme";
+import { KeyboardFormScrollView } from "../components/KeyboardFormScrollView";
 import { useAuth } from "../context/auth";
 import { supabase } from "../lib/supabase";
 import { prepareRandomChatImage, type PreparedRandomChatImage } from "../lib/random-chat-media";
@@ -226,8 +225,7 @@ export default function MailboxScreen() {
 
   if (selected) {
     return (
-      <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-      <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xl }]} keyboardShouldPersistTaps="handled">
+      <KeyboardFormScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xl }]}>
         <Pressable accessibilityRole="button" accessibilityLabel="返回我的信件" style={styles.secondaryButton} onPress={() => setSelected(null)}>
           <Text style={styles.secondaryButtonText}>返回我的信件</Text>
         </Pressable>
@@ -261,14 +259,12 @@ export default function MailboxScreen() {
           {busy ? <ActivityIndicator color={colors.primaryText} /> : <Text style={styles.primaryButtonText}>送出回覆</Text>}
         </Pressable>
         {notice ? <Text style={styles.notice}>{notice}</Text> : null}
-      </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardFormScrollView>
     );
   }
 
   return (
-    <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-    <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xl }]} keyboardShouldPersistTaps="handled">
+    <KeyboardFormScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xl }]}>
       <Text style={styles.intro}>有問題、建議或想告訴站長的事，都可以從這裡寄出。</Text>
       <View style={styles.tabs}>
         <Pressable
@@ -340,16 +336,11 @@ export default function MailboxScreen() {
           )}
         </View>
       )}
-    </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardFormScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardAvoid: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   root: {
     flex: 1,
     backgroundColor: colors.background,

@@ -1,7 +1,5 @@
 import { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { colors, radii, spacing, typography } from "../theme";
+import { KeyboardFormScrollView } from "../components/KeyboardFormScrollView";
 import { useAuth } from "../context/auth";
 import {
   getFriendlyAuthErrorMessage,
@@ -44,8 +43,7 @@ export default function AccountLoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-    <ScrollView style={styles.root} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <KeyboardFormScrollView style={styles.root} contentContainerStyle={styles.content}>
       <Text style={styles.eyebrow}>HERLINK ACCOUNT</Text>
       <Text style={styles.title}>登入帳號</Text>
       <Text style={styles.description}>
@@ -104,16 +102,11 @@ export default function AccountLoginScreen() {
       >
         <Text style={styles.link}>忘記密碼？</Text>
       </Pressable>
-    </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardFormScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardAvoid: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   root: {
     flex: 1,
     backgroundColor: colors.background,
