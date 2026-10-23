@@ -19,17 +19,21 @@ const SIGNED_URL_REFRESH_THRESHOLD_MS = 60_000;
 const MAX_IMAGE_LOAD_RETRIES = 1;
 
 /**
- * Renders one private chat-media image. URLs are signed on the authenticated
- * client when an image needs a URL, with an expiry-aware shared cache.
- * There is never a public bucket or publicly reachable object URL.
+ * Resolves a private chat-media path to a signed URL. URLs are signed on the
+ * authenticated client when an image needs a URL, with an expiry-aware
+ * shared cache. There is never a public bucket or publicly reachable object
+ * URL. Shared by the thumbnail and the full-screen viewer.
  */
-export function RandomChatImage({ path, style }: RandomChatImageProps) {
+export function useRandomChatImageUrl(path: string | null) {
   const [uri, setUri] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const retryCountRef = useRef(0);
   const requestGenerationRef = useRef(0);
 
   const resolveUrl = useCallback(() => {
+    if (!path) {
+      return Promise.reject(new Error("No image path"));
+    }
     return getCachedSignedUrl(
       path,
       async () => {
@@ -49,6 +53,11 @@ export function RandomChatImage({ path, style }: RandomChatImageProps) {
   useEffect(() => {
     const requestGeneration = ++requestGenerationRef.current;
     retryCountRef.current = 0;
+    if (!path) {
+      setUri(null);
+      setFailed(false);
+      return;
+    }
     void resolveUrl()
       .then((signedUrl) => {
         if (requestGenerationRef.current === requestGeneration) {
@@ -65,9 +74,10 @@ export function RandomChatImage({ path, style }: RandomChatImageProps) {
         requestGenerationRef.current += 1;
       }
     };
-  }, [resolveUrl]);
+  }, [path, resolveUrl]);
 
-  const retryOnce = () => {
+  const retry = useCallback(() => {
+    if (!path) return;
     if (retryCountRef.current >= MAX_IMAGE_LOAD_RETRIES) {
       setFailed(true);
       return;
@@ -86,7 +96,13 @@ export function RandomChatImage({ path, style }: RandomChatImageProps) {
       .catch(() => {
         if (requestGenerationRef.current === requestGeneration) setFailed(true);
       });
-  };
+  }, [path, resolveUrl]);
+
+  return { uri, failed, retry };
+}
+
+export function RandomChatImage({ path, style }: RandomChatImageProps) {
+  const { uri, failed, retry } = useRandomChatImageUrl(path);
 
   return (
     <View style={[styles.frame, style]}>
@@ -95,12 +111,12 @@ export function RandomChatImage({ path, style }: RandomChatImageProps) {
           source={{ uri }}
           style={StyleSheet.absoluteFill}
           resizeMode="contain"
-          onError={retryOnce}
+          onError={retry}
         />
       ) : failed ? (
         <View style={styles.stateWrap}>
           <Text style={styles.stateText}>圖片無法載入</Text>
-          <Pressable onPress={retryOnce} hitSlop={10}>
+          <Pressable onPress={retry} hitSlop={10}>
             <Text style={styles.retryText}>重試</Text>
           </Pressable>
         </View>
