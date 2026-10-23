@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { colors, radii, spacing, typography } from "../theme";
 
@@ -30,7 +30,8 @@ export default function SupportScreen() {
   };
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+    <ScrollView style={styles.root} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>支持 HerLink</Text>
       <Text style={styles.copy}>
         HerLink 是免費的，由站長一個人維護。伺服器、資料庫這些每個月都要錢。如果你覺得好用，歡迎隨喜支持——多少都好，心意最重要。
@@ -113,10 +114,15 @@ export default function SupportScreen() {
         </Text>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoid: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   root: {
     flex: 1,
     backgroundColor: colors.background,

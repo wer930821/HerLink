@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import {
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -99,7 +101,8 @@ export default function AccountSignupScreen() {
       : "建立 HerLink 帳號後即可登入使用；之後建立的匿名聊天資料會跟著這個帳號。";
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+    <ScrollView style={styles.root} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.eyebrow}>HERLINK ACCOUNT</Text>
       <Text style={styles.title}>申請帳號</Text>
       <Text style={styles.description}>{description}</Text>
@@ -176,10 +179,15 @@ export default function AccountSignupScreen() {
         </Pressable>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoid: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   root: {
     flex: 1,
     backgroundColor: colors.background,
