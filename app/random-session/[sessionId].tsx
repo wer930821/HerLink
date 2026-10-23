@@ -12,6 +12,7 @@ import {
   FlatList,
   Linking,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -187,6 +188,7 @@ export default function RandomSessionScreen() {
   const [editDraft, setEditDraft] = useState("");
   const [messageActionBusy, setMessageActionBusy] = useState(false);
   const [viewerPath, setViewerPath] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [sessionRecoveryCode, setSessionRecoveryCode] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [busyAction, setBusyAction] = useState<string | null>(null);
@@ -709,6 +711,32 @@ export default function RandomSessionScreen() {
     });
   }, []);
 
+  // On Android the keyboard overlays the layout instead of resizing it, so
+  // track its height to pad the screen (see the root style below) and keep
+  // the message list glued to the bottom while it opens/closes.
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+      setKeyboardHeight(e.endCoordinates?.height ?? 0);
+      if (stickToBottomRef.current) {
+        setTimeout(() => {
+          listRef.current?.scrollToEnd({ animated: true });
+        }, 60);
+      }
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+      if (stickToBottomRef.current) {
+        setTimeout(() => {
+          listRef.current?.scrollToEnd({ animated: false });
+        }, 60);
+      }
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   const appendSentMessage = useCallback(
     (message: RandomMessage | null | undefined) => {
       if (!message) {
@@ -1130,7 +1158,12 @@ export default function RandomSessionScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.root}
+      style={[
+        styles.root,
+        Platform.OS === "android" && keyboardHeight
+          ? { paddingBottom: keyboardHeight }
+          : null,
+      ]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <HalloweenDecor topOffset={0} />
