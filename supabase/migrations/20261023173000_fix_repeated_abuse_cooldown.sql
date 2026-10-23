@@ -71,9 +71,6 @@ BEGIN
 
   actor_id := existing_row.current_user_id;
   rotation_cutoff := COALESCE(existing_row.last_account_rotation_at, existing_row.first_seen_at);
-
-  -- Once a cooldown has expired, its enforcement timestamp is a watermark:
-  -- events at/before it already paid for that cooldown and cannot buy another.
   risk_cutoff := rotation_cutoff;
   IF existing_row.cooldown_until IS NOT NULL
     AND existing_row.enforcement_set_at IS NOT NULL
@@ -83,110 +80,84 @@ BEGIN
   END IF;
 
   IF actor_id IS NOT NULL THEN
-    UPDATE public.moderation_enforcements AS enforcement
-    SET status = 'expired'
-    WHERE enforcement.subject_user_id = actor_id
-      AND enforcement.status = 'active'
+    UPDATE public.moderation_enforcements AS enforcement SET status = 'expired'
+    WHERE enforcement.subject_user_id = actor_id AND enforcement.status = 'active'
       AND enforcement.enforcement_type = 'temporary_suspension'
-      AND enforcement.expires_at IS NOT NULL
-      AND enforcement.expires_at <= timezone('utc'::text, now());
+      AND enforcement.expires_at IS NOT NULL AND enforcement.expires_at <= timezone('utc'::text, now());
 
-    SELECT profile.account_status INTO current_status
-    FROM public.profiles AS profile WHERE profile.id = actor_id LIMIT 1;
+    SELECT profile.account_status INTO current_status FROM public.profiles AS profile WHERE profile.id = actor_id LIMIT 1;
     IF NOT FOUND THEN RAISE EXCEPTION 'Target profile not found.'; END IF;
 
-    SELECT COUNT(*) INTO active_temporary_suspensions
-    FROM public.moderation_enforcements AS enforcement
+    SELECT COUNT(*) INTO active_temporary_suspensions FROM public.moderation_enforcements AS enforcement
     WHERE enforcement.subject_user_id = actor_id AND enforcement.status = 'active'
       AND enforcement.enforcement_type = 'temporary_suspension'
       AND (enforcement.expires_at IS NULL OR enforcement.expires_at > timezone('utc'::text, now()));
-
-    SELECT COUNT(*) INTO active_permanent_bans
-    FROM public.moderation_enforcements AS enforcement
-    WHERE enforcement.subject_user_id = actor_id AND enforcement.status = 'active'
-      AND enforcement.enforcement_type = 'permanent_ban';
-
-    SELECT COUNT(*) INTO expired_temporary_suspensions
-    FROM public.moderation_enforcements AS enforcement
-    WHERE enforcement.subject_user_id = actor_id AND enforcement.status = 'expired'
-      AND enforcement.enforcement_type = 'temporary_suspension';
-
-    SELECT moderation_log.action INTO latest_manual_status_action
-    FROM public.moderation_logs AS moderation_log
-    WHERE moderation_log.target_user_id = actor_id
-      AND moderation_log.action IN ('account_suspended', 'account_restored')
+    SELECT COUNT(*) INTO active_permanent_bans FROM public.moderation_enforcements AS enforcement
+    WHERE enforcement.subject_user_id = actor_id AND enforcement.status = 'active' AND enforcement.enforcement_type = 'permanent_ban';
+    SELECT COUNT(*) INTO expired_temporary_suspensions FROM public.moderation_enforcements AS enforcement
+    WHERE enforcement.subject_user_id = actor_id AND enforcement.status = 'expired' AND enforcement.enforcement_type = 'temporary_suspension';
+    SELECT moderation_log.action INTO latest_manual_status_action FROM public.moderation_logs AS moderation_log
+    WHERE moderation_log.target_user_id = actor_id AND moderation_log.action IN ('account_suspended', 'account_restored')
     ORDER BY moderation_log.created_at DESC LIMIT 1;
 
     next_status := current_status;
     IF current_status <> 'deletion_pending' THEN
-      IF active_permanent_bans > 0 OR active_temporary_suspensions > 0 THEN
-        next_status := 'suspended';
+      IF active_permanent_bans > 0 OR active_temporary_suspensions > 0 THEN next_status := 'suspended';
       ELSIF current_status = 'suspended' AND expired_temporary_suspensions > 0
-        AND COALESCE(latest_manual_status_action, 'account_restored') <> 'account_suspended' THEN
-        next_status := 'active';
+        AND COALESCE(latest_manual_status_action, 'account_restored') <> 'account_suspended' THEN next_status := 'active';
       END IF;
     END IF;
-
     IF next_status IS DISTINCT FROM current_status THEN
       PERFORM set_config('herlink.internal_profile_update', 'on', true);
       UPDATE public.profiles AS profile SET account_status = next_status WHERE profile.id = actor_id;
       IF next_status = 'active' THEN
-        PERFORM public.internal_write_moderation_log(NULL, NULL, actor_id, 'account_restored',
-          'Temporary suspension expired.', jsonb_build_object('reconciled_by', 'anonymous_abuse_refresh',
-          'expired_temporary_suspensions', expired_temporary_suspensions));
+        PERFORM public.internal_write_moderation_log(NULL, NULL, actor_id, 'account_restored', 'Temporary suspension expired.',
+          jsonb_build_object('reconciled_by', 'anonymous_abuse_refresh', 'expired_temporary_suspensions', expired_temporary_suspensions));
       END IF;
     END IF;
     current_status := next_status;
   END IF;
 
   SELECT
-    COALESCE(SUM(CASE WHEN event_type = 'anonymous_account_rotation' AND created_at >= timezone('utc'::text, now()) - INTERVAL '24 hours' AND created_at >= risk_cutoff THEN 1 ELSE 0 END), 0),
-    COALESCE(SUM(CASE WHEN event_type = 'queue_join' AND created_at >= timezone('utc'::text, now()) - INTERVAL '15 minutes' AND created_at >= risk_cutoff THEN 1 ELSE 0 END), 0),
-    COALESCE(SUM(CASE WHEN event_type = 'queue_leave' AND created_at >= timezone('utc'::text, now()) - INTERVAL '15 minutes' AND created_at >= risk_cutoff THEN 1 ELSE 0 END), 0),
-    COALESCE(SUM(CASE WHEN event_type = 'next_match' AND created_at >= timezone('utc'::text, now()) - INTERVAL '15 minutes' AND created_at >= risk_cutoff THEN 1 ELSE 0 END), 0),
-    COALESCE(SUM(CASE WHEN event_type = 'session_leave' AND created_at >= timezone('utc'::text, now()) - INTERVAL '15 minutes' AND created_at >= risk_cutoff THEN 1 ELSE 0 END), 0),
-    COALESCE(SUM(CASE WHEN event_type = 'report_received' AND created_at >= timezone('utc'::text, now()) - INTERVAL '24 hours' AND created_at >= risk_cutoff THEN 1 ELSE 0 END), 0),
-    COALESCE(SUM(CASE WHEN event_type = 'block_received' AND created_at >= timezone('utc'::text, now()) - INTERVAL '24 hours' AND created_at >= risk_cutoff THEN 1 ELSE 0 END), 0),
-    COALESCE(SUM(CASE WHEN event_type = 'fraud_low' AND created_at >= timezone('utc'::text, now()) - INTERVAL '24 hours' AND created_at >= risk_cutoff THEN 1 ELSE 0 END), 0),
-    COALESCE(SUM(CASE WHEN event_type = 'fraud_medium' AND created_at >= timezone('utc'::text, now()) - INTERVAL '24 hours' AND created_at >= risk_cutoff THEN 1 ELSE 0 END), 0),
-    COALESCE(SUM(CASE WHEN event_type = 'fraud_high' AND created_at >= timezone('utc'::text, now()) - INTERVAL '24 hours' AND created_at >= risk_cutoff THEN 1 ELSE 0 END), 0),
-    COALESCE(SUM(CASE WHEN event_type = 'fraud_critical' AND created_at >= timezone('utc'::text, now()) - INTERVAL '24 hours' AND created_at >= risk_cutoff THEN 1 ELSE 0 END), 0),
-    COALESCE(SUM(CASE WHEN event_type = 'anonymous_account_rotation' AND created_at >= timezone('utc'::text, now()) - INTERVAL '30 minutes' AND created_at >= risk_cutoff THEN 1 ELSE 0 END), 0)
+    COALESCE(SUM(CASE WHEN event_type = 'anonymous_account_rotation' AND created_at >= timezone('utc'::text, now()) - INTERVAL '24 hours' AND created_at > risk_cutoff THEN 1 ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN event_type = 'queue_join' AND created_at >= timezone('utc'::text, now()) - INTERVAL '15 minutes' AND created_at > risk_cutoff THEN 1 ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN event_type = 'queue_leave' AND created_at >= timezone('utc'::text, now()) - INTERVAL '15 minutes' AND created_at > risk_cutoff THEN 1 ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN event_type = 'next_match' AND created_at >= timezone('utc'::text, now()) - INTERVAL '15 minutes' AND created_at > risk_cutoff THEN 1 ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN event_type = 'session_leave' AND created_at >= timezone('utc'::text, now()) - INTERVAL '15 minutes' AND created_at > risk_cutoff THEN 1 ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN event_type = 'report_received' AND created_at >= timezone('utc'::text, now()) - INTERVAL '24 hours' AND created_at > risk_cutoff THEN 1 ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN event_type = 'block_received' AND created_at >= timezone('utc'::text, now()) - INTERVAL '24 hours' AND created_at > risk_cutoff THEN 1 ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN event_type = 'fraud_low' AND created_at >= timezone('utc'::text, now()) - INTERVAL '24 hours' AND created_at > risk_cutoff THEN 1 ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN event_type = 'fraud_medium' AND created_at >= timezone('utc'::text, now()) - INTERVAL '24 hours' AND created_at > risk_cutoff THEN 1 ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN event_type = 'fraud_high' AND created_at >= timezone('utc'::text, now()) - INTERVAL '24 hours' AND created_at > risk_cutoff THEN 1 ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN event_type = 'fraud_critical' AND created_at >= timezone('utc'::text, now()) - INTERVAL '24 hours' AND created_at > risk_cutoff THEN 1 ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN event_type = 'anonymous_account_rotation' AND created_at >= timezone('utc'::text, now()) - INTERVAL '30 minutes' AND created_at > risk_cutoff THEN 1 ELSE 0 END), 0)
   INTO rotation_count, queue_join_count, queue_leave_count, next_match_count, session_leave_count,
-    report_received_count, block_received_count, fraud_low_count, fraud_medium_count, fraud_high_count,
-    fraud_critical_count, rotation_recent_count
-  FROM public.anonymous_risk_events AS risk_event
-  WHERE risk_event.installation_key = p_installation_key;
+    report_received_count, block_received_count, fraud_low_count, fraud_medium_count, fraud_high_count, fraud_critical_count, rotation_recent_count
+  FROM public.anonymous_risk_events AS risk_event WHERE risk_event.installation_key = p_installation_key;
 
   computed_score := (rotation_count * 4) + GREATEST(queue_join_count - 3, 0)
-    + GREATEST(queue_leave_count + session_leave_count - 4, 0)
-    + (GREATEST(next_match_count - 2, 0) * 2) + (report_received_count * 2)
-    + (block_received_count * 2) + fraud_low_count + (fraud_medium_count * 2)
+    + GREATEST(queue_leave_count + session_leave_count - 4, 0) + (GREATEST(next_match_count - 2, 0) * 2)
+    + (report_received_count * 2) + (block_received_count * 2) + fraud_low_count + (fraud_medium_count * 2)
     + (fraud_high_count * 4) + (fraud_critical_count * 6);
 
-  IF current_status IS DISTINCT FROM 'active' THEN
-    next_decision := 'blocked'; next_reason_code := 'account_restricted';
+  IF current_status IS DISTINCT FROM 'active' THEN next_decision := 'blocked'; next_reason_code := 'account_restricted';
   ELSIF existing_row.temporary_suspension_until IS NOT NULL AND existing_row.enforcement_set_at IS NOT NULL
     AND existing_row.temporary_suspension_until > existing_row.enforcement_set_at
     AND timezone('utc'::text, now()) < existing_row.temporary_suspension_until THEN
     next_decision := 'temporary_suspension'; next_reason_code := 'temporary_suspension_active';
     next_temporary_until := existing_row.temporary_suspension_until; next_review_required := TRUE;
   ELSIF existing_row.cooldown_until IS NOT NULL AND existing_row.enforcement_set_at IS NOT NULL
-    AND existing_row.cooldown_until > existing_row.enforcement_set_at
-    AND timezone('utc'::text, now()) < existing_row.cooldown_until THEN
-    next_decision := 'cooldown'; next_reason_code := 'cooldown_active';
-    next_cooldown_until := existing_row.cooldown_until;
-  ELSIF computed_score >= 10 OR rotation_count >= 3 OR rotation_recent_count >= 3
-    OR report_received_count >= 5 OR block_received_count >= 3 OR fraud_critical_count >= 1 THEN
+    AND existing_row.cooldown_until > existing_row.enforcement_set_at AND timezone('utc'::text, now()) < existing_row.cooldown_until THEN
+    next_decision := 'cooldown'; next_reason_code := 'cooldown_active'; next_cooldown_until := existing_row.cooldown_until;
+  ELSIF computed_score >= 10 OR rotation_count >= 3 OR rotation_recent_count >= 3 OR report_received_count >= 5
+    OR block_received_count >= 3 OR fraud_critical_count >= 1 THEN
     next_decision := 'temporary_suspension'; next_reason_code := 'anonymous_abuse_high_risk';
     next_temporary_until := timezone('utc'::text, now()) + INTERVAL '24 hours'; next_review_required := TRUE;
-  ELSIF computed_score >= 5 OR rotation_count >= 2 OR rotation_recent_count >= 2
-    OR report_received_count >= 3 OR block_received_count >= 2 OR fraud_high_count >= 2
-    OR (queue_join_count >= 6 AND next_match_count >= 2) THEN
+  ELSIF computed_score >= 5 OR rotation_count >= 2 OR rotation_recent_count >= 2 OR report_received_count >= 3
+    OR block_received_count >= 2 OR fraud_high_count >= 2 OR (queue_join_count >= 6 AND next_match_count >= 2) THEN
     next_decision := 'cooldown'; next_reason_code := 'anonymous_abuse_cooldown';
     next_cooldown_until := timezone('utc'::text, now()) + INTERVAL '5 minutes';
-  ELSE
-    next_decision := 'allow'; next_reason_code := NULL;
+  ELSE next_decision := 'allow'; next_reason_code := NULL;
   END IF;
 
   UPDATE public.anonymous_risk_identities AS identity_row SET
@@ -199,11 +170,8 @@ BEGIN
       WHEN next_decision = 'cooldown' AND next_cooldown_until = identity_row.cooldown_until THEN identity_row.enforcement_set_at
       WHEN next_decision = 'temporary_suspension' AND next_temporary_until = identity_row.temporary_suspension_until THEN identity_row.enforcement_set_at
       WHEN next_decision IN ('cooldown', 'temporary_suspension') THEN timezone('utc'::text, now())
-      -- Preserve an expired cooldown watermark after release. Clearing it would
-      -- make the same old events eligible again on the next precheck.
       WHEN next_decision = 'allow' AND identity_row.cooldown_until IS NOT NULL THEN identity_row.enforcement_set_at
-      WHEN next_decision = 'allow' THEN NULL
-      ELSE identity_row.enforcement_set_at END
+      WHEN next_decision = 'allow' THEN NULL ELSE identity_row.enforcement_set_at END
   WHERE identity_row.installation_key = p_installation_key;
 
   IF next_decision <> 'allow' AND actor_id IS NOT NULL THEN
