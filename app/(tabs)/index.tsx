@@ -22,7 +22,6 @@ import {
   listMyActiveRandomSessions,
   type RandomSession,
 } from "../../lib/random-chat";
-import { isUnreadThread, listMyMailThreads } from "../../lib/station-mail";
 import {
   loadMyAnonymousName,
   rotateMyAnonymousName,
@@ -48,7 +47,6 @@ export default function AnonymousHomeScreen() {
   const { session, signOut } = useAuth();
 
   const [activeSessions, setActiveSessions] = useState<RandomSession[]>([]);
-  const [unreadMail, setUnreadMail] = useState(0);
   const [chatUnread, setChatUnread] = useState(0);
   const [myName, setMyName] = useState<string | null>(null);
   const [renameNotice, setRenameNotice] = useState<string | null>(null);
@@ -89,13 +87,6 @@ export default function AnonymousHomeScreen() {
         })
         .catch(() => {
           if (alive) setActiveSessions([]);
-        });
-      void listMyMailThreads()
-        .then((rows) => {
-          if (alive) setUnreadMail(rows.filter(isUnreadThread).length);
-        })
-        .catch(() => {
-          if (alive) setUnreadMail(0);
         });
       void getMyRandomChatUnreadCount()
         .then((count) => {
@@ -207,20 +198,6 @@ export default function AnonymousHomeScreen() {
     <View style={styles.root}>
       <HalloweenDecor topOffset={insets.top + 6} />
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="站長信箱"
-        style={[styles.mailboxFloat, { top: insets.top + 8 }]}
-        onPress={() => router.push("/mailbox" as never)}
-      >
-        <Text style={styles.mailboxFloatText}>✉ 信箱</Text>
-        {unreadMail > 0 ? (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{unreadMail > 99 ? "99+" : unreadMail}</Text>
-          </View>
-        ) : null}
-      </Pressable>
-
       {isCrownIdentity ? (
         <Pressable
           accessibilityRole="button"
@@ -288,15 +265,6 @@ export default function AnonymousHomeScreen() {
               ) : null}
             </Pressable>
           ) : null}
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="匿名聯絡人"
-            style={styles.secondaryButton}
-            onPress={() => router.push("/contacts" as never)}
-          >
-            <Text style={styles.secondaryButtonText}>匿名聯絡人</Text>
-          </Pressable>
 
           <Pressable
             accessibilityRole="button"
@@ -487,25 +455,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: 120,
   },
-  mailboxFloat: {
-    position: "absolute",
-    right: spacing.lg,
-    zIndex: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceElevated,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-  },
-  mailboxFloatText: {
-    color: colors.text,
-    ...typography.bodyStrong,
-    fontSize: 14,
-  },
   crownFloat: {
     position: "absolute",
     left: spacing.lg,
@@ -522,15 +471,6 @@ const styles = StyleSheet.create({
   crownText: {
     color: "#FFC44D",
     fontSize: 18,
-  },
-  badge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.error,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
   },
   badgeInline: {
     minWidth: 22,

@@ -33,12 +33,14 @@ import {
 } from "../../lib/random-chat-media";
 import {
   blockRandomUser,
+  editRandomMessage,
   getAnonymousContactStatus,
   getRandomSession,
   leaveRandomSession,
   listRandomMessages,
   listRandomMessagesAfter,
   nextRandomMatch,
+  recallRandomMessage,
   requestAnonymousContact,
   RandomMessage,
   RandomReportCategory,
@@ -179,6 +181,10 @@ export default function RandomSessionScreen() {
   const [replyTarget, setReplyTarget] = useState<RandomMessage | null>(null);
   const [partnerTyping, setPartnerTyping] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [messageMenu, setMessageMenu] = useState<RandomMessage | null>(null);
+  const [editTarget, setEditTarget] = useState<RandomMessage | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [messageActionBusy, setMessageActionBusy] = useState(false);
   const [sessionRecoveryCode, setSessionRecoveryCode] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [busyAction, setBusyAction] = useState<string | null>(null);
@@ -291,6 +297,21 @@ export default function RandomSessionScreen() {
         syncQueuedRef.current = false;
         void syncMessagesAfterCursor();
       }
+    }
+  }, [sessionId, updateCursor]);
+
+  const resyncRecentMessages = useCallback(async () => {
+    if (!sessionId) {
+      return;
+    }
+    try {
+      const recent = await listRandomMessages(sessionId, 100);
+      if (recent.length > 0) {
+        setMessages((current) => mergeMessages(current, recent));
+        updateCursor(recent);
+      }
+    } catch {
+      // Realtime resync is best-effort; a manual reload retries it.
     }
   }, [sessionId, updateCursor]);
 
@@ -444,7 +465,12 @@ export default function RandomSessionScreen() {
 
       const channel = supabase
         .channel(`random-chat-${sessionId}`)
-        .on("broadcast", { event: "refresh" }, () => {
+        .on("broadcast", { event: "refresh" }, ({ payload }) => {
+          const reason = (payload as { payload?: { reason?: unknown } } | undefined)?.payload
+            ?.reason;
+          if (reason === "message-updated") {
+            void resyncRecentMessages();
+          }
           void syncMessagesAfterCursor();
           void refreshSession().catch(() => undefined);
           void refreshContactStatus();
@@ -460,6 +486,18 @@ export default function RandomSessionScreen() {
           setPartnerTyping(true);
           armPartnerTypingTimeout();
         })
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "random_chat_messages",
+            filter: `session_id=eq.${sessionId}`,
+          },
+          () => {
+            void resyncRecentMessages();
+          }
+        )
         .subscribe((status) => {
           if (status === "SUBSCRIBED") {
             starting = false;
@@ -580,6 +618,7 @@ export default function RandomSessionScreen() {
   }, [refreshContactStatus]);
 
   const startReply = useCallback((message: RandomMessage) => {
+    if (message.recalled_at) return;
     setReplyTarget(message);
     setNotice(null);
   }, []);
@@ -587,6 +626,78 @@ export default function RandomSessionScreen() {
   const clearReply = useCallback(() => {
     setReplyTarget(null);
   }, []);
+
+  const openMessageMenu = useCallback((message: RandomMessage) => {
+    if (message.recalled_at) return;
+    setMessageMenu(message);
+  }, []);
+
+  const handleRecallMessage = useCallback(
+    (message: RandomMessage) => {
+      setMessageMenu(null);
+      Alert.alert("收回訊息", "收回後，對方只會看到「此訊息已收回」。", [
+        { text: "取消", style: "cancel" },
+        {
+          text: "收回",
+          style: "destructive",
+          onPress: () => {
+            void (async () => {
+              try {
+                await recallRandomMessage(message.id);
+                const recalledAt = new Date().toISOString();
+                setMessages((current) =>
+                  current.map((item) =>
+                    item.id === message.id ? { ...item, recalled_at: recalledAt } : item
+                  )
+                );
+                setReplyTarget((current) => (current?.id === message.id ? null : current));
+                void broadcastRefresh("message-updated");
+              } catch (error) {
+                setNotice(friendlyError(error, "目前無法收回訊息，請稍後再試。"));
+              }
+            })();
+          },
+        },
+      ]);
+    },
+    [broadcastRefresh]
+  );
+
+  const openEditMessage = useCallback((message: RandomMessage) => {
+    setMessageMenu(null);
+    setEditTarget(message);
+    setEditDraft(message.content || "");
+  }, []);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editTarget || messageActionBusy) return;
+    const next = editDraft.trim();
+    if (!next) {
+      setNotice("訊息不能空白。");
+      return;
+    }
+    if (next.length > MAX_DRAFT_LENGTH) {
+      setNotice("訊息請控制在 2000 字以內。");
+      return;
+    }
+    if (next === (editTarget.content || "").trim()) {
+      setEditTarget(null);
+      return;
+    }
+    setMessageActionBusy(true);
+    try {
+      await editRandomMessage(editTarget.id, next);
+      setMessages((current) =>
+        current.map((item) => (item.id === editTarget.id ? { ...item, content: next } : item))
+      );
+      setEditTarget(null);
+      void broadcastRefresh("message-updated");
+    } catch (error) {
+      setNotice(friendlyError(error, "目前無法編輯訊息，請稍後再試。"));
+    } finally {
+      setMessageActionBusy(false);
+    }
+  }, [editTarget, editDraft, messageActionBusy, broadcastRefresh]);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -1098,6 +1209,23 @@ export default function RandomSessionScreen() {
         renderItem={({ item }) => {
           const quote = replyQuote(item);
           const isMine = item.is_mine;
+          if (item.recalled_at) {
+            return (
+              <View style={[styles.messageRow, isMine ? styles.mineRow : styles.otherRow]}>
+                <View style={[styles.bubble, isMine ? styles.mineBubble : styles.otherBubble]}>
+                  <Text
+                    style={[
+                      styles.messageText,
+                      isMine ? styles.mineText : styles.otherText,
+                      styles.recalledText,
+                    ]}
+                  >
+                    此訊息已收回
+                  </Text>
+                </View>
+              </View>
+            );
+          }
           return (
             <View style={[styles.messageRow, isMine ? styles.mineRow : styles.otherRow]}>
               {!isMine ? (
@@ -1106,7 +1234,7 @@ export default function RandomSessionScreen() {
                 </Pressable>
               ) : null}
               <Pressable
-                onLongPress={() => startReply(item)}
+                onLongPress={() => openMessageMenu(item)}
                 onPress={() => {
                   if (item.message_type !== "image") {
                     const match = (item.content || "").match(/https?:\/\/\S+|www\.\S+/i);
@@ -1315,6 +1443,94 @@ export default function RandomSessionScreen() {
             </Pressable>
           </View>
         </Pressable>
+      </Modal>
+
+      <Modal
+        visible={messageMenu !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMessageMenu(null)}
+      >
+        <Pressable style={styles.menuBackdrop} onPress={() => setMessageMenu(null)}>
+          <View style={styles.menuCard}>
+            <Text style={styles.menuTitle}>訊息</Text>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => {
+                if (messageMenu) {
+                  const target = messageMenu;
+                  setMessageMenu(null);
+                  startReply(target);
+                }
+              }}
+            >
+              <Ionicons name="return-down-back-outline" size={20} color={colors.text} />
+              <Text style={styles.menuItemText}>回覆</Text>
+            </Pressable>
+            {messageMenu?.is_mine && messageMenu.message_type === "text" ? (
+              <Pressable
+                style={styles.menuItem}
+                onPress={() => {
+                  if (messageMenu) openEditMessage(messageMenu);
+                }}
+              >
+                <Ionicons name="create-outline" size={20} color={colors.text} />
+                <Text style={styles.menuItemText}>編輯</Text>
+              </Pressable>
+            ) : null}
+            {messageMenu?.is_mine ? (
+              <Pressable
+                style={styles.menuItem}
+                onPress={() => {
+                  if (messageMenu) handleRecallMessage(messageMenu);
+                }}
+              >
+                <Ionicons name="arrow-undo-outline" size={20} color={colors.error} />
+                <Text style={[styles.menuItemText, { color: colors.error }]}>收回</Text>
+              </Pressable>
+            ) : null}
+            <Pressable style={[styles.menuItem, styles.menuCancel]} onPress={() => setMessageMenu(null)}>
+              <Text style={styles.menuCancelText}>取消</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={editTarget !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditTarget(null)}
+      >
+        <View style={styles.editBackdrop}>
+          <View style={styles.editCard}>
+            <Text style={styles.menuTitle}>編輯訊息</Text>
+            <TextInput
+              style={styles.editInput}
+              value={editDraft}
+              onChangeText={setEditDraft}
+              multiline
+              autoFocus
+              placeholder="輸入訊息"
+              placeholderTextColor={colors.textSoft}
+            />
+            <Pressable
+              style={styles.menuItem}
+              disabled={messageActionBusy}
+              onPress={() => void handleSaveEdit()}
+            >
+              <Ionicons name="checkmark-outline" size={20} color={colors.text} />
+              <Text style={styles.menuItemText}>儲存</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.menuItem, styles.menuCancel]}
+              disabled={messageActionBusy}
+              onPress={() => setEditTarget(null)}
+            >
+              <Text style={styles.menuCancelText}>取消</Text>
+            </Pressable>
+          </View>
+        </View>
       </Modal>
 
       <Modal
@@ -1745,5 +1961,34 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: "center",
     ...typography.bodyStrong,
+  },
+  recalledText: {
+    fontStyle: "italic",
+    opacity: 0.7,
+  },
+  editBackdrop: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
+  },
+  editCard: {
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  editInput: {
+    minHeight: 88,
+    maxHeight: 160,
+    borderRadius: radii.md,
+    backgroundColor: colors.backgroundMuted,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    color: colors.text,
+    textAlignVertical: "top",
+    ...typography.body,
+    marginBottom: spacing.md,
   },
 });
