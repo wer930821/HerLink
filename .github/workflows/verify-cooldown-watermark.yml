@@ -1,0 +1,15 @@
+name: Verify cooldown watermark
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261023173000_fix_repeated_abuse_cooldown.sql'
+      - 'tests/abuse-cooldown-watermark-source.test.cjs'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tests/abuse-cooldown-watermark-source.test.cjs
