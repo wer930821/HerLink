@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { colors, radii, spacing, typography } from "../theme";
+import { KeyboardFormScrollView } from "../components/KeyboardFormScrollView";
 import { useAuth } from "../context/auth";
 import { supabase } from "../lib/supabase";
 import {
@@ -101,8 +100,7 @@ export default function AccountSignupScreen() {
       : "建立 HerLink 帳號後即可登入使用；之後建立的匿名聊天資料會跟著這個帳號。";
 
   return (
-    <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-    <ScrollView style={styles.root} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <KeyboardFormScrollView style={styles.root} contentContainerStyle={styles.content}>
       <Text style={styles.eyebrow}>HERLINK ACCOUNT</Text>
       <Text style={styles.title}>申請帳號</Text>
       <Text style={styles.description}>{description}</Text>
@@ -178,16 +176,11 @@ export default function AccountSignupScreen() {
           <Text style={styles.link}>登入帳號</Text>
         </Pressable>
       </View>
-    </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardFormScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardAvoid: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   root: {
     flex: 1,
     backgroundColor: colors.background,

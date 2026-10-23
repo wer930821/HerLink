@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +12,7 @@ import {
 import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { colors, radii, spacing, typography } from "../theme";
+import { KeyboardFormScrollView } from "../components/KeyboardFormScrollView";
 import { useAuth } from "../context/auth";
 import { validateAnonymousDisplayName } from "../lib/anonymous";
 import { listMyActiveRandomSessions } from "../lib/random-chat";
@@ -393,8 +392,7 @@ export default function RecoveryScreen() {
   const back = () => setView("menu");
 
   return (
-    <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-    <ScrollView style={styles.root} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <KeyboardFormScrollView style={styles.root} contentContainerStyle={styles.content}>
       <Text style={styles.title}>找回原本聊天室</Text>
       {view === "menu" ? (
         <View>
@@ -414,16 +412,11 @@ export default function RecoveryScreen() {
       ) : (
         <MyCodeView onBack={back} />
       )}
-    </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardFormScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardAvoid: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   root: {
     flex: 1,
     backgroundColor: colors.background,
