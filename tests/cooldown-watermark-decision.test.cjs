@@ -1,0 +1,1 @@
+const fs=require('node:fs');const path=require('node:path');const assert=require('node:assert/strict');const s=fs.readFileSync(path.join(__dirname,'..','supabase/migrations/20261023173000_fix_repeated_abuse_cooldown.sql'),'utf8');for(const d of ['blocked','temporary_suspension','cooldown','allow'])assert.ok(s.includes(`'${d}'`));console.log('PASS abuse decision states retained');
