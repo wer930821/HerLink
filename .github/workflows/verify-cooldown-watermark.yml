@@ -7,6 +7,7 @@ on:
       - 'tests/abuse-cooldown-watermark-regression.test.cjs'
       - 'tests/cooldown-watermark-new-event.test.cjs'
       - 'tests/cooldown-watermark-expiry-contract.test.cjs'
+      - 'tests/cooldown-watermark-no-old-retrigger.test.cjs'
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -19,3 +20,4 @@ jobs:
       - run: node tests/abuse-cooldown-watermark-regression.test.cjs
       - run: node tests/cooldown-watermark-new-event.test.cjs
       - run: node tests/cooldown-watermark-expiry-contract.test.cjs
+      - run: node tests/cooldown-watermark-no-old-retrigger.test.cjs
