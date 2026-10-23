@@ -9,6 +9,7 @@ on:
       - 'tests/cooldown-watermark-expiry-contract.test.cjs'
       - 'tests/cooldown-watermark-no-old-retrigger.test.cjs'
       - 'tests/cooldown-watermark-thresholds.test.cjs'
+      - 'tests/cooldown-watermark-active.test.cjs'
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -23,3 +24,4 @@ jobs:
       - run: node tests/cooldown-watermark-expiry-contract.test.cjs
       - run: node tests/cooldown-watermark-no-old-retrigger.test.cjs
       - run: node tests/cooldown-watermark-thresholds.test.cjs
+      - run: node tests/cooldown-watermark-active.test.cjs
