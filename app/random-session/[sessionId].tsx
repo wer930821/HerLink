@@ -222,6 +222,7 @@ export default function RandomSessionScreen() {
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const listRef = useRef<FlatList<RandomMessage> | null>(null);
+  const stickToBottomRef = useRef(true);
   const latestCursorRef = useRef<{ created_at: string; id: string } | null>(null);
   const syncInFlightRef = useRef(false);
   const syncQueuedRef = useRef(false);
@@ -702,6 +703,7 @@ export default function RandomSessionScreen() {
   }, [editTarget, editDraft, messageActionBusy, broadcastRefresh]);
 
   const scrollToBottom = useCallback(() => {
+    stickToBottomRef.current = true;
     requestAnimationFrame(() => {
       listRef.current?.scrollToEnd({ animated: true });
     });
@@ -1202,6 +1204,14 @@ export default function RandomSessionScreen() {
         data={messages}
         keyExtractor={(item) => item.id}
         onScrollToIndexFailed={() => scrollToBottom()}
+        onScrollBeginDrag={() => {
+          stickToBottomRef.current = false;
+        }}
+        onContentSizeChange={() => {
+          if (stickToBottomRef.current) {
+            listRef.current?.scrollToEnd({ animated: false });
+          }
+        }}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <Text style={styles.emptyTitle}>還沒有訊息。</Text>
