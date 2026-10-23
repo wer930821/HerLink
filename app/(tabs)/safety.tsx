@@ -25,8 +25,14 @@ const settings = [
 
 export default function SafetyScreen() {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const insets = useSafeAreaInsets();
+  const accountEmail = user && !user.is_anonymous ? (user.email ?? null) : null;
+  const rows = settings.map((item) =>
+    item.path === "/account-login" && accountEmail
+      ? { ...item, detail: accountEmail }
+      : item
+  );
 
   const deleteAccount = () => {
     Alert.alert("刪除帳號", "這會永久刪除登入帳號與相關資料，且無法復原。匿名聊天室也可能無法再取回。確定要繼續嗎？", [
@@ -56,7 +62,7 @@ export default function SafetyScreen() {
 
         <Text style={styles.sectionTitle}>帳號與支援</Text>
         <View style={styles.list}>
-          {settings.map((item) => (
+          {rows.map((item) => (
             <Pressable key={item.path} style={styles.row} onPress={() => router.push(item.path as never)}>
               <View style={styles.iconWrap}>
                 <Ionicons name={item.icon as never} size={21} color={colors.accent} />
