@@ -1,0 +1,12 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+const sql = fs.readFileSync(path.join(__dirname, '..', 'supabase/migrations/20261023173000_fix_repeated_abuse_cooldown.sql'), 'utf8');
+assert.match(sql, /timezone\('utc'::text, now\(\)\) >= existing_row\.cooldown_until/);
+assert.match(sql, /created_at > risk_cutoff/);
+assert.doesNotMatch(sql, /created_at >= risk_cutoff/);
+assert.match(sql, /next_decision = 'cooldown' AND next_cooldown_until = identity_row\.cooldown_until/);
+assert.match(sql, /WHEN next_decision = 'allow' AND identity_row\.cooldown_until IS NOT NULL THEN identity_row\.enforcement_set_at/);
+assert.match(sql, /fraud_high_count >= 2/);
+assert.match(sql, /computed_score >= 10/);
+console.log('PASS repeated cooldown regression source checks');
