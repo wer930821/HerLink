@@ -2131,6 +2131,24 @@ const styles = StyleSheet.create({
   dialogButtonCancelText: {
     color: colors.textMuted,
   },
+  easterEggOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 30,
+  },
+  easterEggIcon: {
+    fontSize: 72,
+  },
+  easterEggSync: {
+    color: colors.primary,
+    fontSize: 22,
+    fontWeight: "700",
+  },
   editBackdrop: {
     flex: 1,
     backgroundColor: colors.overlay,
