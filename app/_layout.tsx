@@ -2,6 +2,7 @@ import { Stack, useRouter } from "expo-router";
 import { AuthProvider, useAuth } from "../context/auth";
 import { useEffect, useRef } from "react";
 import { SplashScreen } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { Alert, AppState, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { pushNavigationTarget, syncNativePushToken } from "../lib/native-push";
