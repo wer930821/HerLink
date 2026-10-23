@@ -18,7 +18,6 @@ const safetyTips = [
 const settings = [
   { label: "永久恢復碼", detail: "保留匿名身分與聊天室", path: "/recovery", icon: "key-outline" },
   { label: "帳號登入／綁定", detail: "保護目前匿名資料", path: "/account-login", icon: "person-circle-outline" },
-  { label: "站長支援", detail: "聯絡 HerLink 管理員", path: "/mailbox", icon: "mail-outline" },
   { label: "支持 HerLink", detail: "自願贊助營運費用", path: "/support", icon: "heart-outline" },
   { label: "隱私權政策", detail: "資料與權限說明", path: "/privacy", icon: "shield-outline" },
   { label: "使用條款", detail: "使用規範與責任", path: "/terms", icon: "document-text-outline" },
