@@ -18,7 +18,7 @@ import {
 
 export default function AccountLoginScreen() {
   const router = useRouter();
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,6 +41,36 @@ export default function AccountLoginScreen() {
       setLoading(false);
     }
   };
+
+  const accountEmail = user && !user.is_anonymous ? (user.email ?? null) : null;
+
+  if (accountEmail) {
+    return (
+      <KeyboardFormScrollView style={styles.root} contentContainerStyle={styles.content}>
+        <Text style={styles.eyebrow}>HERLINK ACCOUNT</Text>
+        <Text style={styles.title}>已登入帳號</Text>
+        <Text style={styles.description}>
+          你目前已用這個帳號登入，匿名身分、聊天室與聯絡人都綁在這個帳號上，不需要再登入一次。
+        </Text>
+
+        <Text style={styles.label}>目前登入的電子郵件</Text>
+        <View style={styles.emailBox}>
+          <Text style={styles.emailText}>{accountEmail}</Text>
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          style={styles.primaryButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.primaryButtonText}>返回</Text>
+        </Pressable>
+        <Text style={styles.switchNote}>
+          如需切換帳號，請先到「安全與設定」登出目前帳號。
+        </Text>
+      </KeyboardFormScrollView>
+    );
+  }
 
   return (
     <KeyboardFormScrollView style={styles.root} contentContainerStyle={styles.content}>
@@ -160,6 +190,25 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.error,
     ...typography.body,
+  },
+  emailBox: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  emailText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  switchNote: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
   },
   primaryButton: {
     marginTop: spacing.lg,
