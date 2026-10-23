@@ -22,6 +22,7 @@ import {
   View,
 } from "react-native";
 import { RandomChatImage } from "../../components/RandomChatImage";
+import { ChatImageViewer } from "../../components/ChatImageViewer";
 import { HalloweenDecor } from "../../components/HalloweenDecor";
 import { RandomReportModal } from "../../components/RandomReportModal";
 import { VerifiedBadge } from "../../components/VerifiedBadge";
@@ -185,6 +186,7 @@ export default function RandomSessionScreen() {
   const [editTarget, setEditTarget] = useState<RandomMessage | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const [messageActionBusy, setMessageActionBusy] = useState(false);
+  const [viewerPath, setViewerPath] = useState<string | null>(null);
   const [sessionRecoveryCode, setSessionRecoveryCode] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [busyAction, setBusyAction] = useState<string | null>(null);
@@ -1236,12 +1238,14 @@ export default function RandomSessionScreen() {
               <Pressable
                 onLongPress={() => openMessageMenu(item)}
                 onPress={() => {
-                  if (item.message_type !== "image") {
-                    const match = (item.content || "").match(/https?:\/\/\S+|www\.\S+/i);
-                    if (match) {
-                      const url = match[0].startsWith("www.") ? `https://${match[0]}` : match[0];
-                      void Linking.openURL(url);
-                    }
+                  if (item.message_type === "image") {
+                    if (item.media_path) setViewerPath(item.media_path);
+                    return;
+                  }
+                  const match = (item.content || "").match(/https?:\/\/\S+|www\.\S+/i);
+                  if (match) {
+                    const url = match[0].startsWith("www.") ? `https://${match[0]}` : match[0];
+                    void Linking.openURL(url);
                   }
                 }}
                 delayLongPress={350}
@@ -1571,6 +1575,7 @@ export default function RandomSessionScreen() {
         onClose={() => setReportOpen(false)}
         onSubmit={submitReport}
       />
+      <ChatImageViewer path={viewerPath} onClose={() => setViewerPath(null)} />
     </KeyboardAvoidingView>
   );
 }
