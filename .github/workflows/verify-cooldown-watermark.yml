@@ -3,14 +3,7 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/20261023173000_fix_repeated_abuse_cooldown.sql'
-      - 'tests/abuse-cooldown-watermark-source.test.cjs'
-      - 'tests/abuse-cooldown-watermark-regression.test.cjs'
-      - 'tests/cooldown-watermark-new-event.test.cjs'
-      - 'tests/cooldown-watermark-expiry-contract.test.cjs'
-      - 'tests/cooldown-watermark-no-old-retrigger.test.cjs'
-      - 'tests/cooldown-watermark-thresholds.test.cjs'
-      - 'tests/cooldown-watermark-active.test.cjs'
-      - 'tests/cooldown-watermark-security.test.cjs'
+      - 'tests/*cooldown-watermark*.test.cjs'
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -19,11 +12,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node tests/abuse-cooldown-watermark-source.test.cjs
-      - run: node tests/abuse-cooldown-watermark-regression.test.cjs
-      - run: node tests/cooldown-watermark-new-event.test.cjs
-      - run: node tests/cooldown-watermark-expiry-contract.test.cjs
-      - run: node tests/cooldown-watermark-no-old-retrigger.test.cjs
-      - run: node tests/cooldown-watermark-thresholds.test.cjs
-      - run: node tests/cooldown-watermark-active.test.cjs
-      - run: node tests/cooldown-watermark-security.test.cjs
+      - run: node tests/cooldown-watermark-summary.test.cjs
+      - run: node tests/cooldown-watermark-migration-present.test.cjs
+      - run: node tests/cooldown-watermark-allow.test.cjs
