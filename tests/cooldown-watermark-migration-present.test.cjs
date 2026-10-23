@@ -1,0 +1,1 @@
+const fs=require('node:fs');const path=require('node:path');const assert=require('node:assert/strict');assert.ok(fs.existsSync(path.join(__dirname,'..','supabase/migrations/20261023173000_fix_repeated_abuse_cooldown.sql')));console.log('PASS cooldown migration present');
