@@ -25,8 +25,7 @@
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.REQUEST_INSTALL_PACKAGES"
       ],
-      "versionCode": 1,
-      "edgeToEdgeEnabled": false
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -58,7 +57,8 @@
           "color": "#6E4EE8",
           "defaultChannel": "herlink-chat"
         }
-      ]
+      ],
+      "./plugins/withAndroidMinify"
     ],
     "experiments": {
       "typedRoutes": true

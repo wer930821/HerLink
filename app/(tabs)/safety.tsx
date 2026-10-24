@@ -105,7 +105,7 @@ export default function SafetyScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1 },
-  content: { padding: spacing.xl, paddingTop: spacing.xxxl + 12, paddingBottom: 120 },
+  content: { width: "100%", maxWidth: 720, alignSelf: "center", padding: spacing.xl, paddingTop: spacing.xxxl + 12, paddingBottom: 120 },
   eyebrow: { color: colors.accent, ...typography.eyebrow },
   title: { marginTop: spacing.sm, color: colors.text, ...typography.title },
   subtitle: { marginTop: spacing.md, color: colors.textMuted, ...typography.body },
