@@ -9,7 +9,7 @@ on:
 jobs:
   build-native-play-aab:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
