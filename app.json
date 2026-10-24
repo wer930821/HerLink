@@ -3,7 +3,7 @@
     "name": "HerLink",
     "slug": "herlink",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/brand-launcher-icon.png",
     "scheme": "herlink",
     "userInterfaceStyle": "automatic",
