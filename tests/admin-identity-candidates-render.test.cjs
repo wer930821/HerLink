@@ -19,3 +19,15 @@ test('current sender identity is display-only and cannot enter manual claim pref
   assert.match(page,/const historicalIdentityCandidates=identityCandidates\.filter\(candidate=>candidate\.source!=="寄件者目前匿名身分"\)/);
   assert.match(page,/historicalIdentityCandidates\.map/);
 });
+
+test('identity candidate RPC uses the same current-sender source label as the mailbox UI',()=>{
+  const migrations=fs.readdirSync(path.join(__dirname,'..','supabase','migrations'))
+    .filter(name=>name.endsWith('.sql'))
+    .map(name=>fs.readFileSync(path.join(__dirname,'..','supabase','migrations',name),'utf8'))
+    .join('\n');
+  const definitions=[...migrations.matchAll(/create\s+or\s+replace\s+function\s+public\.station_mail_admin_identity_candidates[\s\S]*?\$\$;?/gi)];
+  assert.ok(definitions.length>0,'station_mail_admin_identity_candidates must exist');
+  const latest=definitions.at(-1)[0];
+  assert.match(latest,/寄件者目前匿名身分/);
+  assert.doesNotMatch(latest,/目前登入匿名身分/);
+});
