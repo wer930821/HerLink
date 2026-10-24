@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Constants from "expo-constants";
 import { colors, radii, spacing, typography } from "../../theme";
 import { HalloweenDecor } from "../../components/HalloweenDecor";
 import { useAuth } from "../../context/auth";
@@ -28,11 +29,15 @@ export default function SafetyScreen() {
   const { signOut, user } = useAuth();
   const insets = useSafeAreaInsets();
   const accountEmail = user && !user.is_anonymous ? (user.email ?? null) : null;
-  const rows = settings.map((item) =>
-    item.path === "/account-login" && accountEmail
-      ? { ...item, detail: accountEmail }
-      : item
-  );
+  // Google Play 版隱藏贊助入口（Play 付款政策），側載版照常顯示。
+  const isPlayStoreBuild = Constants.expoConfig?.extra?.playStoreBuild === true;
+  const rows = settings
+    .filter((item) => !isPlayStoreBuild || item.path !== "/support")
+    .map((item) =>
+      item.path === "/account-login" && accountEmail
+        ? { ...item, detail: accountEmail }
+        : item
+    );
 
   const deleteAccount = () => {
     Alert.alert("刪除帳號", "這會永久刪除登入帳號與相關資料，且無法復原。匿名聊天室也可能無法再取回。確定要繼續嗎？", [

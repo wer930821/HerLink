@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
+import Constants from "expo-constants";
 import { colors, radii, spacing, typography } from "../theme";
 import { KeyboardFormScrollView } from "../components/KeyboardFormScrollView";
 
@@ -36,6 +37,20 @@ export default function SupportScreen() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Google Play 版不提供站外贊助流程（Play 付款政策：App 內不得引導至 Play 計費以外的付款方式，
+  // 且 HerLink 非免稅公益團體、不適用捐款例外）。側載版與網站版不受影響。
+  const isPlayStoreBuild = Constants.expoConfig?.extra?.playStoreBuild === true;
+  if (isPlayStoreBuild) {
+    return (
+      <View style={styles.root}>
+        <View style={styles.content}>
+          <Text style={styles.title}>支持 HerLink</Text>
+          <Text style={styles.copy}>此版本未提供贊助功能。</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <KeyboardFormScrollView style={styles.root} contentContainerStyle={styles.content}>
