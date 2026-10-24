@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { registerCurrentDevice } from "../lib/device";
+import { ensureAnonymousPrincipal } from "../lib/recovery";
 import { supabase } from "../lib/supabase";
 import { disableNativePushToken, registerNativePushToken } from "../lib/native-push";
 
@@ -84,6 +85,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     for (const [index, result] of results.entries()) {
       if (result.status === "rejected") {
         console.warn(["Profile", "Device", "Native push token"][index] + " registration failed:", result.reason);
+      }
+    }
+    // Fresh anonymous users have no profiles row yet: without it, rename
+    // RPCs update zero rows (name comes back null) and match RPCs resolve
+    // no identity, so home shows "匿名使用者" and rename/match both fail.
+    // Bootstrap here, like the web does, so a new anonymous identity works
+    // on first launch and an existing broken one repairs itself on reopen.
+    // Non-anonymous (email) accounts are never bootstrapped into anon.
+    if ((currentUser as { is_anonymous?: boolean }).is_anonymous === true) {
+      try {
+        await ensureAnonymousPrincipal();
+        await fetchProfile(currentUser.id);
+      } catch (error) {
+        console.warn("Anonymous bootstrap failed:", error);
       }
     }
   };
