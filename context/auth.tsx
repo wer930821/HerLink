@@ -73,7 +73,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const hydrateSignedInUser = async (currentUser: User) => {
-    if (hydratedUserIdRef.current === currentUser.id) return;
+    // 推播 token 每次都要重新註冊，不能只跑第一次：接回身分後 auth id
+    // 沒變、有效身分卻變了，舊的守門會直接 return，token 就永遠停在
+    // 舊身分上，新身分（例如接回的煮月耳機）收不到推播。
+    // Profile 與裝置註冊仍只跑第一次，token 則每次都重跑（RPC 本身
+    // 是 ON CONFLICT 更新，同一支手機重跑不會產生重複筆數）。
+    if (hydratedUserIdRef.current === currentUser.id) {
+      await registerNativePushToken()
+        .then((token) => {
+          nativePushTokenRef.current = token;
+        })
+        .catch((error) => {
+          console.warn("Native push token registration failed:", error);
+        });
+      return;
+    }
     hydratedUserIdRef.current = currentUser.id;
     const results = await Promise.allSettled([
       fetchProfile(currentUser.id),
