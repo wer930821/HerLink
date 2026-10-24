@@ -1,0 +1,46 @@
+name: Fix mailbox current identity source
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run mailbox identity regression test
+        run: node --test tests/admin-identity-candidates-render.test.cjs
+
+      - name: Deploy mailbox identity source fix
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          SQL_FILE="supabase/migrations/20261025020000_fix_station_mail_current_identity_source.sql"
+          test -f "$SQL_FILE"
+          jq -n --rawfile query "$SQL_FILE" '{query: $query}' > /tmp/query.json
+          curl --fail-with-body --silent --show-error \
+            -X POST \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data-binary @/tmp/query.json \
+            "https://api.supabase.com/v1/projects/vrwuxjujevhgsjmdjxmc/database/query"
+
+      - name: Verify deployed source contract
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          cat > /tmp/verify.json <<'JSON'
+          {"query":"select pg_get_functiondef('public.station_mail_admin_identity_candidates(uuid)'::regprocedure) as definition;"}
+          JSON
+          RESPONSE="$(curl --fail-with-body --silent --show-error -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data-binary @/tmp/verify.json "https://api.supabase.com/v1/projects/vrwuxjujevhgsjmdjxmc/database/query")"
+          printf '%s' "$RESPONSE" | jq -e '.[0].definition | contains("寄件者目前匿名身分") and (contains("目前登入匿名身分") | not)' >/dev/null
