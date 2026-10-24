@@ -1852,7 +1852,8 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   bubble: {
-    maxWidth: "84%",
+    // 大螢幕橫向時避免氣泡拉太寬；直向手機氣泡寬本來就小於 560，不影響。
+    maxWidth: 560,
     borderRadius: 20,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
