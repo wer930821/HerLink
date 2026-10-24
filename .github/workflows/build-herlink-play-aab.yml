@@ -75,6 +75,20 @@ jobs:
       - name: Generate native Android project
         run: npx expo prebuild --platform android --non-interactive
 
+      # 與 mobile-build 相同的 Gradle 記憶體設定：範本預設 heap 2GiB／metaspace 512MiB
+      # 會讓 daemon 耗盡 metaspace、建置被拖到 90 分鐘還跑不完（2026-10-24 第二、三跑實證）
+      - name: Configure Gradle memory
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.gradle"
+          cat > "$HOME/.gradle/gradle.properties" <<'EOF'
+          org.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8
+          org.gradle.workers.max=2
+          org.gradle.parallel=false
+          org.gradle.daemon=false
+          kotlin.daemon.jvmargs=-Xmx768m -XX:MaxMetaspaceSize=384m
+          EOF
+
       # 正式簽名：用上傳金鑰（upload key）簽，不要用範本的 debug 金鑰
       - name: Restore upload keystore
         shell: bash
@@ -123,7 +137,8 @@ jobs:
           HERLINK_UPLOAD_KEY_PASSWORD: ${{ secrets.HERLINK_UPLOAD_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew bundleRelease --no-daemon --max-workers=2 \
+          ./gradlew bundleRelease --no-daemon --max-workers=2 --stacktrace \
+            -PreactNativeArchitectures=arm64-v8a,armeabi-v7a \
             -PHERLINK_UPLOAD_STORE_FILE="$GITHUB_WORKSPACE/herlink-upload.jks" \
             -PHERLINK_UPLOAD_STORE_PASSWORD="$HERLINK_UPLOAD_STORE_PASSWORD" \
             -PHERLINK_UPLOAD_KEY_ALIAS="$HERLINK_UPLOAD_KEY_ALIAS" \
