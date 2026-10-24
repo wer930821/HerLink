@@ -166,5 +166,17 @@ export default function WaitingPage() {
     finally { setActionBusy(false); }
   };
 
-  return <main className="stack"><PageHero title={<span className="waiting-title">{waitingTitle}</span>} actions={<><Button variant="secondary" size="lg" onClick={cancelWaiting} disabled={actionBusy}>取消配對</Button><Button variant="ghost" size="lg" onClick={() => router.replace("/")}>返回首頁</Button></>}><div className="waiting-meta"><div className="muted">已等待 {formattedElapsed}</div><div className="muted small">目前有 {onlineCount ?? 0} 位使用者在線（不代表都在等待配對）</div></div><p className="hero-copy">系統會自動把你配對給另一位等待中的匿名使用者。</p></PageHero>{debug ? debugDiagnostics : <PushPermissionCard />}</main>;
+  const returnHome = async () => {
+    setActionBusy(true);
+    try {
+      // The home page redirects an active waiting user back here. Leave the
+      // queue first so "返回首頁" really exits the waiting flow.
+      await leaveRandomQueue();
+      router.replace("/");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  return <main className="stack"><PageHero title={<span className="waiting-title">{waitingTitle}</span>} actions={<><Button variant="secondary" size="lg" onClick={cancelWaiting} disabled={actionBusy}>取消配對</Button><Button variant="ghost" size="lg" onClick={() => void returnHome()} disabled={actionBusy}>返回首頁</Button></>}><div className="waiting-meta"><div className="muted">已等待 {formattedElapsed}</div><div className="muted small">目前有 {onlineCount ?? 0} 位使用者在線（不代表都在等待配對）</div></div><p className="hero-copy">系統會自動把你配對給另一位等待中的匿名使用者。</p></PageHero>{debug ? debugDiagnostics : <PushPermissionCard />}</main>;
 }
