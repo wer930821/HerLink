@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { getFriendlyAuthErrorMessage } from "../../lib/auth-ui";
-import { signIn, supabase } from "../../lib/supabase";
+import { signIn, signInWithGoogle, supabase } from "../../lib/supabase";
 import { Button, Field, Notice, PageHero, Surface } from "../../components/ui";
 
 function getLoginDestination(){if(typeof window==="undefined")return "/";return new URLSearchParams(window.location.search).get("next")==="/admin"?"/admin":"/"}
@@ -17,6 +17,8 @@ export default function LoginPage(){
  const [success,setSuccess]=useState<string|null>(null); const [loading,setLoading]=useState(false); const [error,setError]=useState<string|null>(null);
 
  useEffect(()=>{const next=getLoginDestination();setDestination(next);
+   const callbackError=new URLSearchParams(window.location.search).get("error");
+   if(callbackError)setError(callbackError.startsWith("google_")?"Google 登入未完成，原匿名身分仍保留，請再試一次。":"登入連結無效，請重新操作。");
    if(next==="/admin"){
      void supabase.rpc("admin_bootstrap_available").then(({data}:{data:boolean|null})=>setBootstrapAvailable(data===true)).catch(()=>setBootstrapAvailable(false));
      void supabase.auth.getSession().then(({data}:{data:{session:Session|null}})=>{if(data.session?.user.is_anonymous)void supabase.auth.signOut()});
@@ -48,12 +50,14 @@ export default function LoginPage(){
    const {error:authError}=await signIn(email.trim(),password);if(authError)throw authError;
    window.location.assign(getLoginDestination());
  }catch(err){const message=err instanceof Error?err.message:"";setError(message||getFriendlyAuthErrorMessage(err,"登入失敗，請稍後再試。"))}finally{setLoading(false)}};
+ const onGoogleLogin=async()=>{setLoading(true);setError(null);try{const {data,error:oauthError}=await signInWithGoogle();if(oauthError||!data?.url)throw oauthError??new Error("Google 登入失敗，原匿名身分仍保留，請稍後再試。");window.location.assign(data.url)}catch(err){const message=err instanceof Error?err.message:"";setError(message||"Google 登入失敗，原匿名身分仍保留，請稍後再試。");setLoading(false)}};
 
  if(isAdminLogin)return <main className="stack admin-login-page"><PageHero title={adminCreateMode?"建立管理員帳號":"登入管理員帳號"} description={adminCreateMode?"首次啟用僅限已設定的管理員 Email。完成 Email 驗證後會自動取得後台權限。":"使用管理員 Email / 密碼登入後台。"}/><Surface as="form" elevation={1} onSubmit={onSubmit}><Field label="電子郵件" htmlFor="login-email"><input id="login-email" className="input" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" placeholder="請輸入電子郵件"/></Field><Field label="密碼" htmlFor="login-password" hint={adminCreateMode?"至少 10 個字元":undefined}><input id="login-password" className="input" value={password} onChange={e=>setPassword(e.target.value)} type="password" autoComplete={adminCreateMode?"new-password":"current-password"}/></Field>{adminCreateMode?<Field label="確認密碼" htmlFor="login-confirm-password"><input id="login-confirm-password" className="input" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} type="password" autoComplete="new-password"/></Field>:null}{error?<Notice variant="danger">{error}</Notice>:null}{success?<Notice variant="success">{success}</Notice>:null}<Button type="submit" size="lg" disabled={loading}>{loading?(adminCreateMode?"建立中…":"登入中…"):adminCreateMode?"建立並登入":"登入"}</Button>{(bootstrapAvailable||adminCreateMode)?<Button variant="link" type="button" onClick={()=>{setAdminCreateMode(v=>!v);setError(null);setConfirmPassword("");setSuccess(null)}} disabled={loading}>{adminCreateMode?"已有管理員帳號？回到登入":"第一次使用？啟用管理員帳號"}</Button>:null}{!adminCreateMode?<Button variant="link" type="button" onClick={()=>router.push("/forgot-password")} disabled={loading}>忘記密碼？</Button>:null}</Surface></main>;
 
  return <main style={{minHeight:"100dvh",background:"radial-gradient(circle at 50% 0%, #211a38 0, #120e1a 36%, #0d0a12 72%)",color:"#fff",padding:"max(18px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom))"}}><div style={{width:"min(100%,520px)",margin:"0 auto"}}>
    <button type="button" onClick={()=>router.push("/")} style={{border:0,background:"transparent",color:"#d9d1e2",fontSize:16,fontWeight:800,padding:"10px 0 24px",cursor:"pointer"}}>‹ 返回 HerLink</button>
    <div style={{fontSize:13,fontWeight:900,letterSpacing:2,color:"#9fb3ff",marginBottom:10}}>HERLINK ACCOUNT</div><h1 style={{fontSize:"clamp(30px,8vw,42px)",lineHeight:1.08,margin:"0 0 12px",fontWeight:950}}>登入帳號</h1><p style={{margin:"0 0 30px",color:"#bdb6c7",fontSize:16,lineHeight:1.7}}>登入後會接回這個帳號原本的匿名身分、聊天室與聯絡人。若目前正在使用匿名身分，登入既有帳號時會優先接回該帳號原本的資料；只有尚無匿名資料的帳號才會綁定目前身分。</p>
-   <form onSubmit={onSubmit} style={{display:"grid",gap:18}}><Field label="電子郵件" htmlFor="login-email"><input id="login-email" className="input" value={email} onChange={e=>setEmail(e.target.value)} type="email" required autoComplete="email" placeholder="輸入電子郵件" style={{minHeight:54,fontSize:17}}/></Field><Field label="密碼" htmlFor="login-password"><input id="login-password" className="input" value={password} onChange={e=>setPassword(e.target.value)} type="password" required autoComplete="current-password" placeholder="輸入登入密碼" style={{minHeight:54,fontSize:17}}/></Field>{error?<Notice variant="danger">{error}</Notice>:null}<Button type="submit" size="lg" disabled={loading||!email.trim()||!password}>{loading?"登入中…":"登入帳號"}</Button><Button variant="link" type="button" onClick={()=>router.push("/forgot-password")} disabled={loading}>忘記密碼？</Button></form>
+   <form onSubmit={onSubmit} style={{display:"grid",gap:18}}><Field label="電子郵件" htmlFor="login-email"><input id="login-email" className="input" value={email} onChange={e=>setEmail(e.target.value)} type="email" required autoComplete="email" placeholder="輸入電子郵件" style={{minHeight:54,fontSize:17}}/></Field><Field label="密碼" htmlFor="login-password"><input id="login-password" className="input" value={password} onChange={e=>setPassword(e.target.value)} type="password" required autoComplete="current-password" placeholder="輸入登入密碼" style={{minHeight:54,fontSize:17}}/></Field>{error?<Notice variant="danger">{error}</Notice>:null}<Button type="submit" size="lg" disabled={loading||!email.trim()||!password}>{loading?"登入中…":"登入帳號"}</Button><Button type="button" size="lg" onClick={()=>void onGoogleLogin()} disabled={loading}>使用 Google 登入</Button><Button variant="link" type="button" onClick={()=>router.push("/forgot-password")} disabled={loading}>忘記密碼？</Button></form>
  </div></main>;
 }
+

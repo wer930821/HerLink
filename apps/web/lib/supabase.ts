@@ -400,6 +400,25 @@ export async function signIn(email: string, password: string) {
   return supabase.auth.signInWithPassword({ email, password });
 }
 
+export async function signInWithGoogle() {
+  const current = await supabase.auth.getSession();
+  const redirectTo = typeof window === "undefined"
+    ? "https://her-link-ten.vercel.app/auth/callback"
+    : `${window.location.origin}/auth/callback`;
+
+  if (current.data.session?.user?.is_anonymous) {
+    return supabase.auth.linkIdentity({
+      provider: "google",
+      options: { redirectTo },
+    });
+  }
+
+  return supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo },
+  });
+}
+
 export async function signUp(email: string, password: string) {
   return supabase.auth.signUp({ email, password });
 }
@@ -990,3 +1009,4 @@ export async function getRandomChatMessageCount(sessionId: string) {
     error: { message?: string } | null;
   }>;
 }
+

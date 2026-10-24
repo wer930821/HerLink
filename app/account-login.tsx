@@ -8,13 +8,18 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { colors, radii, spacing, typography } from "../theme";
 import { KeyboardFormScrollView } from "../components/KeyboardFormScrollView";
 import { useAuth } from "../context/auth";
 import {
   getFriendlyAuthErrorMessage,
   signInExistingAccount,
+  startGoogleAuth,
+  completeGoogleAuth,
 } from "../lib/account";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function AccountLoginScreen() {
   const router = useRouter();
@@ -38,6 +43,25 @@ export default function AccountLoginScreen() {
           ? raw
           : getFriendlyAuthErrorMessage(err, raw || "登入失敗，請稍後再試。")
       );
+      setLoading(false);
+    }
+  };
+
+  const onGoogleLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { url } = await startGoogleAuth();
+      const result = await WebBrowser.openAuthSessionAsync(url, "herlink://auth/callback");
+      if (result.type !== "success" || !result.url) {
+        throw new Error("Google 登入已取消，原匿名身分仍保留。");
+      }
+      await completeGoogleAuth(result.url);
+      void refreshProfile().catch(() => undefined);
+      router.replace("/(tabs)" as never);
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : "";
+      setError(raw || "Google 登入失敗，原匿名身分仍保留，請稍後再試。");
       setLoading(false);
     }
   };
@@ -122,6 +146,15 @@ export default function AccountLoginScreen() {
         onPress={() => void onSubmit()}
       >
         <Text style={styles.primaryButtonText}>{loading ? "登入中…" : "登入帳號"}</Text>
+      </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        style={[styles.googleButton, loading && styles.buttonDisabled]}
+        disabled={loading}
+        onPress={() => void onGoogleLogin()}
+      >
+        <Text style={styles.googleButtonText}>使用 Google 登入</Text>
       </Pressable>
 
       <Pressable
@@ -226,6 +259,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
   },
+  googleButton: {
+    minHeight: 54,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  googleButtonText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "800",
+  },
   linkRow: {
     marginTop: spacing.lg,
     alignItems: "center",
@@ -235,3 +282,4 @@ const styles = StyleSheet.create({
     ...typography.bodyStrong,
   },
 });
+

@@ -1,8 +1,53 @@
-import { supabase } from "./supabase";
+import { supabase, completeAuthFromUrl, getAuthCallbackUrl } from "./supabase";
 
 const rpc = supabase as any;
 
 const WEB_ORIGIN = "https://her-link-ten.vercel.app";
+
+type GoogleAuthResult = { url: string };
+
+function googleRedirectUrl() {
+  return getAuthCallbackUrl();
+}
+
+/**
+ * Start Google OAuth without ever replacing an existing anonymous user.
+ * Supabase's linkIdentity keeps the current auth user id, so its chats,
+ * messages, contacts and recovery state remain attached to the same user.
+ */
+export async function startGoogleAuth(): Promise<GoogleAuthResult> {
+  const { data } = await supabase.auth.getSession();
+  const redirectTo = googleRedirectUrl();
+  const current = data.session;
+
+  if (current?.user?.is_anonymous) {
+    const result = await supabase.auth.linkIdentity({
+      provider: "google",
+      options: { redirectTo },
+    });
+    if (result.error || !result.data?.url) {
+      if (/identity.*(already|exist|linked)|already.*identity|provider.*linked/i.test(result.error?.message ?? "")) {
+        throw new Error("這個 Google 帳號已屬於其他 HerLink 帳號，為避免覆蓋資料已停止綁定。");
+      }
+      throw result.error ?? new Error("Google 綁定失敗，原匿名身分仍保留。");
+    }
+    return { url: result.data.url };
+  }
+
+  const result = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo },
+  });
+  if (result.error || !result.data?.url) {
+    throw result.error ?? new Error("Google 登入失敗，請稍後再試。");
+  }
+  return { url: result.data.url };
+}
+
+/** Complete a native callback; errors are thrown without signing out. */
+export async function completeGoogleAuth(rawUrl: string) {
+  return completeAuthFromUrl(rawUrl);
+}
 
 // Friendly auth errors, ported from the web apps/web/lib/auth-ui.ts.
 type AuthErrorLike = {
@@ -178,3 +223,4 @@ export async function requestAccountDeletion(): Promise<void> {
   if (error) throw error;
   if (!data?.ok) throw new Error(data?.error || "帳號刪除失敗，請稍後再試。");
 }
+

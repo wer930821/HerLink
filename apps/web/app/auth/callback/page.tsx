@@ -13,8 +13,15 @@ function AuthCallbackInner() {
     let mounted = true;
     const code = searchParams.get("code");
     const next = searchParams.get("next") ?? "/";
+    const oauthError = searchParams.get("error");
 
     async function handleCallback() {
+      // OAuth failures must leave the current anonymous session untouched.
+      // Return to login so the user can retry or keep chatting anonymously.
+      if (oauthError) {
+        if (mounted) router.replace(`/login?error=google_${encodeURIComponent(oauthError)}`);
+        return;
+      }
       let sessionReady = false;
 
       if (code) {
@@ -75,3 +82,4 @@ export default function AuthCallbackPage() {
     </main>
   );
 }
+
