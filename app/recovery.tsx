@@ -15,6 +15,7 @@ import { colors, radii, spacing, typography } from "../theme";
 import { KeyboardFormScrollView } from "../components/KeyboardFormScrollView";
 import { useAuth } from "../context/auth";
 import { validateAnonymousDisplayName } from "../lib/anonymous";
+import { registerNativePushToken } from "../lib/native-push";
 import {
   claimPermanentRecovery,
   createPermanentRecoveryCode,
@@ -134,6 +135,12 @@ function ClaimView({ onBack }: { onBack: () => void }) {
       if (!effective || effective.id !== result.identityId) {
         throw new Error("已接回原匿名身分，但 App 尚未同步完成，請關閉 App 重新打開後再試。");
       }
+      // 接回後有效身分變了，推播 token 必須立刻重新註冊，否則 token
+      // 還綁在舊身分上，新身分收不到推播。註冊失敗不擋接回成功，
+      // 下次登入時 hydrate 也會再跑一次。
+      await registerNativePushToken().catch((error) => {
+        console.warn("Push token re-registration after recovery failed:", error);
+      });
       setDisplayName(result.displayName);
       setNewCode(result.newRecoveryCode);
     } catch (e) {
