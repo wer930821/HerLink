@@ -230,12 +230,11 @@ export default function RandomSessionScreen() {
     }
   };
 
+  // 網站版彩蛋是所有使用者都可用，原生版之前誤用管理員檢查
+  // （can_use_chat_assistant）當開關，導致一般身分寄晚安、企鵝都不跳。
+  // 改為所有使用者都可用，與網站版一致。
   useEffect(() => {
-    let active = true;
-    void supabase.rpc("can_use_chat_assistant").then(({ data, error }) => {
-      if (active) setPrivateEggsAllowed(!error && data === true);
-    });
-    return () => { active = false; };
+    setPrivateEggsAllowed(true);
   }, [user?.id]);
 
   const triggerPrivateEgg = useCallback((kind: "goodnight" | "penguin" | "sync") => {
