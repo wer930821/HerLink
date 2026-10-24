@@ -1399,7 +1399,7 @@ export default function RandomSessionScreen() {
         </View>
       ) : null}
 
-      <View style={styles.composer}>
+      <View style={[styles.composer, { paddingBottom: spacing.xl + insets.bottom }]}>
         <Pressable
           onPress={() => void pickImage()}
           disabled={!isActive || mediaUploading || sending}
