@@ -15,7 +15,6 @@ import { colors, radii, spacing, typography } from "../theme";
 import { KeyboardFormScrollView } from "../components/KeyboardFormScrollView";
 import { useAuth } from "../context/auth";
 import { validateAnonymousDisplayName } from "../lib/anonymous";
-import { listMyActiveRandomSessions } from "../lib/random-chat";
 import {
   claimPermanentRecovery,
   createPermanentRecoveryCode,
@@ -107,7 +106,6 @@ function ClaimView({ onBack }: { onBack: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newCode, setNewCode] = useState<string | null>(null);
-  const [recoveredSessionId, setRecoveredSessionId] = useState<string | null>(null);
 
   const preview = async () => {
     setBusy(true);
@@ -136,8 +134,6 @@ function ClaimView({ onBack }: { onBack: () => void }) {
       if (!effective || effective.id !== result.identityId) {
         throw new Error("已接回原匿名身分，但 App 尚未同步完成，請關閉 App 重新打開後再試。");
       }
-      const sessions = await listMyActiveRandomSessions().catch(() => []);
-      setRecoveredSessionId(sessions[0]?.id ?? null);
       setDisplayName(result.displayName);
       setNewCode(result.newRecoveryCode);
     } catch (e) {
@@ -158,16 +154,9 @@ function ClaimView({ onBack }: { onBack: () => void }) {
         </View>
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
         <PrimaryButton
-          label={recoveredSessionId ? "我已保存，回到聊天室" : "我已保存，查看聊天室"}
+          label="我已保存，回到主頁"
           onPress={() => {
-            if (recoveredSessionId) {
-              router.replace({
-                pathname: "/random-session/[sessionId]",
-                params: { sessionId: recoveredSessionId },
-              } as never);
-            } else {
-              router.replace("/(tabs)" as never);
-            }
+            router.replace("/(tabs)" as never);
           }}
         />
       </View>
