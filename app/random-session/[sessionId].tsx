@@ -909,19 +909,9 @@ export default function RandomSessionScreen() {
       }
 
       const attempt = async (replyId: string | null): Promise<boolean> => {
+        let sent: RandomMessage | null;
         try {
-          const sent = await sendRandomText(sessionId, content, replyId);
-          appendSentMessage(sent);
-          markCurrentSessionRead();
-          if (privateEggsAllowed) {
-            const partnerLaugh = [...messagesRef.current].reverse().find((item) => !item.is_mine && item.message_type !== "image");
-            const kind = matchTextEasterEgg(content, Boolean(partnerLaugh && /哈{2,}/.test(partnerLaugh.content || "")));
-            if (kind) triggerEasterEgg(kind, { record: true });
-          }
-          void broadcastRefresh("message");
-          setDraft("");
-          setReplyTarget(null);
-          return true;
+          sent = await sendRandomText(sessionId, content, replyId);
         } catch (error) {
           const friendly = friendlyError(error, "訊息傳送失敗，請稍後再試。");
           if (friendly === "REPLY_MISSING" && replyId) {
@@ -932,6 +922,26 @@ export default function RandomSessionScreen() {
           setNotice(friendly);
           return false;
         }
+        // 伺服器已確認收到，先清輸入框與回覆目標：訊息已經進去了，
+        // 後續副作用（顯示、已讀、彩蛋、刷新）就算出錯，也不再當成傳送失敗。
+        // 否則使用者會看到失敗提示、輸入框還留著字，再按一次就重複送出。
+        setDraft("");
+        setReplyTarget(null);
+        setNotice(null);
+        try {
+          appendSentMessage(sent);
+          markCurrentSessionRead();
+          if (privateEggsAllowed) {
+            const partnerLaugh = [...messagesRef.current].reverse().find((item) => !item.is_mine && item.message_type !== "image");
+            const kind = matchTextEasterEgg(content, Boolean(partnerLaugh && /哈{2,}/.test(partnerLaugh.content || "")));
+            if (kind) triggerEasterEgg(kind, { record: true });
+          }
+          void broadcastRefresh("message");
+        } catch {
+          // Best-effort: the message is already on the server and will
+          // arrive via realtime sync even if local post-processing fails.
+        }
+        return true;
       };
 
       setSending(true);
