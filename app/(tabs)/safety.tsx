@@ -107,20 +107,29 @@ export default function SafetyScreen() {
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>推播通知狀態</Text>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>狀態：{pushStateLabels[pushStatus.state]}</Text>
-          <Text style={styles.cardBody}>Expo 專案 ID：{pushStatus.projectIdPresent ? "有" : "沒有"}</Text>
-          <Text style={styles.cardBody}>通知權限：{pushStatus.permissionGranted === null ? "未知" : pushStatus.permissionGranted ? "已授權" : "未授權"}</Text>
-          {pushStatus.step ? <Text style={styles.cardBody}>卡住步驟：{pushStatus.step}</Text> : null}
-          {pushStatus.tokenPrefix ? <Text style={styles.cardBody}>Token 前綴：{pushStatus.tokenPrefix}</Text> : null}
-          {pushStatus.error ? <Text style={styles.cardBody}>錯誤：{pushStatus.error}</Text> : null}
-          {pushStatus.updatedAt ? <Text style={styles.cardBody}>最後嘗試：{pushStatus.updatedAt}</Text> : null}
-          <Text style={styles.cardBody}>如果這裡顯示註冊失敗，請把錯誤那一行截圖給站長；如果顯示已註冊卻還是收不到通知，再查後端寄送紀錄。</Text>
-        </View>
-        <Pressable style={styles.retryPush} onPress={retryPushRegistration}>
-          <Text style={styles.retryPushText}>{pushBusy ? "重新註冊中…" : "重新註冊推播"}</Text>
-        </Pressable>
+        {/* 推播診斷區 (#127/#128) 已完成任務：通知已正常跳出，註冊成功時
+            不再顯示，避免測試員與一般使用者看到診斷雜訊。註冊失敗、
+            權限未授權或找不到專案 ID 時仍會自動出現，萬一又壞掉不用
+            再發一版診斷版就能看到原因。後台的 token 註冊邏輯不變，
+            只是這段 UI 依狀態隱藏。 */}
+        {pushStatus.state !== "token_ok" ? (
+          <>
+            <Text style={styles.sectionTitle}>推播通知狀態</Text>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>狀態：{pushStateLabels[pushStatus.state]}</Text>
+              <Text style={styles.cardBody}>Expo 專案 ID：{pushStatus.projectIdPresent ? "有" : "沒有"}</Text>
+              <Text style={styles.cardBody}>通知權限：{pushStatus.permissionGranted === null ? "未知" : pushStatus.permissionGranted ? "已授權" : "未授權"}</Text>
+              {pushStatus.step ? <Text style={styles.cardBody}>卡住步驟：{pushStatus.step}</Text> : null}
+              {pushStatus.tokenPrefix ? <Text style={styles.cardBody}>Token 前綴：{pushStatus.tokenPrefix}</Text> : null}
+              {pushStatus.error ? <Text style={styles.cardBody}>錯誤：{pushStatus.error}</Text> : null}
+              {pushStatus.updatedAt ? <Text style={styles.cardBody}>最後嘗試：{pushStatus.updatedAt}</Text> : null}
+              <Text style={styles.cardBody}>如果這裡顯示註冊失敗，請把錯誤那一行截圖給站長；如果顯示已註冊卻還是收不到通知，再查後端寄送紀錄。</Text>
+            </View>
+            <Pressable style={styles.retryPush} onPress={retryPushRegistration}>
+              <Text style={styles.retryPushText}>{pushBusy ? "重新註冊中…" : "重新註冊推播"}</Text>
+            </Pressable>
+          </>
+        ) : null}
 
         <Text style={styles.sectionTitle}>匿名聊天安全</Text>
         <View style={styles.notice}>
