@@ -1967,9 +1967,6 @@ export default function RandomSessionClient() {
   const maybeTriggerEasterEgg = (content: string) => {
     if (!easterEggAllowed) return;
     const normalized = content.replace(/\s+/g, "");
-    const now = new Date();
-    const hour = now.getHours();
-    const day = now.getDay();
     if (/今天也遇見你了|今天又遇見你了|今天也遇見妳了|今天又遇見妳了/.test(normalized)) return triggerEasterEgg("sync", true);
     if (/午安/.test(normalized)) return triggerEasterEgg("afternoon", true);
     if (/嗨嗨/.test(normalized)) return triggerEasterEgg("heyhey", true);
@@ -1989,8 +1986,10 @@ export default function RandomSessionClient() {
     // Time-based eggs are handled by the server-side collection evaluator so
     // they unlock once per qualifying period instead of once per sent message.
     // Triggering them here made every message between 00:00-04:59 replay the
-    // midnight effect (and every 03:xx message replay the 03:00 effect).
-    if (day === 0 || day === 6) triggerEasterEgg("weekend", true);
+    // midnight effect (and every 03:xx message replay the 03:00 effect), and
+    // the weekend line below it did the same on Saturdays and Sundays:
+    // every sent message replayed the weekend effect, bypassing the
+    // 90-second cooldown because it passed recordEvent=true.
     if (/睡不著/.test(normalized)) return triggerEasterEgg("sleepless", true);
     if (/想你|想妳|想念|好想|想你了|想妳了/.test(normalized)) return triggerEasterEgg("aurora", true);
     if (/好累|累死|累爆|累慘/.test(normalized)) return triggerEasterEgg("tired", true);
