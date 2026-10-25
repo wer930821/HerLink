@@ -40,6 +40,7 @@ import {
   leaveRandomSession,
   listRandomMessages,
   listRandomMessagesAfter,
+  markRandomSessionRead,
   nextRandomMatch,
   recallRandomMessage,
   requestAnonymousContact,
@@ -246,6 +247,35 @@ export default function RandomSessionScreen() {
   const channelRef = useRef<RealtimeChannel | null>(null);
   const listRef = useRef<FlatList<RandomMessage> | null>(null);
   const stickToBottomRef = useRef(true);
+  const markReadInFlightRef = useRef(false);
+  const markReadQueuedRef = useRef(false);
+  const lastMarkReadRef = useRef<{ sessionId: string; at: number } | null>(null);
+
+  // Mirror the web SessionReadTracker (15s dedupe): being inside the room
+  // means the messages on screen have been read, even if the user only
+  // replies and never scrolls. Failures are swallowed on purpose.
+  const markCurrentSessionRead = useCallback(() => {
+    if (!sessionId) return;
+    const last = lastMarkReadRef.current;
+    if (last?.sessionId === sessionId && Date.now() - last.at < 15_000) return;
+    if (markReadInFlightRef.current) {
+      markReadQueuedRef.current = true;
+      return;
+    }
+    markReadInFlightRef.current = true;
+    void markRandomSessionRead(sessionId)
+      .then(() => {
+        lastMarkReadRef.current = { sessionId, at: Date.now() };
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        markReadInFlightRef.current = false;
+        if (markReadQueuedRef.current) {
+          markReadQueuedRef.current = false;
+          markCurrentSessionRead();
+        }
+      });
+  }, [sessionId]);
   const latestCursorRef = useRef<{ created_at: string; id: string } | null>(null);
   const syncInFlightRef = useRef(false);
   const syncQueuedRef = useRef(false);
@@ -314,6 +344,7 @@ export default function RandomSessionScreen() {
       if (incoming.length > 0) {
         setMessages((current) => mergeMessages(current, incoming));
         updateCursor(incoming);
+        markCurrentSessionRead();
       }
     } catch {
       // Realtime is best-effort; the next INSERT or a manual reload retries it.
@@ -324,7 +355,7 @@ export default function RandomSessionScreen() {
         void syncMessagesAfterCursor();
       }
     }
-  }, [sessionId, updateCursor]);
+  }, [markCurrentSessionRead, sessionId, updateCursor]);
 
   const resyncRecentMessages = useCallback(async () => {
     if (!sessionId) {
@@ -335,11 +366,12 @@ export default function RandomSessionScreen() {
       if (recent.length > 0) {
         setMessages((current) => mergeMessages(current, recent));
         updateCursor(recent);
+        markCurrentSessionRead();
       }
     } catch {
       // Realtime resync is best-effort; a manual reload retries it.
     }
-  }, [sessionId, updateCursor]);
+  }, [markCurrentSessionRead, sessionId, updateCursor]);
 
   const loadAll = useCallback(async () => {
     if (!sessionId) {
@@ -359,12 +391,13 @@ export default function RandomSessionScreen() {
       setSession(next);
       setMessages(initialMessages);
       updateCursor(initialMessages);
+      markCurrentSessionRead();
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "無法載入這段聊天。");
     } finally {
       setLoading(false);
     }
-  }, [sessionId, updateCursor]);
+  }, [markCurrentSessionRead, sessionId, updateCursor]);
 
   useEffect(() => {
     void loadAll();
@@ -790,6 +823,7 @@ export default function RandomSessionScreen() {
         try {
           const sent = await sendRandomText(sessionId, content, replyId);
           appendSentMessage(sent);
+          markCurrentSessionRead();
           if (privateEggsAllowed) {
             if (content.includes("晚安")) triggerPrivateEgg("goodnight");
             else if (content.includes("企鵝")) triggerPrivateEgg("penguin");
@@ -829,6 +863,7 @@ export default function RandomSessionScreen() {
       broadcastRefresh,
       draft,
       isActive,
+      markCurrentSessionRead,
       mediaUploading,
       pendingImage,
       replyTarget?.id,
@@ -909,6 +944,7 @@ export default function RandomSessionScreen() {
           replyId
         );
         appendSentMessage(sent);
+        markCurrentSessionRead();
         void broadcastRefresh("message");
         setPendingImage(null);
         setReplyTarget(null);
@@ -941,6 +977,7 @@ export default function RandomSessionScreen() {
     appendSentMessage,
     broadcastRefresh,
     isActive,
+    markCurrentSessionRead,
     mediaUploading,
     pendingImage,
     replyTarget?.id,

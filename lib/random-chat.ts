@@ -205,6 +205,16 @@ export async function getMyRandomChatUnreadCount() {
   return Math.max(0, Number(data ?? 0));
 }
 
+// Native equivalent of the web SessionReadTracker: the native chat screen
+// never called this, so opening a room (or replying in it) left the home
+// unread badge up. Callers must swallow errors: marking read is best-effort
+// and must never block reading or sending.
+export async function markRandomSessionRead(sessionId: string) {
+  const { error } = await rpc.rpc("mark_random_session_read", { p_session_id: sessionId });
+  if (error) throw error;
+  return true;
+}
+
 export async function getRandomSession(sessionId: string) {
   const { data, error } = await rpc.rpc("get_my_random_session_view", { p_session_id: sessionId });
   if (error) throw error;
