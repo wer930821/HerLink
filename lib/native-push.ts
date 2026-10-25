@@ -34,6 +34,7 @@ export type PushRegistrationStatus = {
   state: PushRegistrationState;
   projectIdPresent: boolean;
   permissionGranted: boolean | null;
+  step: string | null;
   error: string | null;
   tokenPrefix: string | null;
   updatedAt: string | null;
@@ -46,6 +47,7 @@ let lastPushRegistrationStatus: PushRegistrationStatus = {
   state: "not_attempted",
   projectIdPresent: false,
   permissionGranted: null,
+  step: null,
   error: null,
   tokenPrefix: null,
   updatedAt: null,
@@ -56,7 +58,23 @@ export function getNativePushRegistrationStatus(): PushRegistrationStatus {
 }
 
 function errorMessage(error: unknown): string {
+  // 208 實測教訓：Supabase RPC 錯誤是普通物件、不是 Error，String(error)
+  // 只會得到「[object Object]」，完全看不出原因。先取 message／code／
+  // details／hint，再用 JSON 兜底，並截斷避免畫面被長錯誤塞爆。
+  if (typeof error === "string") return error;
   if (error instanceof Error) return error.message || error.name;
+  if (error && typeof error === "object") {
+    const record = error as Record<string, unknown>;
+    const parts = ["message", "code", "details", "hint"]
+      .map((key) => (typeof record[key] === "string" && record[key] ? `${key}=${record[key]}` : null))
+      .filter(Boolean);
+    if (parts.length > 0) return parts.join(" ");
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return "未知錯誤物件";
+    }
+  }
   return String(error);
 }
 
@@ -67,6 +85,7 @@ export async function registerNativePushToken() {
       state: "no_project_id",
       projectIdPresent: Boolean(pid),
       permissionGranted: null,
+      step: "project_id",
       error: Platform.OS === "web" ? "web 平台不註冊原生推播" : "找不到 Expo 專案 ID（eas.projectId）",
       tokenPrefix: null,
       updatedAt: new Date().toISOString(),
@@ -74,6 +93,8 @@ export async function registerNativePushToken() {
     return null;
   }
 
+  let step = "channel";
+  let permissionGranted: boolean | null = null;
   try {
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync("herlink-chat", {
@@ -84,13 +105,16 @@ export async function registerNativePushToken() {
       });
     }
 
+    step = "permission";
     const permissions = await Notifications.getPermissionsAsync();
     const permission = permissions.granted ? permissions : await Notifications.requestPermissionsAsync();
+    permissionGranted = permission.granted;
     if (!permission.granted) {
       lastPushRegistrationStatus = {
         state: "permission_denied",
         projectIdPresent: true,
         permissionGranted: false,
+        step,
         error: "通知權限未授權",
         tokenPrefix: null,
         updatedAt: new Date().toISOString(),
@@ -98,12 +122,15 @@ export async function registerNativePushToken() {
       return null;
     }
 
+    step = "expo_token";
     const token = (await Notifications.getExpoPushTokenAsync({ projectId: pid })).data;
+    step = "rpc_sync";
     await syncNativePushToken(token);
     lastPushRegistrationStatus = {
       state: "token_ok",
       projectIdPresent: true,
       permissionGranted: true,
+      step: "done",
       error: null,
       // 只顯示前綴，不在畫面上顯示完整 token。
       tokenPrefix: token.slice(0, 24),
@@ -114,8 +141,9 @@ export async function registerNativePushToken() {
     lastPushRegistrationStatus = {
       state: "failed",
       projectIdPresent: true,
-      permissionGranted: null,
-      error: errorMessage(error),
+      permissionGranted,
+      step,
+      error: errorMessage(error).slice(0, 500),
       tokenPrefix: null,
       updatedAt: new Date().toISOString(),
     };

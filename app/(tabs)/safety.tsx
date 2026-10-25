@@ -112,6 +112,7 @@ export default function SafetyScreen() {
           <Text style={styles.cardTitle}>狀態：{pushStateLabels[pushStatus.state]}</Text>
           <Text style={styles.cardBody}>Expo 專案 ID：{pushStatus.projectIdPresent ? "有" : "沒有"}</Text>
           <Text style={styles.cardBody}>通知權限：{pushStatus.permissionGranted === null ? "未知" : pushStatus.permissionGranted ? "已授權" : "未授權"}</Text>
+          {pushStatus.step ? <Text style={styles.cardBody}>卡住步驟：{pushStatus.step}</Text> : null}
           {pushStatus.tokenPrefix ? <Text style={styles.cardBody}>Token 前綴：{pushStatus.tokenPrefix}</Text> : null}
           {pushStatus.error ? <Text style={styles.cardBody}>錯誤：{pushStatus.error}</Text> : null}
           {pushStatus.updatedAt ? <Text style={styles.cardBody}>最後嘗試：{pushStatus.updatedAt}</Text> : null}
