@@ -54,6 +54,13 @@ import {
   uploadRandomChatImage,
 } from "../../lib/random-chat";
 import { requestRandomSessionRecovery } from "../../lib/recovery";
+import {
+  EASTER_EGG_META,
+  MILESTONE_EGGS,
+  matchTextEasterEgg,
+  timeEggKindForNow,
+  type EasterEggKind,
+} from "../../lib/easter-eggs";
 import { supabase } from "../../lib/supabase";
 import { colors, radii, spacing, typography } from "../../theme";
 
@@ -176,7 +183,7 @@ export default function RandomSessionScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [privateEggsAllowed, setPrivateEggsAllowed] = useState(false);
-  const [easterEgg, setEasterEgg] = useState<"goodnight" | "penguin" | "sync" | null>(null);
+  const [easterEgg, setEasterEgg] = useState<EasterEggKind | null>(null);
   const [sending, setSending] = useState(false);
   const [mediaUploading, setMediaUploading] = useState(false);
   const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
@@ -238,11 +245,92 @@ export default function RandomSessionScreen() {
     setPrivateEggsAllowed(true);
   }, [user?.id]);
 
-  const triggerPrivateEgg = useCallback((kind: "goodnight" | "penguin" | "sync") => {
+  const messagesRef = useRef<RandomMessage[]>([]);
+  const easterEggLastPlaybackAtRef = useRef(0);
+  const easterEggPlayedMessageIdsRef = useRef<Set<string>>(new Set());
+  const easterEggPlayedMilestonesRef = useRef<Set<EasterEggKind>>(new Set());
+  const easterEggTimePlayedRef = useRef(false);
+  const easterEggInitialCountRef = useRef<number | null>(null);
+  const easterEggInitialLoadDoneRef = useRef(false);
+  const easterEggLoadDoneRef = useRef(false);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  const triggerEasterEgg = useCallback((kind: EasterEggKind, options?: { record?: boolean; minGapMs?: number }) => {
     if (!privateEggsAllowed) return;
+    const now = Date.now();
+    if (options?.minGapMs && now - easterEggLastPlaybackAtRef.current < options.minGapMs) return;
+    easterEggLastPlaybackAtRef.current = now;
     setEasterEgg(kind);
-    setTimeout(() => setEasterEgg((current) => current === kind ? null : current), 3200);
-  }, [privateEggsAllowed]);
+    const duration = kind === "eternal_bond" ? 12000 : 4600;
+    setTimeout(() => setEasterEgg((current) => current === kind ? null : current), duration);
+    // Record to the backend so the partner's web client can play it via
+    // its pending-event sync and the collection can unlock in real time.
+    // Best-effort: a failed record must not block the local playback, and
+    // the collection backfill still unlocks from message history.
+    if (options?.record !== false && sessionId) {
+      const milestoneKinds = new Set<EasterEggKind>([
+        ...MILESTONE_EGGS.map((item) => item.kind),
+        "balanced100", "daily200", "meet10", "eternal_bond", "streak3", "streak7",
+      ]);
+      void (supabase as any).rpc("record_chat_easter_egg_event", {
+        p_session_id: sessionId,
+        p_egg_kind: kind,
+        p_trigger_type: milestoneKinds.has(kind) ? "milestone" : "text",
+      }).catch(() => {});
+    }
+  }, [privateEggsAllowed, sessionId]);
+
+  // Phase 2, receiver side: play text eggs from incoming partner messages.
+  // Historical messages loaded on first mount are marked seen without
+  // playing, so opening an old chat does not replay a wall of eggs.
+  useEffect(() => {
+    if (!privateEggsAllowed || !easterEggLoadDoneRef.current) return;
+    if (!easterEggInitialLoadDoneRef.current) {
+      for (const item of messages) easterEggPlayedMessageIdsRef.current.add(item.id);
+      easterEggInitialLoadDoneRef.current = true;
+      return;
+    }
+    for (const item of messages) {
+      if (easterEggPlayedMessageIdsRef.current.has(item.id)) continue;
+      easterEggPlayedMessageIdsRef.current.add(item.id);
+      if (item.is_mine || item.message_type === "image" || item.recalled_at) continue;
+      const kind = matchTextEasterEgg(item.content || "", false);
+      if (kind) triggerEasterEgg(kind, { record: false, minGapMs: 12000 });
+    }
+  }, [messages, privateEggsAllowed, triggerEasterEgg]);
+
+  // Phase 2, milestone side: play a milestone egg once when the session
+  // message count crosses its threshold after the initial load.
+  useEffect(() => {
+    if (!privateEggsAllowed || !easterEggLoadDoneRef.current || messages.length === 0) return;
+    if (easterEggInitialCountRef.current === null) {
+      easterEggInitialCountRef.current = messages.length;
+      return;
+    }
+    const previous = easterEggInitialCountRef.current;
+    if (messages.length <= previous) return;
+    easterEggInitialCountRef.current = messages.length;
+    for (const item of MILESTONE_EGGS) {
+      if (previous < item.count && messages.length >= item.count && !easterEggPlayedMilestonesRef.current.has(item.kind)) {
+        easterEggPlayedMilestonesRef.current.add(item.kind);
+        triggerEasterEgg(item.kind, { record: true });
+        break;
+      }
+    }
+  }, [messages, privateEggsAllowed, triggerEasterEgg]);
+
+  // Phase 2, time side: play at most once per chat screen mount, never
+  // per message (that was the web weekend bug fixed in #129).
+  useEffect(() => {
+    if (!privateEggsAllowed || !session || easterEggTimePlayedRef.current) return;
+    const kind = timeEggKindForNow();
+    if (!kind) return;
+    easterEggTimePlayedRef.current = true;
+    triggerEasterEgg(kind, { record: true });
+  }, [privateEggsAllowed, session, triggerEasterEgg]);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const listRef = useRef<FlatList<RandomMessage> | null>(null);
@@ -390,6 +478,7 @@ export default function RandomSessionScreen() {
       }
       setSession(next);
       setMessages(initialMessages);
+      easterEggLoadDoneRef.current = true;
       updateCursor(initialMessages);
       markCurrentSessionRead();
     } catch (error) {
@@ -825,12 +914,9 @@ export default function RandomSessionScreen() {
           appendSentMessage(sent);
           markCurrentSessionRead();
           if (privateEggsAllowed) {
-            if (content.includes("晚安")) triggerPrivateEgg("goodnight");
-            else if (content.includes("企鵝")) triggerPrivateEgg("penguin");
-            else if (/哈{2,}/.test(content)) {
-              const partnerLaugh = [...messages].reverse().find((item) => !item.is_mine && item.message_type !== "image");
-              if (partnerLaugh && /哈{2,}/.test(partnerLaugh.content || "")) triggerPrivateEgg("sync");
-            }
+            const partnerLaugh = [...messagesRef.current].reverse().find((item) => !item.is_mine && item.message_type !== "image");
+            const kind = matchTextEasterEgg(content, Boolean(partnerLaugh && /哈{2,}/.test(partnerLaugh.content || "")));
+            if (kind) triggerEasterEgg(kind, { record: true });
           }
           void broadcastRefresh("message");
           setDraft("");
@@ -1232,9 +1318,8 @@ export default function RandomSessionScreen() {
 
       {privateEggsAllowed && easterEgg ? (
         <View pointerEvents="none" style={styles.easterEggOverlay}>
-          <Text style={easterEgg === "sync" ? styles.easterEggSync : styles.easterEggIcon}>
-            {easterEgg === "goodnight" ? "☾  ✦  ✧  ✦" : easterEgg === "penguin" ? "🐧" : "默契 +1"}
-          </Text>
+          <Text style={styles.easterEggIcon}>{EASTER_EGG_META[easterEgg].icon}</Text>
+          <Text style={styles.easterEggTitle}>{EASTER_EGG_META[easterEgg].title}</Text>
         </View>
       ) : null}
 
@@ -2179,11 +2264,17 @@ const styles = StyleSheet.create({
     zIndex: 30,
   },
   easterEggIcon: {
+    // Explicit light color: the old icon had no color, so the goodnight
+    // symbols rendered black on the dark chat background and looked
+    // like they never fired, while the penguin emoji (with its own
+    // colors) still showed. Emoji icons are unaffected by text color.
+    color: colors.text,
     fontSize: 72,
   },
-  easterEggSync: {
-    color: colors.primary,
-    fontSize: 22,
+  easterEggTitle: {
+    marginTop: spacing.md,
+    color: colors.text,
+    fontSize: 20,
     fontWeight: "700",
   },
   editBackdrop: {
