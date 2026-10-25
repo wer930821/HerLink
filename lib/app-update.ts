@@ -1,5 +1,4 @@
 import Constants from "expo-constants";
-import * as Crypto from "expo-crypto";
 import * as FileSystem from "expo-file-system/legacy";
 import * as IntentLauncher from "expo-intent-launcher";
 import { Linking, NativeModules, Platform } from "react-native";
@@ -32,20 +31,21 @@ function apkTarget() {
   return `${FileSystem.documentDirectory}${APK_FILE_NAME}`;
 }
 
-async function sha256File(uri: string) {
-  const base64 = await FileSystem.readAsStringAsync(uri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, base64, {
-    encoding: Crypto.CryptoEncoding.HEX,
-  });
-}
-
-async function isDownloadedApkValid(info: HerLinkUpdateInfo, uri: string) {
+// NOTE: do NOT reintroduce a SHA256 check here with expo-crypto.
+// digestStringAsync hashes the UTF-8 text it is given. The old code read
+// the APK as a Base64 string and hashed that text, which never matches
+// the workflow's binary sha256sum, so every in-app update failed at
+// verification and deleted the just-downloaded APK. No pure-JS SHA256
+// library is in dependencies, and adding one only to re-check a file
+// that Android's package installer already signature-verifies (and that
+// arrives over HTTPS from the release) is not worth the risk.
+// Verification here is therefore: the file exists and is non-empty;
+// a truncated or wrong-signature APK is rejected by the installer.
+async function isDownloadedApkNonEmpty(uri: string) {
   const file = await FileSystem.getInfoAsync(uri);
-  if (!file.exists || !info.sha256) return false;
-  const digest = await sha256File(uri);
-  return digest.toLowerCase() === info.sha256.toLowerCase();
+  if (!file.exists) return false;
+  const size = (file as { size?: unknown }).size;
+  return typeof size === "number" ? size > 0 : true;
 }
 
 export async function getAvailableHerLinkUpdate() {
@@ -75,11 +75,10 @@ export async function downloadHerLinkUpdate(
   if (Platform.OS !== "android") throw new Error("ANDROID_ONLY");
 
   const target = apkTarget();
-  if (await isDownloadedApkValid(info, target)) {
-    onProgress?.(1);
-    return { uri: target, reused: true };
-  }
-
+  // Always re-download: the target filename is fixed (HerLink-latest.apk),
+  // so reusing an existing file could install the previous version's APK
+  // instead of this version. Deleting first also clears a truncated file
+  // left by an earlier failed attempt.
   await FileSystem.deleteAsync(target, { idempotent: true }).catch(() => undefined);
   const resumable = FileSystem.createDownloadResumable(
     info.apkUrl,
@@ -95,9 +94,9 @@ export async function downloadHerLinkUpdate(
   const result = await resumable.downloadAsync();
   if (!result?.uri) throw new Error("APK_DOWNLOAD_FAILED");
 
-  if (info.sha256 && !(await isDownloadedApkValid(info, result.uri))) {
+  if (!(await isDownloadedApkNonEmpty(result.uri))) {
     await FileSystem.deleteAsync(result.uri, { idempotent: true }).catch(() => undefined);
-    throw new Error("APK_SHA256_MISMATCH");
+    throw new Error("APK_DOWNLOAD_FAILED");
   }
 
   onProgress?.(1);
