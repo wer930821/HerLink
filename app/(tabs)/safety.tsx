@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "expo-router/react-navigation";
+import { useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
@@ -8,6 +10,7 @@ import { HalloweenDecor } from "../../components/HalloweenDecor";
 import { useAuth } from "../../context/auth";
 import { Alert } from "react-native";
 import { requestAccountDeletion } from "../../lib/account";
+import { getNativePushRegistrationStatus, registerNativePushToken, type PushRegistrationStatus } from "../../lib/native-push";
 
 const safetyTips = [
   ["金錢與投資要求", "匿名聊天中若有人要求匯款、轉帳、投資或代購，請直接提高警覺。"],
@@ -24,9 +27,32 @@ const settings = [
   { label: "使用條款", detail: "使用規範與責任", path: "/terms", icon: "document-text-outline" },
 ];
 
+const pushStateLabels: Record<PushRegistrationStatus["state"], string> = {
+  not_attempted: "尚未嘗試註冊",
+  no_project_id: "找不到 Expo 專案 ID",
+  permission_denied: "通知權限未授權",
+  token_ok: "已註冊",
+  failed: "註冊失敗",
+};
+
 export default function SafetyScreen() {
   const router = useRouter();
   const { signOut, user } = useAuth();
+  const [pushStatus, setPushStatus] = useState<PushRegistrationStatus>(() => getNativePushRegistrationStatus());
+  const [pushBusy, setPushBusy] = useState(false);
+  useFocusEffect(useCallback(() => {
+    setPushStatus(getNativePushRegistrationStatus());
+  }, []));
+  const retryPushRegistration = () => {
+    if (pushBusy) return;
+    setPushBusy(true);
+    void registerNativePushToken()
+      .catch(() => {})
+      .finally(() => {
+        setPushStatus(getNativePushRegistrationStatus());
+        setPushBusy(false);
+      });
+  };
   const insets = useSafeAreaInsets();
   const accountEmail = user && !user.is_anonymous ? (user.email ?? null) : null;
   // Google Play 版隱藏贊助入口（Play 付款政策），側載版照常顯示。
@@ -81,6 +107,20 @@ export default function SafetyScreen() {
           ))}
         </View>
 
+        <Text style={styles.sectionTitle}>推播通知狀態</Text>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>狀態：{pushStateLabels[pushStatus.state]}</Text>
+          <Text style={styles.cardBody}>Expo 專案 ID：{pushStatus.projectIdPresent ? "有" : "沒有"}</Text>
+          <Text style={styles.cardBody}>通知權限：{pushStatus.permissionGranted === null ? "未知" : pushStatus.permissionGranted ? "已授權" : "未授權"}</Text>
+          {pushStatus.tokenPrefix ? <Text style={styles.cardBody}>Token 前綴：{pushStatus.tokenPrefix}</Text> : null}
+          {pushStatus.error ? <Text style={styles.cardBody}>錯誤：{pushStatus.error}</Text> : null}
+          {pushStatus.updatedAt ? <Text style={styles.cardBody}>最後嘗試：{pushStatus.updatedAt}</Text> : null}
+          <Text style={styles.cardBody}>如果這裡顯示註冊失敗，請把錯誤那一行截圖給站長；如果顯示已註冊卻還是收不到通知，再查後端寄送紀錄。</Text>
+        </View>
+        <Pressable style={styles.retryPush} onPress={retryPushRegistration}>
+          <Text style={styles.retryPushText}>{pushBusy ? "重新註冊中…" : "重新註冊推播"}</Text>
+        </Pressable>
+
         <Text style={styles.sectionTitle}>匿名聊天安全</Text>
         <View style={styles.notice}>
           <Text style={styles.noticeTitle}>匿名不等於沒有風險</Text>
@@ -127,6 +167,8 @@ const styles = StyleSheet.create({
   card: { marginTop: spacing.md, padding: spacing.lg, borderRadius: radii.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   cardTitle: { color: colors.text, ...typography.cardTitle },
   cardBody: { marginTop: spacing.sm, color: colors.textMuted, ...typography.body },
+  retryPush: { marginTop: spacing.md, minHeight: 52, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.accent, backgroundColor: colors.surface, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm },
+  retryPushText: { color: colors.accent, ...typography.bodyStrong },
   deleteAccount: { marginTop: spacing.xl, minHeight: 52, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.error, backgroundColor: colors.errorSurface, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm },
   signOut: { marginTop: spacing.xxl, minHeight: 52, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.error, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm },
   signOutText: { color: colors.error, ...typography.bodyStrong },

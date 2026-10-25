@@ -23,25 +23,104 @@ function projectId() {
   return Constants.easConfig?.projectId ?? Constants.expoConfig?.extra?.eas?.projectId;
 }
 
-export async function registerNativePushToken() {
-  if (Platform.OS === "web" || !projectId()) return null;
+export type PushRegistrationState =
+  | "not_attempted"
+  | "no_project_id"
+  | "permission_denied"
+  | "token_ok"
+  | "failed";
 
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("herlink-chat", {
-      name: "HerLink 聊天通知",
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 180, 120, 180],
-      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
-    });
+export type PushRegistrationStatus = {
+  state: PushRegistrationState;
+  projectIdPresent: boolean;
+  permissionGranted: boolean | null;
+  error: string | null;
+  tokenPrefix: string | null;
+  updatedAt: string | null;
+};
+
+// 推播 token 註冊失敗時，登入流程只記 console.warn，使用者看不到原因，
+// 從 2026-10-07 之後也沒有任何新 token 註冊成功過，卻無從知道是哪一步
+// 卡住。把每一步的結果記在這裡，讓安全與設定頁可以顯示出來給使用者截圖。
+let lastPushRegistrationStatus: PushRegistrationStatus = {
+  state: "not_attempted",
+  projectIdPresent: false,
+  permissionGranted: null,
+  error: null,
+  tokenPrefix: null,
+  updatedAt: null,
+};
+
+export function getNativePushRegistrationStatus(): PushRegistrationStatus {
+  return { ...lastPushRegistrationStatus };
+}
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message || error.name;
+  return String(error);
+}
+
+export async function registerNativePushToken() {
+  const pid = projectId();
+  if (Platform.OS === "web" || !pid) {
+    lastPushRegistrationStatus = {
+      state: "no_project_id",
+      projectIdPresent: Boolean(pid),
+      permissionGranted: null,
+      error: Platform.OS === "web" ? "web 平台不註冊原生推播" : "找不到 Expo 專案 ID（eas.projectId）",
+      tokenPrefix: null,
+      updatedAt: new Date().toISOString(),
+    };
+    return null;
   }
 
-  const permissions = await Notifications.getPermissionsAsync();
-  const permission = permissions.granted ? permissions : await Notifications.requestPermissionsAsync();
-  if (!permission.granted) return null;
+  try {
+    if (Platform.OS === "android") {
+      await Notifications.setNotificationChannelAsync("herlink-chat", {
+        name: "HerLink 聊天通知",
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 180, 120, 180],
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
+      });
+    }
 
-  const token = (await Notifications.getExpoPushTokenAsync({ projectId: projectId() })).data;
-  await syncNativePushToken(token);
-  return token;
+    const permissions = await Notifications.getPermissionsAsync();
+    const permission = permissions.granted ? permissions : await Notifications.requestPermissionsAsync();
+    if (!permission.granted) {
+      lastPushRegistrationStatus = {
+        state: "permission_denied",
+        projectIdPresent: true,
+        permissionGranted: false,
+        error: "通知權限未授權",
+        tokenPrefix: null,
+        updatedAt: new Date().toISOString(),
+      };
+      return null;
+    }
+
+    const token = (await Notifications.getExpoPushTokenAsync({ projectId: pid })).data;
+    await syncNativePushToken(token);
+    lastPushRegistrationStatus = {
+      state: "token_ok",
+      projectIdPresent: true,
+      permissionGranted: true,
+      error: null,
+      // 只顯示前綴，不在畫面上顯示完整 token。
+      tokenPrefix: token.slice(0, 24),
+      updatedAt: new Date().toISOString(),
+    };
+    return token;
+  } catch (error) {
+    lastPushRegistrationStatus = {
+      state: "failed",
+      projectIdPresent: true,
+      permissionGranted: null,
+      error: errorMessage(error),
+      tokenPrefix: null,
+      updatedAt: new Date().toISOString(),
+    };
+    throw error;
+  }
 }
 
 export async function syncNativePushToken(token: string) {
