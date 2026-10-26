@@ -105,10 +105,23 @@ function firstRow<T>(rows: T[] | null | undefined): T | null {
   return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
 }
 
-export async function findOrJoinRandomMatch() {
-  const { data, error } = await rpc.rpc("find_or_join_random_match");
-  if (error) throw error;
-  return (firstRow(data) ?? null) as RandomMatchResult | null;
+export async function findOrJoinRandomMatch(newMatch = false) {
+  // newMatch = true only on the explicit first press of "new match".
+  // Polls while waiting must pass false, otherwise the #126 early-return
+  // for a matched queue is what lets the first waiter enter the chat.
+  // Fallback: if the server has not run the migration that adds
+  // p_new_match yet, retry without the parameter so matching does not
+  // break outright; the old-match bug then persists until the migration
+  // is executed, but matching itself still works.
+  const withParam = await rpc.rpc("find_or_join_random_match", {
+    p_new_match: newMatch,
+  });
+  if (!withParam.error) {
+    return (firstRow(withParam.data) ?? null) as RandomMatchResult | null;
+  }
+  const withoutParam = await rpc.rpc("find_or_join_random_match");
+  if (withoutParam.error) throw withoutParam.error;
+  return (firstRow(withoutParam.data) ?? null) as RandomMatchResult | null;
 }
 
 export async function getAnonymousContactStatus(sessionId: string) {
