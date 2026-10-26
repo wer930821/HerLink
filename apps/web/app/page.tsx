@@ -895,7 +895,7 @@ export default function HomePage() {
       // Do not keep showing a stale "0" while matchmaking mutates the queue.
       setWaitingCount(null);
       const { data, error } = await runWithSessionRetry(async () => {
-        const matchResult = await findOrJoinRandomMatch();
+        const matchResult = await findOrJoinRandomMatch(true);
         if (matchResult.error) {
           throw matchResult.error;
         }

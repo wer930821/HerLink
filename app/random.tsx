@@ -15,6 +15,11 @@ export default function RandomMatchScreen() {
   const [joining, setJoining] = useState(false);
   const joinBusyRef = useRef(false);
   const mountedRef = useRef(true);
+  // True only for the explicit first press, consumed by the next join().
+  // Polls every 5s while waiting must NOT set this, otherwise the server
+  // would skip the matched early-return and the first waiter would be
+  // stuck again. Pressing "new match" again sets it true again.
+  const newMatchRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -30,7 +35,9 @@ export default function RandomMatchScreen() {
     joinBusyRef.current = true;
     setJoining(true);
     try {
-      const result = await findOrJoinRandomMatch();
+      const newMatch = newMatchRef.current;
+      newMatchRef.current = false;
+      const result = await findOrJoinRandomMatch(newMatch);
       if (!mountedRef.current) {
         return;
       }
@@ -58,6 +65,7 @@ export default function RandomMatchScreen() {
   useEffect(() => {
     if (autoJoin) {
       setWaiting(true);
+      newMatchRef.current = true;
       void join();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -99,7 +107,10 @@ export default function RandomMatchScreen() {
       <Pressable
         style={[styles.button, (joining || waiting) && styles.buttonWaiting]}
         disabled={joining}
-        onPress={() => void (waiting ? stopWaiting() : join())}
+        onPress={() => {
+          if (!waiting) newMatchRef.current = true;
+          void (waiting ? stopWaiting() : join());
+        }}
       >
         <Text style={styles.buttonText}>
           {joining ? "處理中…" : waiting ? "停止等待" : "開始配對"}

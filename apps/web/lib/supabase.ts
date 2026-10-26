@@ -776,7 +776,14 @@ export async function requestRandomSessionRecovery(sessionId: string) {
   return { data: row as { recovery_code: string; expires_at: string } | null, error: result.error };
 }
 
-export async function findOrJoinRandomMatch() {
+export async function findOrJoinRandomMatch(newMatch = false) {
+  // Same flag as the native app: home "new match" passes true, so an old
+  // matched queue row does not redirect the user back to an old chat.
+  // Fallback without the parameter keeps old servers working.
+  const withParam = await supabase.rpc("find_or_join_random_match", {
+    p_new_match: newMatch,
+  });
+  if (!withParam.error) return withParam;
   return supabase.rpc("find_or_join_random_match");
 }
 
