@@ -13,6 +13,8 @@ test("recovery entry checks the current session before creating an anonymous ses
   assert.match(requestRecovery, /getCurrentSession\(\)/);
   assert.match(requestRecovery, /if\s*\(!current\.data\.session\)/);
   assert.match(requestRecovery, /signInAnonymously\(\)/);
+  assert.match(requestRecovery, /await\s+getCurrentSession\(\)/g);
+  assert.match(requestRecovery, /session unavailable/i);
 });
 
 test("recovery entry exposes the actual recovery RPC error", () => {
