@@ -38,6 +38,7 @@ import {
   getAnonymousContactStatus,
   getRandomSession,
   leaveRandomSession,
+  listMyActiveRandomSessions,
   listRandomMessages,
   listRandomMessagesAfter,
   markRandomSessionRead,
@@ -201,6 +202,10 @@ export default function RandomSessionScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // 其他聊天室未讀提醒：只顯示「不是這一間、且有未讀」的聊天室，
+  // migration 還沒執行時 unread_count 是 undefined，就當成沒有未讀。
+  const [otherUnread, setOtherUnread] = useState<RandomSession[]>([]);
+  const [otherUnreadDismissed, setOtherUnreadDismissed] = useState(false);
   const [privateEggsAllowed, setPrivateEggsAllowed] = useState(false);
   const [easterEgg, setEasterEgg] = useState<EasterEggKind | null>(null);
   const [sending, setSending] = useState(false);
@@ -783,6 +788,34 @@ export default function RandomSessionScreen() {
   useEffect(() => {
     void refreshContactStatus();
   }, [refreshContactStatus]);
+
+  // 其他聊天室未讀提醒：進到某一間時查一次，之後每 30 秒再查一次，
+  // 有新訊息的其他間才會出現橫幅，點橫幅就跳到那一間（多間時先回列表）。
+  // 查不到或 migration 還沒執行時就靜靜不顯示，不要因為提醒壞掉而擋聊天。
+  useEffect(() => {
+    if (!sessionId) return;
+    let disposed = false;
+    setOtherUnreadDismissed(false);
+    const check = async () => {
+      try {
+        const rows = await listMyActiveRandomSessions();
+        if (disposed) return;
+        setOtherUnread(
+          rows.filter(
+            (row) => row.id !== sessionId && Math.max(0, Number(row.unread_count ?? 0)) > 0
+          )
+        );
+      } catch {
+        // 提醒查不到時不擋聊天，維持原本畫面。
+      }
+    };
+    void check();
+    const timer = setInterval(check, 30000);
+    return () => {
+      disposed = true;
+      clearInterval(timer);
+    };
+  }, [sessionId]);
 
   const startReply = useCallback((message: RandomMessage) => {
     if (message.recalled_at) return;
@@ -1417,6 +1450,35 @@ export default function RandomSessionScreen() {
           </Pressable>
         </View>
       ) : null}
+      {otherUnread.length > 0 && !otherUnreadDismissed ? (
+        <View style={styles.otherUnreadBanner}>
+          <Pressable
+            style={styles.otherUnreadMain}
+            onPress={() => {
+              if (otherUnread.length === 1) {
+                router.push({
+                  pathname: "/random-session/[sessionId]",
+                  params: { sessionId: otherUnread[0].id },
+                } as never);
+              } else {
+                router.push("/chats" as never);
+              }
+            }}
+          >
+            <Text style={styles.otherUnreadBannerText} numberOfLines={2}>
+              {otherUnread.length === 1
+                ? `${otherUnread[0].partner_anonymous_display_name} 有 ${otherUnread[0].unread_count} 則新訊息，點此前往回覆`
+                : `${otherUnread.map((row) => row.partner_anonymous_display_name).join("、")} 都有新訊息，點此回列表查看`}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setOtherUnreadDismissed(true)}
+            hitSlop={10}
+          >
+            <Text style={styles.otherUnreadClose}>關閉</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <FlatList
         ref={listRef}
@@ -1980,6 +2042,33 @@ const styles = StyleSheet.create({
   noticeClose: {
     marginLeft: spacing.md,
     color: colors.info,
+    ...typography.caption,
+    fontWeight: "700",
+  },
+  otherUnreadBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.sm,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.md,
+  },
+  otherUnreadMain: {
+    flex: 1,
+  },
+  otherUnreadBannerText: {
+    color: colors.text,
+    ...typography.caption,
+    fontWeight: "600",
+  },
+  otherUnreadClose: {
+    color: colors.textSoft,
     ...typography.caption,
     fontWeight: "700",
   },

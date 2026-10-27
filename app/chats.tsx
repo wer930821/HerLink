@@ -53,10 +53,18 @@ export default function ChatsScreen() {
       }
       renderItem={({ item }) => {
         const avatar = getAnonymousAvatarOption(item.partner_anonymous_avatar);
+        // migration 還沒執行時 unread_count / last_message_preview 是 undefined，
+        // 就當成沒有未讀、只顯示舊的進行中日期，不要因為欄位不存在就壞掉。
+        const unread = Math.max(0, Number(item.unread_count ?? 0));
+        const preview = item.last_message_preview
+          ? item.last_message_is_mine
+            ? `我：${item.last_message_preview}`
+            : item.last_message_preview
+          : null;
         return (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`和 ${item.partner_anonymous_display_name} 的聊天室`}
+            accessibilityLabel={`和 ${item.partner_anonymous_display_name} 的聊天室${unread > 0 ? `，${unread} 則未讀` : ""}`}
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() =>
               router.push({
@@ -69,12 +77,19 @@ export default function ChatsScreen() {
               <Ionicons name={avatar.icon as never} size={22} color={avatar.fg} />
             </View>
             <View style={styles.rowBody}>
-              <Text style={styles.name} numberOfLines={1}>
-                {item.partner_anonymous_display_name}
-                {item.partner_verified ? " ✓" : ""}
-              </Text>
-              <Text style={styles.meta} numberOfLines={1}>
-                進行中 · {new Date(item.created_at).toLocaleDateString("zh-TW")}
+              <View style={styles.nameRow}>
+                <Text style={styles.name} numberOfLines={1}>
+                  {item.partner_anonymous_display_name}
+                  {item.partner_verified ? " ✓" : ""}
+                </Text>
+                {unread > 0 ? (
+                  <View style={styles.unreadBadge}>
+                    <Text style={styles.unreadBadgeText}>{unread > 99 ? "99+" : String(unread)}</Text>
+                  </View>
+                ) : null}
+              </View>
+              <Text style={[styles.meta, unread > 0 && styles.metaUnread]} numberOfLines={1}>
+                {preview ?? `進行中 · ${new Date(item.created_at).toLocaleDateString("zh-TW")}`}
               </Text>
             </View>
             <Text style={styles.chevron}>›</Text>
@@ -118,14 +133,38 @@ const styles = StyleSheet.create({
   rowBody: {
     flex: 1,
   },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
   name: {
     color: colors.text,
     ...typography.bodyStrong,
+    flexShrink: 1,
+  },
+  unreadBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primary,
+  },
+  unreadBadgeText: {
+    color: colors.primaryText,
+    fontSize: 12,
+    fontWeight: "700",
   },
   meta: {
     marginTop: 2,
     color: colors.textMuted,
     ...typography.caption,
+  },
+  metaUnread: {
+    color: colors.text,
+    fontWeight: "600",
   },
   chevron: {
     color: colors.textSoft,
