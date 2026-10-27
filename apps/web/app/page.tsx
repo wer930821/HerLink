@@ -736,15 +736,21 @@ export default function HomePage() {
     setRecoveryBusy(true);
     setMessage(null);
     try {
-      const auth = await signInAnonymously();
-      if (auth.error || !auth.data.session) throw auth.error ?? new Error("匿名登入失敗");
+      const current = await getCurrentSession();
+      if (current.error) throw current.error;
+
+      if (!current.data.session) {
+        const auth = await signInAnonymously();
+        if (auth.error || !auth.data.session) throw auth.error ?? new Error("匿名登入失敗");
+      }
+
       const result = await requestRandomIdentityRecovery(recoveryName);
       if (result.error) throw result.error;
       const row = result.data?.[0];
       if (!row?.recovery_code) throw new Error("恢復碼建立失敗");
       setRecoveryCode(row.recovery_code);
-    } catch {
-      setMessage("目前無法建立恢復申請，請確認原本的匿名名稱後再試。");
+    } catch (error) {
+      setMessage(getFriendlyAuthErrorMessage(error, "目前無法建立恢復申請，請稍後再試。"));
     } finally {
       setRecoveryBusy(false);
     }
