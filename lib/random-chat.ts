@@ -17,6 +17,14 @@ export type RandomSession = {
   icebreaker_prompt: string | null;
   icebreaker_category: string | null;
   icebreaker_turn: number | null;
+  // 聊天室列表未讀提醒用，migration 20261028010000 之後才有。
+  // migration 還沒執行時這些欄位是 undefined，App 要當成沒有未讀、
+  // 沒有最後一句來顯示，不能因為欄位不存在就壞掉。
+  unread_count?: number | null;
+  last_message_preview?: string | null;
+  last_message_at?: string | null;
+  last_message_type?: string | null;
+  last_message_is_mine?: boolean | null;
 };
 
 export type RandomMessage = {
