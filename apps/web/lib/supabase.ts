@@ -960,7 +960,9 @@ export async function getRandomMessageReplyPreview(sessionId: string, messageId:
 }
 
 export async function uploadChatMedia(sessionId: string, userId: string, blob: Blob, extension: string) {
-  const objectPath = `${sessionId}/${userId}/${crypto.randomUUID()}.${extension}`;
+  const { data: activeIdentityId } = await supabase.rpc("resolve_active_anonymous_chat_identity");
+  const effectiveUserId = activeIdentityId || userId;
+  const objectPath = `${sessionId}/${effectiveUserId}/${crypto.randomUUID()}.${extension}`;
   const { error } = await supabase.storage.from("chat-media").upload(objectPath, blob, {
     contentType: blob.type,
     cacheControl: "3600",
