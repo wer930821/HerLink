@@ -1984,7 +1984,13 @@ const styles = StyleSheet.create({
   },
   bubble: {
     // 大螢幕橫向時避免氣泡拉太寬；直向手機氣泡寬本來就小於 560，不影響。
+    // 但光靠 maxWidth 不夠：React Native 預設 flexShrink 為 0，長訊息
+    // （特別是帶回覆引用的氣泡）量測出來的寬度會超過手機一列的寬度，
+    // 氣泡就不會縮、直接衝出 FlatList 的左右 padding，貼到螢幕邊邊、
+    // 把外面的回覆按鈕也推出去切掉（截圖裡左右兩邊都是這樣）。
+    // 加 flexShrink 讓氣泡在列寬內縮小換行，邊距才會留得住。
     maxWidth: 560,
+    flexShrink: 1,
     borderRadius: 20,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
