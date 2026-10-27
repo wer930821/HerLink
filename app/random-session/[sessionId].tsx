@@ -1480,7 +1480,11 @@ export default function RandomSessionScreen() {
                   }
                 }}
                 delayLongPress={350}
-                style={[styles.bubble, isMine ? styles.mineBubble : styles.otherBubble]}
+                style={
+                  item.message_type === "image"
+                    ? styles.imageBubble
+                    : [styles.bubble, isMine ? styles.mineBubble : styles.otherBubble]
+                }
               >
                 {quote ? (
                   <Pressable
@@ -1496,7 +1500,11 @@ export default function RandomSessionScreen() {
                   </Pressable>
                 ) : null}
                 {item.message_type === "image" && item.media_path ? (
-                  <RandomChatImage path={item.media_path} />
+                  <RandomChatImage
+                    path={item.media_path}
+                    width={item.media_width}
+                    height={item.media_height}
+                  />
                 ) : (
                   <Text style={[styles.messageText, isMine ? styles.mineText : styles.otherText]}>
                     {messageText(item)}
@@ -2025,6 +2033,16 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  // 照片訊息不包文字氣泡：不要背景、不要邊框、不要內距，照片本身
+  // 帶圓角就好，不然照片外面會再多一圈紫色／深色框（截圖裡就是這樣）。
+  // 時間字還留在容器下面，顏色沿用原本的 mineTime / otherTime。
+  imageBubble: {
+    flexShrink: 1,
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   mineBubble: {
     backgroundColor: "#7A4964",
