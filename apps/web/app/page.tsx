@@ -35,6 +35,7 @@ import {
   loadMyRandomQueue,
   registerAnonymousAbuseIdentity,
   signInAnonymously,
+  waitForCurrentSession,
   requestRandomIdentityRecovery,
   signOut,
   type RandomQueueRow,
@@ -743,7 +744,7 @@ export default function HomePage() {
         const auth = await signInAnonymously();
         if (auth.error || !auth.data.session) throw auth.error ?? new Error("匿名登入失敗");
 
-        const verified = await getCurrentSession();
+        const verified = await waitForCurrentSession();
         if (verified.error || !verified.data.session) {
           throw verified.error ?? new Error("session unavailable");
         }
