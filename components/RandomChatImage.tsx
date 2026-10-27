@@ -6,6 +6,10 @@ import { colors } from "../theme/colors";
 
 type RandomChatImageProps = {
   path: string;
+  // 訊息存的原始寬高（media_width / media_height），用來讓框照照片比例長，
+  // 而不是固定 220x240 再用 contain 留出左右黑邊。沒有尺寸時沿用舊的固定框。
+  width?: number | null;
+  height?: number | null;
   style?: {
     width?: number;
     height?: number;
@@ -101,11 +105,29 @@ export function useRandomChatImageUrl(path: string | null) {
   return { uri, failed, retry };
 }
 
-export function RandomChatImage({ path, style }: RandomChatImageProps) {
+export function RandomChatImage({ path, width, height, style }: RandomChatImageProps) {
   const { uri, failed, retry } = useRandomChatImageUrl(path);
 
+  // 照片框照原始比例長：寬最多 220、高最多 320，超出就等比縮小，
+  // 這樣直向照片不會被壓進 220x240 的固定框、左右留出深色邊。
+  // 框底色改透明，就算舊訊息沒有尺寸、contain 留了空位，也不會再
+  // 出現一圈跟聊天室背景不同的框。
+  const aspect =
+    width && height && width > 0 && height > 0 ? width / height : null;
+  const frameStyle = aspect
+    ? (() => {
+        let w = 220;
+        let h = w / aspect;
+        if (h > 320) {
+          h = 320;
+          w = h * aspect;
+        }
+        return { width: w, height: h };
+      })()
+    : null;
+
   return (
-    <View style={[styles.frame, style]}>
+    <View style={[styles.frame, frameStyle, style]}>
       {uri ? (
         <Image
           source={{ uri }}
@@ -135,7 +157,7 @@ const styles = StyleSheet.create({
     height: 240,
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: colors.backgroundMuted,
+    backgroundColor: "transparent",
   },
   stateWrap: {
     flex: 1,
