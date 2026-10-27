@@ -37,5 +37,9 @@ export function getFriendlyAuthErrorMessage(error: unknown, fallback: string) {
     return "目前暫時無法註冊，請稍後再試。";
   }
 
+  if (message.includes("session unavailable") || message.includes("session is unavailable")) {
+    return "目前無法確認匿名登入狀態，請不要關閉或清除瀏覽器資料，重新整理後再試。";
+  }
+
   return fallback;
 }
