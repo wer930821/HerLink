@@ -742,6 +742,11 @@ export default function HomePage() {
       if (!current.data.session) {
         const auth = await signInAnonymously();
         if (auth.error || !auth.data.session) throw auth.error ?? new Error("匿名登入失敗");
+
+        const verified = await getCurrentSession();
+        if (verified.error || !verified.data.session) {
+          throw verified.error ?? new Error("session unavailable");
+        }
       }
 
       const result = await requestRandomIdentityRecovery(recoveryName);
