@@ -287,14 +287,19 @@ export default function HomePage() {
           ? loadedProfileResult
           : await ensureAnonymousBootstrapProfile(session.user.id);
 
+        const recoveredIdentity = profileResult.data?.id !== session.user.id;
+        const resolvedSessionResult = recoveredIdentity
+          ? await loadMyActiveRandomSession()
+          : sessionResult;
+
         if (!mounted) {
           return;
         }
 
-        const rpcError = sessionResult.error as { code?: unknown; message?: unknown } | null;
+        const rpcError = resolvedSessionResult.error as { code?: unknown; message?: unknown } | null;
         const lookup = rpcError
           ? { result: "RPC ERROR" as const, error: summarizeActiveSessionRpcError(rpcError) }
-          : sessionResult.data
+          : resolvedSessionResult.data
             ? { result: "RPC SUCCESS" as const, error: null }
             : { result: "NOT FOUND" as const, error: null };
         const diagnostic: NavigationDiagnosticEvent = {
@@ -308,9 +313,9 @@ export default function HomePage() {
           reason: null,
           redirectReason: null,
           authState: "ready",
-          sessionState: lookup.result === "RPC ERROR" ? "error" : sessionResult.data?.status === "active" ? "active" : "missing",
+          sessionState: lookup.result === "RPC ERROR" ? "error" : resolvedSessionResult.data?.status === "active" ? "active" : "missing",
           routeSessionIdShort: null,
-          serverSessionIdShort: getShortId(sessionResult.data?.id ?? null),
+          serverSessionIdShort: getShortId(resolvedSessionResult.data?.id ?? null),
           bootstrapRunId: null,
           activeSessionResult: lookup.result,
           authUserIdShort: getShortId(session.user.id),
@@ -325,7 +330,7 @@ export default function HomePage() {
           session,
           profile: profileResult.data ?? null,
           queue: queueResult.data ?? null,
-          activeSession: rpcError ? null : sessionResult.data ?? null,
+          activeSession: rpcError ? null : resolvedSessionResult.data ?? null,
         });
 
         if (isNavigationDebugEnabled()) {
