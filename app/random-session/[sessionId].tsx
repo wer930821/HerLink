@@ -52,6 +52,7 @@ import {
   sendRandomImageMessage,
   sendRandomText,
   uploadRandomChatImage,
+  resolveActiveRandomChatIdentityId,
 } from "../../lib/random-chat";
 import { requestRandomSessionRecovery } from "../../lib/recovery";
 import {
@@ -1046,7 +1047,8 @@ export default function RandomSessionScreen() {
       let path: string | null = null;
       let stage = "上傳";
       try {
-        path = await uploadRandomChatImage(sessionId, user.id, image.bytes, "jpg");
+        const activeIdentityId = await resolveActiveRandomChatIdentityId(user.id);
+        path = await uploadRandomChatImage(sessionId, activeIdentityId, image.bytes, "jpg");
         stage = "送出";
         const sent = await sendRandomImageMessage(
           sessionId,
