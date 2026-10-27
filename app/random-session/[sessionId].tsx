@@ -166,6 +166,24 @@ function friendlyError(error: unknown, fallback: string) {
   return fallback;
 }
 
+// 診斷用：傳照片失敗時，friendlyError 沒有對到的錯誤會被包成同一句
+// 「照片傳送失敗，請稍後再試」，光看那句無法分辨是上傳被擋、送出被擋
+// 還是網路問題。診斷版只在傳照片失敗且沒有對到已知原因時，才把原始
+// 錯誤（截斷）附在通知後面，讓使用者截圖回報後能直接對到根因。
+// 這個附註是暫時的診斷手段，根因修好後應該拿掉或改回一般訊息。
+function rawErrorMessage(error: unknown) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" &&
+          error &&
+          "message" in error &&
+          typeof (error as { message?: unknown }).message === "string"
+        ? (error as { message: string }).message
+        : String(error ?? "");
+  return message.replace(/\s+/g, " ").trim().slice(0, 200);
+}
+
 export default function RandomSessionScreen() {
   const params = useLocalSearchParams<{ sessionId?: string | string[] }>();
   const sessionId = useMemo(
@@ -1026,8 +1044,10 @@ export default function RandomSessionScreen() {
 
     const attempt = async (replyId: string | null): Promise<boolean> => {
       let path: string | null = null;
+      let stage = "上傳";
       try {
         path = await uploadRandomChatImage(sessionId, user.id, image.bytes, "jpg");
+        stage = "送出";
         const sent = await sendRandomImageMessage(
           sessionId,
           {
@@ -1055,7 +1075,16 @@ export default function RandomSessionScreen() {
           setNotice("原訊息已不存在，已改為直接傳送照片。");
           return attempt(null);
         }
-        setNotice(friendly);
+        if (friendly === "照片傳送失敗，請稍後再試。") {
+          const raw = rawErrorMessage(error);
+          setNotice(
+            raw
+              ? `照片傳送失敗（診斷：${stage}階段：${raw}），請截圖回報。`
+              : friendly
+          );
+        } else {
+          setNotice(friendly);
+        }
         return false;
       }
     };
