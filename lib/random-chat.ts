@@ -358,6 +358,17 @@ export async function uploadRandomChatImage(
   return data.path;
 }
 
+/**
+ * Storage paths must use the effective anonymous identity, not necessarily
+ * the current Supabase auth user. This differs after account binding or
+ * anonymous-chat recovery.
+ */
+export async function resolveActiveRandomChatIdentityId(fallbackUserId: string) {
+  const { data, error } = await rpc.rpc("resolve_active_anonymous_chat_identity");
+  if (error || !data) return fallbackUserId;
+  return data as string;
+}
+
 export async function removeRandomChatImage(path: string) {
   const { error } = await supabase.storage.from("chat-media").remove([path]);
   if (error) throw error;
