@@ -405,7 +405,7 @@ export async function signInWithGoogle() {
   // SSR fallback: on Cloudflare Workers set NEXT_PUBLIC_SITE_URL to the new
   // domain (e.g. https://herlink-web.<account>.workers.dev); the old Vercel
   // URL stays as fallback for the Vercel deployment.
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://her-link-ten.vercel.app").replace(/\/$/, "");
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://herlink.wer930821.workers.dev").replace(/\/$/, "");
   const redirectTo = typeof window === "undefined"
     ? `${siteUrl}/auth/callback`
     : `${window.location.origin}/auth/callback`;
