@@ -402,8 +402,12 @@ export async function signIn(email: string, password: string) {
 
 export async function signInWithGoogle() {
   const current = await supabase.auth.getSession();
+  // SSR fallback: on Cloudflare Workers set NEXT_PUBLIC_SITE_URL to the new
+  // domain (e.g. https://herlink-web.<account>.workers.dev); the old Vercel
+  // URL stays as fallback for the Vercel deployment.
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://her-link-ten.vercel.app").replace(/\/$/, "");
   const redirectTo = typeof window === "undefined"
-    ? "https://her-link-ten.vercel.app/auth/callback"
+    ? `${siteUrl}/auth/callback`
     : `${window.location.origin}/auth/callback`;
 
   if (current.data.session?.user?.is_anonymous) {
