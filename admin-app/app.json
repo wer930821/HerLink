@@ -29,7 +29,7 @@
       "expo-notifications"
     ],
     "extra": {
-      "adminUrl": "https://her-link-ten.vercel.app/admin",
+      "adminUrl": "https://herlink.wer930821.workers.dev/admin",
       "eas": {
         "projectId": "f2cdaed8-e7a6-48ba-aa41-c2cd32f88720"
       }

@@ -21,7 +21,7 @@ import * as Notifications from "expo-notifications";
 import { WebView } from "react-native-webview";
 import type { WebViewNavigation } from "react-native-webview";
 
-const ADMIN_URL = "https://her-link-ten.vercel.app/admin";
+const ADMIN_URL = "https://herlink.wer930821.workers.dev/admin";
 const UPDATE_INFO_URL =
   "https://github.com/wer930821/HerLink/releases/download/admin-latest/admin-update-info.json";
 
