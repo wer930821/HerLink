@@ -36,10 +36,10 @@ jobs:
         working-directory: admin-app
         shell: bash
         run: |
-          sed -i 's#https://her-link-kivora3.vercel.app/admin#https://her-link-ten.vercel.app/admin#g' App.tsx
-          grep -F 'const ADMIN_URL = "https://her-link-ten.vercel.app/admin";' App.tsx
-          node -e 'const app=require("./app.json"); if(app.expo?.extra?.adminUrl!=="https://her-link-ten.vercel.app/admin") process.exit(1)'
-
+          sed -i 's#https://her-link-kivora3.vercel.app/admin#https://herlink.wer930821.workers.dev/admin#g' App.tsx
+sed -i 's#https://her-link-ten.vercel.app/admin#https://herlink.wer930821.workers.dev/admin#g' App.tsx
+grep -F 'const ADMIN_URL = "https://herlink.wer930821.workers.dev/admin";' App.tsx
+node -e 'const app=require("./app.json"); if(app.expo?.extra?.adminUrl!=="https://herlink.wer930821.workers.dev/admin") process.exit(1)'
       - name: Install dependencies
         working-directory: admin-app
         run: npm install
