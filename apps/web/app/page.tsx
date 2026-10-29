@@ -175,14 +175,12 @@ export default function HomePage() {
     lastWaitingCountRefreshRef.current = now;
     const requestId = ++waitingCountRequestRef.current;
     try {
-      const response = await fetch(`/api/public/match-status?t=${Date.now()}`, {
-        cache: "no-store",
-        headers: { "Cache-Control": "no-cache" },
-      });
-      if (!response.ok) return;
-      const payload = await response.json() as { waiting?: number };
+      // Query Supabase directly instead of the /api/public/match-status route:
+      // same public RPC and anon key, but no Vercel function invocation per poll.
+      const { data, error } = await supabase.rpc("get_public_waiting_count");
+      if (error) return;
       if (requestId === waitingCountRequestRef.current) {
-        setWaitingCount(Number(payload.waiting ?? 0));
+        setWaitingCount(Number(data ?? 0));
       }
     } catch {}
   }, []);
