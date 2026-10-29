@@ -1,5 +1,5 @@
 import { createClient, type Session } from "@supabase/supabase-js";
-import { ANONYMOUS_AVATAR_OPTIONS, isAnonymousAvatarId } from "../../../lib/anonymous";
+import { ANONYMOUS_AVATAR_OPTIONS, isAnonymousAvatarId } from "./anonymous";
 import { getAnonymousInstallationId } from "./anonymous-install";
 
 const supabaseUrl =

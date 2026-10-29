@@ -1,6 +1,6 @@
 "use client";
 
-import { getAnonymousAvatarOption } from "../../../lib/anonymous";
+import { getAnonymousAvatarOption } from "../lib/anonymous";
 
 type Props = {
   avatarId: string;

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createChatMediaSignedUrl } from "../../lib/supabase";
-import { getCachedSignedUrl, invalidateCachedSignedUrl } from "../../../../lib/signed-url-cache";
+import { getCachedSignedUrl, invalidateCachedSignedUrl } from "../../lib/signed-url-cache";
 
 type ChatImageProps = {
   path: string;
