@@ -6467,6 +6467,25 @@ body:has(.site-mailbox-viewport){
 .christmas-home-decor span:nth-child(4) { top: 4%; right: 28%; font-size: 1rem; animation: herlinkSnowFall 12s linear infinite 2s; }
 .christmas-home-decor span:nth-child(5) { top: 2%; left: 45%; font-size: 1.35rem; animation: herlinkSnowFall 10s linear infinite 4s; }
 .home-app-like > :not(.christmas-home-decor):not(.halloween-home-decor) { position: relative; z-index: 1; }
+@keyframes herlinkStarTwinkle { 0%,100% { transform: scale(1) rotate(0deg); opacity: .9; } 50% { transform: scale(1.25) rotate(15deg); opacity: 1; } }
+@keyframes herlinkBellSwing { 0%,100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
+.christmas-chat-decor {
+  pointer-events: none;
+  user-select: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+.christmas-chat-decor span {
+  position: absolute;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.32));
+  opacity: .8;
+}
+.christmas-chat-decor span:nth-child(1) { top: 8%; right: 5%; font-size: 1.8rem; animation: herlinkStarTwinkle 3s ease-in-out infinite; }
+.christmas-chat-decor span:nth-child(2) { top: 22%; left: 3%; font-size: 1.4rem; animation: herlinkBellSwing 4s ease-in-out infinite; transform-origin: top center; }
+.christmas-chat-decor span:nth-child(3) { bottom: 12%; right: 8%; font-size: 1.5rem; transform: rotate(-8deg); }
+.chat-page > :not(.christmas-chat-decor):not(.halloween-chat-decor) { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) {
  .halloween-home-decor span,.halloween-chat-decor span { animation: none!important; }
 }

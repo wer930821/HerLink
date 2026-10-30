@@ -2561,7 +2561,11 @@ export default function RandomSessionClient() {
   if (loading) {
     return (
       <main className="hero">
-      <div className="halloween-chat-decor" aria-hidden="true"><span>💀</span><span>🕯️</span><span>⚰️</span><span className="halloween-corner-web">🕸️</span></div>
+      {myProfile?.anonymous_display_name === "孤星企鵝" ? (
+        <div className="christmas-chat-decor" aria-hidden="true"><span>⭐</span><span>🔔</span><span>🎁</span></div>
+      ) : (
+        <div className="halloween-chat-decor" aria-hidden="true"><span>💀</span><span>🕯️</span><span>⚰️</span><span className="halloween-corner-web">🕸️</span></div>
+      )}
         <h1 className="hero-title">正在載入匿名會話…</h1>
         <p className="hero-copy">請稍候，HerLink 正在確認會話狀態。</p>
         {notice ? <div className="notice">{notice}</div> : null}
@@ -2610,7 +2614,11 @@ export default function RandomSessionClient() {
 
   return (
     <main className={`chat-page ${milestoneTestAllowed && eternalPreviewUnlocked ? "chat-page-eternal-preview" : ""}`}>
-      <div className="halloween-chat-decor" aria-hidden="true"><span>💀</span><span>🕯️</span><span>⚰️</span><span className="halloween-corner-web">🕸️</span></div>
+      {myProfile?.anonymous_display_name === "孤星企鵝" ? (
+        <div className="christmas-chat-decor" aria-hidden="true"><span>⭐</span><span>🔔</span><span>🎁</span></div>
+      ) : (
+        <div className="halloween-chat-decor" aria-hidden="true"><span>💀</span><span>🕯️</span><span>⚰️</span><span className="halloween-corner-web">🕸️</span></div>
+      )}
       <section className="chat-shell">
         <header className="chat-header">
           <button
