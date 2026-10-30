@@ -6466,6 +6466,9 @@ body:has(.site-mailbox-viewport){
 .christmas-home-decor span:nth-child(3) { top: 6%; left: 18%; font-size: 1.2rem; animation: herlinkSnowFall 9s linear infinite; }
 .christmas-home-decor span:nth-child(4) { top: 4%; right: 28%; font-size: 1rem; animation: herlinkSnowFall 12s linear infinite 2s; }
 .christmas-home-decor span:nth-child(5) { top: 2%; left: 45%; font-size: 1.35rem; animation: herlinkSnowFall 10s linear infinite 4s; }
+.christmas-home-decor span:nth-child(6) { bottom: 15%; left: 8%; font-size: 1.8rem; animation: herlinkSantaFloat 7s ease-in-out infinite 1.5s; }
+.christmas-home-decor span:nth-child(7) { bottom: 8%; right: 12%; font-size: 1.4rem; transform: rotate(-10deg); }
+.christmas-home-decor span:nth-child(8) { top: 40%; right: 3%; font-size: 1.25rem; animation: herlinkStarTwinkle 3.5s ease-in-out infinite 1s; }
 .home-app-like > :not(.christmas-home-decor):not(.halloween-home-decor) { position: relative; z-index: 1; }
 @keyframes herlinkStarTwinkle { 0%,100% { transform: scale(1) rotate(0deg); opacity: .9; } 50% { transform: scale(1.25) rotate(15deg); opacity: 1; } }
 @keyframes herlinkBellSwing { 0%,100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
@@ -6492,6 +6495,9 @@ body:has(.site-mailbox-viewport){
 .christmas-chat-decor span:nth-child(1) { top: 8%; right: 5%; font-size: 1.8rem; animation: herlinkStarTwinkle 3s ease-in-out infinite; }
 .christmas-chat-decor span:nth-child(2) { top: 22%; left: 3%; font-size: 1.4rem; animation: herlinkBellSwing 4s ease-in-out infinite; transform-origin: top center; }
 .christmas-chat-decor span:nth-child(3) { bottom: 12%; right: 8%; font-size: 1.5rem; transform: rotate(-8deg); }
+.christmas-chat-decor span:nth-child(4) { top: 45%; right: 3%; font-size: 1.7rem; animation: herlinkSantaFloat 7s ease-in-out infinite 1s; }
+.christmas-chat-decor span:nth-child(5) { bottom: 25%; left: 6%; font-size: 1.2rem; animation: herlinkStarTwinkle 4s ease-in-out infinite 0.5s; }
+.christmas-chat-decor span:nth-child(6) { top: 60%; left: 2%; font-size: 1.45rem; animation: herlinkBellSwing 5s ease-in-out infinite 2s; transform-origin: top center; }
 
 @media (prefers-reduced-motion: reduce) {
  .halloween-home-decor span,.halloween-chat-decor span { animation: none!important; }

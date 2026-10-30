@@ -1023,7 +1023,7 @@ export default function HomePage() {
         <button type="button" className="home-mailbox-float" aria-label="信箱" onPointerDown={(event)=>event.currentTarget.blur()} onClick={()=>router.push("/mailbox")}><span className="home-mailbox-icon" aria-hidden="true">✉</span><span>信箱</span>{mailUnreadCount>0?<span className="home-mailbox-unread" aria-label={`${mailUnreadCount} 封未讀`}>{mailUnreadCount>99?"99+":mailUnreadCount}</span>:null}</button>
 
         {anonymousSummary?.name === "孤星企鵝" ? (
-          <div className="christmas-home-decor" aria-hidden="true"><span>🎄</span><span>🎅</span><span>❄️</span><span>❄️</span><span>❄️</span></div>
+          <div className="christmas-home-decor" aria-hidden="true"><span>🎄</span><span>🎅</span><span>❄️</span><span>❄️</span><span>❄️</span><span>⛄</span><span>🎁</span><span>🔔</span></div>
         ) : (
           <div className="halloween-home-decor" aria-hidden="true"><span>🎃</span><span>👻</span><span>🦇</span></div>
         )}
