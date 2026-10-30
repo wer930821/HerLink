@@ -2614,12 +2614,12 @@ export default function RandomSessionClient() {
 
   return (
     <main className={`chat-page ${milestoneTestAllowed && eternalPreviewUnlocked ? "chat-page-eternal-preview" : ""}`}>
-      {myProfile?.anonymous_display_name === "孤星企鵝" ? (
-        <div className="christmas-chat-decor" aria-hidden="true"><span>⭐</span><span>🔔</span><span>🎁</span></div>
-      ) : (
-        <div className="halloween-chat-decor" aria-hidden="true"><span>💀</span><span>🕯️</span><span>⚰️</span><span className="halloween-corner-web">🕸️</span></div>
-      )}
       <section className="chat-shell">
+        {myProfile?.anonymous_display_name === "孤星企鵝" ? (
+          <div className="christmas-chat-decor" aria-hidden="true"><span>⭐</span><span>🔔</span><span>🎁</span></div>
+        ) : (
+          <div className="halloween-chat-decor" aria-hidden="true"><span>💀</span><span>🕯️</span><span>⚰️</span><span className="halloween-corner-web">🕸️</span></div>
+        )}
         <header className="chat-header">
           <button
             className="ghost chat-back"
