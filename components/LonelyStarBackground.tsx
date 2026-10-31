@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Dimensions, Easing, StyleSheet, View } from "react-native";
-import { useAuth } from "../context/auth";
-import { resolveActiveRandomChatIdentityId } from "../lib/random-chat";
-import { supabase } from "../lib/supabase";
 
 /**
- * 孤星夜空：聊天室背景特效，只給孤星企鵝。
+ * 孤星夜空：聊天室背景特效，所有人都看得到。
  * 深藍夜空上滿天星星（靜態小星＋閃爍星），右上有一顆特別亮、
  * 帶光暈、會呼吸的「孤星」，偶爾劃過一顆流星。
  * 純裝飾：pointerEvents="none"，不擋訊息、不吃點擊。
@@ -266,38 +263,10 @@ function ShootingStar({ width, height }: { width: number; height: number }) {
 }
 
 export function LonelyStarBackground() {
-  const { user } = useAuth();
-  const [enabled, setEnabled] = useState(false);
   const { width, height } = useMemo(() => Dimensions.get("window"), []);
-
-  // 只給孤星企鵝：跟網站版一樣的 gate（anonymous_display_name === "孤星企鵝"）。
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const identityId = await resolveActiveRandomChatIdentityId(user?.id ?? "");
-        if (!identityId) return;
-        const { data } = await supabase
-          .from("profiles")
-          .select("anonymous_display_name")
-          .eq("id", identityId)
-          .maybeSingle();
-        if (alive && (data as { anonymous_display_name?: string } | null)?.anonymous_display_name === "孤星企鵝") {
-          setEnabled(true);
-        }
-      } catch {
-        // 查不到就當作不是，不顯示特效也不擋聊天。
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [user?.id]);
 
   const staticStars = useMemo(() => makeStars(60, width, height), [width, height]);
   const twinkleStars = useMemo(() => makeStars(12, width, height), [width, height]);
-
-  if (!enabled) return null;
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
