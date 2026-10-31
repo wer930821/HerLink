@@ -23,7 +23,7 @@ import {
 } from "react-native";
 import { RandomChatImage } from "../../components/RandomChatImage";
 import { ChatImageViewer } from "../../components/ChatImageViewer";
-import { HalloweenDecor } from "../../components/HalloweenDecor";
+import { ChristmasDecor } from "../../components/ChristmasDecor";
 import { LonelyStarBackground } from "../../components/LonelyStarBackground";
 import { RandomReportModal } from "../../components/RandomReportModal";
 import { VerifiedBadge } from "../../components/VerifiedBadge";
@@ -1389,7 +1389,7 @@ export default function RandomSessionScreen() {
       ]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <HalloweenDecor topOffset={0} />
+      <ChristmasDecor topOffset={0} />
       <LonelyStarBackground />
 
       {privateEggsAllowed && easterEgg ? (
