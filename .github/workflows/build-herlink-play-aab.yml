@@ -14,7 +14,7 @@ on:
       - 'lib/**'
       - 'theme/**'
       - 'app.json'
-      - 'package.json':
+      - 'package.json'
 
 jobs:
   build-native-play-aab:
