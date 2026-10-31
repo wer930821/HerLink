@@ -47,6 +47,7 @@ import {
   supabase,
 } from "../lib/supabase";
 import { Badge, Button, Field, Modal, Notice, PageHero, Surface } from "../components/ui";
+import { LonelyStarBackground } from "../components/chat/LonelyStarBackground";
 import { createPermanentRecoveryCode, getPermanentRecoveryStatus, rotatePermanentRecoveryCode, type RecoveryCodeStatus } from "../lib/permanent-recovery-code";
 
 type BootstrapState = {
@@ -991,6 +992,7 @@ export default function HomePage() {
 
   return (
     <main className="home-fixed home-premium home-app-like">
+      <LonelyStarBackground />
       <section className="home-app-hero">
         <div className="home-app-motion" aria-hidden="true">
           <div className="home-app-glow home-app-glow-a" />

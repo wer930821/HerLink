@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radii, spacing, typography } from "../../theme";
 import { useAuth } from "../../context/auth";
 import { HalloweenDecor } from "../../components/HalloweenDecor";
+import { LonelyStarBackground } from "../../components/LonelyStarBackground";
 import {
   getMyRandomChatUnreadCount,
   listMyActiveRandomSessions,
@@ -197,6 +198,7 @@ export default function AnonymousHomeScreen() {
   return (
     <View style={styles.root}>
       <HalloweenDecor topOffset={insets.top + 6} />
+      <LonelyStarBackground />
 
       {isCrownIdentity ? (
         <Pressable
