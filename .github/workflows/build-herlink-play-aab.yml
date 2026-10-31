@@ -5,6 +5,16 @@ permissions:
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'components/**'
+      - 'context/**'
+      - 'lib/**'
+      - 'theme/**'
+      - 'app.json'
+      - 'package.json':
 
 jobs:
   build-native-play-aab:
