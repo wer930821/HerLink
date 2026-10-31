@@ -6438,8 +6438,8 @@ body:has(.site-mailbox-viewport){
 .halloween-chat-decor span:nth-child(1) { top: 10%; right: 4%; font-size: 1.05rem; animation: herlinkBatFloat 7s ease-in-out infinite; }
 .halloween-chat-decor span:nth-child(2) { bottom: 15%; left: 2%; font-size: 1.35rem; opacity: .48; }
 .halloween-chat-decor span:nth-child(3) { top: 28%; left: 2%; font-size: 1.15rem; opacity: .42; animation: herlinkGhostFloat 5s ease-in-out infinite; }
-/* 孤星夜空：聊天室背景特效，只給孤星企鵝。canvas 鋪滿 chat-shell 當底，
-   不擋訊息、不吃點擊；訊息列自己有 stacking context，會蓋在上面。 */
+/* 孤星夜空：聊天室／首頁背景特效，所有人可見。canvas 鋪滿當底，
+   不擋訊息、不吃點擊；內容自己有 stacking context，會蓋在上面。 */
 .lonely-star-bg {
   pointer-events: none;
   user-select: none;
@@ -6451,9 +6451,9 @@ body:has(.site-mailbox-viewport){
 .home-app-like,
 .chat-page,
 .session-page { position: relative; }
-.home-app-like > :not(.halloween-home-decor),
-.chat-page > :not(.halloween-chat-decor),
-.session-page > :not(.halloween-chat-decor) { position: relative; z-index: 1; }
+.home-app-like > :not(.halloween-home-decor):not(.lonely-star-bg),
+.chat-page > :not(.halloween-chat-decor):not(.lonely-star-bg),
+.session-page > :not(.halloween-chat-decor):not(.lonely-star-bg) { position: relative; z-index: 1; }
 @keyframes herlinkGhostFloat { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-9px) rotate(4deg); } }
 @keyframes herlinkBatFloat { 0%,100% { transform: translate(0,0) rotate(-8deg); } 50% { transform: translate(9px,-7px) rotate(8deg); } }
 @keyframes herlinkSnowFall { 0% { transform: translateY(-10px) rotate(0deg); opacity: 0; } 15% { opacity: .9; } 85% { opacity: .9; } 100% { transform: translateY(105vh) rotate(340deg); opacity: 0; } }
