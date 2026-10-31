@@ -6479,7 +6479,7 @@ body:has(.site-mailbox-viewport){
 .christmas-home-decor span:nth-child(6) { bottom: 15%; left: 8%; font-size: 1.8rem; animation: herlinkSantaFloat 7s ease-in-out infinite 1.5s; }
 .christmas-home-decor span:nth-child(7) { bottom: 8%; right: 12%; font-size: 1.4rem; transform: rotate(-10deg); }
 .christmas-home-decor span:nth-child(8) { top: 40%; right: 3%; font-size: 1.25rem; animation: herlinkStarTwinkle 3.5s ease-in-out infinite 1s; }
-.home-app-like > :not(.christmas-home-decor):not(.halloween-home-decor) { position: relative; z-index: 1; }
+.home-app-like > :not(.christmas-home-decor):not(.halloween-home-decor):not(.lonely-star-bg) { position: relative; z-index: 1; }
 @keyframes herlinkStarTwinkle { 0%,100% { transform: scale(1) rotate(0deg); opacity: .9; } 50% { transform: scale(1.25) rotate(15deg); opacity: 1; } }
 @keyframes herlinkBellSwing { 0%,100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
 .chat-shell {
@@ -6646,8 +6646,8 @@ body:has(.halloween-chat-decor) .chat-header,
 .halloween-chat-decor::before {
   pointer-events: none !important;
 }
-.site-home-viewport:has(.halloween-home-decor) .home-app-like > :not(.halloween-home-decor),
-body:has(.halloween-chat-decor) main > :not(.halloween-chat-decor) {
+.site-home-viewport:has(.halloween-home-decor) .home-app-like > :not(.halloween-home-decor):not(.lonely-star-bg),
+body:has(.halloween-chat-decor) main > :not(.halloween-chat-decor):not(.lonely-star-bg) {
   position: relative;
   z-index: 2 !important;
   opacity: 1 !important;
