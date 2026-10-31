@@ -6438,6 +6438,16 @@ body:has(.site-mailbox-viewport){
 .halloween-chat-decor span:nth-child(1) { top: 10%; right: 4%; font-size: 1.05rem; animation: herlinkBatFloat 7s ease-in-out infinite; }
 .halloween-chat-decor span:nth-child(2) { bottom: 15%; left: 2%; font-size: 1.35rem; opacity: .48; }
 .halloween-chat-decor span:nth-child(3) { top: 28%; left: 2%; font-size: 1.15rem; opacity: .42; animation: herlinkGhostFloat 5s ease-in-out infinite; }
+/* 孤星夜空：聊天室背景特效，只給孤星企鵝。canvas 鋪滿 chat-shell 當底，
+   不擋訊息、不吃點擊；訊息列自己有 stacking context，會蓋在上面。 */
+.lonely-star-bg {
+  pointer-events: none;
+  user-select: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: .9;
+}
 .home-app-like,
 .chat-page,
 .session-page { position: relative; }
