@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import * as Clipboard from "expo-clipboard";
 import * as ImagePicker from "expo-image-picker";
@@ -203,6 +204,8 @@ export default function RandomSessionScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // 長按訊息選單提示：每台裝置只顯示一次（AsyncStorage 記住已看過）。
+  const [showMenuTip, setShowMenuTip] = useState(false);
   // 其他聊天室未讀提醒：只顯示「不是這一間、且有未讀」的聊天室，
   // migration 還沒執行時 unread_count 是 undefined，就當成沒有未讀。
   const [otherUnread, setOtherUnread] = useState<RandomSession[]>([]);
@@ -269,6 +272,24 @@ export default function RandomSessionScreen() {
   useEffect(() => {
     setPrivateEggsAllowed(true);
   }, [user?.id]);
+
+  // 長按訊息選單提示：每台裝置只顯示一次。
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem("herlink:message-menu-tip-seen")
+      .then((seen) => {
+        if (!cancelled && seen !== "1") setShowMenuTip(true);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const dismissMenuTip = useCallback(() => {
+    setShowMenuTip(false);
+    AsyncStorage.setItem("herlink:message-menu-tip-seen", "1").catch(() => undefined);
+  }, []);
 
   const messagesRef = useRef<RandomMessage[]>([]);
   const easterEggLastPlaybackAtRef = useRef(0);
@@ -1449,6 +1470,14 @@ export default function RandomSessionScreen() {
           <Text style={styles.noticeBannerText}>{notice}</Text>
           <Pressable onPress={() => setNotice(null)} hitSlop={10}>
             <Text style={styles.noticeClose}>關閉</Text>
+          </Pressable>
+        </View>
+      ) : null}
+      {showMenuTip ? (
+        <View style={styles.noticeBanner}>
+          <Text style={styles.noticeBannerText}>長按訊息可以回覆、編輯、收回。</Text>
+          <Pressable onPress={dismissMenuTip} hitSlop={10}>
+            <Text style={styles.noticeClose}>知道了</Text>
           </Pressable>
         </View>
       ) : null}

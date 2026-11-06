@@ -328,12 +328,29 @@ export default function RandomSessionClient() {
   const [assistantError, setAssistantError] = useState<string | null>(null);
   const [nextConfirmOpen, setNextConfirmOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  // 長按訊息選單提示：每台裝置只顯示一次（localStorage 記住已看過）。
+  const [showMenuTip, setShowMenuTip] = useState(false);
 
   useEffect(() => {
     if (!notice) return;
     const timer = window.setTimeout(() => setNotice(null), 4000);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem("herlink:message-menu-tip-seen") !== "1") {
+        setShowMenuTip(true);
+      }
+    } catch {}
+  }, []);
+
+  const dismissMenuTip = () => {
+    setShowMenuTip(false);
+    try {
+      window.localStorage.setItem("herlink:message-menu-tip-seen", "1");
+    } catch {}
+  };
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
@@ -2758,6 +2775,14 @@ export default function RandomSessionClient() {
         {notice ? (
           <div className="chat-status-stack">
             <div className="notice chat-status-notice">{notice}</div>
+          </div>
+        ) : null}
+        {showMenuTip ? (
+          <div className="chat-status-stack">
+            <div className="notice chat-status-notice" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <span>長按訊息可以回覆、編輯、收回。</span>
+              <button type="button" onClick={dismissMenuTip} style={{ flexShrink: 0, border: 0, background: "transparent", color: "inherit", fontSize: "inherit", fontWeight: 700, cursor: "pointer", padding: 0 }}>知道了</button>
+            </div>
           </div>
         ) : null}
 
