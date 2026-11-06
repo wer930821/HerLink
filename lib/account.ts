@@ -2,7 +2,7 @@ import { supabase, completeAuthFromUrl, getAuthCallbackUrl } from "./supabase";
 
 const rpc = supabase as any;
 
-const WEB_ORIGIN = "https://her-link-ten.vercel.app";
+const WEB_ORIGIN = "https://herlink.wer930821.workers.dev";
 
 type GoogleAuthResult = { url: string };
 

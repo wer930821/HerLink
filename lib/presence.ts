@@ -5,7 +5,7 @@ import { supabase } from "./supabase";
 const rpc = supabase as any;
 
 const INSTANCE_ID_KEY = "herlink:online-instance-id";
-const WEB_ORIGIN = "https://her-link-ten.vercel.app";
+const WEB_ORIGIN = "https://herlink.wer930821.workers.dev";
 
 function createInstanceId(): string {
   const hex = (length: number) =>
