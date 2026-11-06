@@ -25,6 +25,9 @@ export type RandomSession = {
   last_message_at?: string | null;
   last_message_type?: string | null;
   last_message_is_mine?: boolean | null;
+  // 最近已結束聊天室用（migration 20261106150000 之後才有）。
+  // 供「結束後也能封鎖」：列表顯示對方身分，封鎖走 session id。
+  partner_user_id?: string | null;
 };
 
 export type RandomMessage = {
@@ -216,6 +219,14 @@ export async function reportRandomUser(
 
 export async function listMyActiveRandomSessions() {
   const { data, error } = await rpc.rpc("list_my_active_random_sessions");
+  if (error) throw error;
+  return (data ?? []) as RandomSession[];
+}
+
+// 最近 7 天內已結束的隨機聊天室（供「結束後也能封鎖」用）。
+// migration 還沒執行時 RPC 不存在會報錯，呼叫端要自己吞掉、當成沒有。
+export async function listMyRecentRandomSessions() {
+  const { data, error } = await rpc.rpc("list_my_recent_random_sessions");
   if (error) throw error;
   return (data ?? []) as RandomSession[];
 }

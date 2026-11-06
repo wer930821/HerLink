@@ -1,18 +1,38 @@
 import { useCallback, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router/react-navigation";
 import { useRouter } from "expo-router";
 import { colors, radii, spacing, typography } from "../theme";
 import { getAnonymousAvatarOption } from "../lib/anonymous";
-import { listMyActiveRandomSessions, type RandomSession } from "../lib/random-chat";
+import {
+  blockRandomUser,
+  listMyActiveRandomSessions,
+  listMyRecentRandomSessions,
+  type RandomSession,
+} from "../lib/random-chat";
+
+function friendlyError(error: unknown) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" && error && "message" in error
+        ? String((error as { message?: unknown }).message ?? "")
+        : "";
+  if (message.includes("not available") || message.includes("not found")) {
+    return "找不到這段對話，可能已經被刪除了。";
+  }
+  return "目前無法封鎖這位使用者，請稍後再試。";
+}
 
 export default function ChatsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [sessions, setSessions] = useState<RandomSession[]>([]);
+  const [recentSessions, setRecentSessions] = useState<RandomSession[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [blockingId, setBlockingId] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -27,11 +47,41 @@ export default function ChatsScreen() {
         .catch(() => {
           if (alive) setLoaded(true);
         });
+      // 最近已結束的聊天室：migration 還沒執行時 RPC 不存在會報錯，
+      // 吞掉就好，當成沒有，不影響進行中的列表。
+      void listMyRecentRandomSessions()
+        .then((rows) => {
+          if (alive) setRecentSessions(rows);
+        })
+        .catch(() => {});
       return () => {
         alive = false;
       };
     }, [])
   );
+
+  const doBlockRecent = useCallback((item: RandomSession) => {
+    const name = item.partner_anonymous_display_name || "對方";
+    Alert.alert("封鎖對象", `封鎖「${name}」後，之後不會再配對到對方，對方不會收到通知。`, [
+      { text: "先不要", style: "cancel" },
+      {
+        text: "確認封鎖",
+        style: "destructive",
+        onPress: () => {
+          setBlockingId(item.id);
+          void blockRandomUser(item.id)
+            .then(() => {
+              setRecentSessions((rows) => rows.filter((row) => row.id !== item.id));
+              Alert.alert("已封鎖", `已封鎖「${name}」，之後不會再配對到對方。`, [{ text: "好" }]);
+            })
+            .catch((error) => {
+              Alert.alert("封鎖失敗", friendlyError(error), [{ text: "好" }]);
+            })
+            .finally(() => setBlockingId(null));
+        },
+      },
+    ]);
+  }, []);
 
   return (
     <FlatList
@@ -96,6 +146,45 @@ export default function ChatsScreen() {
           </Pressable>
         );
       }}
+      ListFooterComponent={
+        recentSessions.length > 0 ? (
+          <View style={styles.recentSection}>
+            <Text style={styles.recentTitle}>最近結束的聊天室</Text>
+            <Text style={styles.recentHint}>離開後也可以在這裡封鎖對方，之後就不會再配對到。</Text>
+            {recentSessions.map((item) => {
+              const avatar = getAnonymousAvatarOption(item.partner_anonymous_avatar);
+              const ended = item.ended_at ? new Date(item.ended_at).toLocaleDateString("zh-TW") : null;
+              return (
+                <View key={item.id} style={styles.row}>
+                  <View style={[styles.avatar, { backgroundColor: avatar.bg }]}>
+                    <Ionicons name={avatar.icon as never} size={22} color={avatar.fg} />
+                  </View>
+                  <View style={styles.rowBody}>
+                    <Text style={styles.name} numberOfLines={1}>
+                      {item.partner_anonymous_display_name}
+                      {item.partner_verified ? " ✓" : ""}
+                    </Text>
+                    <Text style={styles.meta} numberOfLines={1}>
+                      {ended ? `已結束 · ${ended}` : "已結束"}
+                    </Text>
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`封鎖 ${item.partner_anonymous_display_name}`}
+                    style={[styles.blockButton, blockingId === item.id && styles.blockButtonDisabled]}
+                    onPress={() => doBlockRecent(item)}
+                    disabled={blockingId !== null}
+                  >
+                    <Text style={styles.blockButtonText}>
+                      {blockingId === item.id ? "處理中…" : "封鎖"}
+                    </Text>
+                  </Pressable>
+                </View>
+              );
+            })}
+          </View>
+        ) : null
+      }
     />
   );
 }
@@ -174,6 +263,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: spacing.xxl,
     gap: spacing.sm,
+  },
+  recentSection: {
+    marginTop: spacing.lg,
+    gap: spacing.md,
+  },
+  recentTitle: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  recentHint: {
+    color: colors.textMuted,
+    ...typography.caption,
+  },
+  blockButton: {
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.error,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  blockButtonDisabled: {
+    opacity: 0.5,
+  },
+  blockButtonText: {
+    color: colors.error,
+    fontSize: 14,
+    fontWeight: "700",
   },
   emptyText: {
     color: colors.text,

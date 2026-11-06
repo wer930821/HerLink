@@ -178,6 +178,9 @@ export type RandomSessionRow = {
   partner_anonymous_display_name: string | null;
   partner_anonymous_avatar: string | null;
   partner_verified: boolean;
+  // 最近已結束聊天室才有（migration 20261106150000 之後才回傳），
+  // 舊版沒有這個欄位時是 undefined。
+  partner_user_id?: string | null;
   partner_age_display: string | null;
   partner_city: string | null;
   icebreaker_turn: number | null;
@@ -634,6 +637,19 @@ export async function ensureAnonymousBootstrapProfile(userId: string) {
 
 export async function loadMyActiveRandomSessions() {
   const result = await supabase.rpc("list_my_active_random_sessions");
+  return {
+    data: Array.isArray(result.data) ? result.data : [],
+    error: result.error,
+  } as {
+    data: RandomSessionRow[];
+    error: { message?: string } | null;
+  };
+}
+
+// 最近 7 天內已結束的隨機聊天室（供「結束後也能封鎖」用）。
+// migration 還沒執行時 RPC 不存在會報錯，呼叫端要自己吞掉、當成沒有。
+export async function loadMyRecentRandomSessions() {
+  const result = await supabase.rpc("list_my_recent_random_sessions");
   return {
     data: Array.isArray(result.data) ? result.data : [],
     error: result.error,

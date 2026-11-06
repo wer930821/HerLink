@@ -2,12 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Notice } from "../../components/ui";
-import { getCurrentSession, loadMyActiveRandomSessions, loadRandomMessages, type RandomChatMessageRow, type RandomSessionRow } from "../../lib/supabase";
+import { Button, Modal, Notice } from "../../components/ui";
+import { blockRandomUser, getCurrentSession, loadMyActiveRandomSessions, loadMyRecentRandomSessions, loadRandomMessages, type RandomChatMessageRow, type RandomSessionRow } from "../../lib/supabase";
 
 export default function ChatsPage() {
   const router = useRouter();
   const [sessions, setSessions] = useState<RandomSessionRow[]>([]);
+  const [recentSessions, setRecentSessions] = useState<RandomSessionRow[]>([]);
+  const [blockTarget, setBlockTarget] = useState<RandomSessionRow | null>(null);
+  const [blockBusy, setBlockBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [latestMessages, setLatestMessages] = useState<Record<string, RandomChatMessageRow | null>>({});
 
@@ -32,9 +36,35 @@ export default function ChatsPage() {
           setLoading(false);
         }
       }
+      // 最近已結束的聊天室：migration 還沒執行時 RPC 不存在會報錯，
+      // 吞掉就好，當成沒有，不影響進行中的列表。
+      void loadMyRecentRandomSessions().then((recentResult) => {
+        if (mounted && !recentResult.error) {
+          setRecentSessions(recentResult.data);
+        }
+      });
     })();
     return () => { mounted = false; };
   }, [router]);
+
+  const confirmBlock = async () => {
+    if (!blockTarget || blockBusy) return;
+    const target = blockTarget;
+    setBlockBusy(true);
+    try {
+      const { error } = await blockRandomUser(target.id);
+      if (error) {
+        throw error;
+      }
+      setRecentSessions((rows) => rows.filter((row) => row.id !== target.id));
+      setNotice(`已封鎖「${target.partner_anonymous_display_name || "對方"}」，之後不會再配對到對方。`);
+    } catch {
+      setNotice("目前無法封鎖這位使用者，請稍後再試。");
+    } finally {
+      setBlockTarget(null);
+      setBlockBusy(false);
+    }
+  };
 
   return (
     <main className="stack home-premium" style={{ maxWidth: 720, margin: "0 auto", padding: "24px 16px" }}>
@@ -78,6 +108,55 @@ export default function ChatsPage() {
           </button>
         ))}
       </div>
+      {notice ? (
+        <Notice title="提示">
+          <p>{notice}</p>
+        </Notice>
+      ) : null}
+      {recentSessions.length > 0 ? (
+        <div className="stack">
+          <div>
+            <h2>最近結束的聊天室</h2>
+            <p className="muted small">聊天結束後 7 天內，還可以在這裡封鎖對方。</p>
+          </div>
+          {recentSessions.map((session) => (
+            <div
+              key={session.id}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: 16, borderRadius: 18, border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.04)" }}
+            >
+              <div style={{ flex: 1, textAlign: "left" }}>
+                <strong>{session.partner_anonymous_display_name || "匿名使用者"}</strong>
+                <div className="muted small" style={{ marginTop: 6 }}>
+                  已結束 · {session.ended_at ? new Date(session.ended_at).toLocaleDateString("zh-TW") : ""}
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" type="button" onClick={() => setBlockTarget(session)}>
+                封鎖
+              </Button>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <Modal
+        open={blockTarget !== null}
+        title="封鎖使用者"
+        tone="danger"
+        onClose={() => { if (!blockBusy) setBlockTarget(null); }}
+        actions={
+          <>
+            <Button variant="ghost" type="button" onClick={() => setBlockTarget(null)} disabled={blockBusy}>
+              取消
+            </Button>
+            <Button type="button" onClick={() => void confirmBlock()} disabled={blockBusy}>
+              {blockBusy ? "處理中…" : "封鎖"}
+            </Button>
+          </>
+        }
+      >
+        <p className="hero-copy">
+          確定要封鎖「{blockTarget?.partner_anonymous_display_name || "對方"}」嗎？封鎖後之後不會再配對到對方，對方不會收到通知。
+        </p>
+      </Modal>
       <Button href="/" variant="secondary">回首頁</Button>
     </main>
   );

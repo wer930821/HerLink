@@ -10,6 +10,7 @@ import {
   anonymousRenameErrorMessage,
 } from "../lib/anonymous-rename";
 import { getFriendlyAuthErrorMessage } from "../lib/auth-ui";
+import { registerCurrentDevice } from "../lib/device";
 import {
   getShortId,
   isNavigationDebugEnabled,
@@ -276,6 +277,10 @@ export default function HomePage() {
           }
           return;
         }
+
+        // 裝置登記（封鎖改進 C）：讓之後的封鎖能認裝置。
+        // 失敗不擋載入，吞掉就好。
+        void registerCurrentDevice().catch(() => null);
 
         const [loadedProfileResult, queueResult, sessionResult] = await Promise.all([
           loadMyProfile(session.user.id),
@@ -705,6 +710,10 @@ export default function HomePage() {
       if (abuseCheck.error) {
         throw abuseCheck.error;
       }
+
+      // 裝置登記（封鎖改進 C）：讓之後的封鎖能認裝置。
+      // 失敗不擋登入，吞掉就好。
+      await registerCurrentDevice().catch(() => null);
 
       const nextState = {
         session,
