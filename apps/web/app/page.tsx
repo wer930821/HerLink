@@ -1058,6 +1058,11 @@ export default function HomePage() {
           <Button size="lg" onClick={startMatching} disabled={actionBusy || MAINTENANCE_MODE}>
             {actionBusy ? "處理中…" : MAINTENANCE_MODE ? "維護中" : state.activeSession ? "配對新的人" : "開始匿名配對"}
           </Button>
+          {anonymousSummary?.name === "孤星企鵝" ? (
+            <Button variant="secondary" size="lg" onClick={() => router.push("/town")} disabled={actionBusy || MAINTENANCE_MODE}>
+              走進 3D 小鎮
+            </Button>
+          ) : null}
           {state.activeSession ? <Button variant="secondary" size="lg" href="/chats">我的聊天{chatUnreadCount > 0 ? <span className="home-chat-unread" aria-label={`${chatUnreadCount} 則未讀訊息`}>{chatUnreadCount > 99 ? "99+" : chatUnreadCount}</span> : null}</Button> : null}
           <Button variant="secondary" size="lg" href="/contacts">匿名聯絡人</Button>
           <Button variant="secondary" size="lg" onClick={() => void openPermanentRecoverySettings()} disabled={actionBusy}>永久恢復碼</Button>
