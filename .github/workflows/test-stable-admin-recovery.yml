@@ -1,0 +1,21 @@
+name: Test stable admin recovery
+
+on:
+  pull_request:
+    paths:
+      - 'apps/web/__tests__/admin-recovery-stable-identity.test.mjs'
+      - 'supabase/migrations/**'
+      - 'apps/web/lib/supabase.ts'
+      - '.github/workflows/test-stable-admin-recovery.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run stable admin recovery regression test
+        run: node --test apps/web/__tests__/admin-recovery-stable-identity.test.mjs

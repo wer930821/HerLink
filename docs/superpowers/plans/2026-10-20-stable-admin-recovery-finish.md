@@ -1,0 +1,3 @@
+# Finish
+
+Planning phase finished.

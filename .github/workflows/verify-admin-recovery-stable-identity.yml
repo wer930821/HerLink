@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'supabase/migrations/20261009003000_admin_recovery_stable_identity.sql'
+      - 'supabase/migrations/20261020_admin_recovery_preserve_original_identity.sql'
+      - 'apps/web/__tests__/admin-recovery-stable-identity.test.mjs'
       - '.github/workflows/verify-admin-recovery-stable-identity.yml'
 
 permissions:
@@ -19,12 +21,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          f=supabase/migrations/20261009003000_admin_recovery_stable_identity.sql
+          f=supabase/migrations/20261020_admin_recovery_preserve_original_identity.sql
           test -f "$f"
           grep -q 'anonymous_identity_device_state' "$f"
           grep -q 'active_auth_user_id' "$f"
-          grep -q 'v_source = p_target_user_id' "$f"
-          grep -q 'on conflict (anonymous_identity_id) do update' "$f"
+          grep -Eq 'anonymous_identity_id, active_auth_user_id, generation, updated_at' "$f"
+          grep -Eq 'values \([[:space:]]*v_source,[[:space:]]*p_target_user_id,[[:space:]]*1' "$f"
           grep -q 'where active_auth_user_id = p_target_user_id' "$f"
-          grep -q 'where status=.active. and (user_a=v_source or user_b=v_source)' "$f"
+          grep -q 'generation = generation + 1' "$f"
+          ! grep -Eiq 'update public\.(random_chat_sessions|random_chat_messages|anonymous_contacts)|set anonymous_display_name' "$f"
           echo 'GREEN: admin recovery migration contains stable identity persistence and idempotent repair path.'
+      - name: Run focused stable identity test
+        run: node --test apps/web/__tests__/admin-recovery-stable-identity.test.mjs

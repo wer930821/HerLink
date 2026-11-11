@@ -1,0 +1,3 @@
+# RED ready
+
+Write test.

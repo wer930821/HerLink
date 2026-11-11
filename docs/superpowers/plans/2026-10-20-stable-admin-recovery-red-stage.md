@@ -1,0 +1,3 @@
+# RED stage
+
+Begin test.
