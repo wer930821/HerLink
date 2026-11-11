@@ -41,6 +41,7 @@ export default function PrivacyPage() {
           <Button variant="link" href="/">返回首頁</Button>
           <Button variant="link" href="/terms">服務條款</Button>
           <Button variant="link" href="/safety">安全說明</Button>
+          <Button variant="link" href="/data-deletion">刪除資料</Button>
         </div>
       </Surface>
     </main>
